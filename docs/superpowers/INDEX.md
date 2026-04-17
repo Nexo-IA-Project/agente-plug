@@ -8,7 +8,7 @@
 | # | Subsistema | Spec | Plano | Implementação |
 |---|-----------|------|-------|---------------|
 | ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec](specs/2026-04-17-nexoia-agent-core-design.md) | [plano](plans/2026-04-17-nexoia-agent-core.md) | ⏳ Pendente |
-| ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | ⏳ Pendente | ⏳ Pendente |
+| ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ⏳ Pendente |
 | ③ | **Capability Access** — aluno sem acesso ao produto | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
 | ⑤ | **Capability Loja Express** — follow-up D+1/D+3/D+7 | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
@@ -30,6 +30,7 @@
 ### Planos (`docs/superpowers/plans/`)
 
 - `2026-04-17-nexoia-agent-core.md` — Plano ①: 35 tasks em 12 fases (A–L), TDD completo
+- `2026-04-17-nexoia-capability-welcome.md` — Plano ②: 12 tasks, TDD completo, CademiClient stub
 
 ## Fonte
 
