@@ -40,10 +40,12 @@ class IntentRouter:
 
 _INTENT_TO_NODE: dict[str, str] = {
     "welcome": "capability_welcome",
+    "welcome_response": "capability_welcome",
     "access": "capability_access",
     "refund": "capability_refund",
     "loja_express": "capability_loja_express",
     "knowledge": "capability_knowledge",
+    "escalate": "capability_knowledge",
 }
 
 

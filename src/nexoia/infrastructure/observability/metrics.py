@@ -89,7 +89,7 @@ welcome_d1_cancelled_total = Counter(
 access_capability_total = Counter(
     "access_capability_total",
     "Total de execuções da Capability Access",
-    labelnames=["status"],
+    ["status"],
     registry=REGISTRY,
 )
 access_cademi_cascade_attempts = Histogram(
