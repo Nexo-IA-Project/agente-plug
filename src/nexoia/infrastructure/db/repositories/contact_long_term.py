@@ -34,3 +34,4 @@ class ContactFactsRepository:
         )
         model = (await self.session.execute(stmt)).scalar_one()
         model.long_term_facts = facts
+        await self.session.flush()

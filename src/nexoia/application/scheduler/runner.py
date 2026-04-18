@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Awaitable, Callable, Protocol
 from uuid import UUID
 
@@ -8,12 +9,12 @@ from nexoia.domain.entities.scheduled_job import JobType, ScheduledJob
 
 
 class ScheduledJobRepoProto(Protocol):
-    async def pick_due_jobs(self, *, now, limit: int = 50) -> list[ScheduledJob]: ...
-    async def mark_executed(self, *, job_id: UUID, at) -> None: ...
+    async def pick_due_jobs(self, *, now: datetime, limit: int = 50) -> list[ScheduledJob]: ...
+    async def mark_executed(self, *, job_id: UUID, at: datetime) -> None: ...
 
 
 class ClockProto(Protocol):
-    def now(self): ...
+    def now(self) -> datetime: ...
 
 
 JobHandler = Callable[[ScheduledJob], Awaitable[None]]

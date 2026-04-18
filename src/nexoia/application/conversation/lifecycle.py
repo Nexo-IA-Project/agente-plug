@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Protocol
 from uuid import UUID
 
@@ -30,8 +30,24 @@ class ChatNexoSender(Protocol):
 
 
 class ScheduledRepoProto(Protocol):
-    async def schedule(self, **kwargs) -> object: ...
-    async def cancel_by_conversation(self, **kwargs) -> int: ...
+    async def schedule(
+        self,
+        *,
+        account_id: UUID,
+        conversation_id: UUID,
+        job_type: JobType,
+        payload: dict,
+        run_at: datetime,
+        correlation_id: str | None = None,
+    ) -> object: ...
+
+    async def cancel_by_conversation(
+        self,
+        *,
+        account_id: UUID,
+        conversation_id: UUID,
+        job_types: list[JobType],
+    ) -> int: ...
 
 
 class ConvRepoProto(Protocol):
@@ -39,7 +55,7 @@ class ConvRepoProto(Protocol):
 
 
 class ClockProto(Protocol):
-    def now(self): ...
+    def now(self) -> datetime: ...
 
 
 @dataclass
