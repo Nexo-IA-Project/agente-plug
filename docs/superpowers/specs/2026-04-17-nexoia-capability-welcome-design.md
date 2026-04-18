@@ -141,8 +141,13 @@ class WelcomeState(ConversationState):
 
 ### Nó `schedule_d1`
 
-- Insere `scheduled_jobs` com `run_at = created_at + 1h`, `job_type = SendScheduledFollowUp`, `payload = {template: "access_reminder_d1", access_case_id}`
-- Salva `scheduled_d1_job_id` no `AccessCase`
+Dois estágios conforme PRD 3.2 step 8 ("Se aluno NÃO responder em 1 hora: agenda follow-up D+1"):
+
+1. **Check inicial (T+1h):** insere `scheduled_job` com `run_at = now + WELCOME_CHECK_DELAY_HOURS (1h)`, `job_type = WELCOME_CHECK`. Este job verifica se houve resposta do aluno.
+2. **D+1 reminder (T+24h):** quando o check de 1h executa e confirma que o aluno não respondeu, agenda um segundo `scheduled_job` com `run_at = purchase_time + WELCOME_D1_DELAY_HOURS (24h)`, `job_type = SendScheduledFollowUp`, `payload = {template: "access_reminder_d1", access_case_id}`.
+3. Salva `scheduled_check_job_id` e `scheduled_d1_job_id` no `AccessCase`.
+
+**Nomenclatura:** D+1 = Day+1 = 24 horas após a compra (conforme PRD 3.3 template `access_reminder_d1` — "Lembrete de acesso se o aluno não entrou no D+1 após a compra").
 
 ### Cancelamento do D+1
 
@@ -277,7 +282,8 @@ CADEMI_API_KEY: str = ""         # TODO: preencher com chave real
 MESSAGE_BUFFER_WAIT_SECONDS: int = 0   # 0 = desativado; ajustar se necessário
 
 # Welcome Capability
-WELCOME_D1_DELAY_HOURS: int = 1        # horas para agendar o D+1
+WELCOME_CHECK_DELAY_HOURS: int = 1     # check se aluno respondeu (PRD 3.2 step 8)
+WELCOME_D1_DELAY_HOURS: int = 24       # D+1 = Day+1 = 24h após compra (PRD 3.3)
 CADEMI_MAX_RETRIES: int = 3
 CADEMI_RETRY_BASE_SECONDS: float = 1.0  # backoff: 1s, 3s, 9s
 ```
@@ -335,7 +341,7 @@ welcome_d1_cancelled_total
 | `RF-W01` | Agente processa o job imediatamente ao receber (sem buffer interno — upstream já faz isso). `MESSAGE_BUFFER_WAIT_SECONDS=0` configurável. |
 | `RF-W02` | Retry Cademi: 3x com backoff exponencial (1s, 3s, 9s). Se esgotado: boas-vindas genérica + handoff silencioso. |
 | `RF-W03` | Conversa aberta no ChatNexo → reutiliza. Fechada/inexistente → cria nova via API. |
-| `RF-W04` | D+1 agendado em `scheduled_jobs` com `run_at = now + WELCOME_D1_DELAY_HOURS`. |
+| `RF-W04` | Check agendado em `scheduled_jobs` com `run_at = now + WELCOME_CHECK_DELAY_HOURS (1h)`. Se aluno não respondeu, agenda D+1 com `run_at = purchase_time + WELCOME_D1_DELAY_HOURS (24h)`. |
 | `RF-W05` | D+1 cancelado quando `access_confirmed = True` (objetivo atingido). |
 | `RF-W06` | Template `welcome_purchase`: ID e variáveis exatas a confirmar — ver `OPEN_QUESTIONS.md`. |
 | `RF-W07` | Link Cademi — prazo de expiração a confirmar — ver `OPEN_QUESTIONS.md`. |

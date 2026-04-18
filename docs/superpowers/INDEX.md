@@ -13,6 +13,7 @@
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | ⏳ Pendente | ⏳ Pendente |
 | ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | ⏳ Pendente | ⏳ Pendente |
 | ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | ⏳ Pendente | ⏳ Pendente |
+| ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | ⏳ Pendente | ⏳ Pendente |
 
 ## Legenda
 
@@ -30,6 +31,7 @@
 - `2026-04-18-nexoia-capability-refund-design.md` — Spec ④: reembolso+retenção, CDC 7 dias, N1/N2, mutex Redis, guards jurídicos
 - `2026-04-18-nexoia-capability-loja-express-design.md` — Spec ⑤: follow-up D+0→D+7, LojaExpressCase, stubs formulário+status
 - `2026-04-18-nexoia-kb-admin-design.md` — Spec ⑥: upload→chunking→pgvector, JWT multi-tenant, busca RAG, logs de uso
+- `2026-04-18-nexoia-capability-knowledge-design.md` — Spec ⑦: RAG capability 3 tentativas + sinônimos + keywords + 4ª com contexto
 
 ### Planos (`docs/superpowers/plans/`)
 

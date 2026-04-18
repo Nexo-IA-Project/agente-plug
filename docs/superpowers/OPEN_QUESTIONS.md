@@ -112,6 +112,19 @@
 
 ---
 
+## Capability Knowledge (Spec ⑦)
+
+### CQ-K01 — Lista consolidada de sinônimos (160+ termos)
+**Contexto:** A Knowledge Capability expande a query do aluno com sinônimos mapeados (PRD 7.4). O PRD menciona "160+ termos mapeados" mas não fornece a lista.
+**Pergunta:**
+- Existe uma lista pronta dos 160+ termos e sinônimos da Sofia atual (G2 Educação)?
+- Se sim: como importar/transcrever?
+- Se não: precisamos consolidar com a equipe antes da implementação da Fase 1?
+
+**Impacto:** Sem a lista, a Tentativa 2 da Knowledge Capability vira a mesma coisa que a Tentativa 1. Stub inicial com 10-20 termos comuns até a lista real.
+
+---
+
 ## Geral / Infraestrutura
 
 ### CQ-G01 — Credenciais Cademi por ambiente

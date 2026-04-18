@@ -44,8 +44,8 @@ Aluno manda mensagem sobre acesso
 - Não processa compras novas (spec ②)
 - Não trata reembolso (spec ④)
 - Não implementa o `CademiClient` real — stub com TODO explícito (herdado do spec ②)
-- Não define o formato exato do link/dados enviados — ver `OPEN_QUESTIONS.md` CQ-A01
 - Não gerencia idle/timeout — responsabilidade do Core (30min ping + 20min close)
+- Não trata problemas de cadastro Shopee ou KYC — plataformas distintas (PRD 7.2)
 
 ---
 
@@ -80,10 +80,14 @@ START
 lookup_access_case      ← busca AccessCase ativo pelo contact_phone
   │ se não encontrado → handoff silencioso
   ▼
+check_platform_scope    ← se aluno menciona Shopee/KYC → handoff silencioso (plataformas distintas)
+  │
+  ▼
 search_cademi_cascade   ← email → CPF → nome+telefone; máx 3 tentativas
+  │ se email da mensagem difere do AccessCase → oferece atualizar cadastro antes de reenviar
   │ se esgotado → handoff silencioso + status = REACTIVE_ESCALATED
   ▼
-send_access             ← envia link/dados via ChatNexo (TODO: ver CQ-A01)
+send_access             ← envia link nominal de auto-login via ChatNexo (PRD 7.2)
   │
   ▼
 update_access_case      ← status = REACTIVE_LINK_SENT, search_attempts, updated_at
@@ -114,7 +118,20 @@ class AccessState(ConversationState):
 3. Se não encontrado: dispara handoff silencioso (caso raro — aluno sem compra registrada)
 4. Popula `student_email`, `student_cpf`, `student_name` a partir do `AccessCase`
 
+### Nó `check_platform_scope`
+
+**Crítico (PRD 7.2):** *"Nunca usar `resend_access` para problemas de cadastro Shopee ou KYC — são plataformas distintas."*
+
+1. Analisa a mensagem do aluno via LLM para detectar menções a Shopee ou KYC
+2. Se detectar: dispara `ChatNexoClient.transfer_to_human(reason="shopee_or_kyc_out_of_scope")` — handoff silencioso
+3. Caso contrário: prossegue para `search_cademi_cascade`
+
 ### Nó `search_cademi_cascade`
+
+**Regra PRD 7.2 — email mismatch:** se o aluno fornecer um email na mensagem (ex: "tentei com joao@gmail.com") e for **diferente** do email no `AccessCase`:
+1. A IA responde oferecendo atualizar o cadastro: *"Percebi que o email que você passou é diferente do cadastro. Quer que eu atualize pra esse novo email antes de reenviar o acesso?"*
+2. Se aluno confirmar: atualiza `long_term_facts.email` do contato + tenta busca Cademi com o email novo
+3. Se aluno negar: prossegue com o email do AccessCase
 
 Tentativa 1 — email:
 1. Chama `CademiPort.get_student_by_email(student_email)`
@@ -138,10 +155,10 @@ Esgotado (3 tentativas sem resultado):
 
 ### Nó `send_access`
 
-- Chama `CademiPort.get_access_link(cademi_student.id, product_id)`
-- Envia via `ChatNexoClient.send_message(...)` com link/dados
+**Regra PRD 7.2:** *"Link de acesso deve ser nominal (auto-login) — aluno não cria senha."*
 
-> **TODO — ver CQ-A01:** Confirmar com cliente o formato exato: link nominal de auto-login, ou dados de acesso (email + senha provisória), ou outro formato.
+1. Chama `CademiPort.get_access_link(cademi_student.id, product_id)`
+2. Envia via `ChatNexoClient.send_message(...)` com link nominal de auto-login (dentro da janela 24h = texto livre; fora = template Meta)
 
 ### Nó `update_access_case`
 
@@ -294,7 +311,9 @@ access_cpf_fallback_total        # vezes que pedimos CPF ao aluno
 | `RF-A02` | Cascade de busca Cademi: email (1ª) → CPF stored (2ª) → nome+telefone (3ª). Máx 3 tentativas. |
 | `RF-A03` | Se `student_cpf = None`: envia mensagem pedindo CPF ao aluno. Retoma busca na próxima mensagem. |
 | `RF-A04` | Após 3 tentativas sem resultado: `transfer_to_human`, `status = REACTIVE_ESCALATED`. |
-| `RF-A05` | Formato do que enviar ao aluno (link ou dados): **TODO** — ver CQ-A01. |
+| `RF-A05` | Envia link nominal de auto-login (PRD 7.2). Dentro de janela 24h: texto livre. Fora: template Meta. |
+| `RF-A05a` | Se aluno mencionar Shopee ou KYC: handoff silencioso (plataformas distintas — PRD 7.2). |
+| `RF-A05b` | Se aluno fornecer email ≠ email no AccessCase: oferecer atualizar cadastro antes de reenviar (PRD 7.2). |
 | `RF-A06` | Busca Cademi por nome+telefone (3ª tentativa): **TODO** — ver CQ-A02. Stub com `NotImplementedError`. |
 | `RF-A07` | Payload Hubla inclui campo `document` (CPF/CNPJ/None). Persistido em `student_cpf` no AccessCase. |
 | `RF-A08` | `AccessCase` atualizado com `REACTIVE_LINK_SENT` e `search_attempts` após envio bem-sucedido. |

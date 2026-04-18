@@ -108,9 +108,11 @@ nexoia-agent/
 │   │
 │   ├── application/            # Use cases — orquestra domain + ports
 │   │   ├── intent_router.py    # classifica intent e despacha pra capability
+│   │   ├── response_composer.py # monta resposta final (regras comunicação PRD 8)
 │   │   ├── memory/
 │   │   │   ├── short_term.py   # thin wrapper sobre o checkpoint LangGraph
-│   │   │   └── long_term.py    # repository-backed, Contact facts
+│   │   │   ├── long_term.py    # repository-backed, Contact facts
+│   │   │   └── legal_history.py # Art. 49 CDC — busca canais anteriores
 │   │   ├── sentiment.py        # detector de sentimento
 │   │   ├── context_builder.py  # separa mensagens humano×IA, monta contexto
 │   │   ├── conversation/
@@ -201,8 +203,9 @@ infrastructure ────────────────┘
 
 - Recebe: `(message, conversation_context, long_term_memory)`
 - Chama OpenAI com prompt estruturado + JSON Schema output
-- Classifica intent em: `access | refund | loja_express | welcome_response | unknown | escalate`
-- Devolve: `IntentDecision(capability, confidence, reasoning)`
+- Classifica intent em: `access | refund | loja_express | knowledge | welcome_response | unknown | escalate` (PRD 7.1-7.6 — 6+ categorias)
+- Classifica sentimento em: `neutro | positivo | frustrado | irritado | ansioso | hostil` (PRD seção 8 — 5+ categorias)
+- Devolve: `IntentDecision(capability, confidence, reasoning, sentiment)`
 - **Regra:** `confidence < 0.7` → handoff silencioso para humano
 - É use case puro: nunca chama infrastructure diretamente, recebe ports injetadas
 
@@ -274,6 +277,7 @@ Variação é escolhida por hash(`conversation_id + stage`) para ser determinís
 
 - **Short-term** (`short_term.py`): wrapper fino sobre o checkpoint LangGraph. Estado da thread, tentativas, handoff.
 - **Long-term** (`long_term.py`): repository do Contact. Busca por `(account_id, contact_id)`. Campos: `email`, `produtos_comprados`, `historico_retencao`, `personalidade`, `preferencias`, `ultima_interacao`, `notas_ia`.
+- **Legal History** (`legal_history.py`): busca em **todas** as conversas anteriores do contato por solicitação de reembolso dentro do prazo CDC (Art. 49 — PRD 9). Usado pelo `check_deadline` do Refund para forçar `within_deadline = True` se aluno pediu em canal anterior. Query: `SELECT * FROM messages JOIN conversations WHERE contact_id = $1 AND content ILIKE '%reembolso%' AND created_at >= purchase_date AND created_at <= purchase_date + 7 days`.
 - **Context Builder** (`context_builder.py`): monta o contexto final pro LLM. **Regra crítica**: separa mensagens enviadas por operador humano vs respostas geradas pela IA — LLM não pode confundir a voz humana com a sua.
 
 ### 5.7 Guards e Circuit Breaker (`application/guards/`)
@@ -284,6 +288,62 @@ Variação é escolhida por hash(`conversation_id + stage`) para ser determinís
 - `LegalMentionGuard` — menção a Procon, advogado, ação judicial → **handoff silencioso imediato** (zero mensagem)
 
 Guards específicos de capability ficam no módulo da capability (ex: `capabilities/refund/guards/explicit_request.py`).
+
+### 5.7c Escalation Triggers (PRD 7.6)
+
+Catálogo de triggers para handoff silencioso gerenciado pelo Core. Cada capability dispara via `ChatNexoClient.transfer_to_human(reason=...)`:
+
+| Trigger | Como detectado | Reason code |
+|---|---|---|
+| Aluno pediu humano 3x | Contador no estado da conversa | `human_requested_3x` |
+| Chargeback / contestação | Webhook específico ou menção explícita | `chargeback` |
+| Bug após 3 tentativas | Retries esgotados em integração | `bug_persistent` |
+| PDF / material de live | Intent Router detecta pedido de mídia específica | `media_material_request` |
+| Compra não encontrada (3 buscas) | Refund/Access cascade esgotada | `purchase_not_found_3x` |
+| Procon / advogado / ação judicial | `LegalMentionGuard` | `legal_mention` |
+| 3ª insistência pós-deny | Contador no RefundCase | `post_deny_3rd_insistence` |
+| Loja Express bloqueio operacional | Spec ⑤ D+5/D+7 | `loja_express_blocked` |
+
+**Regras (PRD 7.6):**
+- **Sempre silencioso:** nunca dizer "vou te transferir" ao aluno
+- **Nunca escalar por erro de API:** usar retry + circuit breaker
+- Logar `handoff_reason` em `audit_events` para rastreamento
+
+### 5.7a Response Composer (`application/response_composer.py`)
+
+Componente que monta a resposta final antes de enviar ao ChatNexo (PRD 3.4 step 13).
+
+**Responsabilidades:**
+- Aplica **Regras de Comunicação** da NexoIA (PRD seção 8) como validação pós-LLM
+- Define `tags`, `status` e `ação` (ex: `transfer_to_human`, `add_tag`) junto à mensagem
+- Trunca se mensagem exceder limite (300 caracteres — PRD seção 8)
+- Valida que a resposta não contém palavras proibidas
+- Adapta tom conforme sentimento detectado
+
+### 5.7b Regras de Comunicação da IA (PRD seção 8)
+
+Aplicadas no Response Composer e no prompt do LLM:
+
+| Atributo | Regra |
+|---|---|
+| **Identidade** | Especialista de Sucesso do Aluno. Pessoa real do time. **Nunca se revela como IA** (PRD 8). |
+| **Tom** | Calorosa, direta, competente. "Amiga próxima que trabalha na empresa." |
+| **Linguagem** | Informal brasileira: "vc", "tb", "pra", "tá", "né", "beleza" |
+| **Mensagens** | Máximo **300 caracteres**, 2-4 linhas |
+| **Proibidas** | "putz", "puts", "poxa", "que chato", "Claro!", "entendo" repetido |
+| **Formato** | Nunca bullets, negrito, itálico ou cabeçalhos no WhatsApp |
+
+**Comportamento por sentimento (PRD seção 8):**
+
+| Sentimento | Comportamento |
+|---|---|
+| Neutro/Positivo | Tom amigável, emoji ok |
+| Frustrado | 1 frase de empatia → ação direta |
+| Irritado | Sério, direto, sem emoji. Ação imediata |
+| Ansioso | "Fica tranquilo(a), vou cuidar disso" |
+| Hostil | Profissional e calmo. 1 tentativa → escala |
+
+**Validação:** `Response Composer` executa um `PostResponseValidator` que rejeita a resposta gerada pelo LLM se violar qualquer regra acima. Em caso de violação: gera nova tentativa com o LLM (máx 2 retries) ou cai em fallback genérico.
 
 ### 5.8 ChatNexo Client (`infrastructure/chatnexo/client.py`)
 
@@ -391,7 +451,7 @@ INTENT_CONFIDENCE_THRESHOLD: float = 0.7
 | `conversations` | Thread de conversa | `id`, `account_id`, `contact_id`, `chatnexo_conversation_id`, `status` (ACTIVE/IDLE_PINGED/CLOSED_BY_TIMEOUT/HANDED_OFF/RESOLVED), `last_activity_at`, `idle_state`, `window_expires_at`, `handoff_reason`, `created_at`, `updated_at` |
 | `messages` | Mensagens in/out | `id`, `conversation_id`, `direction` (IN/OUT), `source` (STUDENT/AGENT_IA/AGENT_HUMAN), `content`, `media_urls` (array), `classification_hint`, `correlation_id`, `created_at` |
 | `webhook_events` | Auditoria de webhooks | `id`, `source` (HUBLA/CHATNEXO), `external_id` UNIQUE, `payload` (JSONB), `status`, `correlation_id`, `created_at`, `processed_at` |
-| `scheduled_jobs` | Scheduler | `id`, `account_id`, `conversation_id` (nullable), `job_type` (IDLE_PING/IDLE_CLOSE/FOLLOWUP_D1/FOLLOWUP_CUSTOM), `payload` (JSONB), `run_at`, `status` (PENDING/CANCELLED/EXECUTED/FAILED), `attempts`, `correlation_id`, `created_at`, `executed_at` |
+| `scheduled_jobs` | Scheduler | `id`, `account_id`, `conversation_id` (nullable), `job_type` (IDLE_PING/IDLE_CLOSE/FOLLOWUP_D1/FOLLOWUP_CUSTOM), `payload` (JSONB), `run_at`, `status` (PENDING/CANCELLED/EXECUTED/FAILED), `attempts`, `correlation_id`, `created_at`, `executed_at` |pode
 | `capability_executions` | Analytics | `id`, `conversation_id`, `capability_name`, `intent_confidence`, `tools_called` (JSONB), `duration_ms`, `outcome` (SUCCESS/HANDOFF/ERROR), `correlation_id`, `created_at` |
 | `audit_events` | Trilha geral | `id`, `account_id`, `actor` (SYSTEM/AGENT/HUMAN), `action`, `resource_type`, `resource_id`, `metadata` (JSONB), `correlation_id`, `created_at` |
 | `integration_configs` | Credenciais por tenant | `id`, `account_id`, `integration_type` (HUBLA/CADEMI/META/CHATNEXO), `credentials_encrypted`, `enabled`, `created_at`, `updated_at` |
@@ -549,6 +609,10 @@ INTENT_CONFIDENCE_THRESHOLD=0.7
 | CORE-RF-10 | Healthcheck `/health` valida PG, Redis, OpenAI, ChatNexo. |
 | CORE-RF-11 | Métricas Prometheus em `/metrics`. |
 | CORE-RF-12 | Criptografia Fernet para `integration_configs.credentials_encrypted`. |
+| CORE-RF-13 | **Intent Router** classifica 7 categorias: `access \| refund \| loja_express \| knowledge \| welcome_response \| unknown \| escalate` e 5 sentimentos. |
+| CORE-RF-14 | **Response Composer** valida resposta contra Regras de Comunicação (PRD 8): máx 300 chars, sem palavras proibidas, sem bullets/bold, tom por sentimento, nunca revela ser IA. |
+| CORE-RF-15 | **Legal History** busca em todas as conversas anteriores do contato por menção a reembolso dentro do prazo CDC (Art. 49 — PRD 9). |
+| CORE-RF-16 | **Escalation Triggers:** catálogo PRD 7.6 — 8 triggers de handoff silencioso, sempre via `transfer_to_human(reason=...)`. |
 
 ## 12. Requisitos Não Funcionais
 
