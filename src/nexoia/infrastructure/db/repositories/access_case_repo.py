@@ -26,6 +26,8 @@ class AccessCaseRepository:
             status=case.status.value,
             access_confirmed=case.access_confirmed,
             scheduled_d1_job_id=case.scheduled_d1_job_id,
+            student_cpf=case.student_cpf,
+            search_attempts=case.search_attempts,
         )
         self._session.add(model)
         await self._session.flush()
@@ -38,6 +40,8 @@ class AccessCaseRepository:
         model.access_confirmed = case.access_confirmed
         model.access_link = case.access_link
         model.scheduled_d1_job_id = case.scheduled_d1_job_id
+        model.student_cpf = case.student_cpf
+        model.search_attempts = case.search_attempts
         await self._session.flush()
 
     async def get_by_purchase_id(self, purchase_id: str) -> AccessCase | None:
@@ -61,6 +65,35 @@ class AccessCaseRepository:
             status=AccessCaseStatus(model.status),
             access_confirmed=model.access_confirmed,
             scheduled_d1_job_id=model.scheduled_d1_job_id,
+            student_cpf=model.student_cpf,
+            search_attempts=model.search_attempts,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )
+
+    async def update_status(
+        self,
+        *,
+        case_id: str,
+        status: AccessCaseStatus,
+        search_attempts: int,
+    ) -> None:
+        model = await self._session.get(AccessCaseModel, case_id)
+        if model is None:
+            raise ValueError(f"AccessCase {case_id} not found")
+        model.status = status.value
+        model.search_attempts = search_attempts
+        await self._session.flush()
+
+    async def find_by_phone(
+        self, *, account_id: int, phone: str
+    ) -> AccessCase | None:
+        result = await self._session.execute(
+            select(AccessCaseModel)
+            .where(AccessCaseModel.account_id == account_id)
+            .where(AccessCaseModel.contact_id == phone)
+            .order_by(AccessCaseModel.created_at.desc())
+            .limit(1)
+        )
+        model = result.scalar_one_or_none()
+        return None if model is None else self._to_entity(model)
