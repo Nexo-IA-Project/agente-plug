@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from nexoia.domain.ports.llm import LLMPort
 from nexoia.domain.value_objects.sentiment import Sentiment
-from nexoia.infrastructure.llm.prompts import sentiment as prompt
+from nexoia.application.prompts import sentiment as prompt
 
 
 @dataclass
