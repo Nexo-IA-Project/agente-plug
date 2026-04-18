@@ -36,3 +36,17 @@ class IntentRouter:
         if confidence < self.confidence_threshold:
             intent = Intent.ESCALATE
         return IntentDecision(intent=intent, confidence=confidence, reasoning=reasoning)
+
+
+_INTENT_TO_NODE: dict[str, str] = {
+    "welcome": "capability_welcome",
+    "access": "capability_access",
+    "refund": "capability_refund",
+    "loja_express": "capability_loja_express",
+    "knowledge": "capability_knowledge",
+}
+
+
+def route_to_capability(intent: str) -> str:
+    """Return the main-graph node name for the given intent."""
+    return _INTENT_TO_NODE.get(intent, "capability_knowledge")
