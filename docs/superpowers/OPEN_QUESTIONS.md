@@ -79,6 +79,12 @@
 
 **Impacto:** Afeta o nó `search_cademi_cascade` (3ª tentativa). Stub com `NotImplementedError` até confirmação.
 
+**Cobertura atual (Plano ③):**
+- Port `CademiPort.get_student_by_name_phone` existe mas é stub.
+- `FakeCademiClient.get_student_by_name_phone` levanta `NotImplementedError` por padrão (`name_phone_supported=False`).
+- Nó `search_cademi_cascade` captura `NotImplementedError` e escala silenciosamente (RF-A04) — fluxo fail-safe.
+- Quando a resposta chegar, basta implementar no `CademiClient` real e habilitar o suporte no fake.
+
 ---
 
 ## Capability Refund & Retention (Spec ④)
