@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, TypedDict
+from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime, timedelta
+from typing import Any, TypedDict
 
 import structlog
 
@@ -135,7 +136,7 @@ async def node_schedule_d1(
     scheduler: Any,
     d1_delay_hours: int = 24,
 ) -> dict[str, Any]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     job = await scheduler.schedule(
         job_type="SendScheduledFollowUp",
         payload={
