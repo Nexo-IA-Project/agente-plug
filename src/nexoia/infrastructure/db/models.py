@@ -232,3 +232,31 @@ class MetaTemplateModel(Base):
     variables_schema: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AccessCaseModel(Base):
+    __tablename__ = "access_cases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    contact_id: Mapped[str] = mapped_column(String, nullable=False)
+    conversation_id: Mapped[str] = mapped_column(String, nullable=False)
+    purchase_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    product_name: Mapped[str] = mapped_column(String, nullable=False)
+    access_link: Mapped[str | None] = mapped_column(String, nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending")
+    access_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    scheduled_d1_job_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=text("NOW()"),
+        onupdate=text("NOW()"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("idx_access_cases_account_contact", "account_id", "contact_id"),
+    )
