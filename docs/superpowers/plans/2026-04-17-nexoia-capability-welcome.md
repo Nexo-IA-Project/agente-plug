@@ -543,7 +543,8 @@ def test_cademi_defaults():
     assert s.CADEMI_MAX_RETRIES == 3
     assert s.CADEMI_RETRY_BASE_SECONDS == 1.0
     assert s.MESSAGE_BUFFER_WAIT_SECONDS == 0
-    assert s.WELCOME_D1_DELAY_HOURS == 1
+    assert s.WELCOME_CHECK_DELAY_HOURS == 1  # check se aluno respondeu (PRD 3.2)
+    assert s.WELCOME_D1_DELAY_HOURS == 24    # D+1 = 24h após compra (PRD 3.3)
 ```
 
 - [ ] **Step 2: Executar para confirmar falha**
@@ -564,8 +565,9 @@ No arquivo `src/nexoia/config/settings.py`, adicionar ao model `Settings`:
     CADEMI_MAX_RETRIES: int = 3
     CADEMI_RETRY_BASE_SECONDS: float = 1.0  # backoff: 1s, 3s, 9s
 
-    # Capability Welcome
-    WELCOME_D1_DELAY_HOURS: int = 1  # horas até disparar o reminder D+1
+    # Capability Welcome (PRD 3.2/3.3)
+    WELCOME_CHECK_DELAY_HOURS: int = 1   # check se aluno respondeu
+    WELCOME_D1_DELAY_HOURS: int = 24     # D+1 = Day+1 = 24h após compra
 
     # Buffer de mensagens upstream (serviço anterior ao agente faz o buffer)
     # 0 = desativado (padrão); ajustar se o agente precisar fazer buffer interno
@@ -1124,21 +1126,42 @@ async def node_schedule_d1(
     state: WelcomeState,
     *,
     scheduler: Any,
-    d1_delay_hours: int = 1,
+    check_delay_hours: int = 1,   # PRD 3.2 step 8 — "Se aluno não responder em 1 hora"
+    d1_delay_hours: int = 24,     # PRD 3.3 — D+1 = Day+1 = 24h após compra
 ) -> dict[str, Any]:
-    run_at = datetime.now(timezone.utc) + timedelta(hours=d1_delay_hours)
-    job = await scheduler.schedule(
-        job_type="SendScheduledFollowUp",
+    """
+    Agenda 2 jobs (PRD 3.2):
+    1) WELCOME_CHECK em T+1h: verifica se aluno respondeu; se não, agenda o reminder.
+    2) SendScheduledFollowUp em T+24h (D+1): envia template access_reminder_d1 se ainda não respondeu.
+    """
+    now = datetime.now(timezone.utc)
+    # 1) Check em 1h
+    check_job = await scheduler.schedule(
+        job_type="WelcomeCheck",
         payload={
-            "template": "access_reminder_d1",  # TODO (CQ-W04): confirmar template
             "access_case_id": state["access_case_id"],
             "account_id": state["account_id"],
             "conversation_id": state["conversation_id"],
         },
-        run_at=run_at,
+        run_at=now + timedelta(hours=check_delay_hours),
     )
-    logger.bind(node="schedule_d1").info("d1_scheduled", job_id=job.id, run_at=run_at.isoformat())
-    return {}
+    # 2) D+1 em 24h (agendado desde já; Intent Router cancela se aluno confirmar acesso)
+    d1_job = await scheduler.schedule(
+        job_type="SendScheduledFollowUp",
+        payload={
+            "template": "access_reminder_d1",  # PRD 3.3
+            "access_case_id": state["access_case_id"],
+            "account_id": state["account_id"],
+            "conversation_id": state["conversation_id"],
+        },
+        run_at=now + timedelta(hours=d1_delay_hours),
+    )
+    logger.bind(node="schedule_d1").info(
+        "welcome_jobs_scheduled",
+        check_job_id=check_job.id,
+        d1_job_id=d1_job.id,
+    )
+    return {"scheduled_check_job_id": check_job.id, "scheduled_d1_job_id": d1_job.id}
 
 
 def build_welcome_subgraph() -> StateGraph:

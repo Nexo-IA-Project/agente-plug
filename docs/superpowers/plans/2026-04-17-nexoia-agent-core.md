@@ -865,6 +865,7 @@ def test_intent_values() -> None:
     assert Intent.ACCESS.value == "access"
     assert Intent.REFUND.value == "refund"
     assert Intent.LOJA_EXPRESS.value == "loja_express"
+    assert Intent.KNOWLEDGE.value == "knowledge"
     assert Intent.WELCOME_RESPONSE.value == "welcome_response"
     assert Intent.UNKNOWN.value == "unknown"
     assert Intent.ESCALATE.value == "escalate"
@@ -966,6 +967,7 @@ class Intent(StrEnum):
     ACCESS = "access"
     REFUND = "refund"
     LOJA_EXPRESS = "loja_express"
+    KNOWLEDGE = "knowledge"        # PRD 7.4 — dúvidas técnicas/gerais
     WELCOME_RESPONSE = "welcome_response"
     UNKNOWN = "unknown"
     ESCALATE = "escalate"
@@ -4914,8 +4916,9 @@ Classifique a mensagem do aluno em UMA das categorias:
 - access: problema para entrar em aula/produto/login
 - refund: pedido explícito de reembolso ou cancelamento
 - loja_express: assunto sobre Loja Express (formulário, progresso)
+- knowledge: dúvida técnica/geral sobre produto ou plataforma (PRD 7.4)
 - welcome_response: resposta à mensagem de boas-vindas pós-compra
-- unknown: não encaixa em nenhuma das acima (dúvida aberta)
+- unknown: não encaixa em nenhuma das acima
 - escalate: pede humano explicitamente ou assunto sensível/jurídico
 
 Responda JSON com { intent, confidence (0..1), reasoning }."""
@@ -4929,6 +4932,7 @@ SCHEMA = {
                 "access",
                 "refund",
                 "loja_express",
+                "knowledge",
                 "welcome_response",
                 "unknown",
                 "escalate",
@@ -6718,6 +6722,58 @@ chmod +x scripts/smoke.sh
 git add tests/e2e scripts
 git commit -m "test(e2e): add smoke test validating webhook → queue → healthcheck end-to-end"
 ```
+
+---
+
+## Tasks adicionais (adicionadas após revisão spec ① contra PRD)
+
+Após a revisão das specs contra o PRD, estas tasks foram identificadas como necessárias e devem ser executadas junto com as 35 originais:
+
+### Task 36: Response Composer (PRD 3.4 step 13 + PRD seção 8)
+
+**Files:**
+- Create: `src/nexoia/application/response_composer.py`
+- Create: `src/nexoia/application/communication_rules.py`
+- Create: `tests/unit/application/test_response_composer.py`
+- Create: `tests/unit/application/test_communication_rules.py`
+
+**Escopo:** componente que monta a resposta final antes de enviar ao ChatNexo. Valida a resposta gerada pelo LLM contra as Regras de Comunicação da NexoIA:
+
+- Máximo 300 caracteres
+- Linguagem informal PT-BR (vc, tb, pra, tá)
+- Sem bullets, negrito, itálico ou cabeçalhos (WhatsApp)
+- Sem palavras proibidas: "putz", "puts", "poxa", "que chato", "Claro!", "entendo" repetido
+- Nunca revelar que é IA
+- Adapta tom conforme sentimento detectado (neutro/positivo/frustrado/irritado/ansioso/hostil)
+
+**TDD:** testar cada regra isoladamente e em conjunto. Incluir `PostResponseValidator` que rejeita resposta inválida e pede nova tentativa ao LLM (máx 2 retries).
+
+### Task 37: Legal History (PRD 9 + Art. 49 CDC)
+
+**Files:**
+- Create: `src/nexoia/application/memory/legal_history.py`
+- Create: `tests/unit/application/memory/test_legal_history.py`
+
+**Escopo:** use case que busca em todas as conversas anteriores do contato se houve menção a reembolso/cancelamento dentro do prazo CDC (7 dias). Usado pelo Refund capability (spec ④) no nó `check_deadline` para forçar `within_deadline = True` quando aluno pediu antes em qualquer canal.
+
+Query base (a rodar contra repositories de Conversation/Message):
+```sql
+SELECT m.* FROM messages m
+JOIN conversations c ON c.id = m.conversation_id
+WHERE c.contact_id = :contact_id
+  AND c.account_id = :account_id
+  AND (m.content ILIKE '%reembolso%' OR m.content ILIKE '%cancel%')
+  AND m.created_at BETWEEN :purchase_date AND (:purchase_date + INTERVAL '7 days')
+```
+
+### Task 38: Escalation Reason catalog
+
+**Files:**
+- Create: `src/nexoia/domain/value_objects/escalation_reason.py`
+- Modify: `src/nexoia/infrastructure/chatnexo/client.py`
+- Create: `tests/unit/domain/value_objects/test_escalation_reason.py`
+
+**Escopo:** StrEnum `EscalationReason` catalogando os 8 triggers do PRD 7.6 (`human_requested_3x`, `chargeback`, `bug_persistent`, `media_material_request`, `purchase_not_found_3x`, `legal_mention`, `post_deny_3rd_insistence`, `loja_express_blocked`). `ChatNexoClient.transfer_to_human(reason: EscalationReason)` valida que o reason pertence ao catálogo.
 
 ---
 
