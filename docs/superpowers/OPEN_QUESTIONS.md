@@ -65,6 +65,30 @@
 
 ---
 
+## Capability Access (Spec ③)
+
+### CQ-A01 — Formato do que enviar ao aluno após encontrar na Cademi
+**Contexto:** A Capability Access encontra o aluno na Cademi e precisa enviar as informações de acesso. Não está definido ainda se enviamos link nominal de auto-login ou outra forma de acesso.
+**Pergunta:** O que exatamente enviamos ao aluno quando encontramos o cadastro?
+- Link nominal de auto-login (igual ao Welcome)?
+- Email + senha provisória?
+- Outro formato?
+- A mensagem pode ser texto livre (dentro da janela 24h) ou precisa de template Meta aprovado?
+
+**Impacto:** Bloqueia o nó `send_access`. Stub com `NotImplementedError` enquanto não confirmado.
+
+---
+
+### CQ-A02 — Cademi suporta busca por nome + telefone?
+**Contexto:** A 3ª tentativa da cascade de busca é por nome+telefone. Não sabemos se a Cademi API tem esse endpoint.
+**Pergunta:** A API da Cademi possui endpoint de busca por nome e/ou telefone do aluno?
+- Se sim: qual o endpoint e parâmetros?
+- Se não: a 3ª tentativa deve escalar diretamente para humano?
+
+**Impacto:** Afeta o nó `search_cademi_cascade` (3ª tentativa). Stub com `NotImplementedError` até confirmação.
+
+---
+
 ## Geral / Infraestrutura
 
 ### CQ-G01 — Credenciais Cademi por ambiente
