@@ -61,6 +61,29 @@ IDLE_CHECK_FIRED = Counter(
     registry=REGISTRY,
 )
 
+welcome_capability_total = Counter(
+    "welcome_capability_total",
+    "Total de execuções da Capability Welcome",
+    ["status"],
+    registry=REGISTRY,
+)
+welcome_cademi_latency_seconds = Histogram(
+    "welcome_cademi_latency_seconds",
+    "Latência das chamadas à Cademi API",
+    buckets=[0.1, 0.5, 1.0, 3.0, 9.0, 30.0],
+    registry=REGISTRY,
+)
+welcome_d1_scheduled_total = Counter(
+    "welcome_d1_scheduled_total",
+    "Total de follow-ups D+1 agendados pela Welcome Capability",
+    registry=REGISTRY,
+)
+welcome_d1_cancelled_total = Counter(
+    "welcome_d1_cancelled_total",
+    "Total de follow-ups D+1 cancelados (acesso confirmado)",
+    registry=REGISTRY,
+)
+
 
 def render_latest() -> bytes:
     return generate_latest(REGISTRY)
