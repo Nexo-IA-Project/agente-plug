@@ -8,7 +8,7 @@
 | # | Subsistema | Spec | Plano | Implementação |
 |---|-----------|------|-------|---------------|
 | ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec](specs/2026-04-17-nexoia-agent-core-design.md) | [plano](plans/2026-04-17-nexoia-agent-core.md) | ⏳ Pendente |
-| ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ⏳ Pendente |
+| ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ✅ Concluído |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | [plano](plans/2026-04-18-nexoia-capability-access.md) | ⏳ Pendente |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | [plano](plans/2026-04-18-nexoia-capability-refund.md) | ⏳ Pendente |
 | ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano](plans/2026-04-18-nexoia-capability-loja-express.md) | ⏳ Pendente |
