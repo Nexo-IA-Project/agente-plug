@@ -12,6 +12,8 @@ class AccessCaseStatus(StrEnum):
     ACCESSED = "accessed"
     REMINDED_D1 = "reminded_d1"
     ESCALATED = "escalated"
+    REACTIVE_LINK_SENT = "reactive_link_sent"
+    REACTIVE_ESCALATED = "reactive_escalated"
 
 
 @dataclass
@@ -26,5 +28,7 @@ class AccessCase:
     status: AccessCaseStatus = AccessCaseStatus.PENDING
     access_confirmed: bool = False
     scheduled_d1_job_id: str | None = None
+    student_cpf: str | None = None
+    search_attempts: int = 0
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
