@@ -131,10 +131,11 @@ class RefundState(ConversationState):
 
 ### Nó `collect`
 
-1. Se motivo já veio na 1ª mensagem: extrai via LLM e salva em `refund_reason`
-2. Se motivo ausente: envia 1 frase de empatia + pede motivo
-3. Pede email + CPF **juntos** na mesma mensagem
-4. Quando dados chegam: cria `RefundCase` com `status = COLLECTING`, avança para `check_deadline`
+**Crítico:** sempre perguntar o motivo antes de pedir email. Nunca ir direto para "me passa o e-mail".
+
+1. Se motivo já veio na 1ª mensagem: extrai via LLM → envia 1 frase de empatia curta → pede email + CPF juntos
+2. Se motivo ausente: envia "Me conta o que aconteceu?" → aguarda resposta → extrai motivo → pede email + CPF juntos
+3. Quando email + CPF chegam: cria `RefundCase` com `status = COLLECTING`, avança para `check_deadline`
 
 ### Nó `check_deadline`
 
