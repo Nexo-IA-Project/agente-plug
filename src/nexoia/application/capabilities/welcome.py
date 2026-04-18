@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, TypedDict
 
 import structlog
+from langgraph.graph import END, StateGraph
 
 from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
 from nexoia.domain.errors import CademiError
@@ -30,6 +31,7 @@ class WelcomeState(TypedDict, total=False):
     conversation_id: str | None
     access_case_id: str | None
     access_confirmed: bool
+    scheduled_check_job_id: str | None
     cademi_failed: bool
     messages: list
     correlation_id: str
@@ -134,10 +136,20 @@ async def node_schedule_d1(
     state: WelcomeState,
     *,
     scheduler: Any,
+    check_delay_hours: int = 1,
     d1_delay_hours: int = 24,
 ) -> dict[str, Any]:
     now = datetime.now(UTC)
-    job = await scheduler.schedule(
+    check_job = await scheduler.schedule(
+        job_type="WelcomeCheck",
+        payload={
+            "access_case_id": state.get("access_case_id"),
+            "account_id": state.get("account_id"),
+            "conversation_id": state.get("conversation_id"),
+        },
+        run_at=now + timedelta(hours=check_delay_hours),
+    )
+    d1_job = await scheduler.schedule(
         job_type="SendScheduledFollowUp",
         payload={
             "template": "access_reminder_d1",
@@ -147,11 +159,10 @@ async def node_schedule_d1(
         },
         run_at=now + timedelta(hours=d1_delay_hours),
     )
-    return {"scheduled_d1_job_id": job.id}
+    return {"scheduled_check_job_id": check_job.id, "scheduled_d1_job_id": d1_job.id}
 
 
 def build_welcome_subgraph():
-    from langgraph.graph import END, StateGraph
     graph = StateGraph(WelcomeState)
     graph.add_node("fetch_cademi", node_fetch_cademi)
     graph.add_node("check_conversation", node_check_conversation)

@@ -113,14 +113,23 @@ async def test_send_welcome_without_link_sends_generic():
 
 
 @pytest.mark.asyncio
-async def test_schedule_d1_creates_scheduled_job():
+async def test_schedule_d1_creates_two_jobs():
     scheduler = AsyncMock()
-    scheduler.schedule.return_value = type("Job", (), {"id": "job-d1-001"})()
+    job_counter = {"n": 0}
+
+    def make_job(*args, **kwargs):
+        job_counter["n"] += 1
+        return type("Job", (), {"id": f"job-{job_counter['n']}"})()
+
+    scheduler.schedule.side_effect = make_job
     state = make_state(access_case_id="ac-001", conversation_id="conv-001")
 
-    await node_schedule_d1(state, scheduler=scheduler)
+    result = await node_schedule_d1(state, scheduler=scheduler)
 
-    scheduler.schedule.assert_called_once()
-    call_kwargs = scheduler.schedule.call_args[1]
-    assert call_kwargs["job_type"] == "SendScheduledFollowUp"
-    assert "access_reminder_d1" in str(call_kwargs["payload"])
+    assert scheduler.schedule.call_count == 2
+    calls = scheduler.schedule.call_args_list
+    assert calls[0][1]["job_type"] == "WelcomeCheck"
+    assert calls[1][1]["job_type"] == "SendScheduledFollowUp"
+    assert "access_reminder_d1" in str(calls[1][1]["payload"])
+    assert "scheduled_d1_job_id" in result
+    assert "scheduled_check_job_id" in result

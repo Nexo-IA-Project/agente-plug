@@ -14,9 +14,10 @@ def test_cademi_student_without_phone():
     assert student.phone is None
 
 
-def test_cademi_error_is_exception():
+def test_cademi_error_is_domain_error():
+    from nexoia.domain.errors import DomainError
     err = CademiError("Connection timeout")
-    assert isinstance(err, Exception)
+    assert isinstance(err, DomainError)
     assert str(err) == "Connection timeout"
 
 

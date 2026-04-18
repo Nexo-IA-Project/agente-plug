@@ -8,6 +8,9 @@ from nexoia.infrastructure.db.models import AccessCaseModel
 
 
 class AccessCaseRepository:
+    # Session lifecycle is managed by the caller (Unit of Work pattern).
+    # flush() sends SQL within the current transaction; commit() is the caller's responsibility.
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -47,18 +50,17 @@ class AccessCaseRepository:
         return self._to_entity(model)
 
     def _to_entity(self, model: AccessCaseModel) -> AccessCase:
-        case = AccessCase(
+        return AccessCase(
+            id=str(model.id),
             account_id=model.account_id,
             contact_id=model.contact_id,
             conversation_id=model.conversation_id,
             purchase_id=model.purchase_id,
             product_name=model.product_name,
+            access_link=model.access_link,
+            status=AccessCaseStatus(model.status),
+            access_confirmed=model.access_confirmed,
+            scheduled_d1_job_id=model.scheduled_d1_job_id,
+            created_at=model.created_at,
+            updated_at=model.updated_at,
         )
-        case.id = str(model.id)
-        case.access_link = model.access_link
-        case.status = AccessCaseStatus(model.status)
-        case.access_confirmed = model.access_confirmed
-        case.scheduled_d1_job_id = model.scheduled_d1_job_id
-        case.created_at = model.created_at
-        case.updated_at = model.updated_at
-        return case

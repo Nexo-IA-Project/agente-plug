@@ -18,5 +18,5 @@ class HandoffRequiredError(DomainError):
     """Agent cannot handle, must escalate to human."""
 
 
-class CademiError(Exception):
+class CademiError(DomainError):
     """Falha ao comunicar com a API da Cademi."""
