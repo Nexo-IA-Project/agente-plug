@@ -247,6 +247,8 @@ class AccessCaseModel(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending")
     access_confirmed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     scheduled_d1_job_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    student_cpf: Mapped[str | None] = mapped_column(String, nullable=True)
+    search_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("NOW()"), nullable=False
     )
