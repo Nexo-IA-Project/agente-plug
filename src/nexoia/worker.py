@@ -5,6 +5,7 @@ import signal
 
 from nexoia.application.scheduler.runner import SchedulerRunner
 from nexoia.config.settings import get_settings
+from nexoia.domain.entities.scheduled_job import JobType, ScheduledJob
 from nexoia.infrastructure.clock.system_clock import SystemClock
 from nexoia.infrastructure.db.repositories.scheduled_job import ScheduledJobRepository
 from nexoia.infrastructure.db.session import get_sessionmaker
@@ -41,20 +42,20 @@ async def main() -> None:
         },
     )
 
-    async def _scheduled_handler(job) -> None:  # noqa: ANN001
+    async def _scheduled_handler(job: ScheduledJob) -> None:
         await handle_scheduled({"job_type": job.job_type.value, "payload": job.payload})
 
     runner = SchedulerRunner(
         repo=ScheduledJobRepository(get_sessionmaker()()),
         clock=SystemClock(),
-        handlers={},
+        handlers={jt: _scheduled_handler for jt in JobType},
     )
 
     scheduler_loop = SchedulerLoop(runner=runner, mutex=mutex, tick_seconds=10)
 
     stop = asyncio.Event()
 
-    def _sigterm(*_) -> None:  # noqa: ANN001
+    def _sigterm(*_: object) -> None:
         log.info("worker_sigterm_received")
         stop.set()
 
