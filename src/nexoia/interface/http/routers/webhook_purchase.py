@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from nexoia.domain.entities.webhook_event import WebhookSource
-from nexoia.infrastructure.observability.metrics import WEBHOOK_RECEIVED
 from nexoia.infrastructure.observability.logger import get_logger
+from nexoia.infrastructure.observability.metrics import WEBHOOK_RECEIVED
 
 router = APIRouter(tags=["webhook"])
 log = get_logger(__name__)
@@ -23,6 +23,7 @@ class PurchasePayload(BaseModel):
     product: str
     amount_brl: int
     occurred_at: str = Field(..., description="ISO 8601")
+    document: str | None = Field(default=None)
 
 
 @dataclass
@@ -81,7 +82,9 @@ async def receive(
         payload=payload.model_dump(),
     )
 
-    job_id = await _cfg.queue.enqueue({"kind": "purchase", "payload": payload.model_dump()})
+    job_payload = payload.model_dump()
+    job_payload["student_cpf"] = payload.document
+    job_id = await _cfg.queue.enqueue({"kind": "purchase", "payload": job_payload})
     WEBHOOK_RECEIVED.labels(source="hubla", status="202").inc()
     log.info("purchase_webhook_enqueued", purchase_id=payload.purchase_id, job_id=job_id)
     return {"accepted": True, "duplicate": False, "job_id": job_id}

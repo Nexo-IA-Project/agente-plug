@@ -25,6 +25,7 @@ class WelcomeState(TypedDict, total=False):
     student_name: str
     student_phone: str
     student_email: str
+    student_cpf: str | None
     product_name: str
     access_link: str | None
     cademi_attempts: int
@@ -121,12 +122,13 @@ async def node_persist_access_case(
 ) -> dict[str, Any]:
     case = AccessCase(
         account_id=state["account_id"],
-        contact_id=state["student_email"],
+        contact_id=state["student_phone"],
         conversation_id=state["conversation_id"],
         purchase_id=state["purchase_id"],
         product_name=state["product_name"],
         access_link=state.get("access_link"),
         status=AccessCaseStatus.ESCALATED if state.get("cademi_failed") else AccessCaseStatus.LINK_SENT,
+        student_cpf=state.get("student_cpf"),
     )
     await access_case_repo.save(case)
     return {"access_case_id": case.id}

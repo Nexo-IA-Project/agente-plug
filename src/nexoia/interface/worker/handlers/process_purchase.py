@@ -31,6 +31,7 @@ async def handle_process_purchase_webhook(payload: dict[str, Any]) -> None:
         student_phone=payload["student_phone"],
         student_email=payload["student_email"],
         product_name=payload["product_name"],
+        student_cpf=payload.get("student_cpf"),
         access_link=None,
         cademi_attempts=0,
         conversation_id=None,
