@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from nexoia.domain.errors import DomainError, TenantIsolationError
@@ -22,5 +23,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unhandled(_request: Request, exc: Exception) -> JSONResponse:
+        if isinstance(exc, (HTTPException, RequestValidationError)):
+            raise exc
         log.exception("unhandled_error", error=str(exc))
         return JSONResponse(status_code=500, content={"error": "internal"})

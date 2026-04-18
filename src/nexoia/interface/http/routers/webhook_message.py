@@ -49,7 +49,8 @@ async def _verify_api_key(request: Request) -> None:
 async def receive(
     payload: IncomingMessagePayload,
 ) -> dict:
-    assert _cfg.dedup is not None
+    if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
+        raise RuntimeError("webhook_message router not configured; call configure() before serving")
     first = await _cfg.dedup.try_mark(
         key=f"message:{payload.chatnexo_message_id}", ttl_seconds=3600
     )
@@ -57,7 +58,6 @@ async def receive(
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="202-dup").inc()
         return {"accepted": True, "duplicate": True}
 
-    assert _cfg.event_repo_factory is not None
     repo = _cfg.event_repo_factory()
     await repo.insert_if_new(
         source=WebhookSource.CHATNEXO,
@@ -65,7 +65,6 @@ async def receive(
         payload=payload.model_dump(),
     )
 
-    assert _cfg.queue is not None
     job_id = await _cfg.queue.enqueue({"kind": "message", "payload": payload.model_dump()})
     WEBHOOK_RECEIVED.labels(source="chatnexo", status="202").inc()
     log.info(

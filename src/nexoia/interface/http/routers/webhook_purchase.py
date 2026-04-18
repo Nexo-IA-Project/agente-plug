@@ -64,7 +64,8 @@ async def _verify_token(request: Request) -> None:
 async def receive(
     payload: PurchasePayload,
 ) -> dict:
-    assert _cfg.dedup is not None
+    if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
+        raise RuntimeError("webhook_purchase router not configured; call configure() before serving")
     first = await _cfg.dedup.try_mark(
         key=f"purchase:{payload.purchase_id}", ttl_seconds=24 * 3600
     )
@@ -73,7 +74,6 @@ async def receive(
         log.info("purchase_webhook_duplicate", purchase_id=payload.purchase_id)
         return {"accepted": True, "duplicate": True}
 
-    assert _cfg.event_repo_factory is not None
     repo = _cfg.event_repo_factory()
     await repo.insert_if_new(
         source=WebhookSource.HUBLA,
@@ -81,7 +81,6 @@ async def receive(
         payload=payload.model_dump(),
     )
 
-    assert _cfg.queue is not None
     job_id = await _cfg.queue.enqueue({"kind": "purchase", "payload": payload.model_dump()})
     WEBHOOK_RECEIVED.labels(source="hubla", status="202").inc()
     log.info("purchase_webhook_enqueued", purchase_id=payload.purchase_id, job_id=job_id)

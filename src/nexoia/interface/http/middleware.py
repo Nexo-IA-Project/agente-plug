@@ -4,7 +4,7 @@ import contextvars
 import uuid
 
 from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
 from nexoia.infrastructure.observability.logger import bind_context, reset_context
@@ -15,7 +15,7 @@ correlation_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         cid = request.headers.get("X-Correlation-Id") or uuid.uuid4().hex
         token = correlation_id_var.set(cid)
         reset_context()
