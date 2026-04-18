@@ -13,6 +13,9 @@ from nexoia.domain.value_objects.sentiment import Sentiment
         ("vou acionar meu advogado", True),
         ("isso vai dar processo", True),
         ("ação judicial pode ser melhor", True),
+        ("preciso de ajuda juridica", True),
+        ("vou postar no reclame aqui", True),
+        ("isso é uma injustiça, vou à justiça", True),
         ("tudo bem, vamos resolver", False),
     ],
 )
