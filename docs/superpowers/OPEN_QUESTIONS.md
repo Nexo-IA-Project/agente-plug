@@ -89,6 +89,50 @@
 
 ---
 
+## Capability Refund & Retention (Spec ④)
+
+### CQ-R01 — Mecanismo para processar reembolso na Hubla
+**Contexto:** A Capability Refund precisa processar o reembolso programaticamente. A Hubla não tem API pública documentada para isso — o único mecanismo encontrado é o painel web.
+**Pergunta:** Como processar o reembolso automaticamente?
+- A Hubla tem API privada para processar reembolsos (endpoint + autenticação)?
+- Ou usamos Playwright para automatizar o painel web `app.hub.la/refund`?
+- Ou o processamento é feito manualmente por um operador humano (handoff)?
+
+**Impacto:** Bloqueia implementação de `HublaClient.process_refund()`. Stub com `NotImplementedError` até ser respondido.
+
+---
+
+### CQ-R02 — Ofertas de retenção N1 e N2 por produto
+**Contexto:** O fluxo de retenção oferece N1 (Acesso Vitalício) e N2 (Mentoria de Tráfego) antes de processar o reembolso.
+**Pergunta:** Essas ofertas são fixas para todos os produtos, ou variam por produto?
+- Se variam: qual é o mapeamento produto → N1/N2?
+- As ofertas têm algum custo ou são sempre gratuitas para o aluno?
+
+**Impacto:** Afeta o nó `retention_loop`. Stub por ora com ofertas fixas.
+
+---
+
+### CQ-R03 — O que é "aluno CMP" e qual é a argumentação especial?
+**Contexto:** O PRD menciona "aluno CMP insistente" com argumentação especial sem N1/N2 padrão.
+**Pergunta:**
+- O que significa CMP neste contexto?
+- Qual é a argumentação especial aplicada?
+- Como identificar um aluno CMP (tag, histórico, campo na Hubla)?
+
+**Impacto:** Afeta o nó `retention_loop`. Stub por ora sem tratamento especial.
+
+---
+
+### CQ-R04 — API Hubla para busca de compra por email
+**Contexto:** O nó `check_deadline` precisa buscar a compra do aluno na Hubla para verificar o prazo CDC.
+**Pergunta:** A Hubla tem endpoint REST para buscar compras/faturas por email do comprador?
+- Se sim: URL, autenticação e campos retornados?
+- Se não: como verificamos o prazo? (dados do webhook já salvos no AccessCase?)
+
+**Impacto:** Bloqueia `HublaClient.get_purchase_by_email()`. Stub com `NotImplementedError` até confirmação.
+
+---
+
 ## Geral / Infraestrutura
 
 ### CQ-G01 — Credenciais Cademi por ambiente
