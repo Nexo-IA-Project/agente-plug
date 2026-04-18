@@ -13,6 +13,7 @@ from tenacity import (
 )
 
 from nexoia.config.settings import get_settings
+from nexoia.domain.value_objects.escalation_reason import EscalationReason
 
 
 class ChatNexoError(RuntimeError):
@@ -73,11 +74,11 @@ class ChatNexoClient:
         )
 
     async def transfer_to_human(
-        self, *, account_id: UUID, conversation_id: int, reason: str
+        self, *, account_id: UUID, conversation_id: int, reason: EscalationReason
     ) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/transfer",
-            json={"reason": reason},
+            json={"reason": reason.value},
         )
 
     async def add_tag(

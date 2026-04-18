@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
+from nexoia.domain.value_objects.escalation_reason import EscalationReason
+
 
 @runtime_checkable
 class ChatNexoPort(Protocol):
@@ -20,7 +22,7 @@ class ChatNexoPort(Protocol):
     ) -> None: ...
 
     async def transfer_to_human(
-        self, *, account_id: UUID, conversation_id: int, reason: str
+        self, *, account_id: UUID, conversation_id: int, reason: EscalationReason
     ) -> None: ...
 
     async def add_tag(
