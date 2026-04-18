@@ -15,6 +15,7 @@ from nexoia.infrastructure.redis.mutex import RedisMutex
 from nexoia.infrastructure.redis.queue import PriorityQueue
 from nexoia.interface.worker.dispatcher import WorkerDispatcher
 from nexoia.interface.worker.handlers.message import handle_message
+from nexoia.interface.worker.handlers.process_purchase import handle_process_purchase_webhook
 from nexoia.interface.worker.handlers.purchase import handle_purchase
 from nexoia.interface.worker.handlers.scheduled import handle_scheduled
 from nexoia.interface.worker.scheduler import SchedulerLoop
@@ -39,6 +40,7 @@ async def main() -> None:
             "purchase": handle_purchase,
             "message": handle_message,
             "scheduled": handle_scheduled,
+            "ProcessPurchaseWebhook": handle_process_purchase_webhook,
         },
     )
 
