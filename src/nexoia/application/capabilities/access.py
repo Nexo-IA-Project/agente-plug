@@ -9,6 +9,11 @@ from langgraph.graph import END, StateGraph
 
 from nexoia.domain.entities.access_case import AccessCaseStatus
 from nexoia.domain.ports.cademi_port import CademiStudent
+from nexoia.infrastructure.observability.metrics import (
+    access_cademi_cascade_attempts,
+    access_capability_total,
+    access_cpf_fallback_total,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -91,6 +96,7 @@ async def node_lookup_access_case(
     )
     if case is None:
         log.warning("no_access_case")
+        access_capability_total.labels(status="no_access_case").inc()
         await handoff_fn(
             account_id=state["account_id"],
             conversation_id=state.get("conversation_id"),
@@ -120,6 +126,7 @@ async def node_check_platform_scope(
     last_msg = _extract_last_user_message(state).lower()
     if any(kw in last_msg for kw in _OUT_OF_SCOPE_KEYWORDS):
         log.warning("out_of_scope", reason="shopee_or_kyc_out_of_scope")
+        access_capability_total.labels(status="out_of_scope").inc()
         await handoff_fn(
             account_id=state["account_id"],
             conversation_id=state.get("conversation_id"),
@@ -172,6 +179,8 @@ async def node_search_cademi_cascade(
             student = await cademi_port.get_student_by_email(email_to_try)
             attempts = 1
             if student is not None:
+                access_cademi_cascade_attempts.observe(attempts)
+                access_capability_total.labels(status="success").inc()
                 return {"cademi_student": student, "search_attempts": attempts}
 
     # Attempt 2: CPF
@@ -182,6 +191,7 @@ async def node_search_cademi_cascade(
             current_cpf = cpf_from_msg
 
         if current_cpf is None and not state.get("cpf_asked", False):
+            access_cpf_fallback_total.inc()
             await chatnexo_port.send_message(
                 account_id=state["account_id"],
                 conversation_id=state.get("conversation_id"),
@@ -196,6 +206,8 @@ async def node_search_cademi_cascade(
         student = await cademi_port.get_student_by_cpf(current_cpf)
         attempts = 2
         if student is not None:
+            access_cademi_cascade_attempts.observe(attempts)
+            access_capability_total.labels(status="success").inc()
             return {
                 "cademi_student": student,
                 "search_attempts": attempts,
@@ -214,9 +226,12 @@ async def node_search_cademi_cascade(
             student = None
         attempts = CADEMI_MAX_ATTEMPTS
         if student is not None:
+            access_cademi_cascade_attempts.observe(attempts)
+            access_capability_total.labels(status="success").inc()
             return {"cademi_student": student, "search_attempts": attempts}
 
     log.warning("cademi_exhausted", reason="cademi_not_found_after_3_attempts")
+    access_capability_total.labels(status="escalated").inc()
     await handoff_fn(
         account_id=state["account_id"],
         conversation_id=state.get("conversation_id"),

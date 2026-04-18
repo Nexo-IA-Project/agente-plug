@@ -85,6 +85,26 @@ welcome_d1_cancelled_total = Counter(
 )
 
 
+# Capability Access (spec ③)
+access_capability_total = Counter(
+    "access_capability_total",
+    "Total de execuções da Capability Access",
+    labelnames=["status"],
+    registry=REGISTRY,
+)
+access_cademi_cascade_attempts = Histogram(
+    "access_cademi_cascade_attempts",
+    "Distribuição de tentativas até encontrar aluno na cascade Cademi",
+    buckets=[1, 2, 3],
+    registry=REGISTRY,
+)
+access_cpf_fallback_total = Counter(
+    "access_cpf_fallback_total",
+    "Vezes que a IA pediu CPF ao aluno (student_cpf=None no AccessCase)",
+    registry=REGISTRY,
+)
+
+
 def render_latest() -> bytes:
     return generate_latest(REGISTRY)
 

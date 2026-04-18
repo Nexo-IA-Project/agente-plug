@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from nexoia.application.prompts import intent_classifier as prompt
 from nexoia.domain.ports.llm import LLMPort
 from nexoia.domain.value_objects.intent import Intent
-from nexoia.application.prompts import intent_classifier as prompt
 
 
 @dataclass(frozen=True, slots=True)
