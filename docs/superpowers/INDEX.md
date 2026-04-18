@@ -11,8 +11,8 @@
 | ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ⏳ Pendente |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | ⏳ Pendente | ⏳ Pendente |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | ⏳ Pendente | ⏳ Pendente |
-| ⑤ | **Capability Loja Express** — follow-up D+1/D+3/D+7 | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
-| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | ⏳ Pendente | ⏳ Pendente | ⏳ Pendente |
+| ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | ⏳ Pendente | ⏳ Pendente |
+| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | ⏳ Pendente | ⏳ Pendente |
 
 ## Legenda
 
@@ -28,6 +28,8 @@
 - `2026-04-17-nexoia-capability-welcome-design.md` — Spec ②: boas-vindas pós-compra, CademiClient stub, AccessCase, D+1
 - `2026-04-18-nexoia-capability-access-design.md` — Spec ③: acesso reativo, cascade email→CPF→nome+telefone, REACTIVE_LINK_SENT
 - `2026-04-18-nexoia-capability-refund-design.md` — Spec ④: reembolso+retenção, CDC 7 dias, N1/N2, mutex Redis, guards jurídicos
+- `2026-04-18-nexoia-capability-loja-express-design.md` — Spec ⑤: follow-up D+0→D+7, LojaExpressCase, stubs formulário+status
+- `2026-04-18-nexoia-kb-admin-design.md` — Spec ⑥: upload→chunking→pgvector, JWT multi-tenant, busca RAG, logs de uso
 
 ### Planos (`docs/superpowers/plans/`)
 
@@ -36,4 +38,4 @@
 
 ## Fonte
 
-PRD original: `PRD_NexoIA_v3.docx` (raiz do repositório)
+PRD original: `PRD_NexoIA_v3.docx` e `PRD_G2_EDUCACAO.md` (raiz do repositório)

@@ -33,7 +33,7 @@
 ---
 
 ### CQ-W03 — Template Meta `welcome_purchase`
-**Contexto:** Mensagens proativas no WhatsApp exigem template aprovado pela Meta. O template precisa estar cadastrado no Meta Business Manager antes de ser usado.
+**Contexto:** Mensagens proativas no WhatsApp exigem template aprovado pela Meta.
 **Pergunta:** O template `welcome_purchase` já está criado e aprovado no Meta Business Manager?
 - Qual é o nome exato do template?
 - Quais são as variáveis (parâmetros `{{1}}`, `{{2}}`, `{{3}}`)?
@@ -44,40 +44,18 @@
 
 ---
 
-### CQ-W04 — Template Meta `access_reminder_d1`
-**Contexto:** Lembrete enviado no D+1 se o aluno não confirmou acesso.
-**Pergunta:** O template `access_reminder_d1` já está criado e aprovado?
-- Nome exato no Meta
-- Variáveis e corpo do texto
+### CQ-W04 — Templates Meta Loja Express
+**Contexto:** Follow-ups D+1, D+3, D+7 usam templates Meta aprovados.
+**Pergunta:** Os templates `loja_express_d1`, `loja_express_d3`, `loja_express_d7` já estão criados e aprovados?
+- Nome exato de cada um no Meta
+- Variáveis e corpo do texto de cada um
+- Template para D+5 existe? (não listado no PRD)
 
-**Impacto:** Bloqueia o envio do reminder D+1 em produção.
-
----
-
-### CQ-W05 — Comportamento quando email de compra ≠ email Cademi
-**Contexto:** O spec define que se o email da compra (Hubla) não for encontrado na Cademi, o agente escalona para humano.
-**Pergunta:** Qual deve ser o comportamento exato?
-- O agente deve informar o aluno sobre o problema de cadastro?
-- O agente deve pedir o CPF para tentar outra busca?
-- Após quantas tentativas escala definitivamente?
-
-**Impacto:** Afeta o fluxo de fallback do nó `fetch_cademi`.
+**Impacto:** Bloqueia os follow-ups da Loja Express em produção.
 
 ---
 
 ## Capability Access (Spec ③)
-
-### CQ-A01 — Formato do que enviar ao aluno após encontrar na Cademi
-**Contexto:** A Capability Access encontra o aluno na Cademi e precisa enviar as informações de acesso. Não está definido ainda se enviamos link nominal de auto-login ou outra forma de acesso.
-**Pergunta:** O que exatamente enviamos ao aluno quando encontramos o cadastro?
-- Link nominal de auto-login (igual ao Welcome)?
-- Email + senha provisória?
-- Outro formato?
-- A mensagem pode ser texto livre (dentro da janela 24h) ou precisa de template Meta aprovado?
-
-**Impacto:** Bloqueia o nó `send_access`. Stub com `NotImplementedError` enquanto não confirmado.
-
----
 
 ### CQ-A02 — Cademi suporta busca por nome + telefone?
 **Contexto:** A 3ª tentativa da cascade de busca é por nome+telefone. Não sabemos se a Cademi API tem esse endpoint.
@@ -91,27 +69,6 @@
 
 ## Capability Refund & Retention (Spec ④)
 
-### CQ-R01 — Mecanismo para processar reembolso na Hubla
-**Contexto:** A Capability Refund precisa processar o reembolso programaticamente. A Hubla não tem API pública documentada para isso — o único mecanismo encontrado é o painel web.
-**Pergunta:** Como processar o reembolso automaticamente?
-- A Hubla tem API privada para processar reembolsos (endpoint + autenticação)?
-- Ou usamos Playwright para automatizar o painel web `app.hub.la/refund`?
-- Ou o processamento é feito manualmente por um operador humano (handoff)?
-
-**Impacto:** Bloqueia implementação de `HublaClient.process_refund()`. Stub com `NotImplementedError` até ser respondido.
-
----
-
-### CQ-R02 — Ofertas de retenção N1 e N2 por produto
-**Contexto:** O fluxo de retenção oferece N1 (Acesso Vitalício) e N2 (Mentoria de Tráfego) antes de processar o reembolso.
-**Pergunta:** Essas ofertas são fixas para todos os produtos, ou variam por produto?
-- Se variam: qual é o mapeamento produto → N1/N2?
-- As ofertas têm algum custo ou são sempre gratuitas para o aluno?
-
-**Impacto:** Afeta o nó `retention_loop`. Stub por ora com ofertas fixas.
-
----
-
 ### CQ-R03 — O que é "aluno CMP" e qual é a argumentação especial?
 **Contexto:** O PRD menciona "aluno CMP insistente" com argumentação especial sem N1/N2 padrão.
 **Pergunta:**
@@ -123,13 +80,35 @@
 
 ---
 
-### CQ-R04 — API Hubla para busca de compra por email
-**Contexto:** O nó `check_deadline` precisa buscar a compra do aluno na Hubla para verificar o prazo CDC.
-**Pergunta:** A Hubla tem endpoint REST para buscar compras/faturas por email do comprador?
-- Se sim: URL, autenticação e campos retornados?
-- Se não: como verificamos o prazo? (dados do webhook já salvos no AccessCase?)
+## Capability Loja Express (Spec ⑤)
 
-**Impacto:** Bloqueia `HublaClient.get_purchase_by_email()`. Stub com `NotImplementedError` até confirmação.
+### CQ-L01 — O que é o "formulário" da Loja Express?
+**Contexto:** O PRD menciona "enviar passo a passo do formulário" no D+0 e "verificar se formulário foi respondido" no D+1.
+**Pergunta:**
+- O que é esse formulário? (Google Forms, Typeform, sistema próprio?)
+- Como o backend sabe se o formulário foi respondido? (webhook, polling, preenchimento manual?)
+- Qual é o link/URL do formulário?
+
+**Impacto:** Afeta os nós D+0 e D+1 do subgraph. Stub por ora.
+
+---
+
+### CQ-L02 — Integração de status da loja (D+3, D+5, D+7)
+**Contexto:** PRD diz "verificar status da loja, informar progresso" (D+3) e "verificar bloqueio, acionar operação" (D+5). A integração é "A definir por tenant".
+**Pergunta:**
+- Para G2 Educação: como verificamos o status da loja? (planilha Google Sheets, sistema do fornecedor, manual?)
+- Quem é o "fornecedor" da loja?
+- O que significa "acionar operação" no D+5? (notificar alguém via Slack/email/WhatsApp?)
+
+**Impacto:** Afeta os nós D+3, D+5 e D+7. Stubs por ora.
+
+---
+
+### CQ-L03 — Template Meta D+5 da Loja Express
+**Contexto:** O PRD lista templates para D+1, D+3 e D+7, mas não menciona template para D+5.
+**Pergunta:** O D+5 usa template Meta aprovado ou pode ser texto livre (se dentro da janela 24h)?
+
+**Impacto:** Afeta o nó D+5.
 
 ---
 
@@ -151,4 +130,32 @@
 
 ## Respondidas
 
-*(nenhuma ainda)*
+### CQ-W05 — Comportamento quando email de compra ≠ email Cademi
+**Resposta (PRD 7.2):** Oferecer atualizar cadastro antes de reenviar. O agente deve informar que o email de compra difere do cadastro e perguntar se o aluno quer atualizar.
+**Spec atualizado:** ③ Access — nó `search_cademi_cascade`.
+
+---
+
+### CQ-A01 — Formato do que enviar ao aluno após encontrar na Cademi
+**Resposta (PRD 7.2):** Link nominal de auto-login. "Regra: link de acesso deve ser nominal (auto-login) — aluno não cria senha." Dentro da janela 24h → texto livre com o link. Fora da janela → template Meta aprovado.
+**Spec atualizado:** ③ Access — nó `send_access`.
+
+---
+
+### CQ-R01 — Mecanismo para processar reembolso na Hubla
+**Resposta (PRD 12):** Playwright (browser automation). "A Hubla não tem API REST pública. Toda operação é via browser automation (Playwright). Timeout 150s, concorrência=1, self-healing de sessão, MFA via IMAP Gmail."
+**Spec atualizado:** ④ Refund — `HublaClient.process_refund()`.
+
+---
+
+### CQ-R02 — Ofertas de retenção N1 e N2 por produto
+**Resposta (PRD 7.3):** Ofertas fixas para G2 Educação:
+- N1 (Acesso Vitalício): transforma acesso em permanente. Gratuito para o aluno.
+- N2 (Mentoria de Tráfego): curso de tráfego pago liberado gratuitamente. Gratuito para o aluno.
+**Spec atualizado:** ④ Refund — nó `retention_loop`.
+
+---
+
+### CQ-R04 — API Hubla para busca de compra por email
+**Resposta (PRD 12):** A Hubla não tem API REST pública. Busca de compra também via Playwright. Timeout 150s, concorrência=1.
+**Spec atualizado:** ④ Refund — `HublaClient.get_purchase_by_email()`.
