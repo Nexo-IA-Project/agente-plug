@@ -54,7 +54,7 @@ class ResponseComposer:
             "",
         )
         violations = None
-        for attempt in range(self.max_retries):
+        for _attempt in range(self.max_retries):
             system = self._build_system(sentiment, violations)
             text = await self.llm.complete_text(
                 system=system, user=user_text, temperature=0.7
