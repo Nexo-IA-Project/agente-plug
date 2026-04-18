@@ -40,6 +40,7 @@ async def test_send_access_skips_when_student_not_found():
     )
     chatnexo.send_message.assert_not_called()
     chatnexo.send_template.assert_not_called()
+    assert result == {}
 
 
 @pytest.mark.asyncio

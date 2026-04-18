@@ -18,7 +18,9 @@ EMAIL_MISMATCH_MESSAGE = (
     "Percebi que o email que vc passou é diferente do cadastro da compra. "
     "Quer que eu atualize pra esse novo email antes de reenviar o acesso?"
 )
-ACCESS_FREE_TEXT = "Tudo certo! Aqui tá seu acesso, {name} — é só clicar que já entra direto: {link}"
+ACCESS_FREE_TEXT = (
+    "Tudo certo! Aqui tá seu acesso, {name} — é só clicar que já entra direto: {link}"
+)
 ACCESS_RESEND_TEMPLATE = "access_reminder_d1"
 _OUT_OF_SCOPE_KEYWORDS = ("shopee", "kyc")
 _EMAIL_REGEX = re.compile(r"[\w.\-\+]+@[\w\-]+(?:\.[\w\-]+)+")
@@ -80,7 +82,9 @@ async def node_lookup_access_case(
     chatnexo_port: Any,
     handoff_fn: Callable[..., Awaitable[None]],
 ) -> dict[str, Any]:
-    log = logger.bind(capability="access", node="lookup_access_case", account_id=state["account_id"])
+    log = logger.bind(
+        capability="access", node="lookup_access_case", account_id=state["account_id"]
+    )
     case = await access_case_repo.find_by_phone(
         account_id=state["account_id"],
         phone=state["student_phone"],
@@ -108,7 +112,9 @@ async def node_check_platform_scope(
     *,
     handoff_fn: Callable[..., Awaitable[None]],
 ) -> dict[str, Any]:
-    log = logger.bind(capability="access", node="check_platform_scope", account_id=state["account_id"])
+    log = logger.bind(
+        capability="access", node="check_platform_scope", account_id=state["account_id"]
+    )
     if state.get("access_case_id") is None:
         return {}
     last_msg = _extract_last_user_message(state).lower()
@@ -130,8 +136,12 @@ async def node_search_cademi_cascade(
     chatnexo_port: Any,
     handoff_fn: Callable[..., Awaitable[None]],
 ) -> dict[str, Any]:
-    log = logger.bind(capability="access", node="search_cademi_cascade",
-                      account_id=state["account_id"], access_case_id=state.get("access_case_id"))
+    log = logger.bind(
+        capability="access",
+        node="search_cademi_cascade",
+        account_id=state["account_id"],
+        access_case_id=state.get("access_case_id"),
+    )
 
     if state.get("out_of_scope") or state.get("access_case_id") is None:
         return {}
@@ -139,9 +149,12 @@ async def node_search_cademi_cascade(
     # Email mismatch detection
     email_from_msg = _extract_email_from_last_message(state)
     stored_email = state.get("student_email")
-    if (email_from_msg and stored_email
-            and email_from_msg.lower() != stored_email.lower()
-            and not state.get("email_mismatch_pending", False)):
+    if (
+        email_from_msg
+        and stored_email
+        and email_from_msg.lower() != stored_email.lower()
+        and not state.get("email_mismatch_pending", False)
+    ):
         await chatnexo_port.send_message(
             account_id=state["account_id"],
             conversation_id=state.get("conversation_id"),
@@ -183,7 +196,11 @@ async def node_search_cademi_cascade(
         student = await cademi_port.get_student_by_cpf(current_cpf)
         attempts = 2
         if student is not None:
-            return {"cademi_student": student, "search_attempts": attempts, "student_cpf": current_cpf}
+            return {
+                "cademi_student": student,
+                "search_attempts": attempts,
+                "student_cpf": current_cpf,
+            }
 
     # Attempt 3: name+phone
     if attempts < CADEMI_MAX_ATTEMPTS:
@@ -214,13 +231,18 @@ async def node_send_access(
     cademi_port: Any,
     chatnexo_port: Any,
 ) -> dict[str, Any]:
-    logger.bind(capability="access", node="send_access",
-                account_id=state["account_id"], access_case_id=state.get("access_case_id"))
+    log = logger.bind(
+        capability="access",
+        node="send_access",
+        account_id=state["account_id"],
+        access_case_id=state.get("access_case_id"),
+    )
 
-    if (state.get("out_of_scope") or state.get("access_case_id") is None
-            or state.get("cademi_student") is None):
-        return {}
-    if state.get("cpf_asked") and state.get("cademi_student") is None:
+    if (
+        state.get("out_of_scope")
+        or state.get("access_case_id") is None
+        or state.get("cademi_student") is None
+    ):
         return {}
 
     student: CademiStudent = state["cademi_student"]  # type: ignore[assignment]
@@ -243,6 +265,7 @@ async def node_send_access(
             template_name=ACCESS_RESEND_TEMPLATE,
             variables={"1": student.name or "", "2": state.get("product_name") or "", "3": link},
         )
+    log.info("access_sent", within_24h=within_24h)
     return {"access_link": link}
 
 
@@ -251,8 +274,12 @@ async def node_update_access_case(
     *,
     access_case_repo: Any,
 ) -> dict[str, Any]:
-    log = logger.bind(capability="access", node="update_access_case",
-                      account_id=state["account_id"], access_case_id=state.get("access_case_id"))
+    log = logger.bind(
+        capability="access",
+        node="update_access_case",
+        account_id=state["account_id"],
+        access_case_id=state.get("access_case_id"),
+    )
 
     if state.get("access_case_id") is None or state.get("out_of_scope"):
         return {}
