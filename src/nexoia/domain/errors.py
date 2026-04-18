@@ -16,3 +16,7 @@ class TenantIsolationError(DomainError):
 
 class HandoffRequiredError(DomainError):
     """Agent cannot handle, must escalate to human."""
+
+
+class CademiError(Exception):
+    """Falha ao comunicar com a API da Cademi."""
