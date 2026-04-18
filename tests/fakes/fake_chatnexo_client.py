@@ -19,11 +19,12 @@ class FakeChatNexoClient:
 
         self.last_sent_template: str | None = None
         self.last_sent_variables: dict | None = None
+        self.last_sent_text: str | None = None
 
     async def send_message(
         self, *, account_id: UUID, conversation_id: int, text: str
     ) -> None:
-        pass
+        self.last_sent_text = text
 
     async def send_template(
         self,
