@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import pytest
+from redis.asyncio import Redis as ARedis
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from testcontainers.postgres import PostgresContainer
+from testcontainers.redis import RedisContainer
 
 from nexoia.infrastructure.db.session import create_engine
 
@@ -29,3 +31,19 @@ async def db_session(engine: AsyncEngine) -> AsyncSession:
     maker = async_sessionmaker(engine, expire_on_commit=False)
     async with maker() as session:
         yield session
+
+
+@pytest.fixture(scope="session")
+def redis_container_session():
+    with RedisContainer("redis:7-alpine") as c:
+        yield c
+
+
+@pytest.fixture
+async def redis_client(redis_container_session) -> ARedis:
+    host = redis_container_session.get_container_host_ip()
+    port = redis_container_session.get_exposed_port(6379)
+    client = ARedis.from_url(f"redis://{host}:{port}/0", decode_responses=True)
+    yield client
+    await client.flushdb()
+    await client.aclose()
