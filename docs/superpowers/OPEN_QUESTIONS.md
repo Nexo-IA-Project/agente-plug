@@ -32,24 +32,38 @@
 
 ---
 
-### CQ-W03 — Template Meta `welcome_purchase`
+### CQ-W03 — Template Meta `welcome_purchase` — corpo exato e CTAs
 **Contexto:** Mensagens proativas no WhatsApp exigem template aprovado pela Meta.
-**Pergunta:** O template `welcome_purchase` já está criado e aprovado no Meta Business Manager?
-- Qual é o nome exato do template?
-- Quais são as variáveis (parâmetros `{{1}}`, `{{2}}`, `{{3}}`)?
-- Qual é o corpo exato do texto?
-- Há botões (call-to-action) no template?
+
+**Já respondido pelo PRD:**
+- ✅ Nome: `welcome_purchase` (PRD 3.3)
+- ✅ Variáveis: `{{1}}` = nome do aluno, `{{2}}` = nome do produto, `{{3}}` = link nominal de auto-login (PRD 3.2 step 6)
+
+**Ainda em aberto:**
+- Template já está criado e aprovado no Meta Business Manager?
+- Qual é o corpo exato do texto (wording)?
+- Há botões (call-to-action)? Se sim, quais?
 
 **Impacto:** Bloqueia o envio real da mensagem de boas-vindas em produção.
 
 ---
 
-### CQ-W04 — Templates Meta Loja Express
+### CQ-W04 — Templates Meta Loja Express — variáveis e corpo exato
 **Contexto:** Follow-ups D+1, D+3, D+7 usam templates Meta aprovados.
-**Pergunta:** Os templates `loja_express_d1`, `loja_express_d3`, `loja_express_d7` já estão criados e aprovados?
-- Nome exato de cada um no Meta
-- Variáveis e corpo do texto de cada um
-- Template para D+5 existe? (não listado no PRD)
+
+**Já respondido pelo PRD:**
+- ✅ Nomes: `loja_express_d1`, `loja_express_d3`, `loja_express_d7` (PRD 3.3)
+- ✅ Propósito de cada um (PRD 3.3):
+  - `loja_express_d1` — verifica se formulário foi respondido
+  - `loja_express_d3` — check de progresso da loja
+  - `loja_express_d7` — alerta do prazo crítico (7 dias)
+
+**Ainda em aberto:**
+- Templates já estão criados e aprovados no Meta Business Manager?
+- Variáveis exatas de cada um (`{{1}}`, `{{2}}`...)?
+- Corpo exato do texto?
+- Há botões (CTAs)?
+- Template para D+5 não está listado no PRD → ver CQ-L03
 
 **Impacto:** Bloqueia os follow-ups da Loja Express em produção.
 
