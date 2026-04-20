@@ -1,8 +1,9 @@
-import pytest
 from unittest.mock import AsyncMock
 
+import pytest
+
 from nexoia.application.capabilities.access import AccessState, node_lookup_access_case
-from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
+from nexoia.domain.entities.access_case import AccessCase
 
 
 def make_state(**kwargs) -> AccessState:

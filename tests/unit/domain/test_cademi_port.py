@@ -1,6 +1,7 @@
 import pytest
-from nexoia.domain.ports.cademi_port import CademiPort, CademiStudent
+
 from nexoia.domain.errors import CademiError
+from nexoia.domain.ports.cademi_port import CademiStudent
 
 
 def test_cademi_student_is_frozen():

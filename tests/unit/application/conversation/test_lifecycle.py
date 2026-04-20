@@ -1,8 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock
-
-import pytest
+from unittest.mock import AsyncMock
 
 from nexoia.application.conversation.lifecycle import (
     ConversationLifecycleManager,

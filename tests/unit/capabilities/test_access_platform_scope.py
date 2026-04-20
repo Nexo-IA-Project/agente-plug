@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.capabilities.access import AccessState, node_check_platform_scope
 

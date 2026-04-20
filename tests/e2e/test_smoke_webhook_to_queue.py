@@ -47,6 +47,7 @@ def test_purchase_webhook_enqueues_job(
         monkeypatch.setenv(k, v)
 
     import importlib
+
     import nexoia.config.settings as st
     importlib.reload(st)
     import nexoia.main as m

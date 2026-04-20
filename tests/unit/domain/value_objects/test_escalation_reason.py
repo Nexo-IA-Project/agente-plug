@@ -1,4 +1,3 @@
-import pytest
 from nexoia.domain.value_objects.escalation_reason import EscalationReason
 
 

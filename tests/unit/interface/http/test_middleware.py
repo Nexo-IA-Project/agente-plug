@@ -12,7 +12,7 @@ def _app_echoing_context() -> FastAPI:
     app.add_middleware(CorrelationIdMiddleware)
 
     @app.get("/echo")
-    async def echo(request: Request):  # noqa: ANN001
+    async def echo(request: Request):
         return {"cid": correlation_id_var.get()}
 
     return app

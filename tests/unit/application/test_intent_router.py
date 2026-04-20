@@ -1,4 +1,4 @@
-from nexoia.application.intent_router import IntentDecision, IntentRouter
+from nexoia.application.intent_router import IntentRouter
 from nexoia.domain.value_objects.intent import Intent
 from nexoia.infrastructure.llm.fake_client import FakeLLM
 

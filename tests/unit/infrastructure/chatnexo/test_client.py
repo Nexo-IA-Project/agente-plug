@@ -1,7 +1,6 @@
 import uuid
 
 import httpx
-import pytest
 
 from nexoia.infrastructure.chatnexo.client import ChatNexoClient
 

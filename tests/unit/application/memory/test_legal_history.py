@@ -2,8 +2,6 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
-import pytest
-
 from nexoia.application.memory.legal_history import LegalHistoryChecker
 
 

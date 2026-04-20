@@ -1,4 +1,3 @@
-import pytest
 from nexoia.application.communication_rules import CommunicationRules, ViolationType
 
 

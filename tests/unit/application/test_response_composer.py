@@ -1,5 +1,6 @@
 import pytest
-from nexoia.application.response_composer import ResponseComposer, CompositionError
+
+from nexoia.application.response_composer import CompositionError, ResponseComposer
 from nexoia.domain.value_objects.sentiment import Sentiment
 from nexoia.infrastructure.llm.fake_client import FakeLLM
 

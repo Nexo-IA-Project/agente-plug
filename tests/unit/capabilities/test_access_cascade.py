@@ -1,6 +1,7 @@
 # tests/unit/capabilities/test_access_cascade.py
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.capabilities.access import AccessState, node_search_cademi_cascade
 from nexoia.domain.ports.cademi_port import CademiStudent

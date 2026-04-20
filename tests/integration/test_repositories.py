@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nexoia.domain.entities.scheduled_job import JobType
 from nexoia.domain.entities.webhook_event import WebhookSource
 from nexoia.domain.value_objects.phone import Phone
-from nexoia.infrastructure.db.models import AccountModel, ContactModel
+from nexoia.infrastructure.db.models import AccountModel
 from nexoia.infrastructure.db.repositories.contact import ContactRepository
 from nexoia.infrastructure.db.repositories.scheduled_job import ScheduledJobRepository
 from nexoia.infrastructure.db.repositories.webhook_event import WebhookEventRepository

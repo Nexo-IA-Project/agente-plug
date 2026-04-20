@@ -1,4 +1,5 @@
 import pytest
+
 from tests.fakes.fake_chatnexo_client import FakeChatNexoClient
 
 

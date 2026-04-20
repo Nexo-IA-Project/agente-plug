@@ -9,13 +9,14 @@ Cenários cobertos:
   5) Out of scope — aluno menciona Shopee; handoff silencioso e sem update.
   6) No access case — aluno sem AccessCase → handoff silencioso.
 """
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.capabilities.access import (
     AccessState,
-    node_lookup_access_case,
     node_check_platform_scope,
+    node_lookup_access_case,
     node_search_cademi_cascade,
     node_send_access,
     node_update_access_case,

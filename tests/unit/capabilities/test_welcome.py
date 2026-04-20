@@ -1,15 +1,14 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.capabilities.welcome import (
     WelcomeState,
-    node_fetch_cademi,
     node_check_conversation,
-    node_send_welcome,
-    node_persist_access_case,
+    node_fetch_cademi,
     node_schedule_d1,
+    node_send_welcome,
 )
-from nexoia.domain.entities.access_case import AccessCaseStatus
 from nexoia.domain.ports.cademi_port import CademiStudent
 from tests.fakes.fake_cademi_client import FakeCademiClient
 from tests.fakes.fake_chatnexo_client import FakeChatNexoClient

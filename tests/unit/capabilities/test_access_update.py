@@ -1,6 +1,7 @@
 # tests/unit/capabilities/test_access_update.py
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.capabilities.access import AccessState, node_update_access_case
 from nexoia.domain.entities.access_case import AccessCaseStatus

@@ -1,4 +1,5 @@
 import pytest
+
 from nexoia.infrastructure.cademi.client import CademiClient
 
 

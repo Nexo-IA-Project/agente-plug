@@ -1,8 +1,6 @@
 import uuid
 from unittest.mock import AsyncMock
 
-import pytest
-
 from nexoia.application.memory.long_term import LongTermMemory
 
 

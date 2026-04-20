@@ -1,8 +1,7 @@
 from nexoia.infrastructure.observability.metrics import (
     welcome_capability_total,
-    welcome_cademi_latency_seconds,
-    welcome_d1_scheduled_total,
     welcome_d1_cancelled_total,
+    welcome_d1_scheduled_total,
 )
 
 

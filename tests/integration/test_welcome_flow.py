@@ -2,21 +2,23 @@
 Teste end-to-end da Capability Welcome usando fakes de infraestrutura.
 Requer DB real (marca @pytest.mark.integration — skipped localmente).
 """
+from unittest.mock import AsyncMock
+
 import pytest
+
+from nexoia.application.capabilities.welcome import (
+    WelcomeState,
+    node_check_conversation,
+    node_fetch_cademi,
+    node_persist_access_case,
+    node_schedule_d1,
+    node_send_welcome,
+)
 from nexoia.domain.entities.access_case import AccessCaseStatus
 from nexoia.domain.ports.cademi_port import CademiStudent
 from nexoia.infrastructure.db.repositories.access_case_repo import AccessCaseRepository
-from nexoia.application.capabilities.welcome import (
-    WelcomeState,
-    node_fetch_cademi,
-    node_check_conversation,
-    node_send_welcome,
-    node_persist_access_case,
-    node_schedule_d1,
-)
 from tests.fakes.fake_cademi_client import FakeCademiClient
 from tests.fakes.fake_chatnexo_client import FakeChatNexoClient
-from unittest.mock import AsyncMock
 
 
 @pytest.fixture

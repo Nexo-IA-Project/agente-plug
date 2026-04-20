@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from nexoia.interface.worker.handlers.process_purchase import handle_process_purchase_webhook
 

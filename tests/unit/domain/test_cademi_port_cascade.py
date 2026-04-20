@@ -1,4 +1,5 @@
 import pytest
+
 from nexoia.domain.ports.cademi_port import CademiStudent
 from tests.fakes.fake_cademi_client import FakeCademiClient
 
