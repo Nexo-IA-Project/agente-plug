@@ -53,7 +53,8 @@ async def test_save_adds_model_and_flushes():
 @pytest.mark.asyncio
 async def test_update_persists_fields():
     session = AsyncMock()
-    session.get = AsyncMock(return_value=_make_model())
+    mock_model = _make_model()
+    session.get = AsyncMock(return_value=mock_model)
     repo = RefundCaseRepository(session)
     case = RefundCase(
         id="case-1",
@@ -66,6 +67,8 @@ async def test_update_persists_fields():
     )
     await repo.update(case)
     session.flush.assert_called_once()
+    assert mock_model.status == "refunded"
+    assert mock_model.offers_made == ["N1", "N2"]
 
 
 @pytest.mark.asyncio

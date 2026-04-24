@@ -28,7 +28,7 @@ class RefundCaseRepository:
             days_since_purchase=case.days_since_purchase,
             within_deadline=case.within_deadline,
             is_duplicate_purchase=case.is_duplicate_purchase,
-            offers_made=case.offers_made,
+            offers_made=list(case.offers_made),
             offer_accepted=case.offer_accepted,
             refund_processed_this_turn=case.refund_processed_this_turn,
             status=case.status.value,
@@ -48,7 +48,7 @@ class RefundCaseRepository:
         model.days_since_purchase = case.days_since_purchase
         model.within_deadline = case.within_deadline
         model.is_duplicate_purchase = case.is_duplicate_purchase
-        model.offers_made = case.offers_made
+        model.offers_made = list(case.offers_made)
         model.offer_accepted = case.offer_accepted
         model.refund_processed_this_turn = case.refund_processed_this_turn
         await self._session.flush()
