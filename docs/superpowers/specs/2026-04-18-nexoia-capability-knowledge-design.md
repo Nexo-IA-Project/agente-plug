@@ -17,13 +17,14 @@ A Capability Knowledge é a "dúvida técnica" do aluno. Quando o aluno faz uma 
 **Resumo do fluxo (PRD 7.4):**
 ```
 Aluno manda pergunta genérica/técnica
-  → Intent Router classifica intent = "knowledge"
-    → Worker invoca subgraph Knowledge
+  → LLM identifica intenção de knowledge
+    → LLM chama buscar_conhecimento(query)
       → Tentativa 1: palavras exatas (threshold 0.55)
         → Tentativa 2: expansão de sinônimos (160+ termos)
           → Tentativa 3: extração de keywords (remove stopwords)
-            → 4ª: pede contexto ao aluno → busca direcionada
-              → Persistir sem resultado: escala silenciosa
+            → Nenhum resultado: retorna sinal ao LLM pedir contexto
+              → LLM chama buscar_conhecimento_com_contexto(original_query, context)
+                → Sem resultado: use case escala + registra em kb_usage_logs
 ```
 
 ---
@@ -32,8 +33,8 @@ Aluno manda pergunta genérica/técnica
 
 ### O que faz
 
-- Subgraph LangGraph reativo, acionado quando `intent = "knowledge"`
-- 3 estratégias de busca em cascata na KB (via `KnowledgePort` do Core ou spec ⑥)
+- Capability reativa — LLM decide quando acionar as skills de knowledge com base na intenção do aluno
+- 3 estratégias de busca em cascata na KB (via `KnowledgePort` implementado por spec ⑥)
 - 4ª tentativa solicitando contexto objetivo ao aluno
 - Escala silenciosa se todas as tentativas falharem
 - Logs de queries sem resultado para enriquecer a KB posteriormente
@@ -50,17 +51,20 @@ Aluno manda pergunta genérica/técnica
 
 ### Novos
 ```
-src/nexoia/application/capabilities/knowledge.py
-src/nexoia/application/kb/synonym_expander.py       # 160+ termos mapeados
-src/nexoia/application/kb/keyword_extractor.py      # remove stopwords PT-BR
-src/nexoia/application/kb/stopwords_ptbr.py         # lista stopwords
-tests/unit/capabilities/test_knowledge.py
+src/nexoia/application/use_cases/knowledge/
+    buscar_conhecimento.py          # 3 tentativas em cascata (exact → synonyms → keywords)
+    buscar_conhecimento_com_contexto.py   # 4ª tentativa com contexto enriquecido + escala
+    synonym_expander.py             # 160+ termos mapeados (antes em application/kb/)
+    keyword_extractor.py            # remove stopwords PT-BR (antes em application/kb/)
+    stopwords_ptbr.py               # lista stopwords
+src/nexoia/infrastructure/skills/knowledge.py       # make_knowledge_skills() factory
+tests/unit/use_cases/test_knowledge.py
 tests/integration/test_knowledge_flow.py
 ```
 
 ### Modificados
 ```
-src/nexoia/application/intent_router.py             # + intent "knowledge"
+src/nexoia/infrastructure/langgraph_runtime/graph_builder.py  # + make_knowledge_skills(...)
 src/nexoia/config/settings.py                       # + KB_ATTEMPT_1_THRESHOLD, KB_MAX_TURNS
 src/nexoia/infrastructure/db/repositories/usage_log_repo.py  # + registra queries sem resultado
 docs/superpowers/OPEN_QUESTIONS.md                  # + CQ-K01 (lista de sinônimos)
@@ -68,129 +72,132 @@ docs/superpowers/OPEN_QUESTIONS.md                  # + CQ-K01 (lista de sinôni
 
 ---
 
-## 4. Subgraph LangGraph
+## 4. Use Cases e Skills
 
-### Grafo de nós
+Sem subgraph LangGraph. Estado não precisa de classe própria — o LLM mantém contexto via
+`AgentState.messages` (checkpoint). A 4ª tentativa (pedir contexto) é tratada naturalmente
+pelo loop do LLM: o use case sinaliza "precisa de contexto", o LLM pede ao aluno, e na
+próxima mensagem chama `buscar_conhecimento_com_contexto`.
 
-```
-START
-  │
-  ▼
-search_exact            ← tentativa 1: palavras exatas do aluno (threshold 0.55)
-  │ achou → answer → END
-  ▼
-search_synonyms         ← tentativa 2: expande sinônimos e busca
-  │ achou → answer → END
-  ▼
-search_keywords         ← tentativa 3: extrai keywords, remove stopwords e busca
-  │ achou → answer → END
-  ▼
-ask_context             ← envia "Me conta um pouco mais, quero te ajudar melhor"
-  │ recebe resposta → search_directed
-  ▼
-search_directed         ← 4ª tentativa com contexto adicional
-  │ achou → answer → END
-  ▼
-persist_no_result       ← registra query em kb_usage_logs
-  │
-  ▼
-escalate                ← handoff silencioso (reason="knowledge_not_found")
-  │
-  ▼
-END
-```
+### `BuscarConhecimento` (`application/use_cases/knowledge/buscar_conhecimento.py`)
 
-### Estado do subgraph
+Executa tentativas 1–3 em cascata. Recebe dependências via `__init__`.
 
 ```python
-class KnowledgeState(ConversationState):
-    original_query: str                 # mensagem original do aluno
-    enriched_query: str | None          # query após contexto do aluno
-    attempt: int                        # 1, 2, 3 ou 4
-    synonym_expanded: str | None
-    keywords_extracted: list[str] | None
-    chunks_found: list[KnowledgeChunk]  # resultado da última busca
-    context_requested: bool             # True se já pedimos contexto
-    no_result: bool                     # True se todas as tentativas falharam
+class BuscarConhecimento:
+    def __init__(
+        self,
+        knowledge_repo: KnowledgePort,
+        synonym_expander: SynonymExpander,
+        keyword_extractor: KeywordExtractor,
+        usage_log_repo: UsageLogRepoPort,
+    ): ...
+
+    async def execute(self, query: str, account_id: int) -> BuscaResult:
+        # Tentativa 1 — palavras exatas (threshold 0.55)
+        chunks = await self._knowledge_repo.search(query, account_id, threshold=0.55, top_k=5)
+        if chunks:
+            return BuscaResult(chunks=chunks, status="found")
+
+        # Tentativa 2 — sinônimos (160+ termos — CQ-K01)
+        expanded = self._synonym_expander.expand(query)
+        chunks = await self._knowledge_repo.search(expanded, account_id, threshold=0.55, top_k=5)
+        if chunks:
+            return BuscaResult(chunks=chunks, status="found")
+
+        # Tentativa 3 — keywords (remove stopwords PT-BR)
+        keywords = " ".join(self._keyword_extractor.extract(query))
+        chunks = await self._knowledge_repo.search(keywords, account_id, threshold=0.55, top_k=5)
+        if chunks:
+            return BuscaResult(chunks=chunks, status="found")
+
+        return BuscaResult(chunks=[], status="ask_context")
 ```
 
-### Nó `search_exact`
+`BuscaResult(status="found")` → LLM usa os chunks para gerar resposta.
+`BuscaResult(status="ask_context")` → LLM pede contexto ao aluno (*"Me conta um pouco mais..."*).
 
-1. Chama `KnowledgePort.search(query=state.original_query, threshold=KB_ATTEMPT_1_THRESHOLD=0.55, top_k=5)`
-2. Se retornou ≥ 1 chunk: `state.chunks_found = resultado`, vai para `answer`
-3. Senão: `state.attempt = 2`, vai para `search_synonyms`
+### `BuscarConhecimentoComContexto` (`application/use_cases/knowledge/buscar_conhecimento_com_contexto.py`)
 
-### Nó `search_synonyms`
+4ª tentativa — chamada quando o aluno fornece contexto após `ask_context`.
 
-1. Chama `SynonymExpander.expand(query)` — substitui termos pelos sinônimos mapeados (160+ termos — ver CQ-K01)
-2. Exemplo: "não consigo entrar" → "não consigo acessar / fazer login / entrar no sistema"
-3. Chama `KnowledgePort.search(query=expanded, threshold=0.55, top_k=5)`
-4. Se achou: vai para `answer`. Senão: `attempt=3`, vai para `search_keywords`
+```python
+async def execute(self, original_query: str, context: str, account_id: int) -> BuscaResult:
+    enriched = f"{original_query} {context}"
+    chunks = await self._knowledge_repo.search(enriched, account_id, threshold=0.55, top_k=5)
+    if chunks:
+        return BuscaResult(chunks=chunks, status="found")
 
-### Nó `search_keywords`
+    await self._usage_log_repo.record_no_result(account_id, original_query)
+    await self._chatnexo.transfer_to_human(account_id, reason="knowledge_not_found")
+    return BuscaResult(chunks=[], status="escalated")
+```
 
-1. Chama `KeywordExtractor.extract(query)` — remove stopwords PT-BR
-2. Exemplo: "como faço para acessar a plataforma" → `["acessar", "plataforma"]`
-3. Chama `KnowledgePort.search(query=keywords_joined, threshold=0.55, top_k=5)`
-4. Se achou: vai para `answer`. Senão: `attempt=4`, vai para `ask_context`
+### `SynonymExpander` e `KeywordExtractor`
 
-### Nó `ask_context`
+Movidos de `application/kb/` → `application/use_cases/knowledge/`.
+São Python puro, zero dependência externa — podem ser testados sem mocks.
 
-1. Envia mensagem pedindo contexto: *"Me conta um pouco mais sobre o que você tá precisando, assim consigo te ajudar melhor 😊"*
-2. Seta `state.context_requested = True`
-3. Aguarda resposta do aluno (próxima mensagem retoma em `search_directed`)
+```python
+# synonym_expander.py
+SYNONYMS: dict[str, list[str]] = {
+    "acessar": ["entrar", "logar", "fazer login", "entrar no sistema"],
+    "senha":   ["palavra-chave", "credencial", "password"],
+    "curso":   ["treinamento", "aula", "conteúdo", "material"],
+    # ... 160+ termos — ver CQ-K01
+}
+```
 
-### Nó `search_directed`
+### Factory de Skills (`infrastructure/skills/knowledge.py`)
 
-1. Concatena `enriched_query = f"{original_query} {student_context}"`
-2. Chama `KnowledgePort.search(query=enriched_query, threshold=0.55, top_k=5)`
-3. Se achou: vai para `answer`. Senão: vai para `persist_no_result` → `escalate`
+```python
+def make_knowledge_skills(
+    knowledge_repo: KnowledgePort,
+    synonym_expander: SynonymExpander,
+    keyword_extractor: KeywordExtractor,
+    usage_log_repo: UsageLogRepoPort,
+    chatnexo: ChatNexoPort,
+) -> list[BaseTool]:
+    buscar_uc   = BuscarConhecimento(knowledge_repo, synonym_expander, keyword_extractor, usage_log_repo)
+    contexto_uc = BuscarConhecimentoComContexto(knowledge_repo, usage_log_repo, chatnexo)
 
-### Nó `answer`
+    @tool
+    async def buscar_conhecimento(query: str) -> str:
+        """
+        Busca resposta na base de conhecimento do produto (3 estratégias em cascata).
+        Use quando: aluno faz pergunta técnica ou geral sobre o produto/plataforma.
+        Retorna: chunks relevantes OU sinal para pedir mais contexto ao aluno.
+        Não use quando: dúvida é sobre reembolso, acesso ou loja express.
+        """
+        cfg = get_config()["configurable"]
+        result = await buscar_uc.execute(query, cfg["account_id"])
+        if result.status == "found":
+            return "\n\n".join(c.text for c in result.chunks)
+        return "ASK_CONTEXT: Me conta um pouco mais sobre o que você tá precisando."
 
-1. Monta resposta com base nos chunks encontrados via LLM
-2. Prompt inclui os chunks + regras de comunicação (max 300 chars, informal, etc. — aplicado pelo Response Composer)
-3. Envia via `ChatNexoClient.send_message(...)`
+    @tool
+    async def buscar_conhecimento_com_contexto(original_query: str, context: str) -> str:
+        """
+        4ª tentativa de busca com contexto adicional fornecido pelo aluno.
+        Use quando: buscar_conhecimento retornou ASK_CONTEXT e o aluno respondeu com mais detalhes.
+        Retorna: chunks relevantes OU sinaliza escalação para humano.
+        """
+        cfg = get_config()["configurable"]
+        result = await contexto_uc.execute(original_query, context, cfg["account_id"])
+        if result.status == "found":
+            return "\n\n".join(c.text for c in result.chunks)
+        return "ESCALATED: Transferindo para atendimento humano."
 
-### Nó `persist_no_result`
-
-1. Registra em `kb_usage_logs` com `result_count = 0`
-2. Permite ao time identificar lacunas na KB
-
-### Nó `escalate`
-
-1. `ChatNexoClient.transfer_to_human(reason="knowledge_not_found")`
+    return [buscar_conhecimento, buscar_conhecimento_com_contexto]
 
 ---
 
 ## 5. Componentes
 
-### `SynonymExpander` (`application/kb/synonym_expander.py`)
+`SynonymExpander` e `KeywordExtractor` ficam em `application/use_cases/knowledge/` — são helpers
+do use case, Python puro, sem dependência externa. Ver seção 4 para código detalhado.
 
-```python
-SYNONYMS: dict[str, list[str]] = {
-    "acessar": ["entrar", "logar", "fazer login", "entrar no sistema"],
-    "senha": ["palavra-chave", "credencial", "password"],
-    "curso": ["treinamento", "aula", "conteúdo", "material"],
-    # ... 160+ termos — ver CQ-K01
-}
-
-class SynonymExpander:
-    def expand(self, query: str) -> str:
-        # substitui cada termo por (termo | sinônimo1 | sinônimo2 ...)
-        ...
-```
-
-> **TODO — CQ-K01:** Consolidar lista completa de 160+ termos e sinônimos com a equipe da G2.
-
-### `KeywordExtractor` (`application/kb/keyword_extractor.py`)
-
-```python
-class KeywordExtractor:
-    def extract(self, query: str) -> list[str]:
-        # tokeniza, remove stopwords PT-BR, retorna tokens relevantes
-        ...
-```
+> **TODO — CQ-K01:** Consolidar lista completa de 160+ termos com a equipe da G2.
 
 Stopwords PT-BR: "a", "o", "de", "que", "como", "faço", "para", "meu", "minha", "tô", "tá" etc.
 
@@ -209,7 +216,7 @@ class KnowledgePort(Protocol):
     ) -> list[KnowledgeChunk]: ...
 ```
 
-Implementação concreta fica em `application/kb/search.py` (spec ⑥), que chama `chunk_repo.similarity_search()` com pgvector.
+Implementação concreta fica em `application/use_cases/kb_admin/buscar_chunks.py` (spec ⑥), que usa `ChunkRepoPort` + `EmbeddingsPort` via DI e ORM SQLAlchemy 2 — sem SQL solto.
 
 ---
 
@@ -248,24 +255,24 @@ knowledge_answer_latency_seconds (histogram)
 
 ## 9. Testes
 
-### Unitários (`tests/unit/capabilities/test_knowledge.py`)
+### Unitários (`tests/unit/use_cases/test_knowledge.py`)
 
 | Teste | Cenário |
 |-------|---------|
-| `test_exact_match_succeeds` | Tentativa 1 encontra → responde |
-| `test_synonym_expansion_succeeds` | T1 falha, T2 (sinônimos) encontra → responde |
-| `test_keyword_extraction_succeeds` | T1+T2 falham, T3 (keywords) encontra → responde |
-| `test_directed_search_with_context` | T1+T2+T3 falham, pede contexto, T4 encontra → responde |
-| `test_all_attempts_exhausted_escalates` | 4 tentativas falham → handoff + log |
+| `test_exact_match_succeeds` | T1 encontra → `status="found"` |
+| `test_synonym_expansion_succeeds` | T1 falha, T2 (sinônimos) encontra → `status="found"` |
+| `test_keyword_extraction_succeeds` | T1+T2 falham, T3 (keywords) encontra → `status="found"` |
+| `test_three_attempts_exhausted_returns_ask_context` | T1+T2+T3 falham → `status="ask_context"` |
+| `test_directed_search_with_context_succeeds` | `BuscarComContexto` T4 encontra → `status="found"` |
+| `test_all_attempts_exhausted_escalates_and_logs` | T4 falha → transfer_to_human + `kb_usage_logs` |
 | `test_synonym_expander_basic` | "acessar" → expande com "entrar, logar, fazer login" |
 | `test_keyword_extractor_removes_stopwords` | "como faço para acessar" → `["acessar"]` |
-| `test_persist_no_result_log` | Query sem resultado registrada em `kb_usage_logs` |
 
 ### Integração (`tests/integration/test_knowledge_flow.py`)
 
-- KB pré-populada (via fixtures) com chunks conhecidos
+- KB pré-populada (via fixtures) com chunks conhecidos + pgvector (testcontainers)
 - Valida busca com threshold 0.55
-- Valida fluxo completo: pergunta → 3 tentativas → ask_context → directed search
+- Valida fluxo completo: skill → 3 tentativas → skill contexto → directed search
 - Valida `kb_usage_logs` registrado em queries sem resultado
 
 ---
@@ -274,11 +281,11 @@ knowledge_answer_latency_seconds (histogram)
 
 | ID | Requisito |
 |----|-----------|
-| `RF-K01` | Intent Router classifica `intent = knowledge` para perguntas gerais/técnicas. |
+| `RF-K01` | LLM identifica intenção de knowledge e chama `buscar_conhecimento(query)` para perguntas gerais/técnicas. |
 | `RF-K02` | Tentativa 1: busca com palavras exatas do aluno, threshold 0.55 (PRD 7.4). |
 | `RF-K03` | Tentativa 2: expansão de sinônimos (160+ termos). |
 | `RF-K04` | Tentativa 3: extração de keywords (remove stopwords PT-BR). |
-| `RF-K05` | Tentativa 4: pede contexto objetivo ao aluno → busca direcionada com contexto. |
+| `RF-K05` | Tentativa 4: `buscar_conhecimento` retorna `ASK_CONTEXT` → LLM pede contexto → LLM chama `buscar_conhecimento_com_contexto(original_query, context)`. |
 | `RF-K06` | 4 tentativas esgotadas: handoff silencioso + registra em `kb_usage_logs`. |
 | `RF-K07` | Lista de sinônimos: TODO CQ-K01 — consolidar com a equipe G2. |
 | `RF-K08` | Queries sem resultado persistidas para identificar lacunas na KB. |

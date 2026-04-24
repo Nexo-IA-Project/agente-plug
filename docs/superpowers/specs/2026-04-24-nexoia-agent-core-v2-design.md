@@ -397,50 +397,103 @@ class BuscarAlunoCademi:
 
 ### 5.2 Skills — Adapters `@tool` (`infrastructure/skills/`)
 
-O `@tool` é adapter. Repassa parâmetros do config para o use case. Zero regra de negócio.
+O `@tool` é adapter. Zero regra de negócio dentro dele. Dependências são injetadas via factory
+— nunca instanciadas dentro do `@tool`. Isso garante portabilidade: trocar infraestrutura
+(banco, cliente HTTP, microservice) exige apenas uma nova implementação de porta, nunca
+editar o corpo do `@tool`.
 
 ```python
 # infrastructure/skills/access.py
 from langchain_core.tools import tool
+from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 
-@tool
-async def buscar_aluno_cademi(email: str | None = None, cpf: str | None = None) -> str:
-    """
-    Busca aluno na plataforma Cademi por email ou CPF.
-    Use quando: precisa localizar o cadastro do aluno. Tente email primeiro, CPF se falhar.
-    Retorna: confirmação de encontrado ou não localizado.
-    Não use quando: aluno já foi localizado em chamada anterior.
-    """
-    cfg = get_config()["configurable"]
-    use_case = BuscarAlunoCademi(
-        repo=AccessCaseRepo(get_db_session()),
-        cademi=CademiClient(),
-    )
-    return await use_case.execute(
-        account_id=cfg["account_id"],
-        phone=cfg["phone"],
-        email=email,
-        cpf=cpf,
-    )
+def make_access_skills(
+    access_repo: AccessCaseRepoPort,
+    cademi: CademiPort,
+    chatnexo: ChatNexoPort,
+) -> list[BaseTool]:
+    buscar_uc  = BuscarAlunoCademi(repo=access_repo, cademi=cademi)
+    enviar_uc  = EnviarLinkAcesso(repo=access_repo, chatnexo=chatnexo)
+    verificar_uc = VerificarCasoAcesso(repo=access_repo)
+
+    @tool
+    async def verificar_caso_acesso() -> str:
+        """
+        Verifica se existe caso de acesso aberto para o aluno.
+        Use quando: aluno relata problema de acesso ao produto.
+        Retorna: status do caso e próxima ação recomendada.
+        """
+        cfg = get_config()["configurable"]
+        return await verificar_uc.execute(cfg["account_id"], cfg["phone"])
+
+    @tool
+    async def buscar_aluno_cademi(email: str | None = None, cpf: str | None = None) -> str:
+        """
+        Busca aluno na plataforma Cademi por email ou CPF.
+        Use quando: precisa localizar o cadastro do aluno. Tente email primeiro, CPF se falhar.
+        Retorna: confirmação de encontrado ou não localizado.
+        Não use quando: aluno já foi localizado em chamada anterior.
+        """
+        cfg = get_config()["configurable"]
+        return await buscar_uc.execute(cfg["account_id"], cfg["phone"], email=email, cpf=cpf)
+
+    @tool
+    async def enviar_link_acesso() -> str:
+        """
+        Envia link de acesso ao aluno após localização na Cademi.
+        Use quando: aluno foi localizado e está sem acesso.
+        Não use quando: aluno ainda não foi localizado (use buscar_aluno_cademi antes).
+        """
+        cfg = get_config()["configurable"]
+        return await enviar_uc.execute(cfg["account_id"], cfg["phone"])
+
+    return [verificar_caso_acesso, buscar_aluno_cademi, enviar_link_acesso]
 ```
 
 ```python
 # infrastructure/skills/__init__.py
-from .access import (
-    verificar_caso_acesso,
-    buscar_aluno_cademi,
-    enviar_link_acesso,
-    escalar_para_humano,
-)
+# SKILLS é montado pelo graph_builder com DI explícita — nunca como lista estática.
+# Cada factory recebe as ports necessárias; o @tool fecha sobre o use case já instanciado.
 
-SKILLS: list = [
-    verificar_caso_acesso,
-    buscar_aluno_cademi,
-    enviar_link_acesso,
-    escalar_para_humano,
-]
+from .access import make_access_skills
+from .refund import make_refund_skills
+from .knowledge import make_knowledge_skills
+
+# Exportar escalar_para_humano separadamente — é skill Core, usada por todas as capabilities
+from .core import escalar_para_humano
 ```
+
+```python
+# infrastructure/langgraph_runtime/graph_builder.py (trecho relevante)
+def build_graph(
+    access_repo, cademi, chatnexo,
+    refund_repo, hubla, legal_history, refund_mutex,
+    knowledge_repo, synonym_expander, keyword_extractor, usage_log_repo,
+    guard_service, long_term_repo, llm,
+    capability_repo, memory_extractor, checkpointer,
+) -> CompiledGraph:
+
+    SKILLS = (
+        make_access_skills(access_repo, cademi, chatnexo) +
+        make_refund_skills(refund_repo, hubla, legal_history, refund_mutex) +
+        make_knowledge_skills(knowledge_repo, synonym_expander, keyword_extractor, usage_log_repo) +
+        [escalar_para_humano]
+    )
+
+    raciocinar_node   = make_raciocinar_node(guard_service, long_term_repo, llm)
+    pos_execucao_node = make_pos_execucao_node(capability_repo, memory_extractor)
+
+    graph = StateGraph(AgentState)
+    graph.add_node("raciocinar",   raciocinar_node)
+    graph.add_node("executar",     ToolNode(SKILLS))
+    graph.add_node("pos_execucao", pos_execucao_node)
+    # ... edges
+    return graph.compile(checkpointer=checkpointer)
+```
+
+**Portabilidade:** para usar uma capability em outro projeto ou extraí-la como microservice,
+basta implementar as ports correspondentes e passar para a factory. O `@tool` não muda.
 
 ### 5.3 MessageDispatcher (`application/message_dispatcher.py`)
 

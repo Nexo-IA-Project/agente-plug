@@ -3,7 +3,7 @@
 **Data:** 2026-04-18
 **Fase:** 1
 **Repositório alvo:** `nexoia-agent`
-**Depende de:** Spec ① (Core — Scheduler, Lifecycle Manager), Spec ② (padrão de subgraph proativo)
+**Depende de:** Spec ① (Core — Scheduler, PurchaseHandler, ChatNexoPort)
 **Status:** Design aprovado — aguardando plano de implementação
 
 ---
@@ -17,12 +17,13 @@ Sem acompanhamento proativo, esse fluxo vira reembolso — o aluno fica perdido 
 **Resumo do fluxo:**
 ```
 Webhook de compra (produto Loja Express)
-  → D+0: confirma recebimento + envia passo a passo do formulário
-    → Scheduler agenda D+1, D+3, D+5, D+7
-      → D+1: verifica formulário → se pendente, reenvia lembrete (template)
-        → D+3: verifica status da loja → informa progresso (template)
-          → D+5: se loja não entregue → verifica bloqueio, aciona operação (escalação silenciosa)
-            → D+7: prazo crítico → resolve ou escala com urgência
+  → PurchaseHandler detecta produto Loja Express
+    → CriarCasoLojaExpress.execute() — cria LojaExpressCase + agenda D+1/D+3/D+5/D+7
+      → D+0: envia confirmação + passo a passo do formulário (template)
+        → Worker job LOJA_EXPRESS_D1 → EnviarFollowup.execute(day=1)
+          → Worker job LOJA_EXPRESS_D3 → EnviarFollowup.execute(day=3)
+            → Worker job LOJA_EXPRESS_D5 → EnviarFollowup.execute(day=5) + escala se não entregue
+              → Worker job LOJA_EXPRESS_D7 → EnviarFollowup.execute(day=7) + escala urgente
 ```
 
 ---
@@ -31,7 +32,8 @@ Webhook de compra (produto Loja Express)
 
 ### O que faz
 
-- Subgraph LangGraph proativo, acionado pelo job `ProcessPurchaseWebhook` quando produto é Loja Express
+- Capability 100% proativa — sem skill `@tool`, sem orquestração LLM. Todos os fluxos são worker-driven.
+- `PurchaseHandler` (Core) detecta produto Loja Express e chama `CriarCasoLojaExpress.execute()`
 - D+0: confirma recebimento da compra + envia passo a passo do formulário
 - Agenda follow-ups D+1, D+3, D+5, D+7 via `scheduled_jobs`
 - D+1: verifica se formulário foi respondido → lembrete via template `loja_express_d1` se pendente
@@ -54,102 +56,80 @@ Webhook de compra (produto Loja Express)
 
 ### Novos
 ```
-src/nexoia/application/capabilities/loja_express.py
+src/nexoia/application/use_cases/loja_express/
+    criar_caso.py          # cria LojaExpressCase + agenda jobs D+1/D+3/D+5/D+7
+    enviar_followup.py     # lógica por dia (day=1|3|5|7): verifica status + envia template + escala
+    marcar_entregue.py     # cancela jobs pendentes quando loja_entregue=True
 src/nexoia/domain/entities/loja_express_case.py
-src/nexoia/domain/ports/loja_express_port.py        # interface para verificar formulário e status
+src/nexoia/domain/ports/loja_express_port.py        # LojaExpressPort (formulário + status da loja)
 src/nexoia/infrastructure/loja_express/client.py    # stub LojaExpressClient
 src/nexoia/infrastructure/db/repositories/loja_express_case_repo.py
 migrations/xxxx_add_loja_express_cases_table.py
-tests/unit/capabilities/test_loja_express.py
+tests/unit/use_cases/test_loja_express.py
 tests/integration/test_loja_express_flow.py
 ```
 
 ### Modificados
 ```
-src/nexoia/interface/worker/handlers/handle_process_purchase_webhook.py  # detecta produto Loja Express
+src/nexoia/application/purchase_handler.py          # detecta produto Loja Express, chama CriarCaso
+src/nexoia/interface/worker/handlers/scheduled.py   # + handlers LOJA_EXPRESS_D1/D3/D5/D7
 src/nexoia/config/settings.py                       # + LOJA_EXPRESS_PRODUCT_TAGS
 docs/superpowers/OPEN_QUESTIONS.md                  # + CQ-L01, CQ-L02, CQ-L03
 ```
 
 ---
 
-## 4. Subgraph LangGraph
+## 4. Use Cases
 
-### Grafo de nós (D+0)
+Sem subgraph LangGraph. Sem skill `@tool`. Sem orquestração LLM. Fluxos inteiramente
+worker-driven — use cases chamados diretamente pelos handlers do scheduler.
+Estado persistido em `LojaExpressCase` no banco — sem estado no grafo.
 
-```
-START (job ProcessPurchaseWebhook — produto Loja Express)
-  │
-  ▼
-send_d0             ← confirma recebimento + envia passo a passo do formulário
-  │
-  ▼
-schedule_followups  ← agenda D+1, D+3, D+5, D+7 em scheduled_jobs
-  │
-  ▼
-persist_case        ← cria LojaExpressCase(status=AGUARDANDO_FORMULARIO)
-  │
-  ▼
-END
-```
+### `CriarCasoLojaExpress` (`application/use_cases/loja_express/criar_caso.py`)
 
-### Grafo de nós (follow-ups — jobs agendados)
+Chamado por `PurchaseHandler` quando detecta produto Loja Express (via `LOJA_EXPRESS_PRODUCT_TAGS`).
 
-```
-START (job SendScheduledFollowUp — tipo LOJA_EXPRESS_D1/D3/D5/D7)
-  │
-  ▼
-check_case          ← carrega LojaExpressCase; se loja_entregue=True → cancela e END
-  │
-  ▼
-execute_followup    ← lógica específica do dia (D+1/D+3/D+5/D+7)
-  │
-  ▼
-update_case         ← atualiza status e last_followup_at
-  │
-  ▼
-END
-```
+1. Cria `LojaExpressCase(status=AGUARDANDO_FORMULARIO)` — `purchase_id UNIQUE` garante idempotência
+2. Envia template D+0 via `ChatNexoPort.send_template("loja_express_d0", {nome, produto})`
+3. Agenda jobs: `LOJA_EXPRESS_D1` (+24h), `D3` (+72h), `D5` (+120h), `D7` (+168h)
+4. Salva `scheduled_job_d1_id`, `d3_id`, `d5_id`, `d7_id` no `LojaExpressCase`
 
-### Lógica por dia
+### `EnviarFollowup` (`application/use_cases/loja_express/enviar_followup.py`)
 
-**D+1 (`LOJA_EXPRESS_D1`):**
-1. Chama `LojaExpressPort.is_form_submitted(loja_express_case_id)` → stub (TODO CQ-L01)
-2. Se `False`: envia template `loja_express_d1` (lembrete de formulário)
-3. Atualiza `status = LEMBRETE_D1_ENVIADO`
+Chamado pelo worker handler em cada job agendado. Recebe `day: int` (1, 3, 5 ou 7).
 
-**D+3 (`LOJA_EXPRESS_D3`):**
-1. Chama `LojaExpressPort.get_store_status(loja_express_case_id)` → stub (TODO CQ-L02)
-2. Envia template `loja_express_d3` com progresso
-3. Atualiza `status = CHECK_D3_ENVIADO`
+**Guard de saída:** se `loja_entregue=True` → cancela jobs pendentes e retorna sem envio.
 
-**D+5 (`LOJA_EXPRESS_D5`):**
-1. Chama `LojaExpressPort.get_store_status(loja_express_case_id)` → stub (TODO CQ-L02)
-2. Se loja não entregue: escalação silenciosa para operação (`transfer_to_human(reason="loja_express_d5_bloqueio")`)
-3. Envia mensagem (template ou texto livre — TODO CQ-L03)
-4. Atualiza `status = ALERTA_D5_ENVIADO`
+**D+1:**
+1. `LojaExpressPort.is_form_submitted(case_id)` — stub TODO CQ-L01
+2. Se pendente: `ChatNexoPort.send_template("loja_express_d1", ...)`
+3. Atualiza `status=LEMBRETE_D1_ENVIADO`
 
-**D+7 (`LOJA_EXPRESS_D7`):**
-1. Prazo crítico — último dia do prazo de reembolso CDC
-2. Envia template `loja_express_d7` (urgência)
-3. Se não resolvido: escalação silenciosa para operação
-4. Atualiza `status = PRAZO_CRITICO_D7`
+**D+3:**
+1. `LojaExpressPort.get_store_status(case_id)` — stub TODO CQ-L02
+2. `ChatNexoPort.send_template("loja_express_d3", {progresso})`
+3. Atualiza `status=CHECK_D3_ENVIADO`
 
-### Estado do subgraph
+**D+5:**
+1. `LojaExpressPort.get_store_status(case_id)` — stub TODO CQ-L02
+2. Se loja não entregue: `ChatNexoPort.transfer_to_human(reason="loja_express_d5_bloqueio")`
+3. Envia template ou texto livre — TODO CQ-L03
+4. Atualiza `status=ALERTA_D5_ENVIADO`
 
-```python
-class LojaExpressState(ConversationState):
-    loja_express_case_id: str | None
-    purchase_id: str
-    student_name: str
-    student_email: str
-    student_phone: str
-    product_name: str
-    form_submitted: bool              # TODO CQ-L01 — preenchido pelo LojaExpressPort
-    loja_entregue: bool               # True = objetivo atingido, cancela follow-ups
-    last_followup_day: int | None     # 1, 3, 5 ou 7
-    scheduled_job_ids: dict[str, str] # {"d1": job_id, "d3": job_id, ...}
-```
+**D+7:**
+1. `ChatNexoPort.send_template("loja_express_d7", ...)` — urgência, último dia CDC
+2. `ChatNexoPort.transfer_to_human(reason="loja_express_d7_prazo_critico")`
+3. Atualiza `status=PRAZO_CRITICO_D7`
+
+### `MarcarEntregue` (`application/use_cases/loja_express/marcar_entregue.py`)
+
+Pode ser chamado por integração futura ou operador via admin. Seta `loja_entregue=True`
+e cancela jobs `D+X` pendentes via `SchedulerPort.cancel(job_id)`.
+
+### Detecção de produto Loja Express
+
+Em `PurchaseHandler.execute()` — verifica `event.product_name` contra `LOJA_EXPRESS_PRODUCT_TAGS`
+(comparação case-insensitive). Se detectado: chama `CriarCasoLojaExpress` em vez do fluxo Welcome padrão.
 
 ---
 
@@ -262,14 +242,15 @@ class LojaExpressClient:
 
 ## 7. Detecção de produto Loja Express
 
-O handler `handle_process_purchase_webhook.py` detecta se o produto é Loja Express via configuração:
+`PurchaseHandler.execute()` verifica `event.product_name` contra `LOJA_EXPRESS_PRODUCT_TAGS`
+(comparação case-insensitive). Configuração:
 
 ```python
 LOJA_EXPRESS_PRODUCT_TAGS: list[str] = ["loja_express", "loja-express"]
-# Comparação case-insensitive com product_name do webhook
 ```
 
-Se detectado como Loja Express: invoca subgraph `LojaExpressCapability` em vez de `WelcomeCapability`.
+Se detectado: chama `CriarCasoLojaExpress.execute(event)` em vez do fluxo Welcome padrão.
+Sem LangGraph envolvido — é Python puro.
 
 ---
 
@@ -309,24 +290,25 @@ loja_express_form_pending_at_d1_total
 
 ## 10. Testes
 
-### Unitários (`tests/unit/capabilities/test_loja_express.py`)
+### Unitários (`tests/unit/use_cases/test_loja_express.py`)
 
 | Teste | Cenário |
 |-------|---------|
-| `test_d0_sends_welcome_and_schedules` | D+0 → mensagem enviada + 4 jobs agendados |
-| `test_d1_form_pending_sends_reminder` | D+1 + form não respondido → lembrete enviado |
-| `test_d1_form_submitted_no_reminder` | D+1 + form respondido → sem mensagem |
-| `test_d3_sends_progress` | D+3 → mensagem de progresso enviada |
-| `test_d5_escalates_if_not_delivered` | D+5 + loja não entregue → handoff silencioso |
-| `test_d7_sends_urgent_template` | D+7 → template urgente + escalação |
-| `test_cancels_followups_on_delivery` | `loja_entregue=True` → todos os jobs cancelados |
+| `test_criar_caso_d0_sends_template_and_schedules` | D+0 → template enviado + 4 jobs agendados |
+| `test_d1_form_pending_sends_reminder` | D+1 + form pendente → lembrete enviado |
+| `test_d1_form_submitted_no_message` | D+1 + form respondido → sem mensagem |
+| `test_d3_sends_progress` | D+3 → template de progresso enviado |
+| `test_d5_escalates_if_not_delivered` | D+5 + loja não entregue → transfer_to_human |
+| `test_d7_sends_urgent_template_and_escalates` | D+7 → template urgente + transfer_to_human |
+| `test_guard_skips_if_delivered` | `loja_entregue=True` em qualquer D+X → nenhuma ação |
+| `test_marcar_entregue_cancels_jobs` | `MarcarEntregue.execute()` → jobs pendentes cancelados |
 
 ### Integração (`tests/integration/test_loja_express_flow.py`)
 
-- `FakeLojaExpressClient` como adapter de teste
+- `FakeLojaExpressClient` e `FakeChatNexoClient` como adapters
 - Valida `LojaExpressCase` persistido no PostgreSQL (testcontainers)
 - Valida 4 jobs agendados em `scheduled_jobs`
-- Valida cancelamento de jobs quando `loja_entregue=True`
+- Valida idempotência: segunda compra com mesmo `purchase_id` não cria caso duplicado
 
 ---
 

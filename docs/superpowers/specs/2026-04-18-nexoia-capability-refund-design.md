@@ -15,13 +15,12 @@ A Capability Refund & Retention é o fluxo reativo acionado quando o aluno pede 
 **Resumo do fluxo:**
 ```
 Aluno pede reembolso
-  → Intent Router classifica intent = "refund"
-    → Worker invoca subgraph Refund
-      → Coleta motivo + email + CPF
-        → Busca compra na Hubla → verifica prazo CDC (7 dias)
-          → Dentro do prazo: tenta retenção (N1 → N2)
-            → Recusa dupla ou compra duplicada: processa reembolso
-          → Fora do prazo: nega com informação da data
+  → LLM identifica intenção e coleta motivo + email + CPF
+    → LLM chama verificar_elegibilidade_reembolso(motivo, email, cpf)
+      → Busca compra na Hubla → verifica prazo CDC (7 dias)
+        → Dentro do prazo: LLM chama oferecer_retencao() (N1 → N2)
+          → Recusa dupla ou compra duplicada: LLM chama processar_reembolso()
+        → Fora do prazo: LLM informa data da compra
 ```
 
 ---
@@ -30,8 +29,8 @@ Aluno pede reembolso
 
 ### O que faz
 
-- Subgraph LangGraph acionado quando `intent = "refund"`
-- Coleta motivo, email e CPF do aluno (juntos, na mesma mensagem)
+- Capability reativa — LLM decide quando acionar as skills de reembolso com base na intenção do aluno
+- LLM coleta motivo, email e CPF antes de chamar qualquer skill
 - Busca compra na Hubla via `HublaPort.get_purchase_by_email()` (stub — ver CQ-R04)
 - Verifica prazo CDC: `dias_desde_compra <= REFUND_DEADLINE_DAYS (7)`
 - Aplica exceção Art. 49 CDC: solicitação em canal anterior dentro do prazo → processa sem retenção
@@ -56,153 +55,157 @@ Aluno pede reembolso
 
 ### Novos
 ```
-src/nexoia/application/capabilities/refund.py
+src/nexoia/application/use_cases/refund/
+    verificar_elegibilidade.py     # CDC 7 dias, Art.49, compra duplicada, is_recurring
+    iniciar_retencao.py            # N1 → N2, nunca repetir oferta
+    processar_reembolso.py         # mutex + HublaPort.process_refund() + invariantes
 src/nexoia/domain/entities/refund_case.py
 src/nexoia/domain/ports/hubla_port.py
+src/nexoia/domain/ports/refund_mutex.py            # RefundMutexPort (interface)
 src/nexoia/infrastructure/hubla/client.py          # stub HublaClient (Playwright)
 src/nexoia/infrastructure/hubla/schemas.py         # HublaPurchase, RefundResult
-src/nexoia/application/capabilities/refund/guards/
-    explicit_request.py                            # Guard 1
-    product_blocked.py                             # Guard 2
-    mandatory_retention.py                         # Guard 3
-    same_turn_block.py                             # Guard 4
-    refund_mutex.py                                # Guard 5
+src/nexoia/infrastructure/redis/refund_mutex.py    # RedisRefundMutex implementa RefundMutexPort
+src/nexoia/infrastructure/skills/refund.py         # make_refund_skills() factory
 src/nexoia/infrastructure/db/repositories/refund_case_repo.py
 migrations/xxxx_add_refund_cases_table.py
-tests/unit/capabilities/test_refund.py
-tests/unit/capabilities/refund/test_guards.py
+tests/unit/use_cases/test_refund.py
 tests/integration/test_refund_flow.py
 ```
 
 ### Modificados
 ```
-src/nexoia/application/intent_router.py            # + intent "refund"
+src/nexoia/infrastructure/langgraph_runtime/graph_builder.py  # + make_refund_skills(...)
 src/nexoia/config/settings.py                      # + REFUND_DEADLINE_DAYS=7
 docs/superpowers/OPEN_QUESTIONS.md                 # + CQ-R01, CQ-R02, CQ-R03, CQ-R04
 ```
 
 ---
 
-## 4. Subgraph LangGraph
+## 4. Use Cases e Skills
 
-### Grafo de nós
+### 4.1 Use Cases (`application/use_cases/refund/`)
 
-```
-START
-  │
-  ▼
-collect             ← coleta motivo + email + CPF (se não vieram na 1ª mensagem)
-  │
-  ▼
-check_deadline      ← busca compra na Hubla → calcula dias → dentro/fora do prazo
-  │                   Art. 49 CDC: canal anterior dentro do prazo → força within_deadline=True
-  ├─ fora do prazo ──────────────────────────────────► deny → END
-  ├─ compra duplicada ───────────────────────────────► process_refund → END
-  │
-  ▼
-retention_loop      ← oferece N1 → aguarda resposta → se recusa, oferece N2
-  │                   máx 2 ofertas; nunca repetir; aluno CMP → argumentação especial (TODO CQ-R03)
-  ├─ aceite ────────────────────────────────────────► deliver_offer → END
-  ├─ recusa dupla ──────────────────────────────────► process_refund → END
-  │
-  ▼
-process_refund      ← HublaPort.process_refund() stub → mensagem padrão
-  │
-  ▼
-END
-```
+Regra de negócio pura — sem `@tool`, sem LangGraph. Cada use case recebe dependências via `__init__`.
+Estado entre turnos é persistido em `RefundCase` no banco — sem `RefundState` no grafo.
 
-**Guards aplicados (PRD 7.3 Guards de Segurança — 5 guards obrigatórios):**
+**`VerificarElegibilidadeReembolso`**
 
-- **Guard 0 — `LegalMentionGuard`** (Core) — menção a Procon/advogado/ação judicial → **handoff silencioso imediato, zero mensagem ao aluno**
-- **Guard 1 — `ExplicitRefundRequestGuard`** (novo) — bloqueia `process_refund` se o aluno não pediu reembolso explicitamente neste turno. Ex: aluno responde "ok" a uma oferta N2 não conta como pedido de reembolso explícito.
-- **Guard 2 — `ProductBlockedGuard`** (novo) — se o aluno disse "Não quero cancelar X" em turno anterior, esse produto fica bloqueado para reembolso no estado da conversa (`refund_blocked_products: list[str]`).
-- **Guard 3 — `MandatoryRetentionGuard`** (novo) — bloqueia `process_refund` se N2 ainda não foi oferecido após N1 recusado (exceção: `is_duplicate_purchase=True`).
-- **Guard 4 — `SameTurnBlockGuard`** (novo) — nunca chamar `finish_attendance` / encerrar conversa no mesmo turno que `process_refund`. O encerramento espera o próximo turno.
-- **Guard 5 — `RefundMutexGuard`** (novo) — Redis mutex por `(account_id, contact_id, product_id)` com TTL 1h → evita job duplicado de reembolso.
+Executado quando o LLM chama a skill com motivo + email + CPF do aluno.
 
-### Estado do subgraph
+1. Cria `RefundCase` com `status=COLLECTING`
+2. **Crítico (PRD 7.3 Passo 2):** chama `HublaPort.get_purchase_by_email()` antes de qualquer menção a prazo
+3. Calcula `days_since_purchase`:
+   - Compra única: `today - purchase.created_at`
+   - Compra recorrente (`is_recurring=True`): `today - purchase.first_charge_at` (PRD 7.3 Passo 2)
+   - Compras separadas: cada `purchase_id` tem prazo independente
+4. Verifica Art. 49 CDC: há registro de solicitação em canal anterior dentro do prazo (`LegalHistoryPort`)? → `within_deadline=True`
+5. Detecta compra duplicada: mesmo contato com 2+ compras do mesmo produto → `is_duplicate_purchase=True`
+6. Retorna resultado estruturado: elegível / inelegível (com data) / duplicada
+
+**`IniciarRetencao`**
+
+1. Valida que `within_deadline=True` e `is_duplicate_purchase=False`; retorna erro descritivo se não
+2. Lê `RefundCase.offers_made` do banco — nunca repetir oferta já feita
+3. Se N1 ainda não oferecido: retorna oferta N1 ao LLM (TODO CQ-R02)
+4. Se N1 recusado e N2 não oferecido: retorna oferta N2
+5. Se N2 recusado: retorna sinal `retention_exhausted=True` — LLM chama `processar_reembolso`
+6. Atualiza `RefundCase.offers_made` e `status=IN_RETENTION`
+
+**`ProcessarReembolso`**
+
+Aplica invariantes de negócio antes de qualquer ação (Guards 1–4 da spec original — agora
+aplicados como validação interna do use case, não como classes separadas):
+
+- **Invariante 1 (ExplicitRequest):** pedido de reembolso explícito no turno atual? Detectado via LLM no contexto do `AgentState.messages[-1]`. Retorna erro descritivo se não.
+- **Invariante 2 (ProductBlocked):** produto está em `refund_blocked_products` (persistido no `RefundCase`)? Retorna erro.
+- **Invariante 3 (MandatoryRetention):** N2 foi oferecido após N1 recusado — exceto `is_duplicate_purchase=True`. Retorna erro.
+- **Invariante 4 (SameTurn):** seta `refund_processed_this_turn=True` no `RefundCase`. O próximo turno limpa a flag — `pos_execucao` nunca encerra conversa se flag ativa.
+
+Após validações:
+
+1. Adquire mutex via `RefundMutexPort.acquire(account_id, contact_id, product_id)` — TTL 1h. Retorna erro se já adquirido (job duplicado).
+2. Chama `HublaPort.process_refund(purchase_id, reason)` — stub TODO CQ-R01
+3. Atualiza `RefundCase.status=REFUNDED`
+4. Retorna **apenas** a mensagem padrão (PRD 7.3):
+   > "Tô processando seu reembolso agora! O prazo de estorno de pix é até 72 horas e cartão de 1 a 2 faturas, ambos dependem da sua operadora. Você vai receber a confirmação assim que o processamento terminar, tá?"
+
+### 4.2 Factory de Skills (`infrastructure/skills/refund.py`)
 
 ```python
-class RefundState(ConversationState):
-    refund_case_id: str | None
-    student_email: str | None
-    student_cpf: str | None
-    refund_reason: str | None
-    purchase: HublaPurchase | None         # resultado de get_purchase_by_email
-    is_recurring: bool                     # True = prazo conta da primeira parcela (PRD 7.3)
-    days_since_purchase: int | None
-    within_deadline: bool | None           # True = dentro dos 7 dias CDC
-    is_duplicate_purchase: bool            # True = pula retenção
-    is_cmp_student: bool                   # TODO CQ-R03
-    offers_made: list[str]                 # ["N1"] ou ["N1","N2"] — nunca repetir
-    offer_accepted: bool
-    explicit_refund_request: bool          # Guard 1 — aluno pediu reembolso explicitamente no turno
-    refund_blocked_products: list[str]     # Guard 2 — produtos que o aluno disse "não quero cancelar"
-    refund_processed: bool
-    refund_step: RefundStep                # enum: COLLECT/DEADLINE/RETENTION/PROCESS/DENY/DONE
+def make_refund_skills(
+    refund_repo: RefundCaseRepoPort,
+    hubla: HublaPort,
+    legal_history: LegalHistoryPort,
+    refund_mutex: RefundMutexPort,
+) -> list[BaseTool]:
+    verificar_uc  = VerificarElegibilidadeReembolso(refund_repo, hubla, legal_history)
+    reter_uc      = IniciarRetencao(refund_repo)
+    processar_uc  = ProcessarReembolso(refund_repo, hubla, refund_mutex)
+
+    @tool
+    async def verificar_elegibilidade_reembolso(motivo: str, email: str, cpf: str) -> str:
+        """
+        Verifica elegibilidade do aluno para reembolso (CDC 7 dias).
+        Use quando: aluno solicita reembolso e forneceu motivo + email + CPF.
+        Não use quando: dados incompletos — colete-os conversacionalmente antes.
+        Retorna: elegível / inelegível com data / compra duplicada.
+        """
+        cfg = get_config()["configurable"]
+        return await verificar_uc.execute(cfg["account_id"], cfg["phone"], motivo, email, cpf)
+
+    @tool
+    async def oferecer_retencao() -> str:
+        """
+        Oferece retenção N1 ou N2 ao aluno elegível para reembolso.
+        Use quando: aluno é elegível (dentro do prazo, não duplicada) e ainda não recusou N2.
+        Não use quando: compra duplicada, N2 já recusado, ou aluno fora do prazo.
+        Retorna: texto da oferta N1/N2 ou sinal de retenção esgotada.
+        """
+        cfg = get_config()["configurable"]
+        return await reter_uc.execute(cfg["account_id"], cfg["phone"])
+
+    @tool
+    async def processar_reembolso() -> str:
+        """
+        Processa o reembolso após dupla recusa de retenção ou compra duplicada.
+        Use quando: aluno recusou N1 e N2, OU compra duplicada confirmada.
+        Não use quando: N2 ainda não foi oferecido — invariante bloqueará e retornará erro.
+        Retorna: mensagem padrão de processamento (PRD 7.3).
+        """
+        cfg = get_config()["configurable"]
+        return await processar_uc.execute(cfg["account_id"], cfg["phone"])
+
+    return [verificar_elegibilidade_reembolso, oferecer_retencao, processar_reembolso]
 ```
 
-### Nó `collect`
+### 4.3 `RefundMutexPort` (`domain/ports/refund_mutex.py`)
 
-**Crítico:** sempre perguntar o motivo antes de pedir email. Nunca ir direto para "me passa o e-mail".
+```python
+class RefundMutexPort(Protocol):
+    async def acquire(self, account_id: str, contact_id: str, product_id: str) -> bool: ...
+    async def release(self, account_id: str, contact_id: str, product_id: str) -> None: ...
+```
 
-1. Se motivo já veio na 1ª mensagem: extrai via LLM → envia 1 frase de empatia curta → pede email + CPF juntos
-2. Se motivo ausente: envia "Me conta o que aconteceu?" → aguarda resposta → extrai motivo → pede email + CPF juntos
-3. Quando email + CPF chegam: cria `RefundCase` com `status = COLLECTING`, avança para `check_deadline`
+Implementação: `infrastructure/redis/refund_mutex.py`
+`SETNX refund:mutex:{account_id}:{contact_id}:{product_id}` com TTL `REFUND_MUTEX_TTL_SECONDS` (3600s).
 
-### Nó `check_deadline`
+### 4.4 Fluxo LLM-orquestrado
 
-**Crítico (PRD 7.3 Passo 2):** *"Nunca falar sobre prazo sem ter buscado a compra na Hubla antes."*
+```
+Aluno pede reembolso
+  → LegalMentionGuard (Core) — menção a Procon/advogado → handoff silencioso, zero mensagem
+  → LLM coleta motivo + email + CPF conversacionalmente (sem skill)
+    → LLM chama verificar_elegibilidade_reembolso(motivo, email, cpf)
+      → Elegível + não duplicado → LLM chama oferecer_retencao()
+          → N1 recusado → LLM chama oferecer_retencao() novamente (retorna N2)
+            → N2 recusado → LLM chama processar_reembolso()
+          → N1 ou N2 aceito → LLM entrega oferta conversacionalmente
+      → Compra duplicada → LLM chama processar_reembolso() diretamente
+      → Inelegível (fora do prazo) → LLM informa data da compra ao aluno
+          → 3ª insistência → LLM chama escalar_para_humano (Core skill)
+```
 
-1. Chama `HublaPort.get_purchase_by_email(email, account_id)` — stub (TODO CQ-R01 e CQ-R04, via Playwright)
-2. Calcula `days_since_purchase`:
-   - **Compra única (one-off):** `today - purchase.created_at`
-   - **Compra recorrente (`is_recurring = True`):** prazo conta a partir da **primeira parcela** (PRD 7.3 Passo 2). `days_since_purchase = today - purchase.first_charge_at`
-   - **Compras separadas:** cada `purchase_id` tem prazo independente. O aluno pode ter 2 produtos com status diferentes.
-3. Se `days_since_purchase > REFUND_DEADLINE_DAYS`: `within_deadline = False` → `deny`
-4. Verifica Art. 49 CDC: há registro de solicitação em canal anterior dentro do prazo (busca em `messages` de conversas anteriores do mesmo contato)? → `within_deadline = True` (força processamento)
-5. Verifica compra duplicada: mesmo `contact_id` com 2+ purchases do mesmo produto → `is_duplicate_purchase = True`
-6. Atualiza `RefundCase.status = CHECKING_DEADLINE`
-
-### Nó `retention_loop`
-
-1. Se `is_duplicate_purchase = True`: pula direto para `process_refund`
-2. Se `is_cmp_student = True`: aplica argumentação especial (TODO CQ-R03) — stub por ora
-3. Se N1 não ofertado: envia oferta N1, aguarda resposta, seta `offers_made = ["N1"]`
-4. Se N1 recusado e N2 não ofertado: envia oferta N2, aguarda resposta, seta `offers_made = ["N1","N2"]`
-5. Se aceite: `offer_accepted = True` → `deliver_offer`
-6. Se N2 recusado: vai para `process_refund`
-
-> **TODO — CQ-R02:** Confirmar se ofertas N1/N2 variam por produto ou são fixas para todos.
-
-### Nó `deliver_offer`
-
-- Entrega o benefício aceito (Acesso Vitalício ou Mentoria de Tráfego)
-- Atualiza `RefundCase.status = OFFER_ACCEPTED`
-- Cancela qualquer job de idle pendente (Core cuida)
-
-### Nó `process_refund`
-
-**Críticos (PRD 7.3 Passo 4):**
-- *"Nunca dizer 'fizemos' ou 'processado' — é assíncrono. Usar apenas a mensagem padrão."*
-- *"Nunca chamar `finish_attendance` no mesmo turno que `process_refund`."* → aplicado via `SameTurnBlockGuard`
-
-1. `ExplicitRefundRequestGuard` valida: aluno pediu reembolso explicitamente neste turno?
-2. `ProductBlockedGuard` valida: o produto não está na lista `refund_blocked_products`?
-3. `MandatoryRetentionGuard` valida: N2 foi oferecido após N1 recusado (ou `is_duplicate_purchase=True`)?
-4. Adquire mutex Redis (`RefundMutexGuard`) — `SETNX refund:mutex:{account_id}:{contact_id}:{product_id}` TTL 1h
-5. Chama `HublaPort.process_refund(purchase_id, reason)` — stub (TODO CQ-R01, via Playwright)
-6. Envia **apenas** a mensagem padrão (PRD 7.3):
-   > "Tô processando seu reembolso agora! O prazo de estorno de pix é até 72 horas e cartão de 1 a 2 faturas, ambos dependem da sua operadora. Você vai receber a confirmação assim que o processamento terminar, tá?"
-7. Atualiza `RefundCase.status = REFUNDED`
-8. **Não encerra a conversa neste turno** — `SameTurnBlockGuard` bloqueia `finish_attendance`. Encerramento acontece no próximo turno (ou via Lifecycle Manager após idle).
-
-### Nó `deny`
-
-1. Informa data da compra e que o prazo de 7 dias passou
-2. Na 3ª insistência após o deny: escala silenciosamente para humano
-3. Atualiza `RefundCase.status = DENIED`
+**Nota aluno CMP:** argumentação especial antes de N1/N2 — TODO CQ-R03. Stub por ora.
 
 ---
 
@@ -315,35 +318,23 @@ class HublaClient:
         raise NotImplementedError("HublaClient não implementado — ver OPEN_QUESTIONS.md CQ-R01")
 ```
 
-### Guards (`application/capabilities/refund/guards/`)
+### Guards e Invariantes
 
-```python
-# Guard 1 — ExplicitRefundRequestGuard
-# Bloqueia process_refund se o turno atual NÃO contém pedido explícito de reembolso
-# (ex: aluno responde "ok" a oferta N2 → não é pedido explícito).
-# Usa LLM para classificar a última mensagem do aluno.
+**Guard de conversa (Core — `domain/policies/guards/`):**
+- `LegalMentionGuard` — menção a Procon/advogado/ação judicial → handoff silencioso pré-LLM
 
-# Guard 2 — ProductBlockedGuard
-# Mantém state.refund_blocked_products: list[str]
-# Quando aluno diz "não quero cancelar X", adiciona X à lista.
-# process_refund bloqueado se target_product_id está na lista.
+**Invariantes de negócio (aplicados dentro dos use cases — não são classes guard separadas):**
 
-# Guard 3 — MandatoryRetentionGuard
-# Bloqueia process_refund se:
-#   - state.offers_made não contém "N2" E
-#   - is_duplicate_purchase = False E
-#   - is_cmp_student = False
-# Força passar por retenção obrigatória.
+| Invariante | Onde é aplicado | Comportamento se violado |
+|-----------|-----------------|--------------------------|
+| ExplicitRefundRequest | `ProcessarReembolso.execute()` | Retorna erro descritivo ao LLM |
+| ProductBlocked | `ProcessarReembolso.execute()` | Retorna erro descritivo ao LLM |
+| MandatoryRetention | `ProcessarReembolso.execute()` | Retorna erro descritivo ao LLM |
+| SameTurnBlock | `ProcessarReembolso.execute()` seta flag; `pos_execucao` verifica | Encerramento bloqueado no turno atual |
 
-# Guard 4 — SameTurnBlockGuard
-# Trava finish_attendance / closure no mesmo turno que process_refund.
-# Enforced via state.refund_processed_in_current_turn: bool (reseta no próximo turno).
-
-# Guard 5 — RefundMutexGuard
-# Redis mutex por (account_id, contact_id, product_id)
-# SETNX refund:mutex:{account_id}:{contact_id}:{product_id} com TTL 3600s (1h)
-# Evita dois jobs de reembolso simultâneos para o mesmo aluno+produto.
-```
+**Mutex Redis (port de infraestrutura):**
+- `RefundMutexPort` — adquirido em `ProcessarReembolso.execute()` via DI
+- Implementação: `infrastructure/redis/refund_mutex.py` — TTL 3600s
 
 ---
 
@@ -382,26 +373,27 @@ refund_deadline_check_total{result="within"|"exceeded"}
 
 ## 9. Testes
 
-### Unitários (`tests/unit/capabilities/test_refund.py`)
+### Unitários (`tests/unit/use_cases/test_refund.py`)
 
 | Teste | Cenário |
 |-------|---------|
 | `test_happy_path_refund` | Dentro do prazo, recusa N1+N2 → reembolso processado |
-| `test_retention_n1_accepted` | Dentro do prazo, aceita N1 → deliver_offer, sem reembolso |
-| `test_retention_n2_accepted` | Recusa N1, aceita N2 → deliver_offer |
-| `test_deny_outside_deadline` | Compra > 7 dias → deny com data informada |
-| `test_duplicate_purchase_skips_retention` | Compra duplicada → reembolso sem ofertas |
-| `test_legal_mention_immediate_handoff` | "vou acionar o Procon" → handoff silencioso imediato |
-| `test_art49_forces_within_deadline` | Solicitação anterior no prazo → processa mesmo com data expirada |
-| `test_mutex_blocks_duplicate_job` | 2 jobs simultâneos → segundo bloqueado pelo mutex |
-| `test_deny_escalate_on_third_insistence` | 3 insistências após deny → handoff |
+| `test_retention_n1_accepted` | Dentro do prazo, aceita N1 → oferta entregue, sem reembolso |
+| `test_retention_n2_accepted` | Recusa N1, aceita N2 → oferta entregue |
+| `test_deny_outside_deadline` | Compra > 7 dias → retorna inelegível com data |
+| `test_duplicate_purchase_skips_retention` | Compra duplicada → `processar_reembolso` direto |
+| `test_art49_forces_within_deadline` | Solicitação anterior no prazo → `within_deadline=True` |
+| `test_mutex_blocks_duplicate_job` | `RefundMutexPort.acquire()` retorna False → erro descritivo |
+| `test_mandatory_retention_invariant` | `processar_reembolso` sem N2 oferecido → erro descritivo |
+| `test_same_turn_block_flag` | `refund_processed_this_turn=True` sinaliza bloqueio de encerramento |
+| `test_recurring_purchase_uses_first_charge_date` | `is_recurring=True` → prazo CDC a partir de `first_charge_at` |
 
 ### Integração (`tests/integration/test_refund_flow.py`)
 
-- `FakeHublaClient` e `FakeChatNexoClient` como adapters
+- `FakeHublaClient` e `FakeLegalHistoryPort` e `FakeRefundMutexPort` como adapters
 - Valida `RefundCase` persistido corretamente (testcontainers)
-- Valida mutex Redis funcionando entre dois workers simultâneos
-- Valida estado entre turnos via checkpoint LangGraph (collect → deadline → retention → process)
+- Valida mutex Redis real funcionando entre dois workers simultâneos
+- Valida fluxo completo via skills: verificar → oferecer → processar
 
 ---
 
@@ -409,7 +401,7 @@ refund_deadline_check_total{result="within"|"exceeded"}
 
 | ID | Requisito |
 |----|-----------|
-| `RF-R01` | Coleta motivo + email + CPF juntos na mesma mensagem. Se motivo vier na 1ª mensagem, extrai via LLM. |
+| `RF-R01` | LLM coleta motivo + email + CPF conversacionalmente antes de invocar qualquer skill. |
 | `RF-R02` | `HublaPort.get_purchase_by_email()` verifica prazo CDC: ≤ 7 dias = dentro, > 7 = fora. |
 | `RF-R03` | Art. 49 CDC: se houver registro de solicitação em canal anterior dentro do prazo, `within_deadline = True`. |
 | `RF-R04` | Compra duplicada: processa reembolso sem tentativa de retenção. |

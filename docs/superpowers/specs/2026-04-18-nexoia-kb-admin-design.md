@@ -59,6 +59,10 @@ Operador faz upload de documento
 
 ## 3. Arquivos
 
+**Nota arquitetural:** KB Admin não gera nenhuma skill `@tool` — é uma API HTTP para
+administradores humanos, não uma capability do agente. Toda a lógica de ingestão e busca
+fica em `application/use_cases/kb_admin/`, chamada diretamente pelos routers FastAPI.
+
 ### Novos (backend)
 ```
 src/nexoia/interface/http/routers/admin/
@@ -66,9 +70,12 @@ src/nexoia/interface/http/routers/admin/
     chunks.py           # visualização de chunks
     search.py           # busca de teste
     auth.py             # login JWT
-src/nexoia/application/kb/
-    ingestion.py        # chunking + embedding + persistência
-    search.py           # RAG query (usado pela Knowledge Capability)
+src/nexoia/application/use_cases/kb_admin/
+    ingerir_documento.py    # chunking + embedding + persistência
+    buscar_chunks.py        # RAG query (usado pela Knowledge Capability via KnowledgePort)
+    listar_documentos.py    # listagem paginada
+    deletar_documento.py    # remoção com cascade
+    reindexar_documento.py  # re-chunking + embedding
 src/nexoia/domain/entities/
     knowledge_document.py
     knowledge_chunk.py
@@ -79,7 +86,7 @@ src/nexoia/infrastructure/
         chunk_repo.py
         usage_log_repo.py
 migrations/xxxx_add_kb_tables.py
-tests/unit/kb/test_ingestion.py
+tests/unit/use_cases/kb_admin/test_ingestion.py
 tests/integration/test_kb_flow.py
 ```
 
@@ -163,28 +170,45 @@ Processamento assíncrono: upload retorna `202 Accepted` com `document_id`. Work
 
 ---
 
-## 6. Fluxo RAG (usado pela Knowledge Capability)
+## 6. Fluxo RAG (usado pela Knowledge Capability via `KnowledgePort`)
+
+A busca RAG é implementada em `BuscarChunks` (`application/use_cases/kb_admin/buscar_chunks.py`)
+e exposta ao agente via `KnowledgePort` (spec ⑦). Sem SQL solto — ORM obrigatório (regra Core v2).
 
 ```python
-async def search(query: str, account_id: int, top_k: int = 5) -> list[KnowledgeChunk]:
-    embedding = await openai.embed(query)
-    chunks = await chunk_repo.similarity_search(
-        embedding=embedding,
-        account_id=account_id,
-        threshold=KB_THRESHOLD,    # padrão 0.55 (PRD 7.4)
-        top_k=top_k
-    )
-    return chunks
+# application/use_cases/kb_admin/buscar_chunks.py
+class BuscarChunks:
+    def __init__(self, chunk_repo: ChunkRepoPort, embeddings: EmbeddingsPort):
+        self._repo = chunk_repo
+        self._emb  = embeddings
+
+    async def execute(
+        self, query: str, account_id: int,
+        threshold: float = 0.55, top_k: int = 5,
+    ) -> list[KnowledgeChunk]:
+        vector = await self._emb.embed(query)
+        return await self._repo.similarity_search(
+            account_id=account_id,
+            embedding=vector,
+            threshold=threshold,
+            top_k=top_k,
+        )
 ```
 
-Query pgvector:
-```sql
-SELECT id, document_id, text, 1 - (embedding <=> $1) AS score
-FROM knowledge_chunks
-WHERE account_id = $2
-  AND 1 - (embedding <=> $1) >= $3
-ORDER BY embedding <=> $1
-LIMIT $4;
+```python
+# infrastructure/db/repositories/chunk_repo.py (SQLAlchemy 2 ORM + pgvector-sqlalchemy)
+async def similarity_search(self, account_id, embedding, threshold, top_k):
+    stmt = (
+        select(KnowledgeChunkModel)
+        .where(KnowledgeChunkModel.account_id == account_id)
+        .where(
+            1 - KnowledgeChunkModel.embedding.cosine_distance(embedding) >= threshold
+        )
+        .order_by(KnowledgeChunkModel.embedding.cosine_distance(embedding))
+        .limit(top_k)
+    )
+    result = await self._session.execute(stmt)
+    return [_to_entity(row) for row in result.scalars()]
 ```
 
 ---
