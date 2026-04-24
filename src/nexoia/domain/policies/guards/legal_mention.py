@@ -7,8 +7,9 @@ from nexoia.domain.policies.guards import GuardResult
 _KEYWORDS = [
     "procon",
     "advogad",
-    "processo",
+    "processo judicial",
     "ação judicial",
+    "jurídic",
     "juridic",
     "reclame aqui",
     "justiça",

@@ -61,3 +61,18 @@ def test_guard_service_passes_clean_message():
     service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
     result = service.check("preciso de ajuda", _state([AIMessage("Ok"), AIMessage("Tudo bem?")]))
     assert result.blocked is False
+
+
+def test_loop_detector_does_not_block_below_threshold():
+    repeated = AIMessage("Olá! Como posso ajudar?")
+    state = _state([repeated, repeated])  # only 2, threshold is 3
+    result = LoopDetectorGuard().check("oi", state)
+    assert result.blocked is False
+
+
+def test_loop_detector_blocks_on_tail_not_full_window():
+    different = AIMessage("Mensagem diferente")
+    repeated = AIMessage("Resposta em loop")
+    state = _state([different, repeated, repeated, repeated])
+    result = LoopDetectorGuard().check("oi", state)
+    assert result.blocked is True
