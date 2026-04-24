@@ -1,18 +1,89 @@
 from __future__ import annotations
 
-from nexoia.infrastructure.observability.logger import get_logger
+from typing import Any
 
-log = get_logger(__name__)
+import structlog
+from langchain_core.messages import AIMessage, HumanMessage
+
+from nexoia.application.lifecycle_handler import LifecycleHandler
+from nexoia.application.message_dispatcher import MessageDispatcher
+
+log = structlog.get_logger(__name__)
+
+
+def _get_agent() -> Any:
+    """Monta e retorna o grafo compilado. Singleton por processo."""
+    # TODO: injetar deps reais de infraestrutura (session factory, redis, etc.)
+    # Placeholder — substituir por DI container quando disponível
+    raise NotImplementedError("_get_agent: configure DI container em main.py e injete via closure")
+
+
+def _get_dispatcher() -> MessageDispatcher:
+    raise NotImplementedError("_get_dispatcher: configure em main.py")
+
+
+def _get_lifecycle() -> LifecycleHandler:
+    raise NotImplementedError("_get_lifecycle: configure em main.py")
+
+
+def _get_scheduler() -> Any:
+    raise NotImplementedError("_get_scheduler: configure em main.py")
 
 
 async def handle_message(payload: dict) -> None:
-    """Stub handler for incoming ChatNexo messages.
+    account_id: str = payload["account_id"]
+    phone: str = payload["phone"]
+    conversation_id: str = payload["conversation_id"]
+    text: str = payload["text"]
 
-    Specs ②–⑤ expandem este handler: carrega checkpoint LangGraph, roda o Main
-    Graph (context_builder → sentiment → intent_router → capability → response →
-    memory), publica resposta via ChatNexo Action API.
-    """
     log.info(
-        "message_job_received_stub",
-        chatnexo_message_id=payload.get("chatnexo_message_id"),
+        "message_job_started",
+        account_id=account_id,
+        phone=phone,
+        conversation_id=conversation_id,
     )
+
+    agent = _get_agent()
+    dispatcher = _get_dispatcher()
+    lifecycle = _get_lifecycle()
+    scheduler = _get_scheduler()
+
+    # Cancela jobs de idle pendentes (nova mensagem = aluno voltou)
+    await scheduler.cancel_pending_idle_jobs(account_id=account_id, phone=phone)
+
+    config = {
+        "configurable": {
+            "thread_id": f"{account_id}:{phone}",
+            "account_id": account_id,
+            "phone": phone,
+            "conversation_id": conversation_id,
+        }
+    }
+
+    result = await agent.ainvoke(
+        {"messages": [HumanMessage(text)]},
+        config=config,
+    )
+
+    # Extrai última AIMessage sem tool_call — é a resposta ao aluno
+    last_ai = next(
+        (m for m in reversed(result.get("messages", []))
+         if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)),
+        None,
+    )
+
+    if last_ai and last_ai.content:
+        await dispatcher.send(
+            account_id=account_id,
+            conversation_id=conversation_id,
+            content=last_ai.content,
+        )
+
+    # Agenda idle check
+    await lifecycle.schedule_idle_ping(
+        account_id=account_id,
+        phone=phone,
+        conversation_id=conversation_id,
+    )
+
+    log.info("message_job_done", account_id=account_id, conversation_id=conversation_id)
