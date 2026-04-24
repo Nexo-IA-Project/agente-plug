@@ -80,7 +80,7 @@ async def test_mutex_blocks_duplicate_job():
     uc = ProcessarReembolso(repo, hubla, mutex)
     result = await uc.execute(1, "5511999990000")
     assert "ERRO" in result
-    assert "processamento" in result.lower() or "duplicado" in result.lower() or "mutex" in result.lower()
+    assert "em processamento" in result.lower()
     hubla.process_refund.assert_not_called()
 
 
