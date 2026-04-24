@@ -1,15 +1,32 @@
 from __future__ import annotations
 
-from nexoia.infrastructure.observability.logger import get_logger
+from datetime import datetime
+from typing import Any
+from uuid import UUID
 
-log = get_logger(__name__)
+import structlog
+
+from nexoia.application.purchase_handler import PurchaseHandler
+from nexoia.domain.events.purchase_received import PurchaseReceived
+
+log = structlog.get_logger(__name__)
+
+
+def _get_purchase_handler() -> PurchaseHandler:
+    raise NotImplementedError("_get_purchase_handler: configure DI em main.py")
 
 
 async def handle_purchase(payload: dict) -> None:
-    """Stub handler for Hubla purchase webhook.
-
-    Spec ② (Welcome capability) substitui este handler: buscar dados na Cademi,
-    criar AccessCase, invocar LangGraph Welcome subgraph e enviar template via
-    ChatNexo Action API.
-    """
-    log.info("purchase_job_received_stub", purchase_id=payload.get("purchase_id"))
+    handler = _get_purchase_handler()
+    event = PurchaseReceived(
+        purchase_id=payload["purchase_id"],
+        account_id=UUID(payload["account_id"]),
+        contact_name=payload["contact_name"],
+        contact_email=payload["contact_email"],
+        contact_phone=payload["contact_phone"],
+        product=payload["product"],
+        amount_brl=int(payload["amount_brl"]),
+        occurred_at=datetime.fromisoformat(payload["occurred_at"]),
+    )
+    await handler.execute(event)
+    log.info("purchase_job_done", purchase_id=payload["purchase_id"])
