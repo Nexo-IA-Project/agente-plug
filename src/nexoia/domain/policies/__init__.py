@@ -11,10 +11,10 @@ from nexoia.domain.policies.guards import (
 
 __all__ = [
     "CommunicationRules",
-    "ValidationResult",
     "FrustrationGuard",
     "GuardResult",
     "GuardService",
     "LegalMentionGuard",
     "LoopDetectorGuard",
+    "ValidationResult",
 ]

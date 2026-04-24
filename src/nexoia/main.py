@@ -1,17 +1,17 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 
 from nexoia.config.settings import get_settings
+from nexoia.infrastructure.db.repositories.webhook_event import WebhookEventRepository
 from nexoia.infrastructure.db.session import get_sessionmaker
 from nexoia.infrastructure.observability.logger import configure_logging, get_logger
 from nexoia.infrastructure.redis.client import get_redis
 from nexoia.infrastructure.redis.dedup import RedisDedup
 from nexoia.infrastructure.redis.queue import PriorityQueue
-from nexoia.infrastructure.db.repositories.webhook_event import WebhookEventRepository
 from nexoia.interface.http.errors import register_error_handlers
 from nexoia.interface.http.middleware import CorrelationIdMiddleware
 from nexoia.interface.http.routers import (

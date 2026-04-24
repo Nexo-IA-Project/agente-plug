@@ -50,7 +50,7 @@ async def main() -> None:
     runner = SchedulerRunner(
         repo=ScheduledJobRepository(get_sessionmaker()()),
         clock=SystemClock(),
-        handlers={jt: _scheduled_handler for jt in JobType},
+        handlers=dict.fromkeys(JobType, _scheduled_handler),
     )
 
     scheduler_loop = SchedulerLoop(runner=runner, mutex=mutex, tick_seconds=10)
@@ -69,7 +69,7 @@ async def main() -> None:
     scheduler_task = asyncio.create_task(scheduler_loop.run_forever())
     stop_task = asyncio.create_task(stop.wait())
 
-    done, pending = await asyncio.wait(
+    _done, pending = await asyncio.wait(
         {dispatcher_task, scheduler_task, stop_task},
         return_when=asyncio.FIRST_COMPLETED,
     )

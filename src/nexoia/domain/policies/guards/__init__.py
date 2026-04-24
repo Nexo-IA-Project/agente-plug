@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    pass
 
 
 @dataclass(frozen=True)
@@ -28,14 +31,15 @@ class GuardService:
         return GuardResult(blocked=False)
 
 
-from nexoia.domain.policies.guards.frustration import FrustrationGuard
-from nexoia.domain.policies.guards.legal_mention import LegalMentionGuard
-from nexoia.domain.policies.guards.loop_detector import LoopDetectorGuard
+# Deferred imports to avoid circular dependency (submodules import GuardResult from here)
+from nexoia.domain.policies.guards.frustration import FrustrationGuard  # noqa: E402
+from nexoia.domain.policies.guards.legal_mention import LegalMentionGuard  # noqa: E402
+from nexoia.domain.policies.guards.loop_detector import LoopDetectorGuard  # noqa: E402
 
 __all__ = [
+    "FrustrationGuard",
     "GuardResult",
     "GuardService",
-    "FrustrationGuard",
     "LegalMentionGuard",
     "LoopDetectorGuard",
 ]

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from langchain_core.messages import HumanMessage
 from langgraph.graph import MessagesState
 
 from nexoia.domain.value_objects.sentiment import Sentiment

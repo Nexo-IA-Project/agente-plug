@@ -33,7 +33,7 @@ class ChatNexoClient:
     http: httpx.AsyncClient
 
     @classmethod
-    def from_settings(cls) -> "ChatNexoClient":
+    def from_settings(cls) -> ChatNexoClient:
         s = get_settings()
         client = httpx.AsyncClient(
             base_url=s.chatnexo_base_url,

@@ -28,7 +28,7 @@ class SchedulerLoop:
                     processed = await self.runner.tick()
                 if processed:
                     log.info("scheduler_tick", processed=processed)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 log.exception("scheduler_tick_failed", error=str(e))
 
             count += 1

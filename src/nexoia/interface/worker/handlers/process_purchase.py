@@ -8,12 +8,10 @@ logger = structlog.get_logger(__name__)
 
 
 async def run_welcome_subgraph(**kwargs: Any) -> dict[str, Any]:
-    """Executa o subgraph Welcome. TODO: injetar deps reais via container DI."""
-    from nexoia.application.capabilities.welcome import WelcomeState, build_welcome_subgraph
-    graph = build_welcome_subgraph().compile()
-    initial_state: WelcomeState = dict(kwargs)  # type: ignore[assignment]
-    result = await graph.ainvoke(initial_state)
-    return result
+    """Deprecated: old LangGraph welcome subgraph. Replaced by PurchaseHandler (v2)."""
+    raise NotImplementedError(
+        "run_welcome_subgraph is deprecated — use PurchaseHandler via handle_purchase instead."
+    )
 
 
 async def handle_process_purchase_webhook(payload: dict[str, Any]) -> None:

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Awaitable, Callable, Protocol
+from typing import Protocol
 from uuid import UUID
 
 from nexoia.domain.entities.scheduled_job import JobType, ScheduledJob

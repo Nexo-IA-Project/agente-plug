@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import Any
 
 import structlog
@@ -47,7 +48,7 @@ def make_raciocinar_node(
                     "messages": [AIMessage("Ok, cancelei. Como posso ajudar?")],
                 }
             return {
-                "mensagens_pendentes": list(state.get("mensagens_pendentes", [])) + [ultima.content],
+                "mensagens_pendentes": [*state.get("mensagens_pendentes", []), ultima.content],
                 "messages": [AIMessage("Já estou resolvendo isso, um momentinho!")],
             }
 
@@ -75,7 +76,7 @@ def make_raciocinar_node(
         system_prompt = build_system_prompt(long_term_facts=facts)
 
         # 3. LLM
-        msgs = [SystemMessage(system_prompt)] + list(state["messages"])
+        msgs = [SystemMessage(system_prompt), *state["messages"]]
         response = await llm.ainvoke(msgs, config)
 
         # 4. CommunicationRules — valida resposta (só para texto livre, não tool_call)
@@ -84,7 +85,7 @@ def make_raciocinar_node(
                 validated = _communication_rules.validate(response.content)
                 if validated.ok:
                     break
-                correction_msgs = msgs + [SystemMessage(validated.correction_hint)]
+                correction_msgs = [*msgs, SystemMessage(validated.correction_hint)]
                 response = await llm.ainvoke(correction_msgs, config)
             else:
                 validated = _communication_rules.validate(response.content)
@@ -105,30 +106,29 @@ def make_pos_execucao_node(capability_repo: Any, memory_extractor: Any):
         skill_name = state.get("skill_em_andamento")
         update: dict = {"skill_em_andamento": None, "mensagens_pendentes": []}
 
+        # Background tasks — fire-and-forget; stored only to satisfy RUF006
+        _bg_tasks: list[asyncio.Task] = []
+
         # Registra analytics em background
         if skill_name and capability_repo:
-            try:
-                asyncio.create_task(
+            with contextlib.suppress(RuntimeError):
+                _bg_tasks.append(asyncio.create_task(
                     capability_repo.record(
                         conversation_id=cfg["conversation_id"],
                         skill_name=skill_name,
                     )
-                )
-            except RuntimeError:
-                pass  # No running loop in test context
+                ))
 
         # Extrai long_term_facts em background
         if memory_extractor:
-            try:
-                asyncio.create_task(
+            with contextlib.suppress(RuntimeError):
+                _bg_tasks.append(asyncio.create_task(
                     memory_extractor.extract_and_save(
                         account_id=cfg["account_id"],
                         phone=cfg["phone"],
                         messages=state["messages"],
                     )
-                )
-            except RuntimeError:
-                pass  # No running loop in test context
+                ))
 
         # Reinjeta mensagens pendentes para o próximo turno de raciocinar
         pending = state.get("mensagens_pendentes") or []

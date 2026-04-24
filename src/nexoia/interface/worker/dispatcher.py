@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 
 from nexoia.infrastructure.observability.logger import bind_context, get_logger
 
@@ -38,9 +38,8 @@ class WorkerDispatcher:
             try:
                 await handler(payload)
                 log.info("dispatcher_handled", kind=kind)
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 log.exception("dispatcher_handler_failed", kind=kind, error=str(e))
-            finally:
-                count += 1
-                if iterations and count >= iterations:
-                    return
+            count += 1
+            if iterations and count >= iterations:
+                return

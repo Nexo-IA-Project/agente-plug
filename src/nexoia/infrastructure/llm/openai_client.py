@@ -17,7 +17,7 @@ class OpenAIClient:
     whisper_model: str = "whisper-1"
 
     @classmethod
-    def from_settings(cls) -> "OpenAIClient":
+    def from_settings(cls) -> OpenAIClient:
         return cls(client=AsyncOpenAI(api_key=get_settings().openai_api_key))
 
     async def complete_json(

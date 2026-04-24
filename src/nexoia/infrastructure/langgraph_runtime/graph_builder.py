@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.graph import END, StateGraph
+from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
 from nexoia.domain.ports.cademi_port import CademiPort
@@ -30,7 +30,7 @@ def build_graph(
     memory_extractor: Any,
     checkpointer: BaseCheckpointSaver | None = None,
 ) -> Any:
-    SKILLS = (
+    skills = (
         make_access_skills(access_repo, cademi, chatnexo)
         + make_core_skills(chatnexo)
     )
@@ -40,7 +40,7 @@ def build_graph(
 
     graph = StateGraph(AgentState)
     graph.add_node("raciocinar", raciocinar_node)
-    graph.add_node("executar", ToolNode(SKILLS))
+    graph.add_node("executar", ToolNode(skills))
     graph.add_node("pos_execucao", pos_execucao_node)
 
     graph.set_entry_point("raciocinar")

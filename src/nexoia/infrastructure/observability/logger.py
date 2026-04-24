@@ -8,12 +8,12 @@ from typing import Any
 import structlog
 
 _context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
-    "log_context", default={}
+    "log_context", default=None  # type: ignore[arg-type]
 )
 
 
 def _merge_context(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
-    ctx = _context.get()
+    ctx = _context.get() or {}
     for k, v in ctx.items():
         event_dict.setdefault(k, v)
     return event_dict
@@ -47,7 +47,7 @@ def get_logger(name: str | None = None):
 
 
 def bind_context(**kwargs: Any) -> None:
-    current = dict(_context.get())
+    current = dict(_context.get() or {})
     current.update({k: v for k, v in kwargs.items() if v is not None})
     _context.set(current)
 
