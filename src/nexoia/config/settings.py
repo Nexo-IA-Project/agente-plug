@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     welcome_d1_delay_hours: int = 24
     message_buffer_wait_seconds: int = 0
 
+    # Capability Refund
+    refund_deadline_days: int = 7
+    refund_mutex_ttl_seconds: int = 3600
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
