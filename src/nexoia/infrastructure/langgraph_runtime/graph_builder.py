@@ -1,43 +1,55 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
-from langgraph.graph import END, START, StateGraph
+from langgraph.graph import END, StateGraph
+from langgraph.prebuilt import ToolNode
 
-from nexoia.infrastructure.langgraph_runtime.state import ConversationState
+from nexoia.domain.ports.cademi_port import CademiPort
+from nexoia.domain.ports.chatnexo import ChatNexoPort
+from nexoia.infrastructure.langgraph_runtime.nodes import (
+    _roteador,
+    make_pos_execucao_node,
+    make_raciocinar_node,
+)
+from nexoia.infrastructure.langgraph_runtime.state import AgentState
+from nexoia.infrastructure.skills.access import make_access_skills
+from nexoia.infrastructure.skills.core import make_core_skills
 
 
-def build_main_graph(
+def build_graph(
     *,
-    checkpointer: BaseCheckpointSaver,
-    context_builder: Callable[[ConversationState], ConversationState],
-    sentiment_detector: Callable[[ConversationState], ConversationState],
-    intent_router: Callable[[ConversationState], ConversationState],
-    dispatch: Callable[[ConversationState], str],
-    capability_runner: Callable[[ConversationState], ConversationState],
-    response_publisher: Callable[[ConversationState], ConversationState],
-    memory_saver: Callable[[ConversationState], ConversationState],
+    access_repo: Any,
+    cademi: CademiPort,
+    chatnexo: ChatNexoPort,
+    guard_service: Any,
+    long_term_repo: Any,
+    llm: Any,
+    capability_repo: Any,
+    memory_extractor: Any,
+    checkpointer: BaseCheckpointSaver | None = None,
 ) -> Any:
-    graph = StateGraph(ConversationState)
-
-    graph.add_node("context_builder", context_builder)
-    graph.add_node("sentiment", sentiment_detector)
-    graph.add_node("intent_router", intent_router)
-    graph.add_node("capability", capability_runner)
-    graph.add_node("response", response_publisher)
-    graph.add_node("save_memory", memory_saver)
-
-    graph.add_edge(START, "context_builder")
-    graph.add_edge("context_builder", "sentiment")
-    graph.add_edge("sentiment", "intent_router")
-    graph.add_conditional_edges(
-        "intent_router",
-        dispatch,
-        {"capability": "capability", "handoff": "save_memory"},
+    SKILLS = (
+        make_access_skills(access_repo, cademi, chatnexo)
+        + make_core_skills(chatnexo)
     )
-    graph.add_edge("capability", "response")
-    graph.add_edge("response", "save_memory")
-    graph.add_edge("save_memory", END)
+
+    raciocinar_node = make_raciocinar_node(guard_service, long_term_repo, llm)
+    pos_execucao_node = make_pos_execucao_node(capability_repo, memory_extractor)
+
+    graph = StateGraph(AgentState)
+    graph.add_node("raciocinar", raciocinar_node)
+    graph.add_node("executar", ToolNode(SKILLS))
+    graph.add_node("pos_execucao", pos_execucao_node)
+
+    graph.set_entry_point("raciocinar")
+    graph.add_conditional_edges("raciocinar", _roteador)
+    graph.add_edge("executar", "pos_execucao")
+    graph.add_edge("pos_execucao", "raciocinar")
 
     return graph.compile(checkpointer=checkpointer)
+
+
+# Deprecated alias — kept for backward compatibility during migration
+build_main_graph = build_graph
