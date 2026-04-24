@@ -1,11 +1,53 @@
+from __future__ import annotations
+
 from uuid import uuid4
+
+from langchain_core.messages import HumanMessage
 
 from nexoia.domain.value_objects.intent import Intent
 from nexoia.domain.value_objects.sentiment import Sentiment
 from nexoia.infrastructure.langgraph_runtime.state import (
+    AgentState,
     ConversationState,
     make_initial_state,
 )
+
+
+# ---------------------------------------------------------------------------
+# New AgentState tests (Core v2)
+# ---------------------------------------------------------------------------
+
+
+def test_agent_state_has_messages_field() -> None:
+    state: AgentState = {
+        "messages": [HumanMessage("oi")],
+        "skill_em_andamento": None,
+        "mensagens_pendentes": [],
+    }
+    assert len(state["messages"]) == 1
+
+
+def test_agent_state_skill_em_andamento_optional() -> None:
+    state: AgentState = {
+        "messages": [],
+        "skill_em_andamento": None,
+        "mensagens_pendentes": [],
+    }
+    assert state["skill_em_andamento"] is None
+
+
+def test_agent_state_mensagens_pendentes_list() -> None:
+    state: AgentState = {
+        "messages": [],
+        "skill_em_andamento": "buscar_aluno_cademi",
+        "mensagens_pendentes": ["msg1"],
+    }
+    assert state["mensagens_pendentes"] == ["msg1"]
+
+
+# ---------------------------------------------------------------------------
+# Legacy ConversationState tests (kept until Task 16 deletes old pipeline)
+# ---------------------------------------------------------------------------
 
 
 def test_make_initial_state_defaults() -> None:
