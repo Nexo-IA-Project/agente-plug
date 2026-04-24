@@ -7,7 +7,7 @@
 
 | # | Subsistema | Spec | Plano | Implementação |
 |---|-----------|------|-------|---------------|
-| ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec](specs/2026-04-17-nexoia-agent-core-design.md) | [plano](plans/2026-04-17-nexoia-agent-core.md) | ⏳ Pendente |
+| ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec v2](specs/2026-04-24-nexoia-agent-core-v2-design.md) ⚠️ substitui v1 | [plano](plans/2026-04-17-nexoia-agent-core.md) ⚠️ reescrever | ⏳ Pendente |
 | ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ✅ Concluído |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | [plano](plans/2026-04-18-nexoia-capability-access.md) | ✅ Completo |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | [plano](plans/2026-04-18-nexoia-capability-refund.md) | ⏳ Pendente |
@@ -25,7 +25,8 @@
 
 ### Specs (`docs/superpowers/specs/`)
 
-- `2026-04-17-nexoia-agent-core-design.md` — Spec ①: arquitetura base, 9 componentes, 10 tabelas, 16 RFs, 12 RNFs (revisado)
+- `2026-04-17-nexoia-agent-core-design.md` — Spec ① v1: arquitetura base (pipeline determinístico) — **OBSOLETO, substituído pela v2**
+- `2026-04-24-nexoia-agent-core-v2-design.md` — Spec ① v2: Skill Architecture, Clean Architecture + SOLID, 22 RFs, 13 RNFs
 - `2026-04-17-nexoia-capability-welcome-design.md` — Spec ②: boas-vindas pós-compra, CademiClient stub, AccessCase, D+1 (24h)
 - `2026-04-18-nexoia-capability-access-design.md` — Spec ③: acesso reativo, cascade email→CPF→nome+telefone, Shopee/KYC, email mismatch
 - `2026-04-18-nexoia-capability-refund-design.md` — Spec ④: reembolso+retenção, CDC 7 dias, N1/N2, 5 Guards, mutex Redis 1h
