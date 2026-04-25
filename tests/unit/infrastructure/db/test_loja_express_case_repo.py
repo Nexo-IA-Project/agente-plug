@@ -1,9 +1,10 @@
 # tests/unit/infrastructure/db/test_loja_express_case_repo.py
 from __future__ import annotations
 
-import pytest
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from nexoia.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 from nexoia.infrastructure.db.repositories.loja_express_case_repo import LojaExpressCaseRepository
