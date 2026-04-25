@@ -87,12 +87,13 @@ class VerificarElegibilidadeReembolso:
             log.info("duplicate_purchase", case_id=case.id)
             return f"COMPRA_DUPLICADA: case_id={case.id}, product={purchase.product_name}"
 
-        await self._repo.update(case)
-
         if within:
+            await self._repo.update(case)
             log.info("eligible_for_refund", case_id=case.id, days=days)
             return f"ELEGIVEL: case_id={case.id}, dias={days}, produto={purchase.product_name}"
 
+        case.status = RefundCaseStatus.DENIED
+        await self._repo.update(case)
         purchase_date_str = base_date.strftime("%d/%m/%Y")
         log.info("refund_denied_deadline", case_id=case.id, days=days)
         return f"INELEGIVEL: case_id={case.id}, data_compra={purchase_date_str}, dias={days}"

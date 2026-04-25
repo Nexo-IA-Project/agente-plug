@@ -24,7 +24,7 @@ class IniciarRetencao:
         if case is None:
             return "ERRO: Caso de reembolso não encontrado."
 
-        if case.within_deadline is False:
+        if case.within_deadline is not True:
             return "ERRO: Aluno fora do prazo CDC — não iniciar retenção."
 
         offers_made = list(case.offers_made)

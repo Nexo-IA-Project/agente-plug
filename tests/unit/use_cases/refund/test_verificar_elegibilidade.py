@@ -109,3 +109,18 @@ async def test_recurring_purchase_uses_first_charge_date():
     result = await uc.execute(1, "5511999990000", "conv-1", "nao gostei", "a@b.com", "123")
     # Must be ELEGIVEL because uses first_charge_at (3 days ago), not created_at (30 days)
     assert "ELEGIVEL" in result
+
+
+@pytest.mark.asyncio
+async def test_recurring_purchase_with_no_first_charge_falls_back_to_created_at():
+    repo = _make_repo()
+    hubla = AsyncMock()
+    # is_recurring=True but first_charge_at=None → should fall back to created_at (3 days ago)
+    purchase = _make_purchase(days_ago=3, is_recurring=True, first_charge_at=None)
+    hubla.get_purchase_by_email = AsyncMock(return_value=purchase)
+    legal = AsyncMock()
+    legal.has_prior_refund_mention = AsyncMock(return_value=False)
+    uc = VerificarElegibilidadeReembolso(repo, hubla, legal)
+    result = await uc.execute(1, "5511999990000", "conv-1", "nao gostei", "a@b.com", "123")
+    # created_at is 3 days ago → within 7-day deadline
+    assert "ELEGIVEL" in result
