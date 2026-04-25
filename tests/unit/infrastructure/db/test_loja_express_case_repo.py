@@ -42,6 +42,7 @@ def _make_model(
 @pytest.mark.asyncio
 async def test_save_adds_model_and_flushes():
     session = AsyncMock()
+    session.add = MagicMock()  # session.add is synchronous in SQLAlchemy AsyncSession
     repo = LojaExpressCaseRepository(session)
     case = LojaExpressCase(
         account_id=1,
