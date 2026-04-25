@@ -8,10 +8,14 @@ from uuid import UUID
 
 
 class JobType(StrEnum):
-    IDLE_PING = "idle_ping"
-    IDLE_CLOSE = "idle_close"
-    FOLLOWUP_D1 = "followup_d1"
+    IDLE_PING       = "idle_ping"
+    IDLE_CLOSE      = "idle_close"
+    FOLLOWUP_D1     = "followup_d1"
     FOLLOWUP_CUSTOM = "followup_custom"
+    LOJA_EXPRESS_D1 = "loja_express_d1"
+    LOJA_EXPRESS_D3 = "loja_express_d3"
+    LOJA_EXPRESS_D5 = "loja_express_d5"
+    LOJA_EXPRESS_D7 = "loja_express_d7"
 
 
 class JobStatus(StrEnum):

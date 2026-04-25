@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     refund_deadline_days: int = 7
     refund_mutex_ttl_seconds: int = 3600
 
+    # Capability Loja Express
+    loja_express_product_tags: list[str] = ["loja_express", "loja-express"]
+    loja_express_d1_delay_hours: int = 24
+    loja_express_d3_delay_hours: int = 72
+    loja_express_d5_delay_hours: int = 120
+    loja_express_d7_delay_hours: int = 168
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
