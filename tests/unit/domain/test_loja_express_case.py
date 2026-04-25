@@ -1,8 +1,7 @@
 # tests/unit/domain/test_loja_express_case.py
 from __future__ import annotations
 
-import pytest
-from datetime import UTC, datetime
+from datetime import datetime
 
 from nexoia.domain.entities.loja_express_case import (
     LojaExpressCase,
