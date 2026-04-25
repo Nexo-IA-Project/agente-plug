@@ -51,6 +51,18 @@ class Settings(BaseSettings):
     loja_express_d5_delay_hours: int = 120
     loja_express_d7_delay_hours: int = 168
 
+    # KB Admin
+    kb_chunk_size: int = 512
+    kb_chunk_overlap: int = 50
+    kb_top_k: int = 5
+    kb_threshold: float = 0.55
+    kb_embedding_model: str = "text-embedding-3-small"
+    kb_max_file_size_mb: int = 20
+
+    # JWT
+    jwt_secret: str = "change-me-in-production"
+    jwt_expire_minutes: int = 60
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
