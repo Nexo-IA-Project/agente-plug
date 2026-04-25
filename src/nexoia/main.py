@@ -20,6 +20,9 @@ from nexoia.interface.http.routers import (
     webhook_message,
     webhook_purchase,
 )
+from nexoia.interface.http.routers.admin import auth as admin_auth
+from nexoia.interface.http.routers.admin import documents as admin_documents
+from nexoia.interface.http.routers.admin import search as admin_search
 
 log = get_logger(__name__)
 
@@ -66,6 +69,9 @@ def create_app() -> FastAPI:
     app.include_router(metrics.router)
     app.include_router(webhook_purchase.router)
     app.include_router(webhook_message.router)
+    app.include_router(admin_auth.router, prefix="/admin")
+    app.include_router(admin_documents.router, prefix="/admin")
+    app.include_router(admin_search.router, prefix="/admin")
     return app
 
 
