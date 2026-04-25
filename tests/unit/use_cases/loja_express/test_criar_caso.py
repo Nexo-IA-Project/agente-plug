@@ -7,6 +7,7 @@ import pytest
 
 from nexoia.application.use_cases.loja_express.criar_caso import CriarCasoLojaExpress
 from nexoia.domain.entities.loja_express_case import LojaExpressCaseStatus
+from nexoia.domain.entities.scheduled_job import JobType
 
 
 def _make_deps():
@@ -80,7 +81,6 @@ async def test_schedules_four_jobs_with_correct_types():
         c.kwargs["job_type"]
         for c in scheduler.create_job.call_args_list
     ]
-    from nexoia.domain.entities.scheduled_job import JobType
     assert JobType.LOJA_EXPRESS_D1 in job_types_called
     assert JobType.LOJA_EXPRESS_D3 in job_types_called
     assert JobType.LOJA_EXPRESS_D5 in job_types_called
