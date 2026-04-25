@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any, ClassVar
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
@@ -14,7 +15,9 @@ from sqlalchemy import (
     LargeBinary,
     String,
     UniqueConstraint,
-    text,
+)
+from sqlalchemy import (
+    text as sa_text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
@@ -36,7 +39,7 @@ class AccountModel(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
 
 
@@ -51,12 +54,12 @@ class ContactModel(Base):
     email: Mapped[str | None] = mapped_column(String(200))
     long_term_facts: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
     __table_args__ = (
@@ -80,12 +83,12 @@ class ConversationModel(Base):
     handoff_reason: Mapped[str | None] = mapped_column(String(100))
     idle_state: Mapped[str] = mapped_column(String(20), default="none", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
     __table_args__ = (
@@ -108,7 +111,7 @@ class MessageModel(Base):
     classification_hint: Mapped[str | None] = mapped_column(String(50))
     correlation_id: Mapped[str | None] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     __table_args__ = (
         Index("ix_messages_conv_created", "conversation_id", "created_at"),
@@ -124,7 +127,7 @@ class WebhookEventModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     correlation_id: Mapped[str | None] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (
@@ -148,7 +151,7 @@ class ScheduledJobModel(Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     correlation_id: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     __table_args__ = (
@@ -156,7 +159,7 @@ class ScheduledJobModel(Base):
             "ix_scheduled_jobs_pending",
             "status",
             "run_at",
-            postgresql_where=text("status = 'pending'"),
+            postgresql_where=sa_text("status = 'pending'"),
         ),
     )
 
@@ -174,7 +177,7 @@ class CapabilityExecutionModel(Base):
     outcome: Mapped[str] = mapped_column(String(20), nullable=False)
     correlation_id: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
 
 
@@ -193,7 +196,7 @@ class AuditEventModel(Base):
     )
     correlation_id: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     __table_args__ = (
         Index("ix_audit_events_account_created", "account_id", "created_at"),
@@ -210,12 +213,12 @@ class IntegrationConfigModel(Base):
     credentials_encrypted: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
 
@@ -250,12 +253,12 @@ class AccessCaseModel(Base):
     student_cpf: Mapped[str | None] = mapped_column(String, nullable=True)
     search_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
 
@@ -284,12 +287,12 @@ class RefundCaseModel(Base):
     refund_processed_this_turn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="collecting")
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
 
@@ -316,15 +319,92 @@ class LojaExpressCaseModel(Base):
     scheduled_job_d5_id: Mapped[str | None] = mapped_column(String, nullable=True)
     scheduled_job_d7_id: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=text("NOW()"), nullable=False
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        server_default=text("NOW()"),
-        onupdate=text("NOW()"),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
         nullable=False,
     )
 
     __table_args__ = (
         Index("idx_loja_express_cases_account_contact", "account_id", "contact_id"),
+    )
+
+
+class KnowledgeDocumentModel(Base):
+    __tablename__ = "knowledge_documents"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tags: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    error_message: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_by: Mapped[str] = mapped_column(String(100), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+    __table_args__ = (Index("idx_knowledge_documents_account", "account_id"),)
+
+
+class KnowledgeChunkModel(Base):
+    __tablename__ = "knowledge_chunks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    document_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    text: Mapped[str] = mapped_column(String, nullable=False)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    token_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list] = mapped_column(Vector(1536), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+    __table_args__ = (
+        Index("idx_knowledge_chunks_document", "document_id"),
+        Index("idx_knowledge_chunks_account", "account_id"),
+    )
+
+
+class KbUsageLogModel(Base):
+    __tablename__ = "kb_usage_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    query: Mapped[str] = mapped_column(String, nullable=False)
+    result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+    __table_args__ = (Index("idx_kb_usage_logs_account", "account_id"),)
+
+
+class AdminUserModel(Base):
+    __tablename__ = "admin_users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    email: Mapped[str] = mapped_column(String(200), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False, default="viewer")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("account_id", "email", name="uq_admin_users_account_email"),
     )
