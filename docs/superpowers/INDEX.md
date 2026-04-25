@@ -11,8 +11,8 @@
 | ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ✅ Concluído |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | [plano](plans/2026-04-18-nexoia-capability-access.md) | ✅ Completo |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | [plano v2](plans/2026-04-24-nexoia-capability-refund-v2.md) (plano v1 obsoleto) | ✅ Concluído |
-| ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-loja-express-v2.md) (plano v1 obsoleto) | 🔄 Em andamento |
-| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano v2](plans/2026-04-25-nexoia-kb-admin-v2.md) (plano v1 obsoleto) | ⏳ Pendente |
+| ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-loja-express-v2.md) (plano v1 obsoleto) | ✅ Concluído |
+| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano v2](plans/2026-04-25-nexoia-kb-admin-v2.md) (plano v1 obsoleto) | 🔄 Em andamento |
 | ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-knowledge-v2.md) (plano v1 obsoleto) | ⏳ Pendente |
 
 ## Legenda
