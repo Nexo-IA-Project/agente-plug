@@ -1,7 +1,8 @@
 # tests/unit/infrastructure/langgraph_runtime/test_graph_builder.py
 from __future__ import annotations
-import pytest
+
 from unittest.mock import AsyncMock, MagicMock
+
 from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
 
 
@@ -19,6 +20,8 @@ def test_build_graph_returns_compiled_graph():
         hubla=AsyncMock(),
         legal_history=AsyncMock(),
         refund_mutex=AsyncMock(),
+        knowledge_repo=AsyncMock(),
+        usage_log_repo=AsyncMock(),
         checkpointer=None,
     )
     assert graph is not None
@@ -38,6 +41,8 @@ def test_build_graph_nodes_include_raciocinar_executar_pos_execucao():
         hubla=AsyncMock(),
         legal_history=AsyncMock(),
         refund_mutex=AsyncMock(),
+        knowledge_repo=AsyncMock(),
+        usage_log_repo=AsyncMock(),
         checkpointer=None,
     )
     node_names = set(graph.nodes.keys())
@@ -48,8 +53,9 @@ def test_build_graph_nodes_include_raciocinar_executar_pos_execucao():
 
 def test_build_graph_accepts_refund_params():
     """build_graph deve aceitar refund_repo, hubla, legal_history, refund_mutex."""
-    from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
     from unittest.mock import AsyncMock
+
+    from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
     graph = build_graph(
         access_repo=AsyncMock(),
         cademi=AsyncMock(),
@@ -63,6 +69,8 @@ def test_build_graph_accepts_refund_params():
         hubla=AsyncMock(),
         legal_history=AsyncMock(),
         refund_mutex=AsyncMock(),
+        knowledge_repo=AsyncMock(),
+        usage_log_repo=AsyncMock(),
         checkpointer=None,
     )
     assert graph is not None
