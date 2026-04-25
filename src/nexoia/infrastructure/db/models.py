@@ -363,8 +363,8 @@ class KnowledgeChunkModel(Base):
     __tablename__ = "knowledge_chunks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    document_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    document_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
