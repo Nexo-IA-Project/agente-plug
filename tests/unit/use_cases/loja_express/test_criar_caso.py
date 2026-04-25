@@ -1,8 +1,9 @@
 # tests/unit/use_cases/loja_express/test_criar_caso.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.use_cases.loja_express.criar_caso import CriarCasoLojaExpress
 from nexoia.domain.entities.loja_express_case import LojaExpressCaseStatus
