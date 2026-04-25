@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import structlog
 
+from nexoia.config.settings import get_settings
 from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
 from nexoia.domain.entities.scheduled_job import JobType
 from nexoia.domain.events.purchase_received import PurchaseReceived
@@ -21,13 +22,20 @@ class PurchaseHandler:
         chatnexo: ChatNexoPort,
         access_case_repo: Any,
         scheduler: Any,
+        loja_express_case_repo: Any = None,
+        loja_express_port: Any = None,
+        criar_uc: Any = None,
     ) -> None:
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
         self._access_case_repo = access_case_repo
         self._scheduler = scheduler
+        self._loja_express_case_repo = loja_express_case_repo
+        self._loja_express_port = loja_express_port
+        self._criar_uc = criar_uc
 
     async def execute(self, event: PurchaseReceived) -> None:
+        settings = get_settings()
         account_id = str(event.account_id)
 
         contact = await self._contact_repo.find_or_create(
@@ -45,6 +53,29 @@ class PurchaseHandler:
                 account_id=account_id, contact_phone=contact.phone
             )
 
+        is_loja_express = any(
+            tag in event.product.lower()
+            for tag in settings.loja_express_product_tags
+        )
+
+        if is_loja_express and self._criar_uc is not None:
+            await self._criar_uc.execute(
+                account_id=int(event.account_id),
+                contact_id=contact.id,
+                conversation_id=conversation_id,
+                purchase_id=event.purchase_id,
+                product_name=event.product,
+                student_email=event.contact_email,
+                contact_name=event.contact_name,
+            )
+            log.info(
+                "loja_express_purchase_routed",
+                account_id=account_id,
+                purchase_id=event.purchase_id,
+            )
+            return
+
+        # Normal welcome flow (Access capability)
         case = AccessCase(
             id=str(uuid4()),
             account_id=account_id,

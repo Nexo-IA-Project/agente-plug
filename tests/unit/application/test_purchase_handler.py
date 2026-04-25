@@ -2,9 +2,21 @@ from __future__ import annotations
 import pytest
 from datetime import datetime, UTC
 from uuid import UUID
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from nexoia.application.purchase_handler import PurchaseHandler
 from nexoia.domain.events.purchase_received import PurchaseReceived
+
+
+@pytest.fixture(autouse=True)
+def mock_settings():
+    """Patch get_settings to avoid requiring a real .env in unit tests."""
+    settings = MagicMock()
+    settings.loja_express_product_tags = ["loja_express", "loja-express"]
+    with patch(
+        "nexoia.application.purchase_handler.get_settings",
+        return_value=settings,
+    ):
+        yield settings
 
 
 def fake_event():
