@@ -1,8 +1,11 @@
 from __future__ import annotations
-import pytest
-from datetime import datetime, UTC
-from uuid import UUID
+
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
+
+import pytest
+
 from nexoia.application.purchase_handler import PurchaseHandler
 from nexoia.domain.events.purchase_received import PurchaseReceived
 
