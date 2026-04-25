@@ -8,6 +8,9 @@ from langgraph.prebuilt import ToolNode
 
 from nexoia.domain.ports.cademi_port import CademiPort
 from nexoia.domain.ports.chatnexo import ChatNexoPort
+from nexoia.domain.ports.hubla_port import HublaPort
+from nexoia.domain.ports.legal_history_port import LegalHistoryPort
+from nexoia.domain.ports.refund_mutex import RefundMutexPort
 from nexoia.infrastructure.langgraph_runtime.nodes import (
     _roteador,
     make_pos_execucao_node,
@@ -16,6 +19,7 @@ from nexoia.infrastructure.langgraph_runtime.nodes import (
 from nexoia.infrastructure.langgraph_runtime.state import AgentState
 from nexoia.infrastructure.skills.access import make_access_skills
 from nexoia.infrastructure.skills.core import make_core_skills
+from nexoia.infrastructure.skills.refund import make_refund_skills
 
 
 def build_graph(
@@ -28,10 +32,15 @@ def build_graph(
     llm: Any,
     capability_repo: Any,
     memory_extractor: Any,
+    refund_repo: Any,
+    hubla: HublaPort,
+    legal_history: LegalHistoryPort,
+    refund_mutex: RefundMutexPort,
     checkpointer: BaseCheckpointSaver | None = None,
 ) -> Any:
     skills = (
         make_access_skills(access_repo, cademi, chatnexo)
+        + make_refund_skills(refund_repo, hubla, legal_history, refund_mutex)
         + make_core_skills(chatnexo)
     )
 
