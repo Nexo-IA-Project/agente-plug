@@ -45,6 +45,7 @@ async def test_marks_case_as_delivered_and_updates():
     assert updated_case.status == LojaExpressCaseStatus.ENTREGUE
     assert "ENTREGUE" in result
     assert "case-le-1" in result
+    assert scheduler.cancel_job.call_count == 3  # d1, d3, d7 (d5 is None in _make_case)
 
 
 @pytest.mark.asyncio
@@ -76,6 +77,7 @@ async def test_returns_error_when_case_not_found():
     scheduler = AsyncMock()
     uc = MarcarEntregue(repo=repo, scheduler=scheduler)
     result = await uc.execute(case_id="nonexistent-id")
+    repo.find_by_id.assert_called_once_with("nonexistent-id")
     assert "ERRO" in result
     repo.update.assert_not_called()
     scheduler.cancel_job.assert_not_called()
