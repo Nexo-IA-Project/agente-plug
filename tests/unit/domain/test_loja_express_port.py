@@ -1,6 +1,8 @@
 # tests/unit/domain/test_loja_express_port.py
 from __future__ import annotations
 
+from typing import Protocol
+
 import pytest
 
 from nexoia.domain.ports.loja_express_port import LojaExpressPort
@@ -9,7 +11,6 @@ from nexoia.infrastructure.loja_express.stub_client import LojaExpressStubClient
 
 def test_loja_express_port_is_protocol():
     """LojaExpressPort must be a Protocol (runtime_checkable)."""
-    from typing import Protocol
     assert issubclass(LojaExpressPort, Protocol)
 
 
