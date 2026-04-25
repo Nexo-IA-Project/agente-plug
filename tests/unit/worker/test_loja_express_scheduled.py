@@ -1,8 +1,9 @@
 # tests/unit/worker/test_loja_express_scheduled.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 
 @pytest.mark.asyncio
