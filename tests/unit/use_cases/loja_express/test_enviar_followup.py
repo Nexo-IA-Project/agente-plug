@@ -144,3 +144,16 @@ async def test_case_not_found_returns_error():
     result = await uc.execute(account_id=1, contact_id="5511999990000", conversation_id="conv-1", day=1)
     assert "ERRO" in result
     chatnexo.send_template.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_d5_marks_entregue_when_store_delivered():
+    repo, chatnexo, scheduler, loja_express_port = _make_deps()
+    loja_express_port.get_store_status = AsyncMock(return_value="delivered")
+    uc = EnviarFollowup(repo=repo, chatnexo=chatnexo, scheduler=scheduler, loja_express_port=loja_express_port)
+    result = await uc.execute(account_id=1, contact_id="5511999990000", conversation_id="conv-1", day=5)
+    chatnexo.transfer_to_human.assert_not_called()
+    updated_case = repo.update.call_args.args[0]
+    assert updated_case.loja_entregue is True
+    assert updated_case.status == LojaExpressCaseStatus.ENTREGUE
+    assert "FOLLOWUP_D5" in result

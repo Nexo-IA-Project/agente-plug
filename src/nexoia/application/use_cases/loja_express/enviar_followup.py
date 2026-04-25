@@ -89,6 +89,7 @@ class EnviarFollowup:
     async def _handle_d3(self, case: Any, account_id_str: str, conversation_id: str) -> str:
         with contextlib.suppress(NotImplementedError):
             await self._loja_express_port.get_store_status(case.id)
+            # Result intentionally discarded — D3 only sends a status-check template
 
         await self._chatnexo.send_template(
             account_id=account_id_str,
@@ -118,7 +119,8 @@ class EnviarFollowup:
             log.info("loja_express_d5_escalated", case_id=case.id, reason=reason)
             return f"ESCALADO: reason={reason}"
 
-        case.status = LojaExpressCaseStatus.ALERTA_D5_ENVIADO
+        case.loja_entregue = True
+        case.status = LojaExpressCaseStatus.ENTREGUE
         await self._repo.update(case)
         log.info("loja_express_d5_delivered", case_id=case.id)
         return "FOLLOWUP_D5: loja entregue, nenhuma ação necessária"
