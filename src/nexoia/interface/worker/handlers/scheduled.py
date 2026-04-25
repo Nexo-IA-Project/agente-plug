@@ -30,7 +30,7 @@ async def handle_scheduled(payload: dict) -> None:
     elif job_type == "IDLE_CLOSE":
         lifecycle = _get_lifecycle_handler()
         await lifecycle.send_close(account_id=account_id, phone=phone, conversation_id=conversation_id)
-    elif job_type in ("LOJA_EXPRESS_D1", JobType.LOJA_EXPRESS_D1.upper()):
+    elif job_type in (JobType.LOJA_EXPRESS_D1, "LOJA_EXPRESS_D1"):
         followup = _get_followup_handler()
         await followup.execute(
             account_id=int(account_id),
@@ -38,7 +38,7 @@ async def handle_scheduled(payload: dict) -> None:
             conversation_id=conversation_id,
             day=1,
         )
-    elif job_type in ("LOJA_EXPRESS_D3", JobType.LOJA_EXPRESS_D3.upper()):
+    elif job_type in (JobType.LOJA_EXPRESS_D3, "LOJA_EXPRESS_D3"):
         followup = _get_followup_handler()
         await followup.execute(
             account_id=int(account_id),
@@ -46,7 +46,7 @@ async def handle_scheduled(payload: dict) -> None:
             conversation_id=conversation_id,
             day=3,
         )
-    elif job_type in ("LOJA_EXPRESS_D5", JobType.LOJA_EXPRESS_D5.upper()):
+    elif job_type in (JobType.LOJA_EXPRESS_D5, "LOJA_EXPRESS_D5"):
         followup = _get_followup_handler()
         await followup.execute(
             account_id=int(account_id),
@@ -54,7 +54,7 @@ async def handle_scheduled(payload: dict) -> None:
             conversation_id=conversation_id,
             day=5,
         )
-    elif job_type in ("LOJA_EXPRESS_D7", JobType.LOJA_EXPRESS_D7.upper()):
+    elif job_type in (JobType.LOJA_EXPRESS_D7, "LOJA_EXPRESS_D7"):
         followup = _get_followup_handler()
         await followup.execute(
             account_id=int(account_id),

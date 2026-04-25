@@ -68,6 +68,10 @@ async def test_loja_express_product_routes_to_criar_uc():
     assert call_kwargs["purchase_id"] == "p-loja-1"
     assert call_kwargs["contact_name"] == "Maria Lima"
     assert call_kwargs["student_email"] == "maria@test.com"
+    assert call_kwargs["account_id"] == 1
+    # Verify early return — access-case flow must NOT run
+    handler._access_case_repo.save.assert_not_called()
+    handler._scheduler.create_job.assert_not_called()
 
 
 @pytest.mark.asyncio
