@@ -1,8 +1,9 @@
 # tests/unit/use_cases/loja_express/test_marcar_entregue.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
 
 from nexoia.application.use_cases.loja_express.marcar_entregue import MarcarEntregue
 from nexoia.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
