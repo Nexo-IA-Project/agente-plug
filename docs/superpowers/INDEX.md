@@ -7,7 +7,7 @@
 
 | # | Subsistema | Spec | Plano | Implementação |
 |---|-----------|------|-------|---------------|
-| ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec v2](specs/2026-04-24-nexoia-agent-core-v2-design.md) ⚠️ substitui v1 | [plano v2](plans/2026-04-24-nexoia-agent-core-v2.md) (plano v1 obsoleto) | 🔄 Parcial (Tasks 1-10 ✅, Tasks 11-16 pendentes) |
+| ① | **Core** — FastAPI, Redis, Workers, LangGraph, DB, multi-tenancy, idle check | [spec v2](specs/2026-04-24-nexoia-agent-core-v2-design.md) ⚠️ substitui v1 | [plano v2](plans/2026-04-24-nexoia-agent-core-v2.md) (plano v1 obsoleto) | ✅ Concluído |
 | ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ✅ Concluído |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | [plano](plans/2026-04-18-nexoia-capability-access.md) | ✅ Completo |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | [plano v2](plans/2026-04-24-nexoia-capability-refund-v2.md) (plano v1 obsoleto) | ✅ Concluído |
