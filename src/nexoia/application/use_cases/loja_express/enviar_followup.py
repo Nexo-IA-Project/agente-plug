@@ -1,6 +1,7 @@
 # src/nexoia/application/use_cases/loja_express/enviar_followup.py
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 import structlog
@@ -71,10 +72,8 @@ class EnviarFollowup:
             return f"ERRO: dia desconhecido {day}"
 
     async def _handle_d1(self, case: Any, account_id_str: str, conversation_id: str) -> str:
-        try:
+        with contextlib.suppress(NotImplementedError):
             await self._loja_express_port.is_form_submitted(case.id)
-        except NotImplementedError:
-            pass  # Treat stub as False — send reminder regardless
 
         await self._chatnexo.send_template(
             account_id=account_id_str,
@@ -88,10 +87,8 @@ class EnviarFollowup:
         return "FOLLOWUP_D1: template enviado"
 
     async def _handle_d3(self, case: Any, account_id_str: str, conversation_id: str) -> str:
-        try:
+        with contextlib.suppress(NotImplementedError):
             await self._loja_express_port.get_store_status(case.id)
-        except NotImplementedError:
-            pass  # Treat stub as "pending" — send check regardless
 
         await self._chatnexo.send_template(
             account_id=account_id_str,
@@ -106,10 +103,8 @@ class EnviarFollowup:
 
     async def _handle_d5(self, case: Any, account_id_str: str, conversation_id: str) -> str:
         store_status = "pending"
-        try:
+        with contextlib.suppress(NotImplementedError):
             store_status = await self._loja_express_port.get_store_status(case.id)
-        except NotImplementedError:
-            pass  # Treat stub as "pending"
 
         if store_status != "delivered":
             reason = "loja_express_d5_bloqueio"
