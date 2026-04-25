@@ -29,18 +29,13 @@ def upgrade() -> None:
         sa.Column("student_email", sa.String(), nullable=False),
         sa.Column("form_submitted", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("loja_entregue", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column("status", sa.String(40), nullable=False, server_default="aguardando_formulario"),
+        sa.Column("status", sa.String(40), nullable=False, server_default=sa.text("'aguardando_formulario'")),
         sa.Column("scheduled_job_d1_id", sa.String(), nullable=True),
         sa.Column("scheduled_job_d3_id", sa.String(), nullable=True),
         sa.Column("scheduled_job_d5_id", sa.String(), nullable=True),
         sa.Column("scheduled_job_d7_id", sa.String(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-    )
-    op.create_index(
-        "ix_loja_express_cases_account_id",
-        "loja_express_cases",
-        ["account_id"],
     )
     op.create_index(
         "idx_loja_express_cases_account_contact",
@@ -51,5 +46,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_index("idx_loja_express_cases_account_contact", table_name="loja_express_cases")
-    op.drop_index("ix_loja_express_cases_account_id", table_name="loja_express_cases")
     op.drop_table("loja_express_cases")
