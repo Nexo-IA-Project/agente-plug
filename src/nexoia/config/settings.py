@@ -54,10 +54,13 @@ class Settings(BaseSettings):
     # KB Admin
     kb_chunk_size: int = 512
     kb_chunk_overlap: int = 50
-    kb_top_k: int = 5
+    kb_top_k: int = Field(default=5, ge=1)
     kb_threshold: float = 0.55
     kb_embedding_model: str = "text-embedding-3-small"
     kb_max_file_size_mb: int = 20
+
+    # Capability Knowledge (RAG)
+    kb_attempt_1_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
 
     # JWT
     jwt_secret: str = "change-me-in-production"
