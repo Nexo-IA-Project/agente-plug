@@ -11,9 +11,9 @@
 | ② | **Capability Welcome** — webhook Hubla → boas-vindas WhatsApp | [spec](specs/2026-04-17-nexoia-capability-welcome-design.md) | [plano](plans/2026-04-17-nexoia-capability-welcome.md) | ✅ Concluído |
 | ③ | **Capability Access** — aluno sem acesso ao produto | [spec](specs/2026-04-18-nexoia-capability-access-design.md) | [plano](plans/2026-04-18-nexoia-capability-access.md) | ✅ Completo |
 | ④ | **Capability Refund** — CDC + Guards de reembolso | [spec](specs/2026-04-18-nexoia-capability-refund-design.md) | [plano v2](plans/2026-04-24-nexoia-capability-refund-v2.md) (plano v1 obsoleto) | ✅ Concluído |
-| ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano](plans/2026-04-18-nexoia-capability-loja-express.md) | ⏳ Pendente |
-| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano](plans/2026-04-18-nexoia-kb-admin.md) | ⏳ Pendente |
-| ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | [plano](plans/2026-04-18-nexoia-capability-knowledge.md) | ⏳ Pendente |
+| ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-loja-express-v2.md) (plano v1 obsoleto) | 🔄 Em andamento |
+| ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano v2](plans/2026-04-25-nexoia-kb-admin-v2.md) (plano v1 obsoleto) | ⏳ Pendente |
+| ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-knowledge-v2.md) (plano v1 obsoleto) | ⏳ Pendente |
 
 ## Legenda
 
@@ -40,9 +40,12 @@
 - `2026-04-17-nexoia-capability-welcome.md` — Plano ②: 12 tasks, TDD completo, timing D+1 corrigido (24h)
 - `2026-04-18-nexoia-capability-access.md` — Plano ③: 15 tasks, 3092 linhas, TDD completo, cascade + platform scope
 - `2026-04-18-nexoia-capability-refund.md` — Plano ④: 22 tasks, 4177 linhas, 5 Guards + Art. 49 + recorrência
-- `2026-04-18-nexoia-capability-loja-express.md` — Plano ⑤: 15 tasks, 2748 linhas, D+0→D+7 + scheduler
-- `2026-04-18-nexoia-kb-admin.md` — Plano ⑥: 22 tasks, 4087 linhas, pgvector + JWT + RAG
-- `2026-04-18-nexoia-capability-knowledge.md` — Plano ⑦: 14 tasks, 2630 linhas, 3 tentativas + ask_context
+- `2026-04-18-nexoia-capability-loja-express.md` — Plano ⑤ v1: 15 tasks — **OBSOLETO, substituído pela v2**
+- `2026-04-18-nexoia-kb-admin.md` — Plano ⑥ v1: 22 tasks — **OBSOLETO, substituído pela v2**
+- `2026-04-18-nexoia-capability-knowledge.md` — Plano ⑦ v1: 14 tasks — **OBSOLETO, substituído pela v2**
+- `2026-04-25-nexoia-capability-loja-express-v2.md` — Plano ⑤ v2: 10 tasks, Skill Architecture, worker-driven D+0→D+7
+- `2026-04-25-nexoia-kb-admin-v2.md` — Plano ⑥ v2: 12 tasks, FastAPI + JWT + pgvector, sem agent skills
+- `2026-04-25-nexoia-capability-knowledge-v2.md` — Plano ⑦ v2: 8 tasks, RAG 4-attempt cascade, Skill Architecture
 
 ## Fonte
 
