@@ -26,27 +26,28 @@ agente-plug/
 ```
 apps/api/
   src/
-    nexoia/                 ← pacote Python (nome mantido; imports existentes não quebram)
-      agent/                ← NOVO: runtime do agente ReAct
-        skills/             ← uma pasta por skill
-        guards/             ← guards globais (LegalMention, LoopDetector)
-        contracts.py        ← tipos Ok, Err, Precondition
-        skill_loader.py     ← auto-descoberta de skills
-        graph.py            ← era infrastructure/langgraph_runtime/graph_builder.py
-        react_node.py       ← era infrastructure/langgraph_runtime/nodes.py
-        state.py            ← era infrastructure/langgraph_runtime/state.py
-        prompt.py           ← era infrastructure/llm/system_prompt.py
-      shared/
-        domain/             ← entities, ports, events, policies (sem mudança de conteúdo)
-        adapters/           ← implementações concretas (cademi, hubla, redis, openai, meta, kb)
-        config/             ← settings.py
-      interface/            ← http routers, worker handlers (sem mudança)
-      main.py
-      worker.py
+    agent/                  ← runtime do agente ReAct
+      skills/               ← uma pasta por skill
+      guards/               ← guards globais (LegalMention, LoopDetector)
+      contracts.py          ← tipos Ok, Err, Precondition
+      skill_loader.py       ← auto-descoberta de skills
+      graph.py              ← era infrastructure/langgraph_runtime/graph_builder.py
+      react_node.py         ← era infrastructure/langgraph_runtime/nodes.py
+      state.py              ← era infrastructure/langgraph_runtime/state.py
+      prompt.py             ← era infrastructure/llm/system_prompt.py
+    shared/
+      domain/               ← entities, ports, events, policies
+      adapters/             ← implementações concretas (cademi, hubla, redis, openai, meta, kb)
+      config/               ← settings.py
+      memory/               ← long_term, short_term, legal_history
+      application/          ← lifecycle_handler, purchase_handler, message_dispatcher, scheduler
+    interface/              ← http routers, worker handlers
+    main.py
+    worker.py
   tests/
   migrations/
   alembic.ini
-  pyproject.toml
+  pyproject.toml            ← packages = [{include = "src"}]; imports: from agent.X, from shared.X
   Dockerfile
 ```
 
@@ -54,21 +55,21 @@ apps/api/
 
 | De | Para |
 |----|------|
-| `src/nexoia/infrastructure/langgraph_runtime/graph_builder.py` | `agent/graph.py` |
-| `src/nexoia/infrastructure/langgraph_runtime/nodes.py` | `agent/react_node.py` |
-| `src/nexoia/infrastructure/langgraph_runtime/state.py` | `agent/state.py` |
-| `src/nexoia/infrastructure/llm/system_prompt.py` | `agent/prompt.py` |
-| `src/nexoia/domain/policies/guards/` | `agent/guards/` |
-| `src/nexoia/infrastructure/skills/*.py` | `agent/skills/<skill_name>/` (ver abaixo) |
-| `src/nexoia/application/use_cases/<cap>/<uc>.py` | `agent/skills/<skill_name>/use_case.py` |
-| `src/nexoia/infrastructure/llm/`, `redis/`, `kb/`, `meta/` | `shared/adapters/` |
-| `src/nexoia/domain/`, `src/nexoia/config/` | `shared/domain/`, `shared/config/` |
-| `src/nexoia/application/memory/` | `shared/memory/` |
-| `src/nexoia/application/lifecycle_handler.py` | `shared/application/lifecycle_handler.py` |
-| `src/nexoia/application/purchase_handler.py` | `shared/application/purchase_handler.py` |
-| `src/nexoia/application/message_dispatcher.py` | `shared/application/message_dispatcher.py` |
-| `src/nexoia/application/scheduler/` | `shared/application/scheduler/` |
-| `src/nexoia/interface/` | `interface/` (sem mudança) |
+| `src/nexoia/infrastructure/langgraph_runtime/graph_builder.py` | `src/agent/graph.py` |
+| `src/nexoia/infrastructure/langgraph_runtime/nodes.py` | `src/agent/react_node.py` |
+| `src/nexoia/infrastructure/langgraph_runtime/state.py` | `src/agent/state.py` |
+| `src/nexoia/infrastructure/llm/system_prompt.py` | `src/agent/prompt.py` |
+| `src/nexoia/domain/policies/guards/` | `src/agent/guards/` |
+| `src/nexoia/infrastructure/skills/*.py` | `src/agent/skills/<skill_name>/` |
+| `src/nexoia/application/use_cases/<cap>/<uc>.py` | `src/agent/skills/<skill_name>/use_case.py` |
+| `src/nexoia/infrastructure/llm/`, `redis/`, `kb/`, `meta/` | `src/shared/adapters/` |
+| `src/nexoia/domain/`, `src/nexoia/config/` | `src/shared/domain/`, `src/shared/config/` |
+| `src/nexoia/application/memory/` | `src/shared/memory/` |
+| `src/nexoia/application/lifecycle_handler.py` | `src/shared/application/lifecycle_handler.py` |
+| `src/nexoia/application/purchase_handler.py` | `src/shared/application/purchase_handler.py` |
+| `src/nexoia/application/message_dispatcher.py` | `src/shared/application/message_dispatcher.py` |
+| `src/nexoia/application/scheduler/` | `src/shared/application/scheduler/` |
+| `src/nexoia/interface/` | `src/interface/` (sem mudança de conteúdo) |
 
 ---
 
@@ -91,7 +92,7 @@ agent/skills/buscar_aluno_cademi/
 ### `__init__.py`
 
 ```python
-from nexoia.agent.skills.buscar_aluno_cademi.skill import make_skill
+from agent.skills.buscar_aluno_cademi.skill import make_skill
 
 __all__ = ["make_skill"]
 ```
@@ -99,9 +100,9 @@ __all__ = ["make_skill"]
 ### `skill.py` (padrão)
 
 ```python
-from nexoia.agent.contracts import Precondition
-from nexoia.agent.skills.buscar_aluno_cademi.preconditions import PRECONDITIONS
-from nexoia.agent.skills.buscar_aluno_cademi.use_case import BuscarAlunoCademi
+from agent.contracts import Precondition
+from agent.skills.buscar_aluno_cademi.preconditions import PRECONDITIONS
+from agent.skills.buscar_aluno_cademi.use_case import BuscarAlunoCademi
 
 class BuscarAlunoCademiInput(BaseModel):
     email: str | None = None
@@ -143,7 +144,7 @@ def _load_instructions(skill_file: str) -> str:
     return (Path(skill_file).parent / "instructions.md").read_text()
 ```
 
-Cada `skill.py` importa: `from nexoia.agent._utils import _load_instructions`.
+Cada `skill.py` importa: `from agent._utils import _load_instructions`.
 
 ### `instructions.md` (padrão)
 
@@ -228,12 +229,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from langchain_core.tools import BaseTool
 
-from nexoia.shared.domain.ports.cademi_port import CademiPort
-from nexoia.shared.domain.ports.chatnexo import ChatNexoPort
-from nexoia.shared.domain.ports.hubla_port import HublaPort
-from nexoia.shared.domain.ports.knowledge import KnowledgePort
-from nexoia.shared.domain.ports.legal_history_port import LegalHistoryPort
-from nexoia.shared.domain.ports.refund_mutex import RefundMutexPort
+from shared.domain.ports.cademi_port import CademiPort
+from shared.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.hubla_port import HublaPort
+from shared.domain.ports.knowledge import KnowledgePort
+from shared.domain.ports.legal_history_port import LegalHistoryPort
+from shared.domain.ports.refund_mutex import RefundMutexPort
 
 @dataclass
 class Adapters:
@@ -252,7 +253,7 @@ def load_skills(adapters: Adapters) -> list[BaseTool]:
     skills = []
     for folder in sorted(skills_dir.iterdir()):
         if folder.is_dir() and not folder.name.startswith("_"):
-            module = importlib.import_module(f"nexoia.agent.skills.{folder.name}")
+            module = importlib.import_module(f"agent.skills.{folder.name}")
             skills.append(module.make_skill(adapters))
     return skills
 ```
@@ -322,7 +323,7 @@ apps/web/
 - Migrations e Alembic
 - Routers FastAPI e worker handlers
 - Testes de integração existentes
-- `pyproject.toml` package name (`nexoia`)
+- Lógica de negócio, entidades, ports — zero mudança de conteúdo
 
 ---
 
