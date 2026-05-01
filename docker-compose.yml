@@ -24,26 +24,26 @@ services:
       retries: 10
 
   api:
-    build: .
+    build: apps/api
     env_file: .env
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     ports:
       - "8000:8000"
-    command: ["uvicorn", "nexoia.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     volumes:
-      - ./src:/app/src
+      - ./apps/api/src:/app/src
 
   worker:
-    build: .
+    build: apps/api
     env_file: .env
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
-    command: ["python", "-m", "nexoia.worker"]
+    command: ["python", "-m", "worker"]
     volumes:
-      - ./src:/app/src
+      - ./apps/api/src:/app/src
 
 volumes:
   pgdata:

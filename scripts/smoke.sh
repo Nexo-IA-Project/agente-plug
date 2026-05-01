@@ -8,10 +8,10 @@ echo "2. Waiting for services..."
 sleep 3
 
 echo "3. Running migrations..."
-uv run alembic upgrade head
+uv run --directory apps/api alembic upgrade head
 
 echo "4. Starting API in background..."
-uv run uvicorn nexoia.main:app --port 8000 &
+uv run --directory apps/api uvicorn main:app --port 8000 &
 API_PID=$!
 trap "kill $API_PID" EXIT
 sleep 3

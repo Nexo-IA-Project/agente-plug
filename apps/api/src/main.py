@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from shared.config.settings import get_settings
+from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
+from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.observability.logger import configure_logging, get_logger
+from shared.adapters.redis.client import get_redis
+from shared.adapters.redis.dedup import RedisDedup
+from shared.adapters.redis.queue import PriorityQueue
+from interface.http.errors import register_error_handlers
+from interface.http.middleware import CorrelationIdMiddleware
+from interface.http.routers import (
+    health,
+    metrics,
+    webhook_message,
+    webhook_purchase,
+)
+from interface.http.routers.admin import auth as admin_auth
+from interface.http.routers.admin import documents as admin_documents
+from interface.http.routers.admin import search as admin_search
+
+log = get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    configure_logging(level=settings.log_level)
+    log.info("app_starting", log_level=settings.log_level)
+
+    redis = get_redis()
+    dedup = RedisDedup(redis)
+    queue = PriorityQueue(
+        redis, name="jobs", priority_enabled=settings.enable_priority_queue
+    )
+
+    def _event_repo_factory() -> WebhookEventRepository:
+        session = get_sessionmaker()()
+        return WebhookEventRepository(session)
+
+    webhook_purchase.configure(
+        dedup=dedup,
+        event_repo_factory=_event_repo_factory,
+        queue=queue,
+        expected_token=settings.hubla_webhook_secret,
+    )
+    webhook_message.configure(
+        dedup=dedup,
+        event_repo_factory=_event_repo_factory,
+        queue=queue,
+        expected_api_key=settings.chatnexo_api_key,
+    )
+
+    yield
+    log.info("app_stopping")
+    await redis.aclose()
+
+
+def create_app() -> FastAPI:
+    app = FastAPI(title="nexoia-agent", version="0.1.0", lifespan=lifespan)
+    app.add_middleware(CorrelationIdMiddleware)
+    register_error_handlers(app)
+    app.include_router(health.router)
+    app.include_router(metrics.router)
+    app.include_router(webhook_purchase.router)
+    app.include_router(webhook_message.router)
+    app.include_router(admin_auth.router, prefix="/admin")
+    app.include_router(admin_documents.router, prefix="/admin")
+    app.include_router(admin_search.router, prefix="/admin")
+    return app
+
+
+app = create_app()
