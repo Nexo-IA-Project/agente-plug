@@ -1,4 +1,4 @@
-from nexoia.infrastructure.db.models import RefundCaseModel
+from shared.adapters.db.models import RefundCaseModel
 
 
 def test_refund_case_model_tablename():

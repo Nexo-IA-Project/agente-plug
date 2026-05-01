@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from nexoia.domain.value_objects.phone import Phone
+from shared.domain.value_objects.phone import Phone
 
 
 @dataclass(slots=True)

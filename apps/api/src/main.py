@@ -5,24 +5,24 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from nexoia.config.settings import get_settings
-from nexoia.infrastructure.db.repositories.webhook_event import WebhookEventRepository
-from nexoia.infrastructure.db.session import get_sessionmaker
-from nexoia.infrastructure.observability.logger import configure_logging, get_logger
-from nexoia.infrastructure.redis.client import get_redis
-from nexoia.infrastructure.redis.dedup import RedisDedup
-from nexoia.infrastructure.redis.queue import PriorityQueue
-from nexoia.interface.http.errors import register_error_handlers
-from nexoia.interface.http.middleware import CorrelationIdMiddleware
-from nexoia.interface.http.routers import (
+from shared.config.settings import get_settings
+from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
+from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.observability.logger import configure_logging, get_logger
+from shared.adapters.redis.client import get_redis
+from shared.adapters.redis.dedup import RedisDedup
+from shared.adapters.redis.queue import PriorityQueue
+from interface.http.errors import register_error_handlers
+from interface.http.middleware import CorrelationIdMiddleware
+from interface.http.routers import (
     health,
     metrics,
     webhook_message,
     webhook_purchase,
 )
-from nexoia.interface.http.routers.admin import auth as admin_auth
-from nexoia.interface.http.routers.admin import documents as admin_documents
-from nexoia.interface.http.routers.admin import search as admin_search
+from interface.http.routers.admin import auth as admin_auth
+from interface.http.routers.admin import documents as admin_documents
+from interface.http.routers.admin import search as admin_search
 
 log = get_logger(__name__)
 

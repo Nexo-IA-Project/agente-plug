@@ -1,4 +1,4 @@
-from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
+from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 
 
 def test_access_case_default_status_is_pending():

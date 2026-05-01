@@ -1,5 +1,5 @@
 # tests/unit/infrastructure/kb/test_chunker.py
-from nexoia.infrastructure.kb.chunker import TextChunker
+from shared.adapters.kb.chunker import TextChunker
 
 
 def test_short_text_produces_single_chunk():

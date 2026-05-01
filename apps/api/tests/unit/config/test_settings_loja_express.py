@@ -1,5 +1,5 @@
 # tests/unit/config/test_settings_loja_express.py
-from nexoia.config.settings import Settings
+from shared.config.settings import Settings
 
 
 def _make_settings(**overrides) -> Settings:

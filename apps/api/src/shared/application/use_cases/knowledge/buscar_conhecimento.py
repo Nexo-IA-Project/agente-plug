@@ -4,10 +4,10 @@ from dataclasses import dataclass
 
 import structlog
 
-from nexoia.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
-from nexoia.application.use_cases.knowledge.synonym_expander import SynonymExpander
-from nexoia.config.settings import get_settings
-from nexoia.domain.ports.knowledge import KnowledgeChunk, KnowledgePort
+from shared.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
+from shared.application.use_cases.knowledge.synonym_expander import SynonymExpander
+from shared.config.settings import get_settings
+from shared.domain.ports.knowledge import KnowledgeChunk, KnowledgePort
 
 log = structlog.get_logger(__name__)
 

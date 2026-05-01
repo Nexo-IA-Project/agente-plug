@@ -1,6 +1,6 @@
 from __future__ import annotations
 import pytest
-from nexoia.domain.policies.communication_rules import CommunicationRules, ValidationResult
+from shared.domain.policies.communication_rules import CommunicationRules, ValidationResult
 
 
 def test_ok_for_clean_short_message():

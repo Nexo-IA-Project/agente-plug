@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexoia.application.use_cases.loja_express.criar_caso import CriarCasoLojaExpress
-from nexoia.domain.entities.loja_express_case import LojaExpressCaseStatus
-from nexoia.domain.entities.scheduled_job import JobType
+from shared.application.use_cases.loja_express.criar_caso import CriarCasoLojaExpress
+from shared.domain.entities.loja_express_case import LojaExpressCaseStatus
+from shared.domain.entities.scheduled_job import JobType
 
 
 def _make_deps():

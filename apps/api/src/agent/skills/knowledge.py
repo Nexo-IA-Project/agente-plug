@@ -6,14 +6,14 @@ from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
 
-from nexoia.application.use_cases.knowledge.buscar_conhecimento import BuscarConhecimento
-from nexoia.application.use_cases.knowledge.buscar_conhecimento_com_contexto import (
+from shared.application.use_cases.knowledge.buscar_conhecimento import BuscarConhecimento
+from shared.application.use_cases.knowledge.buscar_conhecimento_com_contexto import (
     BuscarConhecimentoComContexto,
 )
-from nexoia.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
-from nexoia.application.use_cases.knowledge.synonym_expander import SynonymExpander
-from nexoia.domain.ports.chatnexo import ChatNexoPort
-from nexoia.domain.ports.knowledge import KnowledgePort
+from shared.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
+from shared.application.use_cases.knowledge.synonym_expander import SynonymExpander
+from shared.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.knowledge import KnowledgePort
 
 
 class BuscarConhecimentoInput(BaseModel):

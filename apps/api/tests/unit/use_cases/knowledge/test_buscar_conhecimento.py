@@ -5,10 +5,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexoia.application.use_cases.knowledge.buscar_conhecimento import BuscarConhecimento
-from nexoia.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
-from nexoia.application.use_cases.knowledge.synonym_expander import SynonymExpander
-from nexoia.domain.ports.knowledge import KnowledgeChunk
+from shared.application.use_cases.knowledge.buscar_conhecimento import BuscarConhecimento
+from shared.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
+from shared.application.use_cases.knowledge.synonym_expander import SynonymExpander
+from shared.domain.ports.knowledge import KnowledgeChunk
 
 
 def _make_chunk(text: str = "conteúdo relevante") -> KnowledgeChunk:

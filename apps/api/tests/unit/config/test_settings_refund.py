@@ -1,5 +1,5 @@
 # tests/unit/config/test_settings_refund.py
-from nexoia.config.settings import Settings
+from shared.config.settings import Settings
 
 
 def test_refund_deadline_days_default():

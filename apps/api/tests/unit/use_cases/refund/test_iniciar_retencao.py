@@ -1,8 +1,8 @@
 from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock
-from nexoia.application.use_cases.refund.iniciar_retencao import IniciarRetencao
-from nexoia.domain.entities.refund_case import RefundCase, RefundCaseStatus
+from shared.application.use_cases.refund.iniciar_retencao import IniciarRetencao
+from shared.domain.entities.refund_case import RefundCase, RefundCaseStatus
 
 
 def _make_case(

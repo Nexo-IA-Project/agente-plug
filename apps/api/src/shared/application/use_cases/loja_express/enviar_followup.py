@@ -6,7 +6,7 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.entities.loja_express_case import LojaExpressCaseStatus
+from shared.domain.entities.loja_express_case import LojaExpressCaseStatus
 
 log = structlog.get_logger(__name__)
 

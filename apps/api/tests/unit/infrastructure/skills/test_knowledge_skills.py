@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from nexoia.infrastructure.skills.knowledge import (
+from agent.skills.knowledge import (
     make_knowledge_skills,
     BuscarConhecimentoTool,
     BuscarConhecimentoComContextoTool,

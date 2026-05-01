@@ -2,7 +2,7 @@ import uuid
 
 import httpx
 
-from nexoia.infrastructure.chatnexo.client import ChatNexoClient
+from shared.adapters.chatnexo.client import ChatNexoClient
 
 
 def _client_with_transport(transport: httpx.MockTransport) -> ChatNexoClient:

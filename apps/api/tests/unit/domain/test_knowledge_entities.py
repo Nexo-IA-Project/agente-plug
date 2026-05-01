@@ -1,9 +1,9 @@
 # tests/unit/domain/test_knowledge_entities.py
 from datetime import datetime
 
-from nexoia.domain.entities.admin_user import AdminRole, AdminUser
-from nexoia.domain.entities.knowledge_chunk import KnowledgeChunk
-from nexoia.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
+from shared.domain.entities.admin_user import AdminRole, AdminUser
+from shared.domain.entities.knowledge_chunk import KnowledgeChunk
+from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 
 # ── KnowledgeDocument ─────────────────────────────────────────────────────────
 

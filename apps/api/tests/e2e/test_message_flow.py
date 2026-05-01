@@ -19,7 +19,7 @@ async def test_handle_message_invokes_agent_and_sends_reply():
         patch("nexoia.interface.worker.handlers.message._get_lifecycle", return_value=AsyncMock()),
         patch("nexoia.interface.worker.handlers.message._get_scheduler", return_value=AsyncMock()),
     ):
-        from nexoia.interface.worker.handlers.message import handle_message
+        from interface.worker.handlers.message import handle_message
         await handle_message({
             "account_id": "t1",
             "phone": "5511999990000",

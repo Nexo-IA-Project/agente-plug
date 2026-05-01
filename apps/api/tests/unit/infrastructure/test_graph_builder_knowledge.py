@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import inspect
 
-from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
+from agent.graph import build_graph
 
 
 def test_build_graph_accepts_knowledge_params():

@@ -7,19 +7,19 @@ from fastapi import Header, HTTPException, status
 from jose import JWTError
 from openai import AsyncOpenAI
 
-from nexoia.application.use_cases.kb.buscar_chunks import BuscarChunks
-from nexoia.application.use_cases.kb.deletar_documento import DeletarDocumento
-from nexoia.application.use_cases.kb.ingerir_documento import IngerirDocumento
-from nexoia.application.use_cases.kb.listar_documentos import ListarDocumentos
-from nexoia.config.settings import Settings, get_settings
-from nexoia.infrastructure.db.repositories.chunk_repo import ChunkRepository
-from nexoia.infrastructure.db.repositories.document_repo import DocumentRepository
-from nexoia.infrastructure.db.repositories.usage_log_repo import UsageLogRepository
-from nexoia.infrastructure.db.session import session_scope
-from nexoia.infrastructure.kb.chunker import TextChunker
-from nexoia.infrastructure.kb.jwt_handler import verify_token
-from nexoia.infrastructure.kb.openai_embeddings import OpenAIEmbeddingsAdapter
-from nexoia.infrastructure.kb.text_extractor import TextExtractor
+from shared.application.use_cases.kb.buscar_chunks import BuscarChunks
+from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
+from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
+from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
+from shared.config.settings import Settings, get_settings
+from shared.adapters.db.repositories.chunk_repo import ChunkRepository
+from shared.adapters.db.repositories.document_repo import DocumentRepository
+from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
+from shared.adapters.db.session import session_scope
+from shared.adapters.kb.chunker import TextChunker
+from shared.adapters.kb.jwt_handler import verify_token
+from shared.adapters.kb.openai_embeddings import OpenAIEmbeddingsAdapter
+from shared.adapters.kb.text_extractor import TextExtractor
 
 
 @dataclass

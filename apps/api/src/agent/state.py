@@ -5,7 +5,7 @@ from uuid import UUID
 
 from langgraph.graph import MessagesState
 
-from nexoia.domain.value_objects.sentiment import Sentiment
+from shared.domain.value_objects.sentiment import Sentiment
 
 
 class AgentState(MessagesState):

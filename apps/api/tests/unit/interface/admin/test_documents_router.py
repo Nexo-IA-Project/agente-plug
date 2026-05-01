@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 
 
 def _make_app_with_mock_deps(mock_deps):
-    from nexoia.interface.http.deps.admin_deps import get_admin_deps
-    from nexoia.interface.http.routers.admin.documents import router
+    from interface.http.deps.admin_deps import get_admin_deps
+    from interface.http.routers.admin.documents import router
 
     app = FastAPI()
     app.dependency_overrides[get_admin_deps] = lambda: mock_deps
@@ -37,7 +37,7 @@ def test_list_documents_returns_200():
 
 
 def test_list_documents_calls_listar_use_case():
-    from nexoia.domain.entities.knowledge_document import KnowledgeDocument
+    from shared.domain.entities.knowledge_document import KnowledgeDocument
 
     doc = KnowledgeDocument(
         account_id=1, filename="test.pdf", mime_type="application/pdf",

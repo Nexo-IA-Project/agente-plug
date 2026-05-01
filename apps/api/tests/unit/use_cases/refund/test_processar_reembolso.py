@@ -2,9 +2,9 @@
 from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock
-from nexoia.application.use_cases.refund.processar_reembolso import ProcessarReembolso
-from nexoia.domain.entities.refund_case import RefundCase, RefundCaseStatus
-from nexoia.domain.ports.hubla_port import RefundResult
+from shared.application.use_cases.refund.processar_reembolso import ProcessarReembolso
+from shared.domain.entities.refund_case import RefundCase, RefundCaseStatus
+from shared.domain.ports.hubla_port import RefundResult
 
 _REFUND_MSG_FRAGMENT = "processando seu reembolso"
 

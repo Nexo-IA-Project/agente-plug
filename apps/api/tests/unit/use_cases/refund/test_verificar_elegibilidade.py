@@ -2,10 +2,10 @@ from __future__ import annotations
 import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
-from nexoia.application.use_cases.refund.verificar_elegibilidade import (
+from shared.application.use_cases.refund.verificar_elegibilidade import (
     VerificarElegibilidadeReembolso,
 )
-from nexoia.domain.ports.hubla_port import HublaPurchase
+from shared.domain.ports.hubla_port import HublaPurchase
 
 
 def _make_purchase(

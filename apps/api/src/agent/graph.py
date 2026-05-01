@@ -6,22 +6,22 @@ from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
 
-from nexoia.domain.ports.cademi_port import CademiPort
-from nexoia.domain.ports.chatnexo import ChatNexoPort
-from nexoia.domain.ports.hubla_port import HublaPort
-from nexoia.domain.ports.knowledge import KnowledgePort
-from nexoia.domain.ports.legal_history_port import LegalHistoryPort
-from nexoia.domain.ports.refund_mutex import RefundMutexPort
-from nexoia.infrastructure.langgraph_runtime.nodes import (
+from shared.domain.ports.cademi_port import CademiPort
+from shared.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.hubla_port import HublaPort
+from shared.domain.ports.knowledge import KnowledgePort
+from shared.domain.ports.legal_history_port import LegalHistoryPort
+from shared.domain.ports.refund_mutex import RefundMutexPort
+from agent.react_node import (
     _roteador,
     make_pos_execucao_node,
     make_raciocinar_node,
 )
-from nexoia.infrastructure.langgraph_runtime.state import AgentState
-from nexoia.infrastructure.skills.access import make_access_skills
-from nexoia.infrastructure.skills.core import make_core_skills
-from nexoia.infrastructure.skills.knowledge import make_knowledge_skills
-from nexoia.infrastructure.skills.refund import make_refund_skills
+from agent.state import AgentState
+from agent.skills.access import make_access_skills
+from agent.skills.core import make_core_skills
+from agent.skills.knowledge import make_knowledge_skills
+from agent.skills.refund import make_refund_skills
 
 
 def build_graph(

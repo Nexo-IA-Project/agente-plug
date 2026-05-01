@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from redis.asyncio import Redis
 
-from nexoia.config.settings import get_settings
+from shared.config.settings import get_settings
 
 
 def create_redis_client(url: str | None = None) -> Redis:

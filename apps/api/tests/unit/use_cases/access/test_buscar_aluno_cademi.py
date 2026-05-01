@@ -1,7 +1,7 @@
 from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from nexoia.application.use_cases.access.buscar_aluno_cademi import BuscarAlunoCademi
+from shared.application.use_cases.access.buscar_aluno_cademi import BuscarAlunoCademi
 
 
 def fake_student(name: str = "João Silva", sid: str = "s1"):

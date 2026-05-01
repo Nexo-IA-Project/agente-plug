@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nexoia.domain.ports.embeddings_port import EmbeddingsPort
+from shared.domain.ports.embeddings_port import EmbeddingsPort
 
 
 class BuscarChunks:

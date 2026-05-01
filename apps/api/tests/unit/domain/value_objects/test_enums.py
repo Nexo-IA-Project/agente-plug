@@ -1,6 +1,6 @@
-from nexoia.domain.value_objects.intent import Intent
-from nexoia.domain.value_objects.priority import Priority
-from nexoia.domain.value_objects.sentiment import Sentiment
+from shared.domain.value_objects.intent import Intent
+from shared.domain.value_objects.priority import Priority
+from shared.domain.value_objects.sentiment import Sentiment
 
 
 def test_intent_values() -> None:

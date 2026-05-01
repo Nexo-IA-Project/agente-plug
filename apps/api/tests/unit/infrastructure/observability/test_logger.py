@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from nexoia.infrastructure.observability.logger import (
+from shared.adapters.observability.logger import (
     bind_context,
     configure_logging,
     get_logger,

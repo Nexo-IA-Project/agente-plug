@@ -1,4 +1,4 @@
-from nexoia.infrastructure.observability.metrics import (
+from shared.adapters.observability.metrics import (
     WEBHOOK_RECEIVED,
     render_latest,
 )

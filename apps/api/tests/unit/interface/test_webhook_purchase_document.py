@@ -1,4 +1,4 @@
-from nexoia.interface.http.schemas.webhook_purchase import PurchaseWebhookPayload
+from interface.http.schemas.webhook_purchase import PurchaseWebhookPayload
 
 
 def test_payload_accepts_document_field():

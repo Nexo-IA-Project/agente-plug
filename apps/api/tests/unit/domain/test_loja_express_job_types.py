@@ -1,5 +1,5 @@
 # tests/unit/domain/test_loja_express_job_types.py
-from nexoia.domain.entities.scheduled_job import JobType
+from shared.domain.entities.scheduled_job import JobType
 
 
 def test_loja_express_d1_value():

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import structlog
 
-from nexoia.application.lifecycle_handler import LifecycleHandler
-from nexoia.domain.entities.scheduled_job import JobType
+from shared.application.lifecycle_handler import LifecycleHandler
+from shared.domain.entities.scheduled_job import JobType
 
 log = structlog.get_logger(__name__)
 

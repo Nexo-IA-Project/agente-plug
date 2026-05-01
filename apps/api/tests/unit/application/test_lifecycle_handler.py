@@ -2,7 +2,7 @@ from __future__ import annotations
 import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
-from nexoia.application.lifecycle_handler import LifecycleHandler
+from shared.application.lifecycle_handler import LifecycleHandler
 
 
 def fake_conv(status: str = "ACTIVE", window_ok: bool = True):

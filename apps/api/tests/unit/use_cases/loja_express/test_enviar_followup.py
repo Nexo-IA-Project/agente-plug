@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexoia.application.use_cases.loja_express.enviar_followup import EnviarFollowup
-from nexoia.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
+from shared.application.use_cases.loja_express.enviar_followup import EnviarFollowup
+from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 
 
 def _make_case(

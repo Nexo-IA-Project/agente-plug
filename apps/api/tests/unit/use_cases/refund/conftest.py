@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import MagicMock, patch
 
-from nexoia.config.settings import get_settings
+from shared.config.settings import get_settings
 
 
 @pytest.fixture(autouse=True)

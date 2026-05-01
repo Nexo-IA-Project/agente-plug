@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
-from nexoia.infrastructure.db.models import AccessCaseModel
+from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
+from shared.adapters.db.models import AccessCaseModel
 
 
 class AccessCaseRepository:

@@ -1,4 +1,4 @@
-from nexoia.domain.entities.refund_case import RefundCase, RefundCaseStatus
+from shared.domain.entities.refund_case import RefundCase, RefundCaseStatus
 
 
 def test_refund_case_defaults():

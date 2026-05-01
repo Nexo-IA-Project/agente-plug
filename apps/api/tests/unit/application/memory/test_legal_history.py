@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
-from nexoia.application.memory.legal_history import LegalHistoryChecker
+from shared.memory.legal_history import LegalHistoryChecker
 
 
 async def test_returns_true_when_refund_mentioned_within_7_days():

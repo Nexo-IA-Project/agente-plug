@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from nexoia.domain.policies.guards import (
+from agent.guards import (
     GuardResult,
     GuardService,
     LegalMentionGuard,

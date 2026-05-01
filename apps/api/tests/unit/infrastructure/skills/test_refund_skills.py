@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from nexoia.infrastructure.skills.refund import (
+from agent.skills.refund import (
     make_refund_skills,
     VerificarElegibilidadeReembolsoTool,
     OfereceRetencaoTool,

@@ -4,8 +4,8 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.ports.cademi_port import CademiPort
-from nexoia.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.cademi_port import CademiPort
+from shared.domain.ports.chatnexo import ChatNexoPort
 
 log = structlog.get_logger(__name__)
 

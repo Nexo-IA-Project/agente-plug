@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from nexoia.domain.entities.loja_express_case import (
+from shared.domain.entities.loja_express_case import (
     LojaExpressCase,
     LojaExpressCaseStatus,
 )

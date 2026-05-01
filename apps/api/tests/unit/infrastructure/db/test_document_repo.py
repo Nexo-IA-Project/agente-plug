@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexoia.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
-from nexoia.infrastructure.db.repositories.document_repo import DocumentRepository
+from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
+from shared.adapters.db.repositories.document_repo import DocumentRepository
 
 
 def _make_doc(**kwargs) -> KnowledgeDocument:
@@ -45,7 +45,7 @@ async def test_get_returns_none_when_not_found():
 @pytest.mark.asyncio
 async def test_get_returns_entity_when_found():
     session = AsyncMock()
-    from nexoia.infrastructure.db.models import KnowledgeDocumentModel
+    from shared.adapters.db.models import KnowledgeDocumentModel
     model = KnowledgeDocumentModel(
         id="doc-1",
         account_id=1,
@@ -72,7 +72,7 @@ async def test_get_returns_entity_when_found():
 @pytest.mark.asyncio
 async def test_update_status_flushes():
     session = AsyncMock()
-    from nexoia.infrastructure.db.models import KnowledgeDocumentModel
+    from shared.adapters.db.models import KnowledgeDocumentModel
     model = KnowledgeDocumentModel(
         id="doc-1", account_id=1, filename="f.pdf", mime_type="application/pdf",
         file_size_bytes=0, status="pending", chunk_count=0, tags=[],
@@ -89,7 +89,7 @@ async def test_update_status_flushes():
 @pytest.mark.asyncio
 async def test_update_status_with_error_message():
     session = AsyncMock()
-    from nexoia.infrastructure.db.models import KnowledgeDocumentModel
+    from shared.adapters.db.models import KnowledgeDocumentModel
     model = KnowledgeDocumentModel(
         id="doc-1", account_id=1, filename="f.pdf", mime_type="application/pdf",
         file_size_bytes=0, status="processing", chunk_count=0, tags=[],

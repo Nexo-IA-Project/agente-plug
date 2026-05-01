@@ -11,7 +11,7 @@ async def test_handle_purchase_calls_purchase_handler():
         "nexoia.interface.worker.handlers.purchase._get_purchase_handler",
         return_value=mock_handler,
     ):
-        from nexoia.interface.worker.handlers.purchase import handle_purchase
+        from interface.worker.handlers.purchase import handle_purchase
         await handle_purchase({
             "purchase_id": "p-1",
             "account_id": "00000000-0000-0000-0000-000000000001",
@@ -32,7 +32,7 @@ async def test_handle_scheduled_idle_ping_calls_lifecycle():
         "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=mock_lifecycle,
     ):
-        from nexoia.interface.worker.handlers.scheduled import handle_scheduled
+        from interface.worker.handlers.scheduled import handle_scheduled
         await handle_scheduled({
             "job_type": "IDLE_PING",
             "account_id": "t1",

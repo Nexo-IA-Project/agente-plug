@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexoia.application.use_cases.kb.buscar_chunks import BuscarChunks
-from nexoia.application.use_cases.kb.deletar_documento import DeletarDocumento
-from nexoia.application.use_cases.kb.listar_documentos import ListarDocumentos
+from shared.application.use_cases.kb.buscar_chunks import BuscarChunks
+from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
+from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
 
 # ── BuscarChunks ──────────────────────────────────────────────────────────────
 

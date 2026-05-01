@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
-from nexoia.config.settings import get_settings
+from shared.config.settings import get_settings
 
 
 def _normalize_url(url: str) -> str:

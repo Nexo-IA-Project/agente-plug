@@ -1,10 +1,10 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from nexoia.domain.events.handoff_requested import HandoffRequested
-from nexoia.domain.events.idle_detected import IdleDetected, IdleStage
-from nexoia.domain.events.message_received import MessageReceived
-from nexoia.domain.events.purchase_received import PurchaseReceived
+from shared.domain.events.handoff_requested import HandoffRequested
+from shared.domain.events.idle_detected import IdleDetected, IdleStage
+from shared.domain.events.message_received import MessageReceived
+from shared.domain.events.purchase_received import PurchaseReceived
 
 
 def test_purchase_received_fields() -> None:

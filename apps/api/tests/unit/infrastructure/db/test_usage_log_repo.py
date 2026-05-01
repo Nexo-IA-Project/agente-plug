@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexoia.infrastructure.db.repositories.usage_log_repo import UsageLogRepository
+from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
 
 
 @pytest.mark.asyncio
@@ -22,7 +22,7 @@ async def test_record_no_result_flushes():
 @pytest.mark.asyncio
 async def test_list_recent_returns_list_of_dicts():
     session = AsyncMock()
-    from nexoia.infrastructure.db.models import KbUsageLogModel
+    from shared.adapters.db.models import KbUsageLogModel
     log = KbUsageLogModel(
         id="log-1",
         account_id=1,

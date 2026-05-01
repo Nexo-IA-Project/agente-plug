@@ -1,5 +1,5 @@
 def test_kb_models_importable():
-    from nexoia.infrastructure.db.models import (
+    from shared.adapters.db.models import (
         AdminUserModel,
         KbUsageLogModel,
         KnowledgeChunkModel,
@@ -12,7 +12,7 @@ def test_kb_models_importable():
 
 
 def test_knowledge_document_model_columns():
-    from nexoia.infrastructure.db.models import KnowledgeDocumentModel
+    from shared.adapters.db.models import KnowledgeDocumentModel
     cols = {c.name for c in KnowledgeDocumentModel.__table__.columns}
     assert "id" in cols
     assert "account_id" in cols

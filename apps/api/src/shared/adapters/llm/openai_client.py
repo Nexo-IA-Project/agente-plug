@@ -6,7 +6,7 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from nexoia.config.settings import get_settings
+from shared.config.settings import get_settings
 
 
 @dataclass

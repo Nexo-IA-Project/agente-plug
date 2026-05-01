@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from freezegun import freeze_time
 
-from nexoia.infrastructure.clock.system_clock import FrozenClock, SystemClock
+from shared.adapters.clock.system_clock import FrozenClock, SystemClock
 
 
 def test_system_clock_returns_utc_now() -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from nexoia.infrastructure.skills.access import (
+from agent.skills.access import (
     make_access_skills,
     BuscarAlunoCademiTool,
     EnviarLinkAcessoTool,

@@ -4,8 +4,8 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from nexoia.domain.policies.guards import GuardResult
-from nexoia.infrastructure.langgraph_runtime.nodes import make_raciocinar_node, make_pos_execucao_node
+from agent.guards import GuardResult
+from agent.react_node import make_raciocinar_node, make_pos_execucao_node
 
 
 def fake_config(account_id: str = "t1", phone: str = "5511999", conv_id: str = "c1"):

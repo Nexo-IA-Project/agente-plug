@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.testclient import TestClient
 
-from nexoia.interface.http.middleware import (
+from interface.http.middleware import (
     CorrelationIdMiddleware,
     correlation_id_var,
 )

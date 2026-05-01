@@ -48,9 +48,9 @@ def test_purchase_webhook_enqueues_job(
 
     import importlib
 
-    import nexoia.config.settings as st
+    import main.config.settings as st
     importlib.reload(st)
-    import nexoia.main as m
+    import main.main as m
     importlib.reload(m)
 
     # Run alembic migrations up

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nexoia.application.use_cases.knowledge.synonym_expander import SYNONYMS, SynonymExpander
+from shared.application.use_cases.knowledge.synonym_expander import SYNONYMS, SynonymExpander
 
 
 def test_synonyms_is_dict():

@@ -1,7 +1,7 @@
 from datetime import datetime, UTC
-from nexoia.domain.ports.hubla_port import HublaPurchase, RefundResult, HublaPort
-from nexoia.domain.ports.refund_mutex import RefundMutexPort
-from nexoia.domain.ports.legal_history_port import LegalHistoryPort
+from shared.domain.ports.hubla_port import HublaPurchase, RefundResult, HublaPort
+from shared.domain.ports.refund_mutex import RefundMutexPort
+from shared.domain.ports.legal_history_port import LegalHistoryPort
 
 
 def test_hubla_purchase_is_frozen():

@@ -1,4 +1,4 @@
-from nexoia.domain.value_objects.escalation_reason import EscalationReason
+from shared.domain.value_objects.escalation_reason import EscalationReason
 
 
 def test_all_8_reasons_defined():

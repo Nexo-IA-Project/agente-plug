@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 
 def _make_app():
-    from nexoia.interface.http.routers.admin.auth import router
+    from interface.http.routers.admin.auth import router
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     return app
@@ -18,7 +18,7 @@ def _make_app():
 @pytest.mark.asyncio
 async def test_login_returns_token_on_valid_credentials():
     """Integration-lite: real router, mocked DB and JWT."""
-    from nexoia.infrastructure.kb import jwt_handler
+    from shared.adapters.kb import jwt_handler
 
     mock_user_model = MagicMock()
     mock_user_model.id = "user-1"
@@ -54,7 +54,7 @@ async def test_login_returns_token_on_valid_credentials():
 
 @pytest.mark.asyncio
 async def test_login_returns_401_on_wrong_password():
-    from nexoia.infrastructure.kb import jwt_handler
+    from shared.adapters.kb import jwt_handler
 
     mock_user_model = MagicMock()
     mock_user_model.password_hash = jwt_handler.hash_password("correctpass")

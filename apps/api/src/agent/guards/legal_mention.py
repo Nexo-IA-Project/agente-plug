@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from nexoia.domain.policies.guards import GuardResult
+from agent.guards import GuardResult
 
 _KEYWORDS = [
     "procon",

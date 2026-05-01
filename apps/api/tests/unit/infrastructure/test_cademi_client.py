@@ -1,6 +1,6 @@
 import pytest
 
-from nexoia.infrastructure.cademi.client import CademiClient
+from shared.adapters.cademi.client import CademiClient
 
 
 @pytest.mark.asyncio

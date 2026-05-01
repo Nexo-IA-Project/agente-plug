@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexoia.domain.entities.knowledge_chunk import KnowledgeChunk
-from nexoia.infrastructure.db.repositories.chunk_repo import ChunkRepository
+from shared.domain.entities.knowledge_chunk import KnowledgeChunk
+from shared.adapters.db.repositories.chunk_repo import ChunkRepository
 
 
 def _make_chunk(index: int = 0) -> KnowledgeChunk:

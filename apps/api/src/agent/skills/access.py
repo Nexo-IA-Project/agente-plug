@@ -6,11 +6,11 @@ from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
 
-from nexoia.application.use_cases.access.buscar_aluno_cademi import BuscarAlunoCademi
-from nexoia.application.use_cases.access.enviar_link_acesso import EnviarLinkAcesso
-from nexoia.application.use_cases.access.verificar_caso import VerificarCasoAcesso
-from nexoia.domain.ports.cademi_port import CademiPort
-from nexoia.domain.ports.chatnexo import ChatNexoPort
+from shared.application.use_cases.access.buscar_aluno_cademi import BuscarAlunoCademi
+from shared.application.use_cases.access.enviar_link_acesso import EnviarLinkAcesso
+from shared.application.use_cases.access.verificar_caso import VerificarCasoAcesso
+from shared.domain.ports.cademi_port import CademiPort
+from shared.domain.ports.chatnexo import ChatNexoPort
 
 
 class VerificarCasoAcessoInput(BaseModel):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nexoia.domain.entities.knowledge_document import KnowledgeDocument
+from shared.domain.entities.knowledge_document import KnowledgeDocument
 
 
 class ListarDocumentos:

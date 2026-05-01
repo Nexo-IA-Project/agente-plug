@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 import factory
 
-from nexoia.infrastructure.db.models import (
+from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
     ConversationModel,

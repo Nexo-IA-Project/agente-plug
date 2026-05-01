@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from nexoia.interface.http.deps.admin_deps import AdminDeps, get_admin_deps
+from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
 
 router = APIRouter(tags=["admin-search"])
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nexoia.application.use_cases.knowledge.stopwords_ptbr import STOPWORDS
+from shared.application.use_cases.knowledge.stopwords_ptbr import STOPWORDS
 
 
 class KeywordExtractor:

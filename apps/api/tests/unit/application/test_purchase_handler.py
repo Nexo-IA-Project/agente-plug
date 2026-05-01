@@ -6,8 +6,8 @@ from uuid import UUID
 
 import pytest
 
-from nexoia.application.purchase_handler import PurchaseHandler
-from nexoia.domain.events.purchase_received import PurchaseReceived
+from shared.application.purchase_handler import PurchaseHandler
+from shared.domain.events.purchase_received import PurchaseReceived
 
 
 @pytest.fixture(autouse=True)

@@ -1,6 +1,6 @@
 import pytest
 
-from nexoia.config.settings import Settings
+from shared.config.settings import Settings
 
 
 def test_cademi_and_welcome_defaults(monkeypatch: pytest.MonkeyPatch) -> None:

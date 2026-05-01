@@ -1,7 +1,7 @@
 import uuid
 from unittest.mock import AsyncMock
 
-from nexoia.application.memory.long_term import LongTermMemory
+from shared.memory.long_term import LongTermMemory
 
 
 async def test_long_term_memory_merges_on_update() -> None:

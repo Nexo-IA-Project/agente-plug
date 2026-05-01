@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 from uuid import UUID
 
-from nexoia.domain.errors import TenantIsolationError
+from shared.domain.errors import TenantIsolationError
 
 
 def require_account_id(account_id: Any) -> None:

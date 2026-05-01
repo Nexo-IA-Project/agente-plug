@@ -1,5 +1,5 @@
 # tests/unit/test_kb_settings.py
-from nexoia.config.settings import Settings
+from shared.config.settings import Settings
 
 
 def test_kb_settings_defaults():

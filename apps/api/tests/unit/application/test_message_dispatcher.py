@@ -2,7 +2,7 @@ from __future__ import annotations
 import pytest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
-from nexoia.application.message_dispatcher import MessageDispatcher
+from shared.application.message_dispatcher import MessageDispatcher
 
 
 def fake_conv(within_window: bool):

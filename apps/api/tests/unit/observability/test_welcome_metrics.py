@@ -1,4 +1,4 @@
-from nexoia.infrastructure.observability.metrics import (
+from shared.adapters.observability.metrics import (
     welcome_capability_total,
     welcome_d1_cancelled_total,
     welcome_d1_scheduled_total,

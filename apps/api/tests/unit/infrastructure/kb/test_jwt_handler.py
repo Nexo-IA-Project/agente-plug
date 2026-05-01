@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from nexoia.infrastructure.kb.jwt_handler import (
+from shared.adapters.kb.jwt_handler import (
     create_access_token,
     hash_password,
     verify_password,

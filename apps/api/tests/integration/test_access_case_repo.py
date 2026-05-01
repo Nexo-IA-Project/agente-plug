@@ -1,7 +1,7 @@
 import pytest
 
-from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
-from nexoia.infrastructure.db.repositories.access_case_repo import AccessCaseRepository
+from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
+from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 
 
 @pytest.mark.asyncio

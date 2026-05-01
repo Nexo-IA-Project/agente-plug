@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from nexoia.domain.entities.conversation import Conversation, ConversationStatus
+from shared.domain.entities.conversation import Conversation, ConversationStatus
 
 
 def _make_conv(last_activity: datetime | None = None) -> Conversation:

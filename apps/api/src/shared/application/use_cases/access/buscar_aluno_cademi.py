@@ -5,7 +5,7 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.ports.cademi_port import CademiPort
+from shared.domain.ports.cademi_port import CademiPort
 
 log = structlog.get_logger(__name__)
 

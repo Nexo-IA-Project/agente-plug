@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.domain.entities.admin_user import AdminUser
-from nexoia.infrastructure.db.models import AdminUserModel
+from shared.domain.entities.admin_user import AdminUser
+from shared.adapters.db.models import AdminUserModel
 
 
 class AdminUserRepository:

@@ -3,22 +3,22 @@ from __future__ import annotations
 import asyncio
 import signal
 
-from nexoia.application.scheduler.runner import SchedulerRunner
-from nexoia.config.settings import get_settings
-from nexoia.domain.entities.scheduled_job import JobType, ScheduledJob
-from nexoia.infrastructure.clock.system_clock import SystemClock
-from nexoia.infrastructure.db.repositories.scheduled_job import ScheduledJobRepository
-from nexoia.infrastructure.db.session import get_sessionmaker
-from nexoia.infrastructure.observability.logger import configure_logging, get_logger
-from nexoia.infrastructure.redis.client import get_redis
-from nexoia.infrastructure.redis.mutex import RedisMutex
-from nexoia.infrastructure.redis.queue import PriorityQueue
-from nexoia.interface.worker.dispatcher import WorkerDispatcher
-from nexoia.interface.worker.handlers.message import handle_message
-from nexoia.interface.worker.handlers.process_purchase import handle_process_purchase_webhook
-from nexoia.interface.worker.handlers.purchase import handle_purchase
-from nexoia.interface.worker.handlers.scheduled import handle_scheduled
-from nexoia.interface.worker.scheduler import SchedulerLoop
+from shared.application.scheduler.runner import SchedulerRunner
+from shared.config.settings import get_settings
+from shared.domain.entities.scheduled_job import JobType, ScheduledJob
+from shared.adapters.clock.system_clock import SystemClock
+from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
+from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.observability.logger import configure_logging, get_logger
+from shared.adapters.redis.client import get_redis
+from shared.adapters.redis.mutex import RedisMutex
+from shared.adapters.redis.queue import PriorityQueue
+from interface.worker.dispatcher import WorkerDispatcher
+from interface.worker.handlers.message import handle_message
+from interface.worker.handlers.process_purchase import handle_process_purchase_webhook
+from interface.worker.handlers.purchase import handle_purchase
+from interface.worker.handlers.scheduled import handle_scheduled
+from interface.worker.scheduler import SchedulerLoop
 
 log = get_logger(__name__)
 

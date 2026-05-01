@@ -4,9 +4,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from nexoia.interface.http.errors import register_error_handlers
-from nexoia.interface.http.middleware import CorrelationIdMiddleware
-from nexoia.interface.http.routers import webhook_purchase
+from interface.http.errors import register_error_handlers
+from interface.http.middleware import CorrelationIdMiddleware
+from interface.http.routers import webhook_purchase
 
 
 @pytest.fixture

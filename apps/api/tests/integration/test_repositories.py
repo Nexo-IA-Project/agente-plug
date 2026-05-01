@@ -4,13 +4,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.domain.entities.scheduled_job import JobType
-from nexoia.domain.entities.webhook_event import WebhookSource
-from nexoia.domain.value_objects.phone import Phone
-from nexoia.infrastructure.db.models import AccountModel
-from nexoia.infrastructure.db.repositories.contact import ContactRepository
-from nexoia.infrastructure.db.repositories.scheduled_job import ScheduledJobRepository
-from nexoia.infrastructure.db.repositories.webhook_event import WebhookEventRepository
+from shared.domain.entities.scheduled_job import JobType
+from shared.domain.entities.webhook_event import WebhookSource
+from shared.domain.value_objects.phone import Phone
+from shared.adapters.db.models import AccountModel
+from shared.adapters.db.repositories.contact import ContactRepository
+from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
+from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
 
 
 @pytest.mark.integration

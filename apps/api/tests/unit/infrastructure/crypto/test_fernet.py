@@ -1,7 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet
 
-from nexoia.infrastructure.crypto.fernet import CredentialsCipher
+from shared.adapters.crypto.fernet import CredentialsCipher
 
 
 def test_encrypt_decrypt_roundtrip() -> None:

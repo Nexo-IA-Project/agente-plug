@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from nexoia.application.use_cases.loja_express.marcar_entregue import MarcarEntregue
-from nexoia.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
+from shared.application.use_cases.loja_express.marcar_entregue import MarcarEntregue
+from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 
 
 def _make_case(

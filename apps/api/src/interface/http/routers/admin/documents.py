@@ -5,8 +5,8 @@ import asyncio
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from nexoia.domain.entities.knowledge_document import KnowledgeDocument
-from nexoia.interface.http.deps.admin_deps import AdminDeps, get_admin_deps
+from shared.domain.entities.knowledge_document import KnowledgeDocument
+from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
 
 router = APIRouter(tags=["admin-documents"])
 

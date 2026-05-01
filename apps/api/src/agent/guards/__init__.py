@@ -29,8 +29,8 @@ class GuardService:
 
 
 # Deferred imports to avoid circular dependency (submodules import GuardResult from here)
-from nexoia.domain.policies.guards.legal_mention import LegalMentionGuard  # noqa: E402
-from nexoia.domain.policies.guards.loop_detector import LoopDetectorGuard  # noqa: E402
+from agent.guards.legal_mention import LegalMentionGuard  # noqa: E402
+from agent.guards.loop_detector import LoopDetectorGuard  # noqa: E402
 
 __all__ = [
     "GuardResult",

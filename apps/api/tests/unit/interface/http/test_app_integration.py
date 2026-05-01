@@ -19,9 +19,9 @@ def test_app_boots_and_health_responds(monkeypatch):
     # reimport to pick up env
     import importlib
 
-    import nexoia.config.settings as st
+    import main.config.settings as st
     importlib.reload(st)
-    import nexoia.main as m
+    import main.main as m
     importlib.reload(m)
 
     # TestClient skips real lifespan startup tasks that touch Redis if not connected

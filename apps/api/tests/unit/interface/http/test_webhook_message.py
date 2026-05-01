@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from nexoia.interface.http.middleware import CorrelationIdMiddleware
-from nexoia.interface.http.routers import webhook_message
+from interface.http.middleware import CorrelationIdMiddleware
+from interface.http.routers import webhook_message
 
 
 def _make_app(deps):

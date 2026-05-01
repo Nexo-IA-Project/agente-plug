@@ -6,11 +6,11 @@ from uuid import uuid4
 
 import structlog
 
-from nexoia.config.settings import get_settings
-from nexoia.domain.entities.access_case import AccessCase, AccessCaseStatus
-from nexoia.domain.entities.scheduled_job import JobType
-from nexoia.domain.events.purchase_received import PurchaseReceived
-from nexoia.domain.ports.chatnexo import ChatNexoPort
+from shared.config.settings import get_settings
+from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
+from shared.domain.entities.scheduled_job import JobType
+from shared.domain.events.purchase_received import PurchaseReceived
+from shared.domain.ports.chatnexo import ChatNexoPort
 
 log = structlog.get_logger(__name__)
 

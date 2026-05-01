@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.domain.entities.knowledge_chunk import KnowledgeChunk
-from nexoia.infrastructure.db.models import KnowledgeChunkModel
+from shared.domain.entities.knowledge_chunk import KnowledgeChunk
+from shared.adapters.db.models import KnowledgeChunkModel
 
 
 class ChunkRepository:

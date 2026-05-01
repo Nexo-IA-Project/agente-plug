@@ -4,9 +4,9 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.entities.refund_case import RefundCaseStatus
-from nexoia.domain.ports.hubla_port import HublaPort
-from nexoia.domain.ports.refund_mutex import RefundMutexPort
+from shared.domain.entities.refund_case import RefundCaseStatus
+from shared.domain.ports.hubla_port import HublaPort
+from shared.domain.ports.refund_mutex import RefundMutexPort
 
 log = structlog.get_logger(__name__)
 

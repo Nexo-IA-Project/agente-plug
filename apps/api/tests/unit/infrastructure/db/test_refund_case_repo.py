@@ -2,8 +2,8 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from datetime import UTC, datetime
-from nexoia.domain.entities.refund_case import RefundCase, RefundCaseStatus
-from nexoia.infrastructure.db.repositories.refund_case_repo import RefundCaseRepository
+from shared.domain.entities.refund_case import RefundCase, RefundCaseStatus
+from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
 
 
 def _make_model(

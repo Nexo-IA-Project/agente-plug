@@ -1,8 +1,8 @@
 import pytest
 from redis.asyncio import Redis
 
-from nexoia.domain.value_objects.priority import Priority
-from nexoia.infrastructure.redis.queue import PriorityQueue
+from shared.domain.value_objects.priority import Priority
+from shared.adapters.redis.queue import PriorityQueue
 
 
 @pytest.mark.integration

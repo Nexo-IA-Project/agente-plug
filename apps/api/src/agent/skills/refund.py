@@ -6,12 +6,12 @@ from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
 
-from nexoia.application.use_cases.refund.iniciar_retencao import IniciarRetencao
-from nexoia.application.use_cases.refund.processar_reembolso import ProcessarReembolso
-from nexoia.application.use_cases.refund.verificar_elegibilidade import VerificarElegibilidadeReembolso
-from nexoia.domain.ports.hubla_port import HublaPort
-from nexoia.domain.ports.legal_history_port import LegalHistoryPort
-from nexoia.domain.ports.refund_mutex import RefundMutexPort
+from shared.application.use_cases.refund.iniciar_retencao import IniciarRetencao
+from shared.application.use_cases.refund.processar_reembolso import ProcessarReembolso
+from shared.application.use_cases.refund.verificar_elegibilidade import VerificarElegibilidadeReembolso
+from shared.domain.ports.hubla_port import HublaPort
+from shared.domain.ports.legal_history_port import LegalHistoryPort
+from shared.domain.ports.refund_mutex import RefundMutexPort
 
 
 class VerificarElegibilidadeInput(BaseModel):

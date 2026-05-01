@@ -1,4 +1,4 @@
-from nexoia.infrastructure.meta.templates import InMemoryMetaTemplates
+from shared.adapters.meta.templates import InMemoryMetaTemplates
 
 
 async def test_registered_template_can_be_retrieved() -> None:

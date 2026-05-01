@@ -5,8 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexoia.application.use_cases.kb.ingerir_documento import IngerirDocumento
-from nexoia.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
+from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
+from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 
 
 def _make_document(doc_id: str = "doc-1") -> KnowledgeDocument:

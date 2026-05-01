@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.infrastructure.db.models import KbUsageLogModel
+from shared.adapters.db.models import KbUsageLogModel
 
 
 class UsageLogRepository:

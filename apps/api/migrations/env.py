@@ -8,8 +8,8 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from nexoia.config.settings import get_settings
-from nexoia.infrastructure.db.models import Base  # noqa: E402
+from shared.config.settings import get_settings
+from shared.adapters.db.models import Base  # noqa: E402
 
 config = context.config
 if config.config_file_name is not None:

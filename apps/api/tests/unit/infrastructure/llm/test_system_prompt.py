@@ -1,5 +1,5 @@
 from __future__ import annotations
-from nexoia.infrastructure.llm.system_prompt import build_system_prompt
+from agent.prompt import build_system_prompt
 
 
 def test_build_system_prompt_returns_string():

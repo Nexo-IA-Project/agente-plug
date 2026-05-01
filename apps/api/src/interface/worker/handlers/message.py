@@ -5,8 +5,8 @@ from typing import Any
 import structlog
 from langchain_core.messages import AIMessage, HumanMessage
 
-from nexoia.application.lifecycle_handler import LifecycleHandler
-from nexoia.application.message_dispatcher import MessageDispatcher
+from shared.application.lifecycle_handler import LifecycleHandler
+from shared.application.message_dispatcher import MessageDispatcher
 
 log = structlog.get_logger(__name__)
 

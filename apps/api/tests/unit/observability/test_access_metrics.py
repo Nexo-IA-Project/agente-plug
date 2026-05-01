@@ -1,4 +1,4 @@
-from nexoia.infrastructure.observability.metrics import (
+from shared.adapters.observability.metrics import (
     access_cademi_cascade_attempts,
     access_capability_total,
     access_cpf_fallback_total,

@@ -57,4 +57,4 @@ def test_domain_does_not_import_from_other_layers() -> None:
         for full in full_imports:
             if full.startswith("nexoia.") and not full.startswith("nexoia.domain"):
                 offenders.append(f"{path}: {full}")
-    assert not offenders, "Domain must only import from nexoia.domain.*:\n" + "\n".join(offenders)
+    assert not offenders, "Domain must only import from shared.domain.*:\n" + "\n".join(offenders)

@@ -1,8 +1,8 @@
 # tests/fakes/fake_cademi_client.py
 from __future__ import annotations
 
-from nexoia.domain.errors import CademiError
-from nexoia.domain.ports.cademi_port import CademiStudent
+from shared.domain.errors import CademiError
+from shared.domain.ports.cademi_port import CademiStudent
 
 
 class FakeCademiClient:

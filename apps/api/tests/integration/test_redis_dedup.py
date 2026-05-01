@@ -2,7 +2,7 @@ import pytest
 from redis.asyncio import Redis
 from testcontainers.redis import RedisContainer
 
-from nexoia.infrastructure.redis.dedup import RedisDedup
+from shared.adapters.redis.dedup import RedisDedup
 
 
 @pytest.fixture(scope="module")

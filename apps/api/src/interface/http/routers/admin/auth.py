@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from nexoia.config.settings import get_settings
-from nexoia.infrastructure.db.models import AdminUserModel
-from nexoia.infrastructure.db.session import session_scope
-from nexoia.infrastructure.kb.jwt_handler import create_access_token, verify_password
+from shared.config.settings import get_settings
+from shared.adapters.db.models import AdminUserModel
+from shared.adapters.db.session import session_scope
+from shared.adapters.kb.jwt_handler import create_access_token, verify_password
 
 router = APIRouter(tags=["admin-auth"])
 

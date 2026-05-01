@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from nexoia.infrastructure.skills.core import make_core_skills, EscalarParaHumanoTool
+from agent.skills.core import make_core_skills, EscalarParaHumanoTool
 
 
 def test_make_core_skills_returns_one_tool():

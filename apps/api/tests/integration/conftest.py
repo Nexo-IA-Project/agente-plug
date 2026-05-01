@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
-from nexoia.infrastructure.db.session import create_engine
+from shared.adapters.db.session import create_engine
 
 
 @pytest.fixture(scope="session")

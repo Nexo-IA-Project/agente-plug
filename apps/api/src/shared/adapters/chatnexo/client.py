@@ -12,8 +12,8 @@ from tenacity import (
     wait_exponential,
 )
 
-from nexoia.config.settings import get_settings
-from nexoia.domain.value_objects.escalation_reason import EscalationReason
+from shared.config.settings import get_settings
+from shared.domain.value_objects.escalation_reason import EscalationReason
 
 
 class ChatNexoError(RuntimeError):

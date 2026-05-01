@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from nexoia.infrastructure.observability.logger import bind_context, get_logger
+from shared.adapters.observability.logger import bind_context, get_logger
 
 StopSignal = object()
 log = get_logger(__name__)

@@ -1,7 +1,7 @@
 import pytest
 
-from nexoia.domain.errors import TenantIsolationError
-from nexoia.infrastructure.db.repositories.base import require_account_id
+from shared.domain.errors import TenantIsolationError
+from shared.adapters.db.repositories.base import require_account_id
 
 
 def test_require_account_id_accepts_non_empty_value() -> None:

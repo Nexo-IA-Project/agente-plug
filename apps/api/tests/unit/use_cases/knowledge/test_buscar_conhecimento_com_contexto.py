@@ -5,10 +5,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from nexoia.application.use_cases.knowledge.buscar_conhecimento_com_contexto import (
+from shared.application.use_cases.knowledge.buscar_conhecimento_com_contexto import (
     BuscarConhecimentoComContexto,
 )
-from nexoia.domain.ports.knowledge import KnowledgeChunk
+from shared.domain.ports.knowledge import KnowledgeChunk
 
 
 def _make_chunk(text: str = "resposta encontrada") -> KnowledgeChunk:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Response
 
-from nexoia.infrastructure.observability.metrics import CONTENT_TYPE, render_latest
+from shared.adapters.observability.metrics import CONTENT_TYPE, render_latest
 
 router = APIRouter()
 

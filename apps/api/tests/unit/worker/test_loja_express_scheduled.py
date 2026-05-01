@@ -17,7 +17,7 @@ async def test_handle_scheduled_loja_express_d1_calls_followup_day_1():
         "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
-        from nexoia.interface.worker.handlers.scheduled import handle_scheduled
+        from interface.worker.handlers.scheduled import handle_scheduled
         await handle_scheduled({
             "job_type": "LOJA_EXPRESS_D1",
             "account_id": "1",
@@ -42,7 +42,7 @@ async def test_handle_scheduled_loja_express_d7_calls_followup_day_7():
         "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
-        from nexoia.interface.worker.handlers.scheduled import handle_scheduled
+        from interface.worker.handlers.scheduled import handle_scheduled
         await handle_scheduled({
             "job_type": "LOJA_EXPRESS_D7",
             "account_id": "1",
@@ -66,7 +66,7 @@ async def test_handle_scheduled_loja_express_canonical_lowercase_value():
         "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
-        from nexoia.interface.worker.handlers.scheduled import handle_scheduled
+        from interface.worker.handlers.scheduled import handle_scheduled
         await handle_scheduled({
             "job_type": "loja_express_d3",  # lowercase — canonical StrEnum value
             "account_id": "2",

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from nexoia.domain.errors import InvalidPhoneError
+from shared.domain.errors import InvalidPhoneError
 
 _NON_DIGITS = re.compile(r"\D")
 _BR_COUNTRY_CODE = "55"

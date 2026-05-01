@@ -1,7 +1,7 @@
 import pytest
 from redis.asyncio import Redis
 
-from nexoia.infrastructure.redis.mutex import MutexAcquisitionError, RedisMutex
+from shared.adapters.redis.mutex import MutexAcquisitionError, RedisMutex
 
 
 @pytest.mark.integration

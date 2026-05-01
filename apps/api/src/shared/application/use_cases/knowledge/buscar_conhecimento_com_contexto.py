@@ -4,10 +4,10 @@ from typing import Any
 
 import structlog
 
-from nexoia.application.use_cases.knowledge.buscar_conhecimento import BuscaResult
-from nexoia.config.settings import get_settings
-from nexoia.domain.ports.chatnexo import ChatNexoPort
-from nexoia.domain.ports.knowledge import KnowledgePort
+from shared.application.use_cases.knowledge.buscar_conhecimento import BuscaResult
+from shared.config.settings import get_settings
+from shared.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.knowledge import KnowledgePort
 
 log = structlog.get_logger(__name__)
 

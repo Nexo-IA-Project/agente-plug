@@ -1,7 +1,7 @@
 import pytest
 
-from nexoia.domain.errors import InvalidPhoneError
-from nexoia.domain.value_objects.phone import Phone
+from shared.domain.errors import InvalidPhoneError
+from shared.domain.value_objects.phone import Phone
 
 
 def test_phone_normalizes_br_number_without_country_code() -> None:

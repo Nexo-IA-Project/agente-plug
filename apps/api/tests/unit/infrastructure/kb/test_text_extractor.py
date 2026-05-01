@@ -1,7 +1,7 @@
 # tests/unit/infrastructure/kb/test_text_extractor.py
 import pytest
 
-from nexoia.infrastructure.kb.text_extractor import TextExtractor
+from shared.adapters.kb.text_extractor import TextExtractor
 
 
 def test_extract_plain_text():

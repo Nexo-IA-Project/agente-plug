@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langchain_core.messages import AIMessage
 
-from nexoia.domain.policies.guards import GuardResult
+from agent.guards import GuardResult
 
 _THRESHOLD = 3
 

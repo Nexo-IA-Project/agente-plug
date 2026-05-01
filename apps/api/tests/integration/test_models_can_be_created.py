@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.infrastructure.db.models import (
+from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
     ConversationModel,

@@ -9,7 +9,7 @@ from fastapi import HTTPException
 
 @pytest.mark.asyncio
 async def test_get_admin_deps_raises_401_without_token():
-    from nexoia.interface.http.deps.admin_deps import get_admin_deps
+    from interface.http.deps.admin_deps import get_admin_deps
 
     with pytest.raises(HTTPException) as exc_info:
         # Call as async generator — exhaust it
@@ -21,7 +21,7 @@ async def test_get_admin_deps_raises_401_without_token():
 
 @pytest.mark.asyncio
 async def test_get_admin_deps_raises_401_on_bad_token():
-    from nexoia.interface.http.deps.admin_deps import get_admin_deps
+    from interface.http.deps.admin_deps import get_admin_deps
 
     with patch("nexoia.interface.http.deps.admin_deps.get_settings") as mock_settings:
         mock_settings.return_value.jwt_secret = "test-secret"

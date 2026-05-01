@@ -8,7 +8,7 @@ from typing import Any
 
 from redis.asyncio import Redis
 
-from nexoia.domain.value_objects.priority import Priority
+from shared.domain.value_objects.priority import Priority
 
 
 @dataclass

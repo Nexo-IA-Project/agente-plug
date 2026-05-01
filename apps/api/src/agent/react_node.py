@@ -8,10 +8,10 @@ import structlog
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.config import RunnableConfig
 
-from nexoia.domain.policies.communication_rules import CommunicationRules
-from nexoia.domain.policies.guards import GuardService
-from nexoia.infrastructure.langgraph_runtime.state import AgentState
-from nexoia.infrastructure.llm.system_prompt import build_system_prompt
+from shared.domain.policies.communication_rules import CommunicationRules
+from agent.guards import GuardService
+from agent.state import AgentState
+from agent.prompt import build_system_prompt
 
 log = structlog.get_logger(__name__)
 

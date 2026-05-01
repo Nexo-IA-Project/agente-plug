@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock
 
-from nexoia.interface.worker.dispatcher import StopSignal, WorkerDispatcher
+from interface.worker.dispatcher import StopSignal, WorkerDispatcher
 
 
 async def test_dispatcher_routes_to_handler_by_kind():

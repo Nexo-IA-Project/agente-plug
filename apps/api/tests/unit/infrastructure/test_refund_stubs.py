@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock
-from nexoia.infrastructure.hubla.client import HublaClient
-from nexoia.infrastructure.redis.refund_mutex import RedisRefundMutex
+from shared.adapters.hubla.client import HublaClient
+from shared.adapters.redis.refund_mutex import RedisRefundMutex
 
 
 @pytest.mark.asyncio

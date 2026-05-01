@@ -4,7 +4,7 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.entities.refund_case import RefundCaseStatus
+from shared.domain.entities.refund_case import RefundCaseStatus
 
 log = structlog.get_logger(__name__)
 

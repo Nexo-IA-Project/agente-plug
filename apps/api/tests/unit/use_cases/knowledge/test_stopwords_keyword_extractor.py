@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from nexoia.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
-from nexoia.application.use_cases.knowledge.stopwords_ptbr import STOPWORDS
+from shared.application.use_cases.knowledge.keyword_extractor import KeywordExtractor
+from shared.application.use_cases.knowledge.stopwords_ptbr import STOPWORDS
 
 
 def test_stopwords_is_frozenset():

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Protocol, runtime_checkable
 from uuid import UUID
 
-from nexoia.domain.value_objects.escalation_reason import EscalationReason
+from shared.domain.value_objects.escalation_reason import EscalationReason
 
 
 @runtime_checkable

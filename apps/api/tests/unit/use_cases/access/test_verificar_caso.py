@@ -1,7 +1,7 @@
 from __future__ import annotations
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from nexoia.application.use_cases.access.verificar_caso import VerificarCasoAcesso
+from shared.application.use_cases.access.verificar_caso import VerificarCasoAcesso
 
 
 def fake_case(case_id: str = "case-1", attempts: int = 0, email: str = "a@b.com"):

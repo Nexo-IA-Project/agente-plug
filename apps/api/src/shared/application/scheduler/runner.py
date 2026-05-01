@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from nexoia.domain.entities.scheduled_job import JobType, ScheduledJob
+from shared.domain.entities.scheduled_job import JobType, ScheduledJob
 
 
 class ScheduledJobRepoProto(Protocol):

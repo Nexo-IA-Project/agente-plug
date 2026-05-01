@@ -6,8 +6,8 @@ from typing import Any
 
 import structlog
 
-from nexoia.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
-from nexoia.domain.entities.scheduled_job import JobType
+from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
+from shared.domain.entities.scheduled_job import JobType
 
 log = structlog.get_logger(__name__)
 

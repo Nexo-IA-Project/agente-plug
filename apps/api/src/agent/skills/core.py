@@ -6,7 +6,7 @@ from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
 
-from nexoia.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.ports.chatnexo import ChatNexoPort
 
 
 class EscalarParaHumanoInput(BaseModel):

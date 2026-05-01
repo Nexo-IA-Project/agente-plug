@@ -1,7 +1,7 @@
 # src/nexoia/infrastructure/loja_express/stub_client.py
 from __future__ import annotations
 
-from nexoia.domain.ports.loja_express_port import StoreStatus
+from shared.domain.ports.loja_express_port import StoreStatus
 
 
 class LojaExpressStubClient:

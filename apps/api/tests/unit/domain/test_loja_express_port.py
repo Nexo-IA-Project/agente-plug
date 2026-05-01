@@ -5,8 +5,8 @@ from typing import Protocol
 
 import pytest
 
-from nexoia.domain.ports.loja_express_port import LojaExpressPort
-from nexoia.infrastructure.loja_express.stub_client import LojaExpressStubClient
+from shared.domain.ports.loja_express_port import LojaExpressPort
+from shared.adapters.loja_express.stub_client import LojaExpressStubClient
 
 
 def test_loja_express_port_is_protocol():

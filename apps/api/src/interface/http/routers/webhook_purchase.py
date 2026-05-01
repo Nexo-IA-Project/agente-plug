@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from nexoia.domain.entities.webhook_event import WebhookSource
-from nexoia.infrastructure.observability.logger import get_logger
-from nexoia.infrastructure.observability.metrics import WEBHOOK_RECEIVED
+from shared.domain.entities.webhook_event import WebhookSource
+from shared.adapters.observability.logger import get_logger
+from shared.adapters.observability.metrics import WEBHOOK_RECEIVED
 
 router = APIRouter(tags=["webhook"])
 log = get_logger(__name__)

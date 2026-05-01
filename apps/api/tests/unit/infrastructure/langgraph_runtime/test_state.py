@@ -4,9 +4,9 @@ from uuid import uuid4
 
 from langchain_core.messages import HumanMessage
 
-from nexoia.domain.value_objects.intent import Intent
-from nexoia.domain.value_objects.sentiment import Sentiment
-from nexoia.infrastructure.langgraph_runtime.state import (
+from shared.domain.value_objects.intent import Intent
+from shared.domain.value_objects.sentiment import Sentiment
+from agent.state import (
     AgentState,
     ConversationState,
     make_initial_state,

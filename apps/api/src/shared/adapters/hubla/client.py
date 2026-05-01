@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from nexoia.domain.ports.hubla_port import HublaPurchase, RefundResult
+from shared.domain.ports.hubla_port import HublaPurchase, RefundResult
 
 
 class HublaClient:

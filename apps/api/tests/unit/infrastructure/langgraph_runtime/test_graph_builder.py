@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
+from agent.graph import build_graph
 
 
 def test_build_graph_returns_compiled_graph():
@@ -55,7 +55,7 @@ def test_build_graph_accepts_refund_params():
     """build_graph deve aceitar refund_repo, hubla, legal_history, refund_mutex."""
     from unittest.mock import AsyncMock
 
-    from nexoia.infrastructure.langgraph_runtime.graph_builder import build_graph
+    from agent.graph import build_graph
     graph = build_graph(
         access_repo=AsyncMock(),
         cademi=AsyncMock(),

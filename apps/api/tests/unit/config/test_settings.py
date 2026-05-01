@@ -1,6 +1,6 @@
 import pytest
 
-from nexoia.config.settings import Settings
+from shared.config.settings import Settings
 
 
 def test_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:

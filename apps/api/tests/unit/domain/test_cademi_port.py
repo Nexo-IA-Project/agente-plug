@@ -1,7 +1,7 @@
 import pytest
 
-from nexoia.domain.errors import CademiError
-from nexoia.domain.ports.cademi_port import CademiStudent
+from shared.domain.errors import CademiError
+from shared.domain.ports.cademi_port import CademiStudent
 
 
 def test_cademi_student_is_frozen():
@@ -16,7 +16,7 @@ def test_cademi_student_without_phone():
 
 
 def test_cademi_error_is_domain_error():
-    from nexoia.domain.errors import DomainError
+    from shared.domain.errors import DomainError
     err = CademiError("Connection timeout")
     assert isinstance(err, DomainError)
     assert str(err) == "Connection timeout"

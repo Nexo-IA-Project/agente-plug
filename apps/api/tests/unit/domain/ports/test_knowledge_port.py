@@ -1,7 +1,7 @@
 # tests/unit/domain/ports/test_knowledge_port.py
 from __future__ import annotations
 
-from nexoia.domain.ports.knowledge import KnowledgeChunk, KnowledgePort
+from shared.domain.ports.knowledge import KnowledgeChunk, KnowledgePort
 
 
 def test_knowledge_chunk_fields():

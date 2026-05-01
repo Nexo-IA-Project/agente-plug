@@ -1,4 +1,4 @@
-from nexoia.infrastructure.llm.fake_client import FakeLLM
+from shared.adapters.llm.fake_client import FakeLLM
 
 
 async def test_complete_json_returns_canned() -> None:

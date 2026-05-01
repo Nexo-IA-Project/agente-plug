@@ -1,5 +1,5 @@
 # tests/unit/infrastructure/db/test_loja_express_case_model.py
-from nexoia.infrastructure.db.models import LojaExpressCaseModel
+from shared.adapters.db.models import LojaExpressCaseModel
 
 
 def test_loja_express_case_model_tablename():

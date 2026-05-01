@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexoia.domain.entities.refund_case import RefundCase, RefundCaseStatus
-from nexoia.infrastructure.db.models import RefundCaseModel
+from shared.domain.entities.refund_case import RefundCase, RefundCaseStatus
+from shared.adapters.db.models import RefundCaseModel
 
 
 class RefundCaseRepository:

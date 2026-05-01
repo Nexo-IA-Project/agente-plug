@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from nexoia.infrastructure.kb.openai_embeddings import OpenAIEmbeddingsAdapter
+from shared.adapters.kb.openai_embeddings import OpenAIEmbeddingsAdapter
 
 
 @pytest.mark.asyncio
@@ -44,6 +44,6 @@ def test_embeddings_port_protocol_satisfied():
     """OpenAIEmbeddingsAdapter implements EmbeddingsPort (structural check)."""
     from unittest.mock import AsyncMock
 
-    from nexoia.domain.ports.embeddings_port import EmbeddingsPort
+    from shared.domain.ports.embeddings_port import EmbeddingsPort
     adapter = OpenAIEmbeddingsAdapter(AsyncMock())
     assert isinstance(adapter, EmbeddingsPort)
