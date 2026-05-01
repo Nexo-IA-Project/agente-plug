@@ -19,7 +19,10 @@ class LoopDetectorGuard:
             return GuardResult(
                 blocked=True,
                 reason="loop_detected",
-                skill_override="escalar_para_humano",
+                forced_instruction=(
+                    "INSTRUÇÃO CRÍTICA: Foi detectado um loop de respostas repetidas. "
+                    "Você DEVE chamar imediatamente a skill escalar_para_humano. "
+                    "Não responda por texto — use a skill."
+                ),
             )
         return GuardResult(blocked=False)
-

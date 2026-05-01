@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
+
 from nexoia.domain.policies.guards import (
     GuardResult,
     GuardService,
     LegalMentionGuard,
     LoopDetectorGuard,
-    FrustrationGuard,
 )
 
 
@@ -18,12 +19,14 @@ def test_legal_mention_guard_blocks_on_procon():
     result = LegalMentionGuard().check("vou acionar o Procon!", _state([]))
     assert result.blocked is True
     assert result.reason == "legal_mention"
-    assert result.skill_override == "escalar_para_humano"
+    assert result.forced_instruction
+    assert "escalar_para_humano" in result.forced_instruction
 
 
 def test_legal_mention_guard_blocks_on_advogado():
     result = LegalMentionGuard().check("vou chamar meu advogado", _state([]))
     assert result.blocked is True
+    assert result.forced_instruction
 
 
 def test_legal_mention_guard_passes_normal_message():
@@ -36,17 +39,14 @@ def test_loop_detector_blocks_when_ai_repeats():
     state = _state([repeated, repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is True
-    assert result.skill_override == "escalar_para_humano"
+    assert result.reason == "loop_detected"
+    assert result.forced_instruction
+    assert "escalar_para_humano" in result.forced_instruction
 
 
 def test_loop_detector_passes_varied_messages():
     state = _state([AIMessage("Mensagem 1"), AIMessage("Mensagem 2"), AIMessage("Mensagem 3")])
     result = LoopDetectorGuard().check("oi", state)
-    assert result.blocked is False
-
-
-def test_frustration_guard_is_stub_returns_not_blocked():
-    result = FrustrationGuard().check("isso é uma bagunça!", _state([]))
     assert result.blocked is False
 
 
@@ -65,7 +65,7 @@ def test_guard_service_passes_clean_message():
 
 def test_loop_detector_does_not_block_below_threshold():
     repeated = AIMessage("Olá! Como posso ajudar?")
-    state = _state([repeated, repeated])  # only 2, threshold is 3
+    state = _state([repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is False
 
@@ -76,3 +76,8 @@ def test_loop_detector_blocks_on_tail_not_full_window():
     state = _state([different, repeated, repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is True
+
+
+def test_guard_result_has_no_skill_override_field():
+    result = GuardResult(blocked=False)
+    assert not hasattr(result, "skill_override")

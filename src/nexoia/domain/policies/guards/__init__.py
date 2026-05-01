@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol
-
-if TYPE_CHECKING:
-    pass
+from typing import Protocol
 
 
 @dataclass(frozen=True)
@@ -12,7 +9,7 @@ class GuardResult:
     blocked: bool
     response: str = ""
     reason: str = ""
-    skill_override: str | None = None
+    forced_instruction: str = ""
 
 
 class Guard(Protocol):
@@ -32,12 +29,10 @@ class GuardService:
 
 
 # Deferred imports to avoid circular dependency (submodules import GuardResult from here)
-from nexoia.domain.policies.guards.frustration import FrustrationGuard  # noqa: E402
 from nexoia.domain.policies.guards.legal_mention import LegalMentionGuard  # noqa: E402
 from nexoia.domain.policies.guards.loop_detector import LoopDetectorGuard  # noqa: E402
 
 __all__ = [
-    "FrustrationGuard",
     "GuardResult",
     "GuardService",
     "LegalMentionGuard",

@@ -24,6 +24,10 @@ class LegalMentionGuard:
             return GuardResult(
                 blocked=True,
                 reason="legal_mention",
-                skill_override="escalar_para_humano",
+                forced_instruction=(
+                    "INSTRUÇÃO CRÍTICA: O aluno mencionou ação legal ou órgão de defesa do consumidor. "
+                    "Você DEVE chamar imediatamente a skill escalar_para_humano. "
+                    "Não responda por texto — use a skill."
+                ),
             )
         return GuardResult(blocked=False)
