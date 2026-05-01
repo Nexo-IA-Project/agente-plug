@@ -27,8 +27,8 @@ async def test_login_returns_token_on_valid_credentials():
     mock_user_model.account_id = 1
     mock_user_model.role = "admin"
 
-    with patch("nexoia.interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("nexoia.interface.http.routers.admin.auth.get_settings") as mock_settings:
+    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
+         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
 
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(
@@ -61,8 +61,8 @@ async def test_login_returns_401_on_wrong_password():
     mock_user_model.email = "admin@test.com"
     mock_user_model.account_id = 1
 
-    with patch("nexoia.interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("nexoia.interface.http.routers.admin.auth.get_settings") as mock_settings:
+    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
+         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
 
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(
@@ -84,8 +84,8 @@ async def test_login_returns_401_on_wrong_password():
 
 @pytest.mark.asyncio
 async def test_login_returns_401_when_user_not_found():
-    with patch("nexoia.interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("nexoia.interface.http.routers.admin.auth.get_settings") as mock_settings:
+    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
+         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
 
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(

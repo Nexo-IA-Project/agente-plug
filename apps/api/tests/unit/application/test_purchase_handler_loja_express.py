@@ -17,7 +17,7 @@ def mock_settings():
     settings = MagicMock()
     settings.loja_express_product_tags = ["loja_express", "loja-express"]
     with patch(
-        "nexoia.application.purchase_handler.get_settings",
+        "shared.application.purchase_handler.get_settings",
         return_value=settings,
     ):
         yield settings

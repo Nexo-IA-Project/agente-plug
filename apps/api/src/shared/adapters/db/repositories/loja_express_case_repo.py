@@ -1,4 +1,3 @@
-# src/nexoia/infrastructure/db/repositories/loja_express_case_repo.py
 from __future__ import annotations
 
 from sqlalchemy import select

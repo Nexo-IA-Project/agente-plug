@@ -1,4 +1,3 @@
-# src/nexoia/application/use_cases/loja_express/criar_caso.py
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

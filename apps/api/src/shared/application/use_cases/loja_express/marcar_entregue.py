@@ -1,4 +1,3 @@
-# src/nexoia/application/use_cases/loja_express/marcar_entregue.py
 from __future__ import annotations
 
 from typing import Any

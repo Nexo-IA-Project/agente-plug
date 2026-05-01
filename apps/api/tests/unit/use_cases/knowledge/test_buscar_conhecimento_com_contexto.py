@@ -39,7 +39,7 @@ async def test_found_with_context_returns_found_status():
     uc = BuscarConhecimentoComContexto(repo, usage_log, chatnexo)
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(
@@ -68,7 +68,7 @@ async def test_escalates_when_context_search_fails():
     uc = BuscarConhecimentoComContexto(repo, usage_log, chatnexo)
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(
@@ -98,7 +98,7 @@ async def test_search_uses_enriched_query():
     uc = BuscarConhecimentoComContexto(repo, usage_log, chatnexo)
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento_com_contexto.get_settings",
         return_value=_make_settings(),
     ):
         await uc.execute(

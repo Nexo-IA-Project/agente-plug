@@ -1,4 +1,3 @@
-# src/nexoia/interface/worker/handlers/scheduled.py
 from __future__ import annotations
 
 import structlog

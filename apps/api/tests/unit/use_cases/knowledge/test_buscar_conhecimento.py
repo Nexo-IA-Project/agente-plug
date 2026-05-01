@@ -37,7 +37,7 @@ async def test_found_on_first_attempt():
     uc = BuscarConhecimento(repo, SynonymExpander(), KeywordExtractor())
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(query="como acessar", account_id=1)
@@ -55,7 +55,7 @@ async def test_found_on_second_attempt_synonyms():
     uc = BuscarConhecimento(repo, SynonymExpander(), KeywordExtractor())
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(query="como acessar", account_id=1)
@@ -74,7 +74,7 @@ async def test_found_on_third_attempt_keywords():
     uc = BuscarConhecimento(repo, SynonymExpander(), KeywordExtractor())
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(query="como acessar o curso", account_id=1)
@@ -91,7 +91,7 @@ async def test_ask_context_when_all_attempts_fail():
     uc = BuscarConhecimento(repo, SynonymExpander(), KeywordExtractor())
 
     with patch(
-        "nexoia.application.use_cases.knowledge.buscar_conhecimento.get_settings",
+        "shared.application.use_cases.knowledge.buscar_conhecimento.get_settings",
         return_value=_make_settings(),
     ):
         result = await uc.execute(query="xpto zzzz", account_id=1)

@@ -11,10 +11,10 @@ async def test_handle_scheduled_loja_express_d1_calls_followup_day_1():
     mock_followup = AsyncMock()
     mock_followup.execute = AsyncMock(return_value="FOLLOWUP_D1: template enviado")
     with patch(
-        "nexoia.interface.worker.handlers.scheduled._get_followup_handler",
+        "interface.worker.handlers.scheduled._get_followup_handler",
         return_value=mock_followup,
     ), patch(
-        "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
+        "interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
         from interface.worker.handlers.scheduled import handle_scheduled
@@ -36,10 +36,10 @@ async def test_handle_scheduled_loja_express_d7_calls_followup_day_7():
     mock_followup = AsyncMock()
     mock_followup.execute = AsyncMock(return_value="ESCALADO: reason=loja_express_d7_prazo_critico")
     with patch(
-        "nexoia.interface.worker.handlers.scheduled._get_followup_handler",
+        "interface.worker.handlers.scheduled._get_followup_handler",
         return_value=mock_followup,
     ), patch(
-        "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
+        "interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
         from interface.worker.handlers.scheduled import handle_scheduled
@@ -60,10 +60,10 @@ async def test_handle_scheduled_loja_express_canonical_lowercase_value():
     mock_followup = AsyncMock()
     mock_followup.execute = AsyncMock(return_value="FOLLOWUP_D3: template enviado")
     with patch(
-        "nexoia.interface.worker.handlers.scheduled._get_followup_handler",
+        "interface.worker.handlers.scheduled._get_followup_handler",
         return_value=mock_followup,
     ), patch(
-        "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
+        "interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=AsyncMock(),
     ):
         from interface.worker.handlers.scheduled import handle_scheduled

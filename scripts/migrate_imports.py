@@ -48,6 +48,33 @@ REPLACEMENTS: list[tuple[str, str]] = [
     # Main module
     ("from nexoia.main", "from main"),
     ("import nexoia", "import main"),  # fallback
+    # patch() / monkeypatch string literals — same order rules apply
+    ("nexoia.domain.policies.guards", "agent.guards"),
+    ("nexoia.infrastructure.langgraph_runtime.nodes", "agent.react_node"),
+    ("nexoia.infrastructure.langgraph_runtime.graph_builder", "agent.graph"),
+    ("nexoia.infrastructure.langgraph_runtime.state", "agent.state"),
+    ("nexoia.infrastructure.langgraph_runtime.checkpointer", "agent.checkpointer"),
+    ("nexoia.infrastructure.langgraph_runtime", "agent"),
+    ("nexoia.infrastructure.skills", "agent.skills"),
+    ("nexoia.infrastructure.llm.system_prompt", "agent.prompt"),
+    ("nexoia.infrastructure.db", "shared.adapters.db"),
+    ("nexoia.infrastructure.observability", "shared.adapters.observability"),
+    ("nexoia.infrastructure.kb", "shared.adapters.kb"),
+    ("nexoia.infrastructure.redis", "shared.adapters.redis"),
+    ("nexoia.infrastructure.llm", "shared.adapters.llm"),
+    ("nexoia.infrastructure.meta", "shared.adapters.meta"),
+    ("nexoia.infrastructure.loja_express", "shared.adapters.loja_express"),
+    ("nexoia.infrastructure.cademi", "shared.adapters.cademi"),
+    ("nexoia.infrastructure.chatnexo", "shared.adapters.chatnexo"),
+    ("nexoia.infrastructure.hubla", "shared.adapters.hubla"),
+    ("nexoia.infrastructure.clock", "shared.adapters.clock"),
+    ("nexoia.infrastructure.crypto", "shared.adapters.crypto"),
+    ("nexoia.application.memory", "shared.memory"),
+    ("nexoia.application", "shared.application"),
+    ("nexoia.domain", "shared.domain"),
+    ("nexoia.config", "shared.config"),
+    ("nexoia.interface", "interface"),
+    ("nexoia.main", "main"),
 ]
 
 SEARCH_ROOTS = [

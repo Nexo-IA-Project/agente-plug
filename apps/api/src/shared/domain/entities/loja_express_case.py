@@ -1,4 +1,3 @@
-# src/nexoia/domain/entities/loja_express_case.py
 from __future__ import annotations
 
 from dataclasses import dataclass, field

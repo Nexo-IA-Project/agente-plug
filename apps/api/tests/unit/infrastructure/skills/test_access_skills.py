@@ -30,7 +30,7 @@ async def test_buscar_aluno_cademi_tool_direct_instantiation():
     buscar_uc.execute.return_value = "ESCALADO"
     tool = BuscarAlunoCademiTool(buscar_uc=buscar_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999"}}
-    with patch("nexoia.infrastructure.skills.access.get_config", return_value=fake_cfg):
+    with patch("agent.skills.access.get_config", return_value=fake_cfg):
         result = await tool._arun(email="test@example.com", cpf=None)
     buscar_uc.execute.assert_called_once_with(
         account_id="t1", phone="5511999", email="test@example.com", cpf=None
@@ -44,7 +44,7 @@ async def test_verificar_caso_acesso_tool_direct_instantiation():
     verificar_uc.execute.return_value = "ESCALADO"
     tool = VerificarCasoAcessoTool(verificar_uc=verificar_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999"}}
-    with patch("nexoia.infrastructure.skills.access.get_config", return_value=fake_cfg):
+    with patch("agent.skills.access.get_config", return_value=fake_cfg):
         result = await tool._arun(last_message="quero acesso")
     verificar_uc.execute.assert_called_once_with(
         account_id="t1", phone="5511999", last_message="quero acesso"
@@ -58,7 +58,7 @@ async def test_enviar_link_acesso_tool_direct_instantiation():
     enviar_uc.execute.return_value = "LINK_ENVIADO: http://cademi.com/x"
     tool = EnviarLinkAcessoTool(enviar_uc=enviar_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999", "conversation_id": "c1"}}
-    with patch("nexoia.infrastructure.skills.access.get_config", return_value=fake_cfg):
+    with patch("agent.skills.access.get_config", return_value=fake_cfg):
         result = await tool._arun(student_id="s1", student_name="João", within_24h_window=True)
     enviar_uc.execute.assert_called_once_with(
         account_id="t1",

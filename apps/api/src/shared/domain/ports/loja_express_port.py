@@ -1,4 +1,3 @@
-# src/nexoia/domain/ports/loja_express_port.py
 from __future__ import annotations
 
 from typing import Literal, Protocol, runtime_checkable

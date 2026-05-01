@@ -14,10 +14,10 @@ async def test_handle_message_invokes_agent_and_sends_reply():
     fake_dispatcher = AsyncMock()
 
     with (
-        patch("nexoia.interface.worker.handlers.message._get_agent", return_value=fake_agent),
-        patch("nexoia.interface.worker.handlers.message._get_dispatcher", return_value=fake_dispatcher),
-        patch("nexoia.interface.worker.handlers.message._get_lifecycle", return_value=AsyncMock()),
-        patch("nexoia.interface.worker.handlers.message._get_scheduler", return_value=AsyncMock()),
+        patch("interface.worker.handlers.message._get_agent", return_value=fake_agent),
+        patch("interface.worker.handlers.message._get_dispatcher", return_value=fake_dispatcher),
+        patch("interface.worker.handlers.message._get_lifecycle", return_value=AsyncMock()),
+        patch("interface.worker.handlers.message._get_scheduler", return_value=AsyncMock()),
     ):
         from interface.worker.handlers.message import handle_message
         await handle_message({

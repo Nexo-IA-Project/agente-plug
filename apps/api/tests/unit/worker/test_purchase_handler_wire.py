@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 async def test_handle_purchase_calls_purchase_handler():
     mock_handler = AsyncMock()
     with patch(
-        "nexoia.interface.worker.handlers.purchase._get_purchase_handler",
+        "interface.worker.handlers.purchase._get_purchase_handler",
         return_value=mock_handler,
     ):
         from interface.worker.handlers.purchase import handle_purchase
@@ -29,7 +29,7 @@ async def test_handle_purchase_calls_purchase_handler():
 async def test_handle_scheduled_idle_ping_calls_lifecycle():
     mock_lifecycle = AsyncMock()
     with patch(
-        "nexoia.interface.worker.handlers.scheduled._get_lifecycle_handler",
+        "interface.worker.handlers.scheduled._get_lifecycle_handler",
         return_value=mock_lifecycle,
     ):
         from interface.worker.handlers.scheduled import handle_scheduled

@@ -1,4 +1,3 @@
-# src/nexoia/application/use_cases/loja_express/enviar_followup.py
 from __future__ import annotations
 
 import contextlib

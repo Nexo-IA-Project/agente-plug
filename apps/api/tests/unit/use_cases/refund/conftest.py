@@ -12,7 +12,7 @@ def mock_settings():
     settings = MagicMock()
     settings.refund_deadline_days = 7
     with patch(
-        "nexoia.application.use_cases.refund.verificar_elegibilidade.get_settings",
+        "shared.application.use_cases.refund.verificar_elegibilidade.get_settings",
         return_value=settings,
     ):
         yield settings

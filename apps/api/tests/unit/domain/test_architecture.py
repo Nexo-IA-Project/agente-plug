@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-DOMAIN_DIR = Path(__file__).resolve().parents[3] / "src" / "nexoia" / "domain"
+DOMAIN_DIR = Path(__file__).resolve().parents[3] / "src" / "shared" / "domain"
 
 FORBIDDEN_IMPORTS = {
     "sqlalchemy",
@@ -55,6 +55,6 @@ def test_domain_does_not_import_from_other_layers() -> None:
             if line.strip().startswith(("import ", "from "))
         }
         for full in full_imports:
-            if full.startswith("nexoia.") and not full.startswith("nexoia.domain"):
+            if full.startswith("shared.") and not full.startswith("shared.domain"):
                 offenders.append(f"{path}: {full}")
     assert not offenders, "Domain must only import from shared.domain.*:\n" + "\n".join(offenders)

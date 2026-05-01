@@ -23,7 +23,7 @@ async def test_get_admin_deps_raises_401_without_token():
 async def test_get_admin_deps_raises_401_on_bad_token():
     from interface.http.deps.admin_deps import get_admin_deps
 
-    with patch("nexoia.interface.http.deps.admin_deps.get_settings") as mock_settings:
+    with patch("interface.http.deps.admin_deps.get_settings") as mock_settings:
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
         mock_settings.return_value.kb_chunk_size = 512

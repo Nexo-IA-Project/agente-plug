@@ -17,7 +17,7 @@ async def test_escalar_para_humano_tool_calls_chatnexo():
     chatnexo = AsyncMock()
     tool = EscalarParaHumanoTool(chatnexo=chatnexo)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999", "conversation_id": "c1"}}
-    with patch("nexoia.infrastructure.skills.core.get_config", return_value=fake_cfg):
+    with patch("agent.skills.core.get_config", return_value=fake_cfg):
         result = await tool._arun(reason="legal_mention")
     chatnexo.transfer_to_human.assert_called_once_with(
         account_id="t1",
@@ -33,7 +33,7 @@ async def test_escalar_para_humano_tool_default_reason():
     chatnexo = AsyncMock()
     tool = EscalarParaHumanoTool(chatnexo=chatnexo)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999", "conversation_id": "c1"}}
-    with patch("nexoia.infrastructure.skills.core.get_config", return_value=fake_cfg):
+    with patch("agent.skills.core.get_config", return_value=fake_cfg):
         result = await tool._arun()
     chatnexo.transfer_to_human.assert_called_once_with(
         account_id="t1",

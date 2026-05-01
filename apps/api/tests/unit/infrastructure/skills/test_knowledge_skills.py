@@ -40,7 +40,7 @@ async def test_buscar_conhecimento_tool_returns_chunks_when_found():
     buscar_uc.execute.return_value = result_obj
     tool = BuscarConhecimentoTool(buscar_uc=buscar_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999"}}
-    with patch("nexoia.infrastructure.skills.knowledge.get_config", return_value=fake_cfg):
+    with patch("agent.skills.knowledge.get_config", return_value=fake_cfg):
         result = await tool._arun(query="como acesso o curso?")
     assert result == "Resposta aqui."
 
@@ -54,7 +54,7 @@ async def test_buscar_conhecimento_tool_returns_ask_context_when_not_found():
     buscar_uc.execute.return_value = result_obj
     tool = BuscarConhecimentoTool(buscar_uc=buscar_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999"}}
-    with patch("nexoia.infrastructure.skills.knowledge.get_config", return_value=fake_cfg):
+    with patch("agent.skills.knowledge.get_config", return_value=fake_cfg):
         result = await tool._arun(query="algo vago")
     assert result.startswith("ASK_CONTEXT:")
 
@@ -68,7 +68,7 @@ async def test_buscar_conhecimento_com_contexto_tool_calls_use_case():
     contexto_uc.execute.return_value = result_obj
     tool = BuscarConhecimentoComContextoTool(contexto_uc=contexto_uc)
     fake_cfg = {"configurable": {"account_id": "t1", "phone": "5511999", "conversation_id": "c1"}}
-    with patch("nexoia.infrastructure.skills.knowledge.get_config", return_value=fake_cfg):
+    with patch("agent.skills.knowledge.get_config", return_value=fake_cfg):
         result = await tool._arun(original_query="pergunta", context="contexto adicional")
     contexto_uc.execute.assert_called_once_with(
         original_query="pergunta",
