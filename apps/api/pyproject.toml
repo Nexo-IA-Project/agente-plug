@@ -62,7 +62,7 @@ ignore = ["E501"]
 "tests/**" = ["N802", "N803", "N806"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src"]
 asyncio_mode = "auto"
 addopts = "-ra --strict-markers"
 markers = [

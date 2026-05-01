@@ -18,10 +18,7 @@ from agent.react_node import (
     make_raciocinar_node,
 )
 from agent.state import AgentState
-from agent.skills.access import make_access_skills
-from agent.skills.core import make_core_skills
-from agent.skills.knowledge import make_knowledge_skills
-from agent.skills.refund import make_refund_skills
+from agent.skill_loader import Adapters, load_skills
 
 
 def build_graph(
@@ -42,12 +39,18 @@ def build_graph(
     usage_log_repo: Any,
     checkpointer: BaseCheckpointSaver | None = None,
 ) -> Any:
-    skills = (
-        make_access_skills(access_repo, cademi, chatnexo)
-        + make_refund_skills(refund_repo, hubla, legal_history, refund_mutex)
-        + make_knowledge_skills(knowledge_repo, usage_log_repo, chatnexo)
-        + make_core_skills(chatnexo)
+    adapters = Adapters(
+        access_repo=access_repo,
+        cademi=cademi,
+        chatnexo=chatnexo,
+        refund_repo=refund_repo,
+        hubla=hubla,
+        legal_history=legal_history,
+        refund_mutex=refund_mutex,
+        knowledge_repo=knowledge_repo,
+        usage_log_repo=usage_log_repo,
     )
+    skills = load_skills(adapters)
 
     raciocinar_node = make_raciocinar_node(guard_service, long_term_repo, llm)
     pos_execucao_node = make_pos_execucao_node(capability_repo, memory_extractor)
