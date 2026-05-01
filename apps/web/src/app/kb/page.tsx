@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { DocumentTable } from "@/components/kb/document-table";
 import { listDocuments } from "@/lib/api";
+import type { KbDocument } from "@/types/api";
 import { Upload } from "lucide-react";
 
 // The account_id will come from session/auth in a future iteration.
@@ -10,7 +11,7 @@ import { Upload } from "lucide-react";
 const ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID ?? "1";
 
 export default async function KbListPage() {
-  let documents = [];
+  let documents: KbDocument[] = [];
   let error: string | null = null;
 
   try {
