@@ -55,20 +55,13 @@ def make_raciocinar_node(
         # 1. Guards pré-LLM
         guard_result = guard_service.check(ultima.content, state)
         if guard_result.blocked:
-            if guard_result.skill_override:
-                override_msg = AIMessage(
-                    content="",
-                    tool_calls=[{
-                        "name": guard_result.skill_override,
-                        "args": {"reason": guard_result.reason},
-                        "id": f"guard_{guard_result.reason}",
-                        "type": "tool_call",
-                    }],
-                )
-                return {
-                    "messages": [override_msg],
-                    "skill_em_andamento": guard_result.skill_override,
-                }
+            if guard_result.forced_instruction:
+                msgs = [SystemMessage(guard_result.forced_instruction), *state["messages"]]
+                response = await llm.ainvoke(msgs, config)
+                update: dict = {"messages": [response]}
+                if getattr(response, "tool_calls", None):
+                    update["skill_em_andamento"] = response.tool_calls[0]["name"]
+                return update
             return {"messages": [AIMessage(guard_result.response or _FALLBACK_MESSAGE)]}
 
         # 2. Long-term facts → system prompt dinâmico
