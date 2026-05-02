@@ -107,10 +107,10 @@ jobs:
             --env-file /root/.env.prod \
             --network host \
             "${IMAGE_API_LC}:${IMAGE_TAG}" \
-            alembic upgrade head
+            alembic upgrade heads
 
           # Subir nova versão (recria containers um a um)
-          docker compose -f docker-compose.prod.yml up -d --force-recreate api worker web
+          docker compose -f docker-compose.prod.yml up -d --force-recreate api worker
 
           # Aguardar healthchecks
           sleep 15
