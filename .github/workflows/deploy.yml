@@ -100,7 +100,7 @@ jobs:
           IMAGE_API_LC=$(echo "${IMAGE_API_REF}" | tr '[:upper:]' '[:lower:]')
 
           # Pull novas imagens
-          docker compose -f docker-compose.prod.yml pull
+          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml pull
 
           # Aplicar migrations antes de subir nova versão
           docker run --rm \
@@ -110,8 +110,8 @@ jobs:
             alembic upgrade heads
 
           # Subir nova versão (recria containers um a um)
-          docker compose -f docker-compose.prod.yml up -d --force-recreate api worker
+          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml up -d --force-recreate api worker
 
           # Aguardar healthchecks
           sleep 15
-          docker compose -f docker-compose.prod.yml ps
+          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml ps
