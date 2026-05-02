@@ -1,10 +1,11 @@
-# apps/api/src/agent/skills/escalar_para_humano/skill.py
 from __future__ import annotations
 
-from langchain_core.tools import BaseTool
-from langgraph.config import get_config
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
 
+from agent.context import AgentContext
+from agent.skill import BaseSkill
 from agent.skills._utils import _load_instructions
 from agent.skills.escalar_para_humano.preconditions import PRECONDITIONS
 from shared.domain.ports.chatnexo import ChatNexoPort
@@ -15,32 +16,31 @@ class _Input(BaseModel):
     reason: str = "solicitado_pelo_usuario"
 
 
-class EscalarParaHumanoTool(BaseTool):
-    name: str = "escalar_para_humano"
-    description: str = _load_instructions(__file__)
-    args_schema: type[BaseModel] = _Input
-
-    _chatnexo: ChatNexoPort
-
+class EscalarParaHumanoSkill(BaseSkill):
     def __init__(self, chatnexo: ChatNexoPort) -> None:
-        super().__init__()
         self._chatnexo = chatnexo
 
-    def _run(self, reason: str = "solicitado_pelo_usuario") -> str:  # pragma: no cover
-        raise NotImplementedError("Use async")
+    @property
+    def name(self) -> str:
+        return "escalar_para_humano"
 
-    async def _arun(self, reason: str = "solicitado_pelo_usuario") -> str:
-        cfg = get_config()["configurable"]
-        account_id: str = cfg["account_id"]
-        conversation_id = cfg.get("conversation_id")
+    @property
+    def description(self) -> str:
+        return _load_instructions(__file__)
+
+    def params_model(self) -> type[BaseModel]:
+        return _Input
+
+    async def handle(self, ctx: AgentContext, **kwargs: Any) -> str:
+        reason: str = kwargs.get("reason", "solicitado_pelo_usuario")
 
         for pre in PRECONDITIONS:
             if not pre.passed:
                 return pre.block_message
 
         await self._chatnexo.transfer_to_human(
-            account_id=account_id,
-            conversation_id=conversation_id,
+            account_id=ctx.account_id,
+            conversation_id=ctx.conversation_id,
             reason=reason,
         )
         return f"TRANSFERIDO: Atendimento transferido para humano. Motivo: {reason}"

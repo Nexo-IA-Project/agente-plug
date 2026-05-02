@@ -50,6 +50,8 @@ jobs:
             src/agent/context.py \
             src/agent/history.py \
             src/agent/tool_registry.py \
+            src/agent/skill.py \
+            src/agent/runner.py \
             src/interface/worker/dispatcher.py
 
   test:

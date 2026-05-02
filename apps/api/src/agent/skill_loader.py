@@ -7,8 +7,8 @@ import importlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from langchain_core.tools import BaseTool
-
+from agent.skill import register_skill
+from agent.tool_registry import ToolRegistry
 from shared.domain.ports.cademi_port import CademiPort
 from shared.domain.ports.chatnexo import ChatNexoPort
 from shared.domain.ports.hubla_port import HublaPort
@@ -30,16 +30,22 @@ class Adapters:
     usage_log_repo: object
 
 
-def load_skills(adapters: Adapters) -> list[BaseTool]:
-    """Auto-discover every skill folder under agent/skills/ and instantiate it.
+def build_registry(adapters: Adapters) -> ToolRegistry:
+    """Auto-discover every skill folder under agent/skills/ and register each one.
 
-    Folders whose names start with '_' are ignored (e.g. _utils.py is not a
-    folder, but the pattern guards future helper packages as well).
+    Folders whose names start with '_' are ignored.
     """
+    registry = ToolRegistry()
     skills_dir = Path(__file__).parent / "skills"
-    skills: list[BaseTool] = []
     for folder in sorted(skills_dir.iterdir()):
         if folder.is_dir() and not folder.name.startswith("_"):
             module = importlib.import_module(f"agent.skills.{folder.name}")
-            skills.append(module.make_skill(adapters))
-    return skills
+            skill = module.make_skill(adapters)
+            register_skill(registry, skill)
+    return registry
+
+
+# Kept for backward compatibility while graph.py / react_node.py are still present
+def load_skills(adapters: Adapters) -> list:  # type: ignore[type-arg]
+    """Deprecated: use build_registry() instead."""
+    return []

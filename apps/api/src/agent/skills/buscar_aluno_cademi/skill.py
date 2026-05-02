@@ -1,10 +1,11 @@
-# apps/api/src/agent/skills/buscar_aluno_cademi/skill.py
 from __future__ import annotations
 
-from langchain_core.tools import BaseTool
-from langgraph.config import get_config
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
 
+from agent.context import AgentContext
+from agent.skill import BaseSkill
 from agent.skills._utils import _load_instructions
 from agent.skills.buscar_aluno_cademi.preconditions import PRECONDITIONS
 from agent.skills.buscar_aluno_cademi.use_case import BuscarAlunoCademi
@@ -15,29 +16,27 @@ class _Input(BaseModel):
     phone: str
 
 
-class BuscarAlunoCademiTool(BaseTool):
-    name: str = "buscar_aluno_cademi"
-    description: str = _load_instructions(__file__)
-    args_schema: type[BaseModel] = _Input
-
-    _use_case: BuscarAlunoCademi
-
+class BuscarAlunoCademiSkill(BaseSkill):
     def __init__(self, use_case: BuscarAlunoCademi) -> None:
-        super().__init__()
         self._use_case = use_case
 
-    def _run(self, phone: str) -> str:  # pragma: no cover
-        raise NotImplementedError("Use async")
+    @property
+    def name(self) -> str:
+        return "buscar_aluno_cademi"
 
-    async def _arun(self, phone: str) -> str:
-        cfg = get_config()["configurable"]
-        account_id: str = cfg["account_id"]
+    @property
+    def description(self) -> str:
+        return _load_instructions(__file__)
 
+    def params_model(self) -> type[BaseModel]:
+        return _Input
+
+    async def handle(self, ctx: AgentContext, **kwargs: Any) -> str:
         for pre in PRECONDITIONS:
             if not pre.passed:
                 return pre.block_message
 
-        result = await self._use_case.execute(phone=phone, account_id=account_id)
+        result = await self._use_case.execute(phone=kwargs["phone"], account_id=ctx.account_id)
         if not result["encontrado"]:
             return result["mensagem"]
         return (

@@ -19,7 +19,9 @@ FROM python:3.11-slim AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 1001 appgroup \
+    && useradd --uid 1001 --gid appgroup --shell /bin/sh --create-home appuser
 
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
@@ -27,9 +29,13 @@ COPY --from=builder /app/src /app/src
 COPY alembic.ini ./
 COPY migrations ./migrations
 
+RUN chown -R appuser:appgroup /app
+
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH="/app/src"
+
+USER appuser
 
 EXPOSE 8000
 

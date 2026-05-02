@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from openai.types.chat import ChatCompletionToolParam
+
 from agent.context import AgentContext
 
 Handler = Callable[..., Awaitable[str]]
@@ -13,7 +15,7 @@ Handler = Callable[..., Awaitable[str]]
 
 @dataclass
 class _ToolEntry:
-    definition: dict[str, Any]  # OpenAI {"type": "function", "function": {...}}
+    definition: ChatCompletionToolParam
     handler: Handler
 
 
@@ -46,19 +48,17 @@ class ToolRegistry:
         """Register a tool with its OpenAI schema and async handler."""
         if name in self._entries:
             raise ValueError(f"Tool '{name}' is already registered")
-        self._entries[name] = _ToolEntry(
-            definition={
-                "type": "function",
-                "function": {
-                    "name": name,
-                    "description": description,
-                    "parameters": parameters,
-                },
+        definition: ChatCompletionToolParam = {
+            "type": "function",
+            "function": {
+                "name": name,
+                "description": description,
+                "parameters": parameters,
             },
-            handler=handler,
-        )
+        }
+        self._entries[name] = _ToolEntry(definition=definition, handler=handler)
 
-    def get_tools(self) -> list[dict[str, Any]]:
+    def get_tools(self) -> list[ChatCompletionToolParam]:
         """Return all tool definitions in OpenAI format for use in API calls."""
         return [entry.definition for entry in self._entries.values()]
 

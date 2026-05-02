@@ -1,10 +1,11 @@
-# apps/api/src/agent/skills/buscar_conhecimento_com_contexto/skill.py
 from __future__ import annotations
 
-from langchain_core.tools import BaseTool
-from langgraph.config import get_config
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict
 
+from agent.context import AgentContext
+from agent.skill import BaseSkill
 from agent.skills._utils import _load_instructions
 from agent.skills.buscar_conhecimento_com_contexto.preconditions import PRECONDITIONS
 from agent.skills.buscar_conhecimento_com_contexto.use_case import BuscarConhecimentoComContexto
@@ -16,30 +17,30 @@ class _Input(BaseModel):
     contexto_aluno: str
 
 
-class BuscarConhecimentoComContextoTool(BaseTool):
-    name: str = "buscar_conhecimento_com_contexto"
-    description: str = _load_instructions(__file__)
-    args_schema: type[BaseModel] = _Input
-
-    _use_case: BuscarConhecimentoComContexto
-
+class BuscarConhecimentoComContextoSkill(BaseSkill):
     def __init__(self, use_case: BuscarConhecimentoComContexto) -> None:
-        super().__init__()
         self._use_case = use_case
 
-    def _run(self, query: str, contexto_aluno: str) -> str:  # pragma: no cover
-        raise NotImplementedError("Use async")
+    @property
+    def name(self) -> str:
+        return "buscar_conhecimento_com_contexto"
 
-    async def _arun(self, query: str, contexto_aluno: str) -> str:
-        cfg = get_config()["configurable"]
-        account_id: int = int(cfg["account_id"])
+    @property
+    def description(self) -> str:
+        return _load_instructions(__file__)
 
+    def params_model(self) -> type[BaseModel]:
+        return _Input
+
+    async def handle(self, ctx: AgentContext, **kwargs: Any) -> str:
         for pre in PRECONDITIONS:
             if not pre.passed:
                 return pre.block_message
 
         result = await self._use_case.execute(
-            query=query, contexto_aluno=contexto_aluno, account_id=account_id
+            query=kwargs["query"],
+            contexto_aluno=kwargs["contexto_aluno"],
+            account_id=int(ctx.account_id),
         )
         if not result["encontrado"]:
             if result.get("escalar"):
