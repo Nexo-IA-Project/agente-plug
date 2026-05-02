@@ -96,10 +96,8 @@ jobs:
           set -euo pipefail
           cd /root/agente-plug
 
-          # Sincronizar docker-compose.prod.yml do repo (garante configs atualizadas)
-          git config --global --add safe.directory /root/agente-plug
-          git -C /root/agente-plug fetch origin main
-          git -C /root/agente-plug checkout FETCH_HEAD -- docker-compose.prod.yml
+          # Sincronizar repo (puxa docker-compose.prod.yml e outros configs atualizados)
+          git pull --ff-only
 
           # GHCR exige lowercase — normaliza o owner que pode ter maiúsculas
           IMAGE_API_LC=$(echo "${IMAGE_API_REF}" | tr '[:upper:]' '[:lower:]')
