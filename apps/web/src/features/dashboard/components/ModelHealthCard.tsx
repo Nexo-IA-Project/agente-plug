@@ -1,0 +1,42 @@
+// apps/web/src/features/dashboard/components/ModelHealthCard.tsx
+import type { ModelHealth } from "../types";
+
+function ProgressBar({ label, value, displayValue, color }: { label: string; value: number; displayValue: string; color: "primary" | "secondary" }) {
+  return (
+    <div>
+      <div className="mb-1 flex justify-between">
+        <span className="text-mono-label font-mono text-on-surface-variant">{label}</span>
+        <span className="text-mono-label font-mono text-on-surface">{displayValue}</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+        <div
+          className={color === "primary" ? "h-full rounded-full bg-primary" : "h-full rounded-full bg-secondary"}
+          style={{ width: `${value}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function ModelHealthCard({ health }: { health: ModelHealth }) {
+  const latencyPct = Math.min((health.avgLatencyMs / 500) * 100, 100);
+
+  return (
+    <div className="flex h-full flex-col rounded-xl border border-outline-variant bg-surface-container overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-primary to-secondary" />
+      <div className="flex flex-1 flex-col p-card-padding">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-outline-variant bg-primary-container">
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: "22px" }}>memory</span>
+        </div>
+        <h3 className="text-h2 font-sans font-semibold text-on-surface">Saúde do Modelo</h3>
+        <p className="mt-2 text-body-sm text-on-surface-variant">
+          A latência do modelo principal está otimizada. Nenhuma anomalia detectada nas últimas 24 horas.
+        </p>
+        <div className="mt-auto space-y-4 pt-6">
+          <ProgressBar label="Uso de CPU" value={health.cpuUsage} displayValue={`${health.cpuUsage}%`} color="primary" />
+          <ProgressBar label="Latência Média" value={latencyPct} displayValue={`${health.avgLatencyMs}ms`} color="secondary" />
+        </div>
+      </div>
+    </div>
+  );
+}
