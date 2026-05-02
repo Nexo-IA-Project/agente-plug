@@ -5,6 +5,7 @@ from typing import Any
 import structlog
 from langchain_core.messages import AIMessage, HumanMessage
 
+from shared.adapters.redis.lead_lock import LeadLock, LeadLockError
 from shared.application.lifecycle_handler import LifecycleHandler
 from shared.application.message_dispatcher import MessageDispatcher
 
@@ -30,7 +31,7 @@ def _get_scheduler() -> Any:
     raise NotImplementedError("_get_scheduler: configure em main.py")
 
 
-async def handle_message(payload: dict) -> None:
+async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None = None) -> None:
     account_id: str = payload["account_id"]
     phone: str = payload["phone"]
     conversation_id: str = payload["conversation_id"]
@@ -43,6 +44,41 @@ async def handle_message(payload: dict) -> None:
         conversation_id=conversation_id,
     )
 
+    if lead_lock is not None:
+        try:
+            async with lead_lock.acquire(account_id=account_id, phone=phone):
+                await _process_message(
+                    account_id=account_id,
+                    phone=phone,
+                    conversation_id=conversation_id,
+                    text=text,
+                )
+        except LeadLockError:
+            log.warning(
+                "message_job_lead_locked",
+                account_id=account_id,
+                phone=phone,
+                conversation_id=conversation_id,
+            )
+            raise
+    else:
+        await _process_message(
+            account_id=account_id,
+            phone=phone,
+            conversation_id=conversation_id,
+            text=text,
+        )
+
+    log.info("message_job_done", account_id=account_id, conversation_id=conversation_id)
+
+
+async def _process_message(
+    *,
+    account_id: str,
+    phone: str,
+    conversation_id: str,
+    text: str,
+) -> None:
     agent = _get_agent()
     dispatcher = _get_dispatcher()
     lifecycle = _get_lifecycle()
@@ -88,5 +124,3 @@ async def handle_message(payload: dict) -> None:
         phone=phone,
         conversation_id=conversation_id,
     )
-
-    log.info("message_job_done", account_id=account_id, conversation_id=conversation_id)
