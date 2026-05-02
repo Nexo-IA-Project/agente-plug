@@ -8,9 +8,15 @@ from interface.worker.dispatcher import StopSignal, WorkerDispatcher
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
+def _envelope(kind: str, payload: dict, attempt: int = 1) -> dict:
+    return {"id": "job-1", "payload": {"kind": kind, "payload": payload}, "attempt": attempt}
+
+
 def _queue(*messages: object) -> AsyncMock:
     q = AsyncMock()
     q.dequeue = AsyncMock(side_effect=list(messages))
+    q.nack = AsyncMock()
+    q.to_dlq = AsyncMock()
     return q
 
 
@@ -28,8 +34,8 @@ async def test_dispatcher_routes_to_handler_by_kind():
 
     dispatcher = WorkerDispatcher(
         queue=_queue(
-            {"kind": "purchase", "payload": {"p": 1}},
-            {"kind": "message", "payload": {"m": 2}},
+            _envelope("purchase", {"p": 1}),
+            _envelope("message", {"m": 2}),
             StopSignal,
         ),
         handlers={"purchase": purchase_handler, "message": message_handler},
@@ -49,7 +55,7 @@ async def test_dispatcher_skips_unknown_kind():
         calls.append(payload)
 
     dispatcher = WorkerDispatcher(
-        queue=_queue({"kind": "unknown", "payload": {}}, StopSignal),
+        queue=_queue(_envelope("unknown", {}), StopSignal),
         handlers={"known": handler},
     )
     await dispatcher.run_forever()
@@ -68,11 +74,13 @@ async def test_dispatcher_handler_exception_does_not_stop_loop():
 
     dispatcher = WorkerDispatcher(
         queue=_queue(
-            {"kind": "bad", "payload": {}},
-            {"kind": "good", "payload": {"x": 1}},
+            _envelope("bad", {}),
+            _envelope("good", {"x": 1}),
             StopSignal,
         ),
         handlers={"bad": bad_handler, "good": good_handler},
+        max_retries=1,
+        base_delay=0.0,
     )
     await dispatcher.run_forever()
 
@@ -96,8 +104,8 @@ async def test_dispatcher_runs_jobs_concurrently():
 
     dispatcher = WorkerDispatcher(
         queue=_queue(
-            {"kind": "job", "payload": {}},
-            {"kind": "job", "payload": {}},
+            _envelope("job", {}),
+            _envelope("job", {}),
             StopSignal,
         ),
         handlers={"job": slow_handler},
@@ -122,8 +130,8 @@ async def test_dispatcher_semaphore_limits_concurrency():
 
     dispatcher = WorkerDispatcher(
         queue=_queue(
-            {"kind": "job", "payload": {}},
-            {"kind": "job", "payload": {}},
+            _envelope("job", {}),
+            _envelope("job", {}),
             StopSignal,
         ),
         handlers={"job": slow_handler},
@@ -146,7 +154,9 @@ async def test_dispatcher_stops_on_stop_event():
         await asyncio.sleep(10)
 
     q = AsyncMock()
-    q.dequeue = AsyncMock(return_value={"kind": "job", "payload": {}})
+    q.dequeue = AsyncMock(return_value=_envelope("job", {}))
+    q.nack = AsyncMock()
+    q.to_dlq = AsyncMock()
 
     dispatcher = WorkerDispatcher(
         queue=q,
@@ -175,7 +185,7 @@ async def test_dispatcher_drains_in_flight_tasks_on_stop():
 
     dispatcher = WorkerDispatcher(
         queue=_queue(
-            {"kind": "job", "payload": {"id": "a"}},
+            _envelope("job", {"id": "a"}),
             StopSignal,
         ),
         handlers={"job": handler},

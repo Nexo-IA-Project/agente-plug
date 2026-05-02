@@ -95,3 +95,8 @@ module = [
 ]
 ignore_errors = true
 ignore_missing_imports = true
+
+# redis-py async stubs produce false-positive misc/no-any-return errors
+[[tool.mypy.overrides]]
+module = ["shared.adapters.redis.*"]
+ignore_errors = true
