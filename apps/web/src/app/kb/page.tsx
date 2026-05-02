@@ -1,52 +1,21 @@
 // apps/web/src/app/kb/page.tsx
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { DocumentTable } from "@/components/kb/document-table";
-import { listDocuments } from "@/lib/api";
-import type { KbDocument } from "@/types/api";
-import { Upload } from "lucide-react";
+import { Dropzone } from "@/features/kb/components/Dropzone";
+import { FileList } from "@/features/kb/components/FileList";
+import { processedFiles } from "@/features/kb/data/kbMocks";
 
-// The account_id will come from session/auth in a future iteration.
-// For now, read from env or default to "1" for development.
-const ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID ?? "1";
-
-export default async function KbListPage() {
-  let documents: KbDocument[] = [];
-  let error: string | null = null;
-
-  try {
-    const response = await listDocuments(ACCOUNT_ID);
-    documents = response.items;
-  } catch (err) {
-    error = err instanceof Error ? err.message : "Erro ao carregar documentos.";
-  }
-
+export default function KbPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Base de Conhecimento
-          </h1>
-          <p className="text-muted-foreground">
-            Gerencie os documentos que o agente usa para responder dúvidas.
+    <div className="flex h-[calc(100vh-128px)] flex-col gap-6 lg:flex-row">
+      <div className="flex flex-1 flex-col rounded-xl border border-outline-variant bg-surface-container-low p-card-padding">
+        <div className="mb-6">
+          <h1 className="text-h1 font-bold text-on-surface">Adicionar Arquivos</h1>
+          <p className="mt-1 text-body-sm text-on-surface-variant">
+            Carregue documentos para treinar sua IA. Formatos suportados: PDF, DOCX, TXT.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/kb/upload">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload
-          </Link>
-        </Button>
+        <Dropzone />
       </div>
-
-      {error ? (
-        <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      ) : (
-        <DocumentTable documents={documents} />
-      )}
+      <FileList files={processedFiles} />
     </div>
   );
 }

@@ -63,6 +63,11 @@ export function FileItem({ file }: { file: KbFile }) {
                 Indexado
               </span>
             )}
+            {file.status === "processing" && (
+              <span className="rounded bg-surface-container-high px-2 py-0.5 font-mono text-[10px] font-medium uppercase text-on-surface-variant">
+                Indexando...
+              </span>
+            )}
           </>
         )}
       </div>

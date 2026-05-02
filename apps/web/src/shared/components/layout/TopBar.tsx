@@ -25,8 +25,8 @@ export function TopBar() {
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>help_outline</span>
         </button>
         <ThemeToggle />
-        <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full border border-outline-variant bg-surface-container">
-          <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "16px" }}>person</span>
+        <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary text-xs font-semibold select-none">
+          FD
         </div>
       </div>
     </header>
