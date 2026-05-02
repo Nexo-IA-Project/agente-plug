@@ -10,6 +10,7 @@ const ACCEPTED = [".pdf", ".docx", ".txt"];
 export function Dropzone() {
   const toast = useToast();
   const [isDragOver, setIsDragOver] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState<{ name: string; progress: number } | null>(null);
 
   const processFile = useCallback(
     (file: File) => {
@@ -19,6 +20,8 @@ export function Dropzone() {
         return;
       }
       toast.success("Arquivo enviado para processamento", file.name);
+      setUploadingFile({ name: file.name, progress: 45 });
+      setTimeout(() => setUploadingFile(null), 2000);
     },
     [toast]
   );
@@ -58,8 +61,7 @@ export function Dropzone() {
         </div>
       </div>
 
-      {/* Mock progress bar */}
-      <UploadProgress filename="relatorio_financeiro_Q3.pdf" progress={45} />
+      {uploadingFile && <UploadProgress filename={uploadingFile.name} progress={uploadingFile.progress} />}
     </div>
   );
 }

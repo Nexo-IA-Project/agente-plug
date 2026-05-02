@@ -13,7 +13,7 @@ export function ComingSoon() {
           <span className="material-symbols-outlined text-primary" style={{ fontSize: "28px" }}>construction</span>
         </div>
         <span className="mb-4 text-label-caps font-sans uppercase tracking-widest text-primary">Em breve</span>
-        <h2 className="text-h1 font-sans font-bold text-on-surface mb-4">Configuração de Contas</h2>
+        <h1 className="text-h1 font-sans font-bold text-on-surface mb-4">Configuração de Contas</h1>
         <p className="text-body-base text-on-surface-variant max-w-sm">
           Em breve você poderá gerenciar múltiplas instâncias e configurações de inquilinos diretamente por aqui.
         </p>
