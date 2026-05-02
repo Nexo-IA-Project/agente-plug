@@ -2,9 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Regra de Credenciais (OBRIGATÓRIO)
+
+**Toda credencial, chave de API, URL de serviço ou variável de ambiente DEVE estar em `.env.local`.** O `.env.example` é o modelo público (sem valores reais). Sempre que adicionar uma variável nova:
+1. Adicionar com valor real em `.env.local` (ignorado pelo git)
+2. Adicionar a chave sem valor em `.env.example` (commitado como documentação)
+3. Nunca hardcodar valores no código Python ou TypeScript
+
+> Razão: as configurações serão editáveis via página de settings da IA no frontend futuramente.
+
+---
+
 ## Overview
 
-Monorepo com backend Python (FastAPI + LangGraph) e frontend Next.js 15. O produto é um agente de IA para suporte ao cliente integrado ao WhatsApp via ChatNexo.
+Monorepo com backend Python (FastAPI + OpenAI function calling) e frontend Next.js 15. O produto é um agente de IA para suporte ao cliente integrado ao WhatsApp via ChatNexo.
 
 - `apps/api/` — Backend Python, porta 8000
 - `apps/web/` — Frontend Next.js 15, porta 3000
@@ -126,3 +137,7 @@ Serviços: postgres (5432), redis (6379), api (8000), worker.
 `docs/superpowers/specs/` — design docs por subsistema  
 `docs/superpowers/plans/` — planos de implementação com tasks detalhadas  
 `docs/superpowers/INDEX.md` — índice dos 7 subsistemas do produto
+
+## Task Master AI Instructions
+**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
+@./.taskmaster/CLAUDE.md

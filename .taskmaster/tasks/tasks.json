@@ -1,0 +1,2187 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Define AgentContext and ToolRegistry",
+        "description": "Create the AgentContext dataclass and ToolRegistry for managing tools.",
+        "details": "Implement AgentContext as a dataclass with fields for account_id, phone, conversation_id, and thread_id. Create ToolRegistry to manage tool definitions and handlers.",
+        "testStrategy": "Unit tests to ensure AgentContext fields are correctly initialized and ToolRegistry can register and retrieve tools.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create AgentContext Dataclass",
+            "description": "Implement the AgentContext as a dataclass with specified fields.",
+            "dependencies": [],
+            "details": "Define a dataclass named AgentContext with fields for account_id, phone, conversation_id, and thread_id.",
+            "status": "pending",
+            "testStrategy": "Write unit tests to ensure all fields are initialized correctly."
+          },
+          {
+            "id": 2,
+            "title": "Design ToolRegistry Class",
+            "description": "Create the ToolRegistry class to manage tool definitions and handlers.",
+            "dependencies": [],
+            "details": "Implement a class named ToolRegistry that includes methods for registering and retrieving tool definitions and handlers.",
+            "status": "pending",
+            "testStrategy": "Develop unit tests to verify tool registration and retrieval functionality."
+          },
+          {
+            "id": 3,
+            "title": "Integrate ToolRegistry with AgentContext",
+            "description": "Ensure ToolRegistry can be accessed and used within AgentContext.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Modify AgentContext to include a reference to ToolRegistry, allowing tools to be managed within the context.",
+            "status": "pending",
+            "testStrategy": "Test integration by registering a tool and retrieving it through AgentContext."
+          },
+          {
+            "id": 4,
+            "title": "Document AgentContext and ToolRegistry",
+            "description": "Create comprehensive documentation for both AgentContext and ToolRegistry.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Write detailed documentation explaining the purpose, usage, and methods of AgentContext and ToolRegistry.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 5,
+            "title": "Review and Refactor Code",
+            "description": "Conduct a code review and refactor for clarity and efficiency.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Review the implemented code for AgentContext and ToolRegistry, refactor as needed for clarity and performance.",
+            "status": "pending",
+            "testStrategy": "Ensure all tests pass after refactoring and no functionality is broken."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement ConversationHistory",
+        "description": "Create a ConversationHistory class to manage message history in PostgreSQL.",
+        "details": "Create a PostgreSQL table 'conversation_messages' with columns for thread_id, messages (JSONB), and updated_at. Implement methods to load, save, and clear message history.",
+        "testStrategy": "Integration tests with a real PostgreSQL database to verify message history is correctly saved, loaded, and cleared.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design PostgreSQL Table for Conversation History",
+            "description": "Design the 'conversation_messages' table schema in PostgreSQL.",
+            "dependencies": [],
+            "details": "Define columns: thread_id (UUID), messages (JSONB), updated_at (timestamp).",
+            "status": "pending",
+            "testStrategy": "Verify table creation with correct schema."
+          },
+          {
+            "id": 2,
+            "title": "Implement Method to Save Message History",
+            "description": "Develop a method to save message history to the database.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a method to insert or update records in 'conversation_messages'.",
+            "status": "pending",
+            "testStrategy": "Integration test to ensure messages are saved correctly."
+          },
+          {
+            "id": 3,
+            "title": "Implement Method to Load Message History",
+            "description": "Develop a method to load message history from the database.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a method to retrieve messages based on thread_id from 'conversation_messages'.",
+            "status": "pending",
+            "testStrategy": "Integration test to verify correct message retrieval."
+          },
+          {
+            "id": 4,
+            "title": "Implement Method to Clear Message History",
+            "description": "Develop a method to clear message history from the database.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a method to delete records from 'conversation_messages' based on thread_id.",
+            "status": "pending",
+            "testStrategy": "Integration test to ensure messages are cleared correctly."
+          },
+          {
+            "id": 5,
+            "title": "Write Integration Tests for ConversationHistory",
+            "description": "Develop integration tests for all methods in ConversationHistory.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Create tests to verify save, load, and clear operations with a real PostgreSQL database.",
+            "status": "pending",
+            "testStrategy": "Run tests to confirm all methods work as expected."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop OpenAI Function Calling Loop",
+        "description": "Implement the main agent loop using OpenAI's function calling.",
+        "details": "Create runner.py with an async function that processes messages using OpenAI's SDK. Implement message handling, tool call dispatching, and conversation history management.",
+        "testStrategy": "Unit tests with mocked OpenAI client to verify message processing and tool call handling.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Async Function in runner.py",
+            "description": "Create an async function in runner.py to handle message processing.",
+            "dependencies": [],
+            "details": "Initialize runner.py and define an async function to process incoming messages using OpenAI's SDK.",
+            "status": "pending",
+            "testStrategy": "Unit test to verify async function setup."
+          },
+          {
+            "id": 2,
+            "title": "Implement Message Handling Logic",
+            "description": "Develop logic to handle incoming messages within the async function.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add code to parse and handle messages, ensuring correct format and error handling.",
+            "status": "pending",
+            "testStrategy": "Unit test with mocked messages to verify handling logic."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Tool Call Dispatching",
+            "description": "Add functionality to dispatch tool calls from messages.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement logic to identify and dispatch tool calls using OpenAI's function calling capabilities.",
+            "status": "pending",
+            "testStrategy": "Unit test with mocked tool calls to verify dispatching."
+          },
+          {
+            "id": 4,
+            "title": "Manage Conversation History",
+            "description": "Implement conversation history management within the async function.",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate ConversationHistory class to load, save, and clear message history.",
+            "status": "pending",
+            "testStrategy": "Integration test with ConversationHistory to verify history management."
+          },
+          {
+            "id": 5,
+            "title": "Finalize and Test Main Agent Loop",
+            "description": "Complete the main agent loop and conduct comprehensive testing.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Ensure all components are integrated and functioning as expected. Conduct thorough testing of the entire loop.",
+            "status": "pending",
+            "testStrategy": "Comprehensive unit and integration tests to verify loop functionality."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Skill Protocol and Adapter",
+        "description": "Define a Skill protocol and implement an adapter for OpenAI tool dicts.",
+        "details": "Define a Skill protocol with tool_definition and handle methods. Implement an adapter to convert skills to OpenAI tool dicts using Pydantic models for parameters.",
+        "testStrategy": "Unit tests to ensure skills conform to the protocol and are correctly converted to tool dicts.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define Skill Protocol Interface",
+            "description": "Create the Skill protocol interface with required methods.",
+            "dependencies": [],
+            "details": "Define the Skill protocol with 'tool_definition' and 'handle' methods using Python's ABC module.",
+            "status": "pending",
+            "testStrategy": "Write unit tests to ensure the interface methods are correctly defined."
+          },
+          {
+            "id": 2,
+            "title": "Implement Tool Definition Method",
+            "description": "Develop the 'tool_definition' method for the Skill protocol.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the 'tool_definition' method to specify the tool's metadata and required parameters.",
+            "status": "pending",
+            "testStrategy": "Test the method to ensure it returns correct tool metadata."
+          },
+          {
+            "id": 3,
+            "title": "Implement Handle Method",
+            "description": "Develop the 'handle' method for the Skill protocol.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement the 'handle' method to process input data and return results.",
+            "status": "pending",
+            "testStrategy": "Test the method with various inputs to ensure correct processing."
+          },
+          {
+            "id": 4,
+            "title": "Create Adapter for OpenAI Tool Dicts",
+            "description": "Develop an adapter to convert skills to OpenAI tool dicts.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Use Pydantic models to map Skill protocol methods to OpenAI tool dicts.",
+            "status": "pending",
+            "testStrategy": "Test the adapter to ensure it correctly converts skills to tool dicts."
+          },
+          {
+            "id": 5,
+            "title": "Write Unit Tests for Adapter",
+            "description": "Develop unit tests for the adapter implementation.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create unit tests to verify the adapter's functionality and ensure it handles edge cases.",
+            "status": "pending",
+            "testStrategy": "Run tests to confirm the adapter's accuracy and reliability."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Migrate Existing Skills",
+        "description": "Convert all existing skills to the new OpenAI tool dict format.",
+        "details": "Refactor each of the 9 existing skills to implement the Skill protocol and use the new adapter for tool dicts.",
+        "testStrategy": "Unit tests for each skill to verify correct behavior and integration with the new system.",
+        "priority": "medium",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Existing Skills",
+            "description": "Review the current implementation of all 9 existing skills.",
+            "dependencies": [],
+            "details": "Identify the structure and functionality of each skill to understand how they will map to the new format.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Design Skill Protocol Interface",
+            "description": "Create a new interface for the Skill protocol.",
+            "dependencies": [
+              1
+            ],
+            "details": "Define the methods and properties required for the Skill protocol to ensure compatibility with the new system.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify interface methods are correctly defined."
+          },
+          {
+            "id": 3,
+            "title": "Implement New Adapter for Tool Dicts",
+            "description": "Develop an adapter to convert skills to the new tool dict format.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create an adapter that translates existing skill data into the new tool dict format, ensuring compatibility with the Skill protocol.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify correct conversion of skills to tool dict format."
+          },
+          {
+            "id": 4,
+            "title": "Refactor Each Skill to Use New Protocol",
+            "description": "Update each of the 9 skills to implement the new Skill protocol and adapter.",
+            "dependencies": [
+              3
+            ],
+            "details": "Refactor the code for each skill to use the new protocol and adapter, ensuring all functionalities are preserved.",
+            "status": "pending",
+            "testStrategy": "Unit tests for each skill to verify correct behavior and integration."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Integration Testing",
+            "description": "Perform integration tests to ensure all skills work with the new system.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the integration of all refactored skills within the system to ensure they interact correctly with other components.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify system-wide compatibility and performance."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Refactor WorkerDispatcher for Concurrency",
+        "description": "Update WorkerDispatcher to use asyncio.TaskGroup for concurrent processing.",
+        "details": "Refactor WorkerDispatcher to use asyncio.TaskGroup and Semaphore for managing concurrent tasks. Implement graceful shutdown handling.",
+        "testStrategy": "Integration tests to verify concurrent job processing and graceful shutdown behavior.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current WorkerDispatcher Implementation",
+            "description": "Review the existing WorkerDispatcher code to understand its structure and functionality.",
+            "dependencies": [],
+            "details": "Examine how tasks are currently dispatched and managed. Identify areas that need refactoring for concurrency.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Integrate asyncio.TaskGroup for Task Management",
+            "description": "Refactor WorkerDispatcher to use asyncio.TaskGroup for managing concurrent tasks.",
+            "dependencies": [
+              1
+            ],
+            "details": "Replace existing task management logic with asyncio.TaskGroup to handle multiple tasks concurrently.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify concurrent task execution."
+          },
+          {
+            "id": 3,
+            "title": "Implement Semaphore for Concurrency Control",
+            "description": "Use Semaphore to limit the number of concurrent tasks in WorkerDispatcher.",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate asyncio.Semaphore to control the maximum number of concurrent tasks allowed.",
+            "status": "pending",
+            "testStrategy": "Integration tests to ensure Semaphore limits are respected."
+          },
+          {
+            "id": 4,
+            "title": "Add Graceful Shutdown Handling",
+            "description": "Implement logic to handle graceful shutdown of WorkerDispatcher.",
+            "dependencies": [
+              3
+            ],
+            "details": "Ensure that all running tasks are completed or properly terminated during shutdown.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify graceful shutdown behavior."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Integration Testing",
+            "description": "Perform integration tests to validate the refactored WorkerDispatcher.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the entire WorkerDispatcher system to ensure concurrency and shutdown handling work as expected.",
+            "status": "pending",
+            "testStrategy": "Integration tests focusing on concurrency and shutdown scenarios."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Retry Logic and DLQ",
+        "description": "Add retry logic with exponential backoff and a Dead-Letter Queue for failed jobs.",
+        "details": "Implement retry logic with configurable max_retries and backoff strategy. Use Redis for DLQ to store failed jobs with error details.",
+        "testStrategy": "Integration tests to verify retry behavior and DLQ population for failed jobs.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Retry Logic with Exponential Backoff",
+            "description": "Design the retry logic with configurable max_retries and exponential backoff.",
+            "dependencies": [],
+            "details": "Define the algorithm for exponential backoff and parameters for max_retries.",
+            "status": "pending",
+            "testStrategy": "Review design with team and unit test algorithm."
+          },
+          {
+            "id": 2,
+            "title": "Implement Retry Logic",
+            "description": "Develop the retry logic based on the design specifications.",
+            "dependencies": [
+              1
+            ],
+            "details": "Code the retry mechanism using the designed algorithm and parameters.",
+            "status": "pending",
+            "testStrategy": "Unit tests to validate retry behavior."
+          },
+          {
+            "id": 3,
+            "title": "Integrate Redis for Dead-Letter Queue",
+            "description": "Set up Redis to store failed jobs with error details.",
+            "dependencies": [],
+            "details": "Configure Redis and create a structure to store job details and errors.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify data storage in Redis."
+          },
+          {
+            "id": 4,
+            "title": "Implement DLQ Population Logic",
+            "description": "Develop logic to populate the DLQ with failed jobs.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Code the mechanism to move jobs to DLQ after max retries are exceeded.",
+            "status": "pending",
+            "testStrategy": "Integration tests to ensure jobs are moved to DLQ correctly."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Integration Testing",
+            "description": "Perform integration tests to verify retry logic and DLQ functionality.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the complete flow from retry attempts to DLQ population.",
+            "status": "pending",
+            "testStrategy": "Run integration tests and validate results against expected outcomes."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Add Lead Locking Mechanism",
+        "description": "Implement a Redis-based mutex to prevent concurrent processing of the same lead.",
+        "details": "Use Redis to create a mutex lock for each lead based on account_id and phone. Implement retry logic for acquiring the lock.",
+        "testStrategy": "Integration tests to ensure that only one job processes a lead at a time and that retries occur when locks are unavailable.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Redis Mutex Implementation",
+            "description": "Investigate how to implement a mutex lock using Redis.",
+            "dependencies": [],
+            "details": "Explore Redis commands and libraries that support mutex locks, focusing on account_id and phone as keys.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Design Lead Locking Mechanism",
+            "description": "Create a design document for the lead locking mechanism.",
+            "dependencies": [
+              1
+            ],
+            "details": "Outline the structure and flow of the mutex lock, including retry logic and error handling.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Implement Redis Mutex Lock",
+            "description": "Develop the Redis-based mutex lock for leads.",
+            "dependencies": [
+              2
+            ],
+            "details": "Write code to create a mutex lock using Redis, ensuring it locks based on account_id and phone.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify lock creation and release."
+          },
+          {
+            "id": 4,
+            "title": "Implement Retry Logic for Lock Acquisition",
+            "description": "Add retry logic for acquiring the mutex lock.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement retry logic with exponential backoff for acquiring the lock when it's unavailable.",
+            "status": "pending",
+            "testStrategy": "Integration tests to ensure retries occur correctly."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Integration Testing",
+            "description": "Perform integration testing for the lead locking mechanism.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the complete locking mechanism to ensure only one job processes a lead at a time.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify that the lock prevents concurrent processing."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Setup Hetzner Infrastructure",
+        "description": "Provision Hetzner VMs with private networking and firewall configurations.",
+        "details": "Create a private network for app and db servers. Configure firewalls to restrict access to necessary ports only.",
+        "testStrategy": "Manual testing to verify network connectivity and firewall rules.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Private Network for VMs",
+            "description": "Set up a private network for application and database servers on Hetzner.",
+            "dependencies": [],
+            "details": "Use Hetzner's networking tools to create a private network that connects the app and db servers securely.",
+            "status": "pending",
+            "testStrategy": "Verify network isolation and connectivity between VMs."
+          },
+          {
+            "id": 2,
+            "title": "Provision Application Server VM",
+            "description": "Create and configure the virtual machine for the application server.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Hetzner Cloud Console to provision a VM with necessary resources for the application server.",
+            "status": "pending",
+            "testStrategy": "Ensure VM is accessible via the private network."
+          },
+          {
+            "id": 3,
+            "title": "Provision Database Server VM",
+            "description": "Create and configure the virtual machine for the database server.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Hetzner Cloud Console to provision a VM with necessary resources for the database server.",
+            "status": "pending",
+            "testStrategy": "Ensure VM is accessible via the private network."
+          },
+          {
+            "id": 4,
+            "title": "Configure Firewall Rules",
+            "description": "Set up firewall rules to restrict access to necessary ports only.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Configure Hetzner firewall to allow only essential traffic to and from the VMs, blocking all other ports.",
+            "status": "pending",
+            "testStrategy": "Test firewall rules by attempting connections on allowed and blocked ports."
+          },
+          {
+            "id": 5,
+            "title": "Verify Network and Firewall Setup",
+            "description": "Conduct manual testing to verify network connectivity and firewall configurations.",
+            "dependencies": [
+              4
+            ],
+            "details": "Perform tests to ensure that the private network is functioning correctly and that firewall rules are properly restricting access.",
+            "status": "pending",
+            "testStrategy": "Manual testing to verify network connectivity and firewall rules."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Install and Configure PostgreSQL",
+        "description": "Set up PostgreSQL on the db-server with secure access and automated backups.",
+        "details": "Install PostgreSQL, configure access from the app-server, and set up daily backups with a 14-day retention policy.",
+        "testStrategy": "Manual verification of database connectivity and successful backup and restore operations.",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install PostgreSQL on db-server",
+            "description": "Install the latest version of PostgreSQL on the db-server.",
+            "dependencies": [],
+            "details": "Use the package manager to install PostgreSQL. Ensure the service is running after installation.",
+            "status": "pending",
+            "testStrategy": "Verify PostgreSQL service is active."
+          },
+          {
+            "id": 2,
+            "title": "Configure secure access for PostgreSQL",
+            "description": "Set up secure access for PostgreSQL from the app-server.",
+            "dependencies": [
+              1
+            ],
+            "details": "Edit the pg_hba.conf and postgresql.conf files to allow connections from the app-server IP. Use SSL for secure connections.",
+            "status": "pending",
+            "testStrategy": "Test connection from app-server using SSL."
+          },
+          {
+            "id": 3,
+            "title": "Create PostgreSQL user and database",
+            "description": "Create a new PostgreSQL user and database for the application.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use psql to create a user with a strong password and a database owned by this user.",
+            "status": "pending",
+            "testStrategy": "Verify user can connect and access the database."
+          },
+          {
+            "id": 4,
+            "title": "Set up automated daily backups",
+            "description": "Configure daily backups for PostgreSQL with a 14-day retention policy.",
+            "dependencies": [
+              3
+            ],
+            "details": "Use pg_dump to create a backup script. Schedule it with cron to run daily, and configure retention using a cleanup script.",
+            "status": "pending",
+            "testStrategy": "Check backup files are created and old files are deleted after 14 days."
+          },
+          {
+            "id": 5,
+            "title": "Test backup and restore process",
+            "description": "Ensure the backup and restore process works correctly.",
+            "dependencies": [
+              4
+            ],
+            "details": "Perform a test backup and restore operation to verify data integrity and process reliability.",
+            "status": "pending",
+            "testStrategy": "Restore from backup and verify data consistency."
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Deploy Application with Docker Compose",
+        "description": "Deploy the backend and frontend applications using Docker Compose on the app-server.",
+        "details": "Create Docker Compose configurations for the API, worker, and web services. Ensure services restart automatically and are health-checked.",
+        "testStrategy": "Manual testing to verify application deployment and service health checks.",
+        "priority": "medium",
+        "dependencies": [
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Docker Compose File for API Service",
+            "description": "Develop a Docker Compose configuration for the API service.",
+            "dependencies": [],
+            "details": "Define the API service in the Docker Compose file with necessary environment variables and ports.",
+            "status": "pending",
+            "testStrategy": "Verify API service starts and responds to requests."
+          },
+          {
+            "id": 2,
+            "title": "Configure Docker Compose for Worker Service",
+            "description": "Set up Docker Compose for the worker service.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add the worker service to the Docker Compose file, ensuring it has the correct dependencies and restart policy.",
+            "status": "pending",
+            "testStrategy": "Check worker service logs for correct task processing."
+          },
+          {
+            "id": 3,
+            "title": "Set Up Docker Compose for Web Service",
+            "description": "Implement Docker Compose configuration for the web service.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Include the web service in the Docker Compose file, mapping necessary ports and setting environment variables.",
+            "status": "pending",
+            "testStrategy": "Access the web service via browser to ensure it loads correctly."
+          },
+          {
+            "id": 4,
+            "title": "Implement Health Checks for All Services",
+            "description": "Add health checks to Docker Compose for API, worker, and web services.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Define health check parameters for each service in the Docker Compose file to ensure they are running properly.",
+            "status": "pending",
+            "testStrategy": "Simulate failures and verify services restart automatically."
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate Docker Compose Deployment",
+            "description": "Conduct manual testing to ensure all services deploy correctly with Docker Compose.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Deploy the application using Docker Compose and verify all services are operational and healthy.",
+            "status": "pending",
+            "testStrategy": "Manually test each service endpoint and monitor logs for errors."
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Implement Cloudflare Tunnel",
+        "description": "Set up Cloudflare Tunnel to expose the application securely without public IPs.",
+        "details": "Install and configure Cloudflare Tunnel on the app-server to route traffic to the API and web services securely.",
+        "testStrategy": "Manual testing to verify tunnel configuration and secure access to services.",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Cloudflare Tunnel on App Server",
+            "description": "Install the Cloudflare Tunnel software on the application server.",
+            "dependencies": [],
+            "details": "Download and install the Cloudflare Tunnel package on the app server following the official documentation.",
+            "status": "pending",
+            "testStrategy": "Verify installation by checking the version."
+          },
+          {
+            "id": 2,
+            "title": "Configure Cloudflare Tunnel for API Service",
+            "description": "Set up Cloudflare Tunnel to route traffic to the API service.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a configuration file for the API service, specifying the local service address and desired subdomain.",
+            "status": "pending",
+            "testStrategy": "Test API access via the tunnel using curl."
+          },
+          {
+            "id": 3,
+            "title": "Configure Cloudflare Tunnel for Web Service",
+            "description": "Set up Cloudflare Tunnel to route traffic to the web service.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a configuration file for the web service, specifying the local service address and desired subdomain.",
+            "status": "pending",
+            "testStrategy": "Access the web service through the tunnel from a browser."
+          },
+          {
+            "id": 4,
+            "title": "Verify Tunnel Security Settings",
+            "description": "Ensure the Cloudflare Tunnel is configured with secure settings.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Check the configuration for TLS settings and access restrictions to ensure secure connections.",
+            "status": "pending",
+            "testStrategy": "Attempt unauthorized access to verify security."
+          },
+          {
+            "id": 5,
+            "title": "Document Cloudflare Tunnel Setup",
+            "description": "Document the setup process and configurations for future reference.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create a detailed document outlining the installation, configuration, and testing steps for the Cloudflare Tunnel.",
+            "status": "pending",
+            "testStrategy": null
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Setup CI Pipeline with GitHub Actions",
+        "description": "Create a CI pipeline for linting, testing, and type-checking using GitHub Actions.",
+        "details": "Configure GitHub Actions to run lint, test, and type-check jobs on pull requests and pushes to main.",
+        "testStrategy": "Verify CI pipeline execution on test pull requests and ensure all checks pass.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create GitHub Actions Workflow File",
+            "description": "Create the initial workflow file for the CI pipeline.",
+            "dependencies": [],
+            "details": "Create a new YAML file in the .github/workflows directory to define the CI pipeline.",
+            "status": "pending",
+            "testStrategy": "Check if the workflow file is correctly recognized by GitHub."
+          },
+          {
+            "id": 2,
+            "title": "Configure Linting Job",
+            "description": "Set up a job in the workflow to run linting checks.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add a job to the workflow file that runs linting using the appropriate linter for the codebase.",
+            "status": "pending",
+            "testStrategy": "Verify that the linting job runs successfully on a test pull request."
+          },
+          {
+            "id": 3,
+            "title": "Configure Testing Job",
+            "description": "Set up a job in the workflow to run unit tests.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add a job to the workflow file that runs unit tests using the project's test framework.",
+            "status": "pending",
+            "testStrategy": "Ensure all tests pass when the job is executed on a test pull request."
+          },
+          {
+            "id": 4,
+            "title": "Configure Type-Checking Job",
+            "description": "Set up a job in the workflow to perform type-checking.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add a job to the workflow file that performs type-checking using a tool like mypy.",
+            "status": "pending",
+            "testStrategy": "Verify that the type-checking job runs without errors on a test pull request."
+          },
+          {
+            "id": 5,
+            "title": "Test CI Pipeline on Pull Requests and Pushes",
+            "description": "Test the entire CI pipeline on pull requests and pushes to main.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Create test pull requests and pushes to ensure the CI pipeline triggers and runs all jobs correctly.",
+            "status": "pending",
+            "testStrategy": "Verify that all jobs in the CI pipeline execute successfully and report results on GitHub."
+          }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Setup CD Pipeline with GitHub Actions",
+        "description": "Implement a CD pipeline for automated deployment on successful merges to main.",
+        "details": "Configure GitHub Actions to build Docker images, push to GHCR, and deploy to the app-server via SSH.",
+        "testStrategy": "Verify CD pipeline execution on test merges and ensure successful deployment.",
+        "priority": "medium",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create GitHub Actions Workflow File",
+            "description": "Create a new workflow file for the CD pipeline in the GitHub repository.",
+            "dependencies": [],
+            "details": "Add a YAML file in the .github/workflows directory to define the CD pipeline.",
+            "status": "pending",
+            "testStrategy": "Check if the workflow file is correctly recognized by GitHub."
+          },
+          {
+            "id": 2,
+            "title": "Configure Docker Build and Push",
+            "description": "Set up the workflow to build Docker images and push them to GitHub Container Registry (GHCR).",
+            "dependencies": [
+              1
+            ],
+            "details": "Use GitHub Actions to build Docker images and push them to GHCR on successful merges to main.",
+            "status": "pending",
+            "testStrategy": "Verify Docker images are correctly built and pushed to GHCR."
+          },
+          {
+            "id": 3,
+            "title": "Setup SSH Deployment to App Server",
+            "description": "Configure the workflow to deploy the application to the app server via SSH.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use SSH keys to securely connect and deploy the application to the app server.",
+            "status": "pending",
+            "testStrategy": "Ensure the application is correctly deployed to the server."
+          },
+          {
+            "id": 4,
+            "title": "Implement Environment Variables Management",
+            "description": "Manage environment variables securely within the GitHub Actions workflow.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use GitHub Secrets to store and access necessary environment variables for deployment.",
+            "status": "pending",
+            "testStrategy": "Check if environment variables are correctly accessed during the workflow execution."
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate CD Pipeline",
+            "description": "Perform test merges to validate the entire CD pipeline from build to deployment.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Conduct test merges to ensure the pipeline executes successfully and the application is deployed without errors.",
+            "status": "pending",
+            "testStrategy": "Perform end-to-end testing of the CD pipeline with test merges."
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Implement Branch Protection Rules",
+        "description": "Configure GitHub branch protection rules to enforce CI checks and review requirements.",
+        "details": "Set branch protection rules on main to require passing CI checks and at least one approval for merges.",
+        "testStrategy": "Manual verification of branch protection settings and enforcement on test pull requests.",
+        "priority": "medium",
+        "dependencies": [
+          13
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Current Branch Settings",
+            "description": "Examine the current branch settings on GitHub for the main branch.",
+            "dependencies": [],
+            "details": "Access the GitHub repository settings and document existing branch protection rules.",
+            "status": "pending",
+            "testStrategy": "Manual verification of current settings."
+          },
+          {
+            "id": 2,
+            "title": "Define CI Check Requirements",
+            "description": "Specify which CI checks must pass before a merge is allowed.",
+            "dependencies": [
+              1
+            ],
+            "details": "Identify necessary CI checks and document them for inclusion in branch protection rules.",
+            "status": "pending",
+            "testStrategy": "Ensure CI checks are correctly identified and documented."
+          },
+          {
+            "id": 3,
+            "title": "Configure Approval Requirement",
+            "description": "Set up the requirement for at least one approval before merging.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify branch protection rules to require at least one code review approval for merges.",
+            "status": "pending",
+            "testStrategy": "Test by creating a pull request and verifying approval requirement."
+          },
+          {
+            "id": 4,
+            "title": "Implement Branch Protection Rules",
+            "description": "Apply the defined branch protection rules on the main branch.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Use GitHub settings to enforce CI checks and approval requirements on the main branch.",
+            "status": "pending",
+            "testStrategy": "Manual verification by attempting to merge a pull request without meeting requirements."
+          },
+          {
+            "id": 5,
+            "title": "Test Branch Protection Enforcement",
+            "description": "Verify that the branch protection rules are enforced correctly.",
+            "dependencies": [
+              4
+            ],
+            "details": "Create test pull requests to ensure that CI checks and approval requirements are enforced.",
+            "status": "pending",
+            "testStrategy": "Manual testing with test pull requests to confirm enforcement."
+          }
+        ]
+      },
+      {
+        "id": 16,
+        "title": "Remove LangChain and LangGraph Dependencies",
+        "description": "Eliminate all LangChain and LangGraph dependencies from the codebase.",
+        "details": "Remove all imports and references to LangChain and LangGraph, ensuring all functionality is replaced with native OpenAI SDK usage.",
+        "testStrategy": "Code review and testing to ensure no LangChain or LangGraph dependencies remain.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify LangChain and LangGraph Usage",
+            "description": "Locate all instances of LangChain and LangGraph in the codebase.",
+            "dependencies": [],
+            "details": "Conduct a thorough search of the codebase to identify all imports and references to LangChain and LangGraph.",
+            "status": "pending",
+            "testStrategy": "Verify all instances are identified using code search tools."
+          },
+          {
+            "id": 2,
+            "title": "Remove LangChain and LangGraph Imports",
+            "description": "Eliminate all import statements related to LangChain and LangGraph.",
+            "dependencies": [
+              1
+            ],
+            "details": "Remove import statements and ensure no compilation errors occur.",
+            "status": "pending",
+            "testStrategy": "Run code to ensure no import errors occur."
+          },
+          {
+            "id": 3,
+            "title": "Replace LangChain Functionality with OpenAI SDK",
+            "description": "Substitute LangChain functionality with equivalent OpenAI SDK functions.",
+            "dependencies": [
+              2
+            ],
+            "details": "Identify equivalent functions in OpenAI SDK and replace LangChain calls accordingly.",
+            "status": "pending",
+            "testStrategy": "Test each replacement to ensure functionality is preserved."
+          },
+          {
+            "id": 4,
+            "title": "Replace LangGraph Functionality with OpenAI SDK",
+            "description": "Substitute LangGraph functionality with equivalent OpenAI SDK functions.",
+            "dependencies": [
+              2
+            ],
+            "details": "Identify equivalent functions in OpenAI SDK and replace LangGraph calls accordingly.",
+            "status": "pending",
+            "testStrategy": "Test each replacement to ensure functionality is preserved."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Comprehensive Testing",
+            "description": "Perform a full test of the system to ensure all dependencies are removed and functionality is intact.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Run all existing tests and add new ones if necessary to cover changes.",
+            "status": "pending",
+            "testStrategy": "Ensure all tests pass and no references to LangChain or LangGraph remain."
+          }
+        ]
+      },
+      {
+        "id": 17,
+        "title": "Optimize Dockerfiles for Production",
+        "description": "Create optimized multi-stage Dockerfiles for the API and web applications.",
+        "details": "Implement multi-stage builds to reduce image size and improve build efficiency. Ensure non-root user execution.",
+        "testStrategy": "Build and run Docker images locally to verify size and functionality.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current Dockerfiles",
+            "description": "Review existing Dockerfiles for the API and web applications.",
+            "dependencies": [],
+            "details": "Examine the current Dockerfiles to identify areas for optimization, focusing on image size and build efficiency.",
+            "status": "pending",
+            "testStrategy": "Document findings and potential improvements."
+          },
+          {
+            "id": 2,
+            "title": "Implement Multi-Stage Builds",
+            "description": "Create multi-stage Dockerfiles for the API and web applications.",
+            "dependencies": [
+              1
+            ],
+            "details": "Refactor Dockerfiles to use multi-stage builds, separating build and runtime stages to reduce image size.",
+            "status": "pending",
+            "testStrategy": "Build Docker images locally and verify reduced size."
+          },
+          {
+            "id": 3,
+            "title": "Ensure Non-Root User Execution",
+            "description": "Modify Dockerfiles to ensure applications run as non-root users.",
+            "dependencies": [
+              2
+            ],
+            "details": "Add a non-root user to the Dockerfiles and adjust permissions accordingly to enhance security.",
+            "status": "pending",
+            "testStrategy": "Run Docker containers and verify applications execute as non-root users."
+          },
+          {
+            "id": 4,
+            "title": "Optimize Build Efficiency",
+            "description": "Improve the efficiency of the Docker build process.",
+            "dependencies": [
+              2
+            ],
+            "details": "Reorder Dockerfile instructions to leverage caching and minimize build times.",
+            "status": "pending",
+            "testStrategy": "Measure build times before and after optimization."
+          },
+          {
+            "id": 5,
+            "title": "Test and Validate Optimized Dockerfiles",
+            "description": "Test the optimized Dockerfiles for functionality and performance.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Build and run the Docker images locally, ensuring all functionalities work as expected and performance is improved.",
+            "status": "pending",
+            "testStrategy": "Verify image size, build time, and application functionality in local environment."
+          }
+        ]
+      },
+      {
+        "id": 18,
+        "title": "Implement Professional Prompt System",
+        "description": "Refactor the prompt system to separate system prompts, context, and skill instructions.",
+        "details": "Create a prompt builder that assembles prompts from distinct sections for identity, capabilities, context, and rules.",
+        "testStrategy": "Unit tests to verify prompt assembly and correctness.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Prompt System Architecture",
+            "description": "Outline the architecture for the new prompt system.",
+            "dependencies": [],
+            "details": "Create a detailed design document outlining how the prompt system will separate system prompts, context, and skill instructions.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Develop Identity Section Module",
+            "description": "Implement the module for handling identity prompts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a module that manages identity-related prompts, ensuring they can be easily integrated into the prompt builder.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify identity prompt integration."
+          },
+          {
+            "id": 3,
+            "title": "Develop Capabilities Section Module",
+            "description": "Implement the module for handling capabilities prompts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a module that manages capabilities-related prompts, ensuring they can be easily integrated into the prompt builder.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify capabilities prompt integration."
+          },
+          {
+            "id": 4,
+            "title": "Develop Context Section Module",
+            "description": "Implement the module for handling context prompts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a module that manages context-related prompts, ensuring they can be easily integrated into the prompt builder.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify context prompt integration."
+          },
+          {
+            "id": 5,
+            "title": "Implement Prompt Builder",
+            "description": "Create the main prompt builder to assemble prompts from all sections.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Develop the prompt builder that assembles prompts from identity, capabilities, context, and rules sections.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify prompt assembly and correctness."
+          }
+        ]
+      },
+      {
+        "id": 19,
+        "title": "Refactor Guards as Middleware",
+        "description": "Convert guards to middleware executed before the agent loop.",
+        "details": "Implement guards as async functions that check messages and context before processing. Migrate existing guards to this new system.",
+        "testStrategy": "Unit tests to verify guard execution and blocking behavior.",
+        "priority": "medium",
+        "dependencies": [
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Analyze Current Guard Implementation",
+            "description": "Review existing guard implementations to understand their functionality.",
+            "dependencies": [],
+            "details": "Examine the current guard functions to identify their roles and how they interact with the system.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Design Middleware Structure",
+            "description": "Create a design for the middleware structure to replace guards.",
+            "dependencies": [
+              1
+            ],
+            "details": "Outline how the middleware will be structured, including entry points and execution flow.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 3,
+            "title": "Implement Middleware Base Class",
+            "description": "Develop a base class for middleware to standardize execution.",
+            "dependencies": [
+              2
+            ],
+            "details": "Create an abstract base class that defines the interface and common functionality for all middleware.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify base class functionality."
+          },
+          {
+            "id": 4,
+            "title": "Migrate Existing Guards to Middleware",
+            "description": "Convert existing guard functions into middleware components.",
+            "dependencies": [
+              3
+            ],
+            "details": "Refactor each guard function to conform to the new middleware structure, ensuring compatibility with the agent loop.",
+            "status": "pending",
+            "testStrategy": "Unit tests to ensure each middleware component functions as expected."
+          },
+          {
+            "id": 5,
+            "title": "Integrate Middleware into Agent Loop",
+            "description": "Incorporate the new middleware into the agent loop for execution.",
+            "dependencies": [
+              4
+            ],
+            "details": "Modify the agent loop to execute middleware before processing messages, ensuring correct order and error handling.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify middleware execution within the agent loop."
+          }
+        ]
+      },
+      {
+        "id": 20,
+        "title": "Implement Streaming Response Mode",
+        "description": "Add support for streaming responses from the agent to reduce perceived latency.",
+        "details": "Modify the runner to support streaming responses using OpenAI's streaming API. Implement callbacks for text chunks.",
+        "testStrategy": "Integration tests to verify streaming behavior and response assembly.",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research OpenAI Streaming API",
+            "description": "Investigate the OpenAI streaming API to understand its capabilities and requirements.",
+            "dependencies": [],
+            "details": "Review OpenAI documentation and examples for streaming API usage.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Modify Runner for Streaming",
+            "description": "Update the runner to handle streaming responses from the API.",
+            "dependencies": [
+              1
+            ],
+            "details": "Refactor the runner to initiate and manage streaming connections.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify runner modifications."
+          },
+          {
+            "id": 3,
+            "title": "Implement Callbacks for Text Chunks",
+            "description": "Create callbacks to process and display text chunks as they arrive.",
+            "dependencies": [
+              2
+            ],
+            "details": "Develop callback functions to handle incoming text chunks and update the UI.",
+            "status": "pending",
+            "testStrategy": "Unit tests to ensure callbacks process text correctly."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Streaming with Existing System",
+            "description": "Connect the streaming functionality with the current system architecture.",
+            "dependencies": [
+              3
+            ],
+            "details": "Ensure seamless integration of streaming responses with existing components.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify system-wide streaming behavior."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Integration Testing",
+            "description": "Perform integration tests to ensure streaming responses work as expected.",
+            "dependencies": [
+              4
+            ],
+            "details": "Test the complete streaming response flow in a staging environment.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify streaming behavior and response assembly."
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "title": "Add Observability Metrics",
+        "description": "Instrument the agent with metrics for latency, tool usage, and worker throughput.",
+        "details": "Use prometheus_client to add metrics for agent run duration, tool calls, and worker job counts. Expose metrics via a /metrics endpoint.",
+        "testStrategy": "Integration tests to verify metric collection and exposure.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Prometheus Client Library",
+            "description": "Install and configure the prometheus_client library for metrics collection.",
+            "dependencies": [],
+            "details": "Add prometheus_client to the project dependencies and configure it for use in the agent.",
+            "status": "pending",
+            "testStrategy": "Verify installation and basic configuration."
+          },
+          {
+            "id": 2,
+            "title": "Instrument Agent Run Duration",
+            "description": "Add metrics to measure the duration of agent runs.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use prometheus_client to create a histogram metric for tracking agent run duration.",
+            "status": "pending",
+            "testStrategy": "Run the agent and check if the run duration metrics are collected."
+          },
+          {
+            "id": 3,
+            "title": "Track Tool Usage Metrics",
+            "description": "Add metrics to track the usage of different tools by the agent.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement a counter metric for each tool call using prometheus_client.",
+            "status": "pending",
+            "testStrategy": "Invoke tool calls and verify metrics are incremented correctly."
+          },
+          {
+            "id": 4,
+            "title": "Measure Worker Throughput",
+            "description": "Add metrics to measure the throughput of worker jobs.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create a gauge metric to track the number of jobs processed by workers.",
+            "status": "pending",
+            "testStrategy": "Simulate worker jobs and ensure throughput metrics are updated."
+          },
+          {
+            "id": 5,
+            "title": "Expose Metrics via /metrics Endpoint",
+            "description": "Create an HTTP endpoint to expose the collected metrics.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Set up an HTTP server to serve metrics at the /metrics endpoint using prometheus_client.",
+            "status": "pending",
+            "testStrategy": "Access the /metrics endpoint and verify all metrics are exposed correctly."
+          }
+        ]
+      },
+      {
+        "id": 22,
+        "title": "Conduct Load Testing",
+        "description": "Perform load testing to ensure the system can handle 50 simultaneous messages without degradation.",
+        "details": "Use a load testing tool to simulate 50 concurrent messages and measure system performance and response times.",
+        "testStrategy": "Analyze load test results to ensure performance targets are met.",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Select Load Testing Tool",
+            "description": "Choose an appropriate load testing tool for simulating 50 concurrent messages.",
+            "dependencies": [
+              6,
+              7,
+              8
+            ],
+            "details": "Evaluate tools like JMeter, LoadRunner, or Locust for compatibility and ease of use.",
+            "status": "pending",
+            "testStrategy": "Verify tool setup with a basic test."
+          },
+          {
+            "id": 2,
+            "title": "Configure Load Test Environment",
+            "description": "Set up the environment for load testing, including necessary configurations.",
+            "dependencies": [
+              1
+            ],
+            "details": "Prepare the test environment with necessary hardware and software configurations to support load testing.",
+            "status": "pending",
+            "testStrategy": "Ensure environment stability under test conditions."
+          },
+          {
+            "id": 3,
+            "title": "Develop Load Test Scripts",
+            "description": "Create scripts to simulate 50 concurrent messages using the selected tool.",
+            "dependencies": [
+              2
+            ],
+            "details": "Write scripts that accurately simulate the load scenario, ensuring they reflect real-world usage.",
+            "status": "pending",
+            "testStrategy": "Run scripts in a controlled environment to validate accuracy."
+          },
+          {
+            "id": 4,
+            "title": "Execute Load Test",
+            "description": "Run the load test to measure system performance and response times.",
+            "dependencies": [
+              3
+            ],
+            "details": "Execute the load test and monitor system performance metrics such as response time, throughput, and error rates.",
+            "status": "pending",
+            "testStrategy": "Collect and analyze performance data to ensure targets are met."
+          },
+          {
+            "id": 5,
+            "title": "Analyze and Report Results",
+            "description": "Analyze the results of the load test and document findings.",
+            "dependencies": [
+              4
+            ],
+            "details": "Review the collected data to identify any performance bottlenecks or degradation issues and compile a detailed report.",
+            "status": "pending",
+            "testStrategy": "Ensure report accuracy and completeness with peer review."
+          }
+        ]
+      },
+      {
+        "id": 23,
+        "title": "Finalize Documentation",
+        "description": "Update and finalize all documentation related to the new system architecture and processes.",
+        "details": "Revise existing documentation to reflect changes in architecture, deployment, and operational procedures. Ensure clarity and completeness.",
+        "testStrategy": "Peer review of documentation to ensure accuracy and usability.",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review Existing Documentation",
+            "description": "Review current documentation to identify outdated sections.",
+            "dependencies": [],
+            "details": "Go through all existing documents related to the system architecture and processes to identify areas that need updates.",
+            "status": "pending",
+            "testStrategy": "Peer review to ensure all outdated sections are identified."
+          },
+          {
+            "id": 2,
+            "title": "Update Architecture Documentation",
+            "description": "Revise documentation to reflect new system architecture changes.",
+            "dependencies": [
+              1
+            ],
+            "details": "Update diagrams and descriptions to match the new architecture. Ensure all components are accurately represented.",
+            "status": "pending",
+            "testStrategy": "Cross-check with architecture team for accuracy."
+          },
+          {
+            "id": 3,
+            "title": "Revise Deployment Procedures",
+            "description": "Update deployment documentation to align with new processes.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify deployment guides to include new steps and tools used in the updated process.",
+            "status": "pending",
+            "testStrategy": "Test deployment using the updated guide to ensure completeness."
+          },
+          {
+            "id": 4,
+            "title": "Update Operational Procedures",
+            "description": "Revise operational documentation to reflect new procedures.",
+            "dependencies": [
+              1
+            ],
+            "details": "Ensure all operational steps are updated to match the new system processes, including troubleshooting and maintenance.",
+            "status": "pending",
+            "testStrategy": "Operational team to validate the updated procedures."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Final Review and Approval",
+            "description": "Perform a final review of all updated documentation and obtain necessary approvals.",
+            "dependencies": [
+              2,
+              3,
+              4
+            ],
+            "details": "Compile all updated documents and conduct a peer review session. Obtain approval from relevant stakeholders.",
+            "status": "pending",
+            "testStrategy": "Approval from stakeholders and final peer review feedback."
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "title": "Implement Admin DLQ Inspection Endpoint",
+        "description": "Create an admin endpoint to inspect the Dead-Letter Queue for failed jobs.",
+        "details": "Develop a paginated admin endpoint to list entries in the DLQ, including job details and error information.",
+        "testStrategy": "Integration tests to verify endpoint functionality and security.",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design DLQ Inspection Endpoint",
+            "description": "Design the structure and requirements for the DLQ inspection endpoint.",
+            "dependencies": [],
+            "details": "Create a detailed design document outlining the endpoint's URL, request parameters, response format, and pagination strategy.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Implement DLQ Data Retrieval Logic",
+            "description": "Develop the logic to retrieve data from the Dead-Letter Queue.",
+            "dependencies": [
+              1
+            ],
+            "details": "Write a function to query the DLQ, fetching job details and error information. Ensure data is structured for pagination.",
+            "status": "pending",
+            "testStrategy": "Unit tests to verify data retrieval accuracy."
+          },
+          {
+            "id": 3,
+            "title": "Develop Paginated Endpoint",
+            "description": "Create the paginated admin endpoint to serve DLQ data.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement the endpoint using the designed URL and parameters. Integrate pagination logic to handle large datasets efficiently.",
+            "status": "pending",
+            "testStrategy": "Integration tests to verify pagination and data integrity."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Security Measures",
+            "description": "Add authentication and authorization to the DLQ endpoint.",
+            "dependencies": [
+              3
+            ],
+            "details": "Ensure the endpoint is accessible only to authorized admin users. Implement token-based authentication and role checks.",
+            "status": "pending",
+            "testStrategy": "Security tests to verify access control and authentication."
+          },
+          {
+            "id": 5,
+            "title": "Conduct Endpoint Testing",
+            "description": "Perform comprehensive testing of the DLQ inspection endpoint.",
+            "dependencies": [
+              4
+            ],
+            "details": "Execute integration tests to ensure endpoint functionality, security, and performance. Validate against test cases for various scenarios.",
+            "status": "pending",
+            "testStrategy": "Integration tests focusing on endpoint functionality and security aspects."
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "title": "Ensure Zero-Downtime Deployments",
+        "description": "Configure deployments to ensure zero downtime using Docker health checks and rolling updates.",
+        "details": "Implement health checks in Docker Compose and configure rolling updates to prevent downtime during deployments.",
+        "testStrategy": "Manual testing to verify zero-downtime behavior during deployments.",
+        "priority": "medium",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Research Docker Health Checks",
+            "description": "Investigate how to implement health checks in Docker Compose.",
+            "dependencies": [],
+            "details": "Review Docker documentation and examples on health checks to understand implementation.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 2,
+            "title": "Implement Docker Health Checks",
+            "description": "Add health checks to Docker Compose files for all services.",
+            "dependencies": [
+              1
+            ],
+            "details": "Modify Docker Compose files to include health checks for each service, ensuring they reflect service-specific requirements.",
+            "status": "pending",
+            "testStrategy": "Verify health checks are correctly configured by observing service status changes."
+          },
+          {
+            "id": 3,
+            "title": "Research Rolling Updates in Docker",
+            "description": "Understand how to configure rolling updates in Docker Compose.",
+            "dependencies": [],
+            "details": "Study Docker Compose documentation and best practices for setting up rolling updates.",
+            "status": "pending",
+            "testStrategy": null
+          },
+          {
+            "id": 4,
+            "title": "Configure Rolling Updates",
+            "description": "Set up rolling updates in Docker Compose to ensure zero downtime.",
+            "dependencies": [
+              3
+            ],
+            "details": "Update Docker Compose configurations to include rolling update strategies, ensuring minimal service disruption.",
+            "status": "pending",
+            "testStrategy": "Deploy updates in a test environment to confirm zero-downtime behavior."
+          },
+          {
+            "id": 5,
+            "title": "Test Zero-Downtime Deployment",
+            "description": "Conduct manual testing to verify zero-downtime during deployments.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Deploy updates in a controlled environment and monitor service availability to ensure no downtime occurs.",
+            "status": "pending",
+            "testStrategy": "Manual testing to observe service continuity during deployments."
+          }
+        ]
+      },
+      {
+        "id": 26,
+        "title": "Conduct Security Audit",
+        "description": "Perform a security audit to ensure the system meets all security requirements and best practices.",
+        "details": "Review system architecture, code, and configurations to identify and mitigate security risks.",
+        "testStrategy": "Security audit report with identified issues and mitigation strategies.",
+        "priority": "medium",
+        "dependencies": [
+          23
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Review System Architecture",
+            "description": "Analyze the current system architecture for security vulnerabilities.",
+            "dependencies": [],
+            "details": "Examine architectural diagrams and documentation to identify potential security weaknesses.",
+            "status": "pending",
+            "testStrategy": "Document identified vulnerabilities and propose mitigations."
+          },
+          {
+            "id": 2,
+            "title": "Conduct Code Review",
+            "description": "Perform a detailed code review to identify security issues.",
+            "dependencies": [
+              1
+            ],
+            "details": "Review the codebase for common security flaws such as SQL injection, XSS, and insecure data handling.",
+            "status": "pending",
+            "testStrategy": "Compile a list of code vulnerabilities and recommended fixes."
+          },
+          {
+            "id": 3,
+            "title": "Evaluate Configuration Settings",
+            "description": "Assess system configurations for security compliance.",
+            "dependencies": [
+              1
+            ],
+            "details": "Check server and application configurations against security best practices and compliance requirements.",
+            "status": "pending",
+            "testStrategy": "Create a report on configuration issues and suggest improvements."
+          },
+          {
+            "id": 4,
+            "title": "Perform Penetration Testing",
+            "description": "Execute penetration tests to simulate attacks on the system.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Use automated tools and manual techniques to test the system's defenses against various attack vectors.",
+            "status": "pending",
+            "testStrategy": "Generate a penetration test report with findings and remediation steps."
+          },
+          {
+            "id": 5,
+            "title": "Compile Security Audit Report",
+            "description": "Document all findings and recommendations from the security audit.",
+            "dependencies": [
+              4
+            ],
+            "details": "Consolidate all identified issues, vulnerabilities, and proposed mitigation strategies into a comprehensive report.",
+            "status": "pending",
+            "testStrategy": "Review the report for completeness and accuracy before submission."
+          }
+        ]
+      },
+      {
+        "id": 27,
+        "title": "Launch Production Environment",
+        "description": "Deploy the final version of the application to the production environment.",
+        "details": "Ensure all components are deployed and configured correctly in the production environment. Monitor initial performance and stability.",
+        "testStrategy": "Monitor production environment for stability and performance issues post-launch.",
+        "priority": "medium",
+        "dependencies": [
+          25,
+          26
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Prepare Production Environment",
+            "description": "Set up the production environment infrastructure.",
+            "dependencies": [
+              25,
+              26
+            ],
+            "details": "Ensure all servers and network configurations are ready for deployment.",
+            "status": "pending",
+            "testStrategy": "Verify infrastructure readiness with test scripts."
+          },
+          {
+            "id": 2,
+            "title": "Deploy Application Components",
+            "description": "Deploy all application components to the production environment.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Docker Compose to deploy API, worker, and web services.",
+            "status": "pending",
+            "testStrategy": "Monitor deployment logs for errors."
+          },
+          {
+            "id": 3,
+            "title": "Configure Monitoring and Alerts",
+            "description": "Set up monitoring and alerting for the production environment.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement monitoring tools to track performance and stability.",
+            "status": "pending",
+            "testStrategy": "Test alerts by simulating performance issues."
+          },
+          {
+            "id": 4,
+            "title": "Conduct Security Audit",
+            "description": "Perform a security audit on the production environment.",
+            "dependencies": [
+              3
+            ],
+            "details": "Review security configurations and perform penetration testing.",
+            "status": "pending",
+            "testStrategy": "Use automated security tools to identify vulnerabilities."
+          },
+          {
+            "id": 5,
+            "title": "Monitor Initial Performance and Stability",
+            "description": "Monitor the application post-deployment for performance and stability.",
+            "dependencies": [
+              4
+            ],
+            "details": "Track key performance metrics and resolve any issues.",
+            "status": "pending",
+            "testStrategy": "Analyze performance data and adjust configurations as needed."
+          }
+        ]
+      },
+      {
+        "id": 28,
+        "title": "User Validation Checkpoint 1",
+        "description": "Manually test functionality from Tasks 1-5: AgentContext, ConversationHistory, OpenAI runner, Skill Protocol, Skills migrated. Verify runner returns text, tool calls dispatch correctly, history persists in PostgreSQL.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          5
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test AgentContext Functionality",
+            "description": "Manually test the AgentContext functionality to ensure it operates as expected.",
+            "dependencies": [],
+            "details": "Verify that the AgentContext initializes correctly and maintains state throughout interactions.",
+            "status": "pending",
+            "testStrategy": "Perform manual tests to ensure AgentContext maintains state."
+          },
+          {
+            "id": 2,
+            "title": "Verify ConversationHistory Persistence",
+            "description": "Ensure ConversationHistory is correctly stored and retrieved from PostgreSQL.",
+            "dependencies": [
+              1
+            ],
+            "details": "Check that all conversation data is accurately saved and can be retrieved without data loss.",
+            "status": "pending",
+            "testStrategy": "Manually insert and retrieve conversation data to verify persistence."
+          },
+          {
+            "id": 3,
+            "title": "Test OpenAI Runner Output",
+            "description": "Verify that the OpenAI runner returns the expected text output.",
+            "dependencies": [
+              1
+            ],
+            "details": "Run the OpenAI runner with various inputs and confirm the output matches expected results.",
+            "status": "pending",
+            "testStrategy": "Use predefined inputs to test runner output consistency."
+          },
+          {
+            "id": 4,
+            "title": "Validate Skill Protocol Dispatch",
+            "description": "Ensure tool calls are dispatched correctly using the Skill Protocol.",
+            "dependencies": [
+              1,
+              3
+            ],
+            "details": "Test various tool calls to confirm they are dispatched and executed as intended.",
+            "status": "pending",
+            "testStrategy": "Manually trigger tool calls and verify correct dispatch."
+          },
+          {
+            "id": 5,
+            "title": "Check Skills Migration",
+            "description": "Verify that all skills have been migrated and function correctly.",
+            "dependencies": [
+              1,
+              2,
+              3,
+              4
+            ],
+            "details": "Review the migration process and test each skill to ensure they operate as expected.",
+            "status": "pending",
+            "testStrategy": "Test each migrated skill to confirm functionality and integration."
+          }
+        ]
+      },
+      {
+        "id": 29,
+        "title": "User Validation Checkpoint 2",
+        "description": "Manually test Tasks 6-10: concurrent WorkerDispatcher, retry+DLQ, lead lock, Hetzner infra, PostgreSQL. Verify 20 simultaneous messages process without blocking, failed jobs appear in DLQ.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          10
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test Concurrent WorkerDispatcher",
+            "description": "Manually test the concurrent WorkerDispatcher functionality.",
+            "dependencies": [],
+            "details": "Ensure the WorkerDispatcher can handle 20 simultaneous messages without blocking.",
+            "status": "pending",
+            "testStrategy": "Simulate 20 concurrent message dispatches and observe performance."
+          },
+          {
+            "id": 2,
+            "title": "Verify Retry and DLQ Mechanism",
+            "description": "Check the retry logic and Dead Letter Queue (DLQ) functionality.",
+            "dependencies": [
+              1
+            ],
+            "details": "Ensure failed jobs are retried correctly and appear in the DLQ if they fail.",
+            "status": "pending",
+            "testStrategy": "Force job failures and verify they are retried and logged in the DLQ."
+          },
+          {
+            "id": 3,
+            "title": "Test Lead Lock Mechanism",
+            "description": "Validate the lead lock mechanism for task processing.",
+            "dependencies": [
+              1
+            ],
+            "details": "Ensure that the lead lock prevents multiple processes from handling the same task simultaneously.",
+            "status": "pending",
+            "testStrategy": "Attempt simultaneous task processing and check for lock enforcement."
+          },
+          {
+            "id": 4,
+            "title": "Validate Hetzner Infrastructure Setup",
+            "description": "Ensure Hetzner infrastructure is correctly configured for task processing.",
+            "dependencies": [
+              1
+            ],
+            "details": "Check network configurations and resource allocations on Hetzner.",
+            "status": "pending",
+            "testStrategy": "Run infrastructure tests to verify setup and connectivity."
+          },
+          {
+            "id": 5,
+            "title": "Test PostgreSQL Integration",
+            "description": "Verify PostgreSQL database integration for task logging and data persistence.",
+            "dependencies": [
+              1
+            ],
+            "details": "Ensure that task data is correctly logged and persisted in PostgreSQL.",
+            "status": "pending",
+            "testStrategy": "Perform database operations and check for correct data storage and retrieval."
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "title": "User Validation Checkpoint 3",
+        "description": "Manually test Tasks 11-15: Docker Compose deploy, Cloudflare Tunnel, CI pipeline, CD pipeline, branch protection. Verify curl https://api-iag2.ianexo.com.br/health returns 200, PR triggers CI.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          15
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test Docker Compose Deployment",
+            "description": "Manually test the Docker Compose deployment as per Task 11.",
+            "dependencies": [],
+            "details": "Ensure the Docker Compose setup is correctly deploying the application. Follow the deployment steps outlined in Task 11 documentation.",
+            "status": "pending",
+            "testStrategy": "Verify deployment logs and application accessibility."
+          },
+          {
+            "id": 2,
+            "title": "Verify Cloudflare Tunnel Configuration",
+            "description": "Check the Cloudflare Tunnel setup as per Task 12.",
+            "dependencies": [
+              1
+            ],
+            "details": "Ensure the Cloudflare Tunnel is correctly configured and operational. Follow the configuration guide from Task 12.",
+            "status": "pending",
+            "testStrategy": "Test tunnel connectivity and access logs."
+          },
+          {
+            "id": 3,
+            "title": "Test CI Pipeline Functionality",
+            "description": "Manually test the CI pipeline as per Task 13.",
+            "dependencies": [
+              2
+            ],
+            "details": "Run the CI pipeline and ensure all stages complete successfully. Refer to Task 13 for pipeline stages and expected outcomes.",
+            "status": "pending",
+            "testStrategy": "Check CI logs and build artifacts."
+          },
+          {
+            "id": 4,
+            "title": "Test CD Pipeline Deployment",
+            "description": "Manually test the CD pipeline as per Task 14.",
+            "dependencies": [
+              3
+            ],
+            "details": "Ensure the CD pipeline deploys the application without errors. Follow the deployment steps in Task 14.",
+            "status": "pending",
+            "testStrategy": "Verify deployment success and application functionality post-deployment."
+          },
+          {
+            "id": 5,
+            "title": "Verify Branch Protection Rules",
+            "description": "Check branch protection rules as per Task 15.",
+            "dependencies": [
+              4
+            ],
+            "details": "Ensure branch protection rules are correctly set up and enforced. Follow the guidelines from Task 15.",
+            "status": "pending",
+            "testStrategy": "Attempt to push changes to protected branches and verify restrictions."
+          }
+        ]
+      },
+      {
+        "id": 31,
+        "title": "User Validation Checkpoint 4",
+        "description": "Manually test Tasks 16-20: LangChain removed, prompt_builder, guards middleware, streaming, metrics. Verify grep langchain returns 0 results, agent responds correctly end-to-end.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          20
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Verify LangChain Removal",
+            "description": "Ensure LangChain is completely removed from the codebase.",
+            "dependencies": [],
+            "details": "Run 'grep langchain' across the codebase to confirm no instances remain.",
+            "status": "pending",
+            "testStrategy": "Run 'grep langchain' and ensure it returns 0 results."
+          },
+          {
+            "id": 2,
+            "title": "Test Prompt Builder Functionality",
+            "description": "Manually test the prompt_builder feature for correct functionality.",
+            "dependencies": [
+              1
+            ],
+            "details": "Create various prompts and ensure they are built correctly using the prompt_builder.",
+            "status": "pending",
+            "testStrategy": "Create test prompts and verify output matches expected format."
+          },
+          {
+            "id": 3,
+            "title": "Validate Guards Middleware",
+            "description": "Check that guards middleware is functioning as expected.",
+            "dependencies": [
+              2
+            ],
+            "details": "Test middleware by simulating requests and ensuring correct guards are applied.",
+            "status": "pending",
+            "testStrategy": "Simulate requests and verify guards middleware blocks/permits as expected."
+          },
+          {
+            "id": 4,
+            "title": "Test Streaming Capabilities",
+            "description": "Ensure streaming functionality works end-to-end.",
+            "dependencies": [
+              3
+            ],
+            "details": "Initiate streaming sessions and verify data is streamed correctly without interruptions.",
+            "status": "pending",
+            "testStrategy": "Conduct streaming tests and monitor for data integrity and continuity."
+          },
+          {
+            "id": 5,
+            "title": "Verify Metrics Collection",
+            "description": "Check that metrics are being collected and reported correctly.",
+            "dependencies": [
+              4
+            ],
+            "details": "Review logs and dashboards to ensure metrics are accurately captured and reported.",
+            "status": "pending",
+            "testStrategy": "Compare collected metrics against expected values and verify dashboard displays."
+          }
+        ]
+      },
+      {
+        "id": 32,
+        "title": "User Validation Checkpoint 5 — Production Launch",
+        "description": "Final validation: zero-downtime deploy, security audit, production launch. Verify uv run pytest green, mypy clean, CD deploys in <3min, uptime monitor active.",
+        "details": "",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          27
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Perform Zero-Downtime Deployment",
+            "description": "Execute a zero-downtime deployment to production.",
+            "dependencies": [
+              27
+            ],
+            "details": "Use blue-green deployment strategy to ensure zero downtime. Monitor logs for any errors during the switch.",
+            "status": "pending",
+            "testStrategy": "Verify no downtime by checking service availability during deployment."
+          },
+          {
+            "id": 2,
+            "title": "Conduct Security Audit",
+            "description": "Perform a comprehensive security audit before launch.",
+            "dependencies": [
+              1
+            ],
+            "details": "Review code for vulnerabilities, check dependencies for known issues, and ensure all security patches are applied.",
+            "status": "pending",
+            "testStrategy": "Run automated security tests and manual code review."
+          },
+          {
+            "id": 3,
+            "title": "Verify Test Suite and Type Checks",
+            "description": "Ensure all tests pass and type checks are clean.",
+            "dependencies": [
+              2
+            ],
+            "details": "Run 'uv run pytest' to ensure all tests pass and 'mypy' to check for type errors.",
+            "status": "pending",
+            "testStrategy": "Tests should pass without errors; mypy should report no issues."
+          },
+          {
+            "id": 4,
+            "title": "Optimize Continuous Deployment Pipeline",
+            "description": "Ensure CD pipeline deploys in under 3 minutes.",
+            "dependencies": [
+              3
+            ],
+            "details": "Review and optimize pipeline steps to reduce deployment time. Consider parallelizing tasks where possible.",
+            "status": "pending",
+            "testStrategy": "Time the deployment process to ensure it completes within 3 minutes."
+          },
+          {
+            "id": 5,
+            "title": "Activate and Monitor Uptime Monitoring",
+            "description": "Ensure uptime monitoring is active and configured correctly.",
+            "dependencies": [
+              4
+            ],
+            "details": "Set up monitoring tools to track service uptime and configure alerts for downtime.",
+            "status": "pending",
+            "testStrategy": "Simulate downtime and verify alerts are triggered correctly."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2026-05-02T17:17:29.877Z",
+      "updated": "2026-05-02T17:18:57.493Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
