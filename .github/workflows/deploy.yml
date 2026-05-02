@@ -74,35 +74,40 @@ jobs:
 
   deploy:
     name: Deploy to production
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-push
     environment: production
+    permissions:
+      packages: read
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.SERVER_APP_IP }}
-          username: root
-          key: ${{ secrets.SSH_DEPLOY_KEY }}
-          script: |
-            cd /root/agente-plug
-            IMAGE_TAG=${{ needs.build-push.outputs.image_tag }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-            # Pull novas imagens
-            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose -f docker-compose.prod.yml pull
+      - name: Deploy
+        env:
+          IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          cd /root/agente-plug
 
-            # Aplicar migrations antes de subir nova versão
-            docker run --rm \
-              --env-file /root/.env.prod \
-              --network host \
-              ghcr.io/${{ env.IMAGE_API }}:${IMAGE_TAG} \
-              alembic upgrade head
+          # Pull novas imagens
+          docker compose -f docker-compose.prod.yml pull
 
-            # Subir nova versão (recria containers um a um)
-            docker compose -f docker-compose.prod.yml up -d --force-recreate api worker web
+          # Aplicar migrations antes de subir nova versão
+          docker run --rm \
+            --env-file /root/.env.prod \
+            --network host \
+            ghcr.io/${{ env.IMAGE_API }}:${IMAGE_TAG} \
+            alembic upgrade head
 
-            # Aguardar healthchecks
-            sleep 15
-            docker compose -f docker-compose.prod.yml ps
+          # Subir nova versão (recria containers um a um)
+          docker compose -f docker-compose.prod.yml up -d --force-recreate api worker web
+
+          # Aguardar healthchecks
+          sleep 15
+          docker compose -f docker-compose.prod.yml ps
