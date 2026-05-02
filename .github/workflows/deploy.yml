@@ -91,9 +91,13 @@ jobs:
       - name: Deploy
         env:
           IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
+          IMAGE_API_REF: ghcr.io/${{ env.IMAGE_API }}
         run: |
           set -euo pipefail
           cd /root/agente-plug
+
+          # GHCR exige lowercase — normaliza o owner que pode ter maiúsculas
+          IMAGE_API_LC=$(echo "${IMAGE_API_REF}" | tr '[:upper:]' '[:lower:]')
 
           # Pull novas imagens
           docker compose -f docker-compose.prod.yml pull
@@ -102,7 +106,7 @@ jobs:
           docker run --rm \
             --env-file /root/.env.prod \
             --network host \
-            ghcr.io/${{ env.IMAGE_API }}:${IMAGE_TAG} \
+            "${IMAGE_API_LC}:${IMAGE_TAG}" \
             alembic upgrade head
 
           # Subir nova versão (recria containers um a um)
