@@ -84,7 +84,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_APP_IP }}
           username: root
-          password: ${{ secrets.SERVER_APP_SSH_PASS }}
+          key: ${{ secrets.SSH_DEPLOY_KEY }}
           script: |
             cd /root/agente-plug
             IMAGE_TAG=${{ needs.build-push.outputs.image_tag }}
