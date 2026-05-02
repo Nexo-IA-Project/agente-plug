@@ -408,3 +408,18 @@ class AdminUserModel(Base):
     __table_args__ = (
         UniqueConstraint("account_id", "email", name="uq_admin_users_account_email"),
     )
+
+
+class ConversationMessageModel(Base):
+    """Stores the full OpenAI message list for a thread (used by the new agent loop)."""
+
+    __tablename__ = "conversation_messages"
+
+    thread_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    messages: Mapped[list[Any]] = mapped_column(JSONB, default=list, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )

@@ -65,7 +65,7 @@ async def main() -> None:
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(sig, _sigterm)
 
-    dispatcher_task = asyncio.create_task(dispatcher.run_forever())
+    dispatcher_task = asyncio.create_task(dispatcher.run_forever(stop=stop))
     scheduler_task = asyncio.create_task(scheduler_loop.run_forever())
     stop_task = asyncio.create_task(stop.wait())
 

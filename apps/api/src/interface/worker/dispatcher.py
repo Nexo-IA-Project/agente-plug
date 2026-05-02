@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from shared.adapters.observability.logger import bind_context, get_logger
 
@@ -15,31 +16,60 @@ Handler = Callable[[dict], Awaitable[None]]
 class WorkerDispatcher:
     queue: object
     handlers: dict[str, Handler]
+    max_concurrency: int = 50
+    # semaphore is created lazily so it belongs to the correct event loop
+    _sem: asyncio.Semaphore = field(init=False, repr=False, default=None)  # type: ignore[assignment]
 
-    async def run_forever(self, *, iterations: int | None = None) -> None:
-        count = 0
-        while True:
-            msg = await self.queue.dequeue(timeout=5)  # type: ignore[attr-defined]
-            if msg is StopSignal:
-                return
-            if msg is None:
-                if iterations and count >= iterations:
+    async def run_forever(
+        self,
+        *,
+        stop: asyncio.Event | None = None,
+        iterations: int | None = None,
+    ) -> None:
+        """Dequeue jobs and process them concurrently up to *max_concurrency*.
+
+        Exits when:
+        - StopSignal is dequeued
+        - *stop* event is set (checked between dequeues)
+        - *iterations* jobs have been dispatched (test escape hatch)
+
+        On exit the TaskGroup waits for all in-flight tasks to finish before
+        returning — this is the graceful shutdown guarantee.
+        """
+        self._sem = asyncio.Semaphore(self.max_concurrency)
+        dispatched = 0
+
+        async def _run_job(msg: dict) -> None:
+            async with self._sem:
+                kind = msg.get("kind", "")
+                payload = msg.get("payload", {})
+                bind_context(job_kind=kind)
+                handler = self.handlers.get(kind)
+                if handler is None:
+                    log.warning("dispatcher_no_handler", kind=kind)
                     return
-                continue
+                try:
+                    await handler(payload)
+                    log.info("dispatcher_handled", kind=kind)
+                except Exception as e:
+                    log.exception("dispatcher_handler_failed", kind=kind, error=str(e))
 
-            kind = msg.get("kind", "")
-            payload = msg.get("payload", {})
-            bind_context(job_kind=kind)
+        async with asyncio.TaskGroup() as tg:
+            while True:
+                if stop and stop.is_set():
+                    log.info("dispatcher_stop_requested")
+                    break
 
-            handler = self.handlers.get(kind)
-            if handler is None:
-                log.warning("dispatcher_no_handler", kind=kind)
-                continue
-            try:
-                await handler(payload)
-                log.info("dispatcher_handled", kind=kind)
-            except Exception as e:
-                log.exception("dispatcher_handler_failed", kind=kind, error=str(e))
-            count += 1
-            if iterations and count >= iterations:
-                return
+                msg = await self.queue.dequeue(timeout=2)  # type: ignore[attr-defined]
+
+                if msg is StopSignal:
+                    break
+                if msg is None:
+                    continue
+
+                tg.create_task(_run_job(msg))
+                dispatched += 1
+                if iterations is not None and dispatched >= iterations:
+                    break
+        # TaskGroup.__aexit__ waits for all running _run_job tasks here
+        log.info("dispatcher_drained", dispatched=dispatched)
