@@ -7,11 +7,6 @@ from fastapi import Header, HTTPException, status
 from jose import JWTError
 from openai import AsyncOpenAI
 
-from shared.application.use_cases.kb.buscar_chunks import BuscarChunks
-from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
-from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
-from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
-from shared.config.settings import Settings, get_settings
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
 from shared.adapters.db.repositories.document_repo import DocumentRepository
 from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
@@ -20,6 +15,11 @@ from shared.adapters.kb.chunker import TextChunker
 from shared.adapters.kb.jwt_handler import verify_token
 from shared.adapters.kb.openai_embeddings import OpenAIEmbeddingsAdapter
 from shared.adapters.kb.text_extractor import TextExtractor
+from shared.application.use_cases.kb.buscar_chunks import BuscarChunks
+from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
+from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
+from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
+from shared.config.settings import Settings, get_settings
 
 
 @dataclass

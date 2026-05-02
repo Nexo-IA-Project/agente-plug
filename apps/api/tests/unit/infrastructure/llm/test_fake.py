@@ -2,9 +2,7 @@ from shared.adapters.llm.fake_client import FakeLLM
 
 
 async def test_complete_json_returns_canned() -> None:
-    fake = FakeLLM(
-        json_responses={"classify": {"intent": "access", "confidence": 0.92}}
-    )
+    fake = FakeLLM(json_responses={"classify": {"intent": "access", "confidence": 0.92}})
     result = await fake.complete_json(
         system="classify intents",
         user="nao consigo entrar",

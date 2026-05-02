@@ -22,9 +22,7 @@ async def test_send_message_posts_correct_payload() -> None:
         return httpx.Response(200, json={"ok": True})
 
     client = _client_with_transport(httpx.MockTransport(handler))
-    await client.send_message(
-        account_id=uuid.uuid4(), conversation_id=42, text="Olá"
-    )
+    await client.send_message(account_id=uuid.uuid4(), conversation_id=42, text="Olá")
     assert len(calls) == 1
     req = calls[0]
     assert "42" in str(req.url)

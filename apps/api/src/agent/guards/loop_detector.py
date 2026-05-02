@@ -10,9 +10,7 @@ _THRESHOLD = 3
 class LoopDetectorGuard:
     def check(self, message: str, state: dict) -> GuardResult:
         recent_ai = [
-            str(m.content)
-            for m in state.get("messages", [])[-6:]
-            if isinstance(m, AIMessage)
+            str(m.content) for m in state.get("messages", [])[-6:] if isinstance(m, AIMessage)
         ]
         tail = recent_ai[-_THRESHOLD:]
         if len(tail) >= _THRESHOLD and len(set(tail)) == 1:

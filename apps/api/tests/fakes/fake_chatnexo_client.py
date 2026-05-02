@@ -21,9 +21,7 @@ class FakeChatNexoClient:
         self.last_sent_variables: dict | None = None
         self.last_sent_text: str | None = None
 
-    async def send_message(
-        self, *, account_id: UUID, conversation_id: int, text: str
-    ) -> None:
+    async def send_message(self, *, account_id: UUID, conversation_id: int, text: str) -> None:
         self.last_sent_text = text
 
     async def send_template(
@@ -42,17 +40,11 @@ class FakeChatNexoClient:
     ) -> None:
         pass
 
-    async def add_tag(
-        self, *, account_id: UUID, conversation_id: int, tag: str
-    ) -> None:
+    async def add_tag(self, *, account_id: UUID, conversation_id: int, tag: str) -> None:
         pass
 
-    async def get_open_conversation(
-        self, account_id: int, contact_phone: str
-    ) -> str | None:
+    async def get_open_conversation(self, account_id: int, contact_phone: str) -> str | None:
         return self._open_conversation_id
 
-    async def create_conversation(
-        self, account_id: int, contact_phone: str
-    ) -> str:
+    async def create_conversation(self, account_id: int, contact_phone: str) -> str:
         return self._new_conversation_id

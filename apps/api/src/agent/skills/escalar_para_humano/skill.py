@@ -1,8 +1,6 @@
 # apps/api/src/agent/skills/escalar_para_humano/skill.py
 from __future__ import annotations
 
-from typing import Type
-
 from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
@@ -20,7 +18,7 @@ class _Input(BaseModel):
 class EscalarParaHumanoTool(BaseTool):
     name: str = "escalar_para_humano"
     description: str = _load_instructions(__file__)
-    args_schema: Type[BaseModel] = _Input
+    args_schema: type[BaseModel] = _Input
 
     _chatnexo: ChatNexoPort
 

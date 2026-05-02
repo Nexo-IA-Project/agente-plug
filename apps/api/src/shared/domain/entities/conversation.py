@@ -38,10 +38,10 @@ class Conversation:
         return now <= self.window_expires_at
 
     def can_send_free_text(self, *, now: datetime) -> bool:
-        return (
-            self.status in {ConversationStatus.ACTIVE, ConversationStatus.IDLE_PINGED}
-            and self.is_inside_meta_window(now=now)
-        )
+        return self.status in {
+            ConversationStatus.ACTIVE,
+            ConversationStatus.IDLE_PINGED,
+        } and self.is_inside_meta_window(now=now)
 
     def mark_handed_off(self, *, reason: str) -> None:
         self.status = ConversationStatus.HANDED_OFF

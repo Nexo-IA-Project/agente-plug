@@ -20,8 +20,10 @@ def test_app_boots_and_health_responds(monkeypatch):
     import importlib
 
     import shared.config.settings as st
+
     importlib.reload(st)
     import main as m
+
     importlib.reload(m)
 
     # TestClient skips real lifespan startup tasks that touch Redis if not connected

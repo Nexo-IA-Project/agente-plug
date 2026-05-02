@@ -7,13 +7,13 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.adapters.db.models import ConversationModel
+from shared.adapters.db.repositories.base import require_account_id
 from shared.domain.entities.conversation import (
     Conversation,
     ConversationStatus,
     IdleState,
 )
-from shared.adapters.db.models import ConversationModel
-from shared.adapters.db.repositories.base import require_account_id
 
 
 def _to_entity(model: ConversationModel) -> Conversation:

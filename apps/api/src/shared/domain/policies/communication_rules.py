@@ -3,9 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-_FORBIDDEN = re.compile(
-    r"(?i)\b(putz|puts|poxa|que chato|entendo entendo)\b|Claro!"
-)
+_FORBIDDEN = re.compile(r"(?i)\b(putz|puts|poxa|que chato|entendo entendo)\b|Claro!")
 _MARKDOWN = re.compile(r"(\*\*|\*|__|_|#{1,6} |- |\d+\. )")
 _IA_REVEAL = re.compile(
     r"\b(sou (uma? )?ia|intelig[eê]ncia artificial|sou um (rob[ôo]|bot|assistente virtual))\b",

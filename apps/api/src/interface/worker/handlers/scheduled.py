@@ -25,10 +25,14 @@ async def handle_scheduled(payload: dict) -> None:
 
     if job_type == "IDLE_PING":
         lifecycle = _get_lifecycle_handler()
-        await lifecycle.send_ping(account_id=account_id, phone=phone, conversation_id=conversation_id)
+        await lifecycle.send_ping(
+            account_id=account_id, phone=phone, conversation_id=conversation_id
+        )
     elif job_type == "IDLE_CLOSE":
         lifecycle = _get_lifecycle_handler()
-        await lifecycle.send_close(account_id=account_id, phone=phone, conversation_id=conversation_id)
+        await lifecycle.send_close(
+            account_id=account_id, phone=phone, conversation_id=conversation_id
+        )
     elif job_type in (JobType.LOJA_EXPRESS_D1, "LOJA_EXPRESS_D1"):
         followup = _get_followup_handler()
         await followup.execute(

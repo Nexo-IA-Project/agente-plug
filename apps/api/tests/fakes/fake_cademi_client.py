@@ -54,9 +54,7 @@ class FakeCademiClient:
             return self._students_by_cpf.get(cpf)
         return self._student
 
-    async def get_student_by_name_phone(
-        self, name: str, phone: str
-    ) -> CademiStudent | None:
+    async def get_student_by_name_phone(self, name: str, phone: str) -> CademiStudent | None:
         self.name_phone_calls += 1
         if not self._name_phone_supported:
             raise NotImplementedError(

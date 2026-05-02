@@ -6,9 +6,9 @@ from dataclasses import dataclass
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from shared.domain.entities.webhook_event import WebhookSource
 from shared.adapters.observability.logger import get_logger
 from shared.adapters.observability.metrics import WEBHOOK_RECEIVED
+from shared.domain.entities.webhook_event import WebhookSource
 
 router = APIRouter(tags=["webhook"])
 log = get_logger(__name__)
@@ -66,10 +66,10 @@ async def receive(
     payload: PurchasePayload,
 ) -> dict:
     if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
-        raise RuntimeError("webhook_purchase router not configured; call configure() before serving")
-    first = await _cfg.dedup.try_mark(
-        key=f"purchase:{payload.purchase_id}", ttl_seconds=24 * 3600
-    )
+        raise RuntimeError(
+            "webhook_purchase router not configured; call configure() before serving"
+        )
+    first = await _cfg.dedup.try_mark(key=f"purchase:{payload.purchase_id}", ttl_seconds=24 * 3600)
     if not first:
         WEBHOOK_RECEIVED.labels(source="hubla", status="202-dup").inc()
         log.info("purchase_webhook_duplicate", purchase_id=payload.purchase_id)

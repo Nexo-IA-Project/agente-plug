@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.adapters.db.models import WebhookEventModel
 from shared.domain.entities.webhook_event import (
     WebhookEvent,
     WebhookSource,
     WebhookStatus,
 )
-from shared.adapters.db.models import WebhookEventModel
 
 
 @dataclass

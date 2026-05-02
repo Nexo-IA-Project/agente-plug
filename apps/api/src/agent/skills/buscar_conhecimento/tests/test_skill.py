@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/buscar_conhecimento/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.buscar_conhecimento.skill import BuscarConhecimentoTool
 from agent.skills.buscar_conhecimento.use_case import BuscarConhecimento

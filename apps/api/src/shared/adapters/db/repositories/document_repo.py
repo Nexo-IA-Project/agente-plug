@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 from shared.adapters.db.models import KnowledgeDocumentModel
+from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 
 
 class DocumentRepository:

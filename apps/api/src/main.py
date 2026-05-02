@@ -5,13 +5,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from shared.config.settings import get_settings
-from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
-from shared.adapters.db.session import get_sessionmaker
-from shared.adapters.observability.logger import configure_logging, get_logger
-from shared.adapters.redis.client import get_redis
-from shared.adapters.redis.dedup import RedisDedup
-from shared.adapters.redis.queue import PriorityQueue
 from interface.http.errors import register_error_handlers
 from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import (
@@ -23,6 +16,13 @@ from interface.http.routers import (
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import search as admin_search
+from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
+from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.observability.logger import configure_logging, get_logger
+from shared.adapters.redis.client import get_redis
+from shared.adapters.redis.dedup import RedisDedup
+from shared.adapters.redis.queue import PriorityQueue
+from shared.config.settings import get_settings
 
 log = get_logger(__name__)
 
@@ -35,9 +35,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     redis = get_redis()
     dedup = RedisDedup(redis)
-    queue = PriorityQueue(
-        redis, name="jobs", priority_enabled=settings.enable_priority_queue
-    )
+    queue = PriorityQueue(redis, name="jobs", priority_enabled=settings.enable_priority_queue)
 
     def _event_repo_factory() -> WebhookEventRepository:
         session = get_sessionmaker()()

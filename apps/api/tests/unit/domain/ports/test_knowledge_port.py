@@ -27,6 +27,7 @@ def test_knowledge_port_is_runtime_checkable():
 
 def test_knowledge_port_compliance():
     """Classe concreta que implementa KnowledgePort deve ser reconhecida."""
+
     class FakeKnowledgeRepo:
         async def search(
             self,

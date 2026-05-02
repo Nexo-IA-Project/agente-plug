@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 from shared.adapters.db.repositories.loja_express_case_repo import LojaExpressCaseRepository
+from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 
 
 def _make_model(

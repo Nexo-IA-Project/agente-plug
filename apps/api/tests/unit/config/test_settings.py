@@ -39,5 +39,5 @@ def test_settings_missing_required_raises(monkeypatch: pytest.MonkeyPatch) -> No
     monkeypatch.delenv("META_API_KEY", raising=False)
     monkeypatch.delenv("INTEGRATION_CREDENTIALS_KEY", raising=False)
     # Pass _env_file=None to prevent loading from .env on disk
-    with pytest.raises(Exception):
+    with pytest.raises((Exception,)):
         Settings(_env_file=None)  # type: ignore[call-arg]

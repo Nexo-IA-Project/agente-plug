@@ -8,7 +8,8 @@ from typing import Any
 import structlog
 
 _context: contextvars.ContextVar[dict[str, Any]] = contextvars.ContextVar(
-    "log_context", default=None  # type: ignore[arg-type]
+    "log_context",
+    default=None,  # type: ignore[arg-type]
 )
 
 
@@ -33,9 +34,7 @@ def configure_logging(*, level: str = "INFO") -> None:
             _merge_context,
             structlog.processors.JSONRenderer(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(
-            logging.getLevelName(level.upper())
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelName(level.upper())),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,

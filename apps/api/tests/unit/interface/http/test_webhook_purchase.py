@@ -54,9 +54,7 @@ def test_returns_202_on_first_valid_call(deps):
         "amount_brl": 19700,
         "occurred_at": "2026-04-17T10:00:00Z",
     }
-    r = client.post(
-        "/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"}
-    )
+    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"})
     assert r.status_code == 202
     deps["queue"].enqueue.assert_awaited_once()
 
@@ -75,9 +73,7 @@ def test_returns_202_but_skips_enqueue_on_duplicate(deps):
         "amount_brl": 100,
         "occurred_at": "2026-04-17T10:00:00Z",
     }
-    r = client.post(
-        "/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"}
-    )
+    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"})
     assert r.status_code == 202
     assert r.json()["duplicate"] is True
     deps["queue"].enqueue.assert_not_awaited()

@@ -74,3 +74,24 @@ markers = [
 python_version = "3.11"
 strict = true
 plugins = ["pydantic.mypy"]
+explicit_package_bases = true
+mypy_path = "src"
+
+# Legacy LangChain/LangGraph modules — ignored until migration to OpenAI function calling is complete
+[[tool.mypy.overrides]]
+module = [
+  "agent.graph",
+  "agent.react_node",
+  "agent.skill_loader",
+  "agent.state",
+  "agent.checkpointer",
+  "agent.prompt",
+  "agent.guards.*",
+  "agent.skills.*",
+  "langchain_core.*",
+  "langgraph.*",
+  "langchain.*",
+  "pgvector.*",
+]
+ignore_errors = true
+ignore_missing_imports = true

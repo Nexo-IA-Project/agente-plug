@@ -23,6 +23,7 @@ async def test_record_no_result_flushes():
 async def test_list_recent_returns_list_of_dicts():
     session = AsyncMock()
     from shared.adapters.db.models import KbUsageLogModel
+
     log = KbUsageLogModel(
         id="log-1",
         account_id=1,
@@ -30,7 +31,11 @@ async def test_list_recent_returns_list_of_dicts():
         result_count=0,
         created_at=datetime.now(UTC),
     )
-    session.execute = AsyncMock(return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[log])))))
+    session.execute = AsyncMock(
+        return_value=MagicMock(
+            scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[log])))
+        )
+    )
     repo = UsageLogRepository(session)
     result = await repo.list_recent(account_id=1, limit=10)
     assert len(result) == 1

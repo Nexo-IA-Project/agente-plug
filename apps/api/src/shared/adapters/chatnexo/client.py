@@ -48,9 +48,7 @@ class ChatNexoClient:
         response.raise_for_status()
         return response
 
-    async def send_message(
-        self, *, account_id: UUID, conversation_id: int, text: str
-    ) -> None:
+    async def send_message(self, *, account_id: UUID, conversation_id: int, text: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
             json={"type": "text", "content": text},
@@ -81,9 +79,7 @@ class ChatNexoClient:
             json={"reason": reason.value},
         )
 
-    async def add_tag(
-        self, *, account_id: UUID, conversation_id: int, tag: str
-    ) -> None:
+    async def add_tag(self, *, account_id: UUID, conversation_id: int, tag: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/tags",
             json={"tag": tag},

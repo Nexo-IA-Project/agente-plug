@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from shared.adapters.kb.chunker import TextChunker
+from shared.adapters.kb.text_extractor import TextExtractor
 from shared.domain.entities.knowledge_chunk import KnowledgeChunk
 from shared.domain.entities.knowledge_document import DocumentStatus
 from shared.domain.ports.embeddings_port import EmbeddingsPort
-from shared.adapters.kb.chunker import TextChunker
-from shared.adapters.kb.text_extractor import TextExtractor
 
 
 class IngerirDocumento:

@@ -51,7 +51,8 @@ def test_domain_does_not_import_from_other_layers() -> None:
     offenders: list[str] = []
     for path in _iter_python_files(DOMAIN_DIR):
         full_imports = {
-            line.split()[1] for line in path.read_text(encoding="utf-8").splitlines()
+            line.split()[1]
+            for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip().startswith(("import ", "from "))
         }
         for full in full_imports:

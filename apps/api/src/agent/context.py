@@ -1,4 +1,5 @@
 """AgentContext — per-conversation context passed explicitly to every tool handler."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

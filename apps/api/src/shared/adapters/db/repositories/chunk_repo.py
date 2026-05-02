@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.knowledge_chunk import KnowledgeChunk
 from shared.adapters.db.models import KnowledgeChunkModel
+from shared.domain.entities.knowledge_chunk import KnowledgeChunk
 
 
 class ChunkRepository:
@@ -31,9 +31,7 @@ class ChunkRepository:
 
     async def delete_by_document(self, document_id: str) -> None:
         await self._session.execute(
-            delete(KnowledgeChunkModel).where(
-                KnowledgeChunkModel.document_id == document_id
-            )
+            delete(KnowledgeChunkModel).where(KnowledgeChunkModel.document_id == document_id)
         )
         await self._session.flush()
 

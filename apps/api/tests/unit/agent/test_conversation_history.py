@@ -1,4 +1,5 @@
 """Unit tests for ConversationHistory (Task 2) — mocked AsyncSession."""
+
 from __future__ import annotations
 
 from typing import Any

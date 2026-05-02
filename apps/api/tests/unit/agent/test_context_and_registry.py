@@ -1,11 +1,11 @@
 """Unit tests for AgentContext and ToolRegistry (Task 1)."""
+
 from __future__ import annotations
 
 import pytest
 
 from agent.context import AgentContext
 from agent.tool_registry import ToolRegistry
-
 
 # ── AgentContext ──────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ def test_agent_context_is_immutable():
         conversation_id="conv-abc",
         thread_id="thread-xyz",
     )
-    with pytest.raises(Exception):
+    with pytest.raises((Exception,)):
         ctx.account_id = "other"  # type: ignore[misc]
 
 

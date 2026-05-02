@@ -40,6 +40,4 @@ class ConversationFactory(factory.Factory):
     chatnexo_conversation_id = factory.Sequence(lambda n: n + 1)
     status = "active"
     last_activity_at = factory.LazyFunction(lambda: datetime.now(UTC))
-    window_expires_at = factory.LazyFunction(
-        lambda: datetime.now(UTC) + timedelta(hours=24)
-    )
+    window_expires_at = factory.LazyFunction(lambda: datetime.now(UTC) + timedelta(hours=24))

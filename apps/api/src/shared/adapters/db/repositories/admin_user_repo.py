@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.admin_user import AdminUser
 from shared.adapters.db.models import AdminUserModel
+from shared.domain.entities.admin_user import AdminUser
 
 
 class AdminUserRepository:
@@ -24,9 +24,7 @@ class AdminUserRepository:
         self._session.add(model)
         await self._session.flush()
 
-    async def get_by_email(
-        self, account_id: int, email: str
-    ) -> AdminUserModel | None:
+    async def get_by_email(self, account_id: int, email: str) -> AdminUserModel | None:
         result = await self._session.execute(
             select(AdminUserModel)
             .where(AdminUserModel.account_id == account_id)

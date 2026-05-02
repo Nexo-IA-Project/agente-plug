@@ -49,8 +49,10 @@ def test_purchase_webhook_enqueues_job(
     import importlib
 
     import main.config.settings as st
+
     importlib.reload(st)
     import main.main as m
+
     importlib.reload(m)
 
     # Run alembic migrations up
@@ -76,14 +78,13 @@ def test_purchase_webhook_enqueues_job(
         "amount_brl": 19700,
         "occurred_at": "2026-04-17T10:00:00Z",
     }
-    r = client.post(
-        "/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"}
-    )
+    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"})
     assert r.status_code == 202
     assert r.json()["duplicate"] is False
 
     # Queue should have 1 item
     import asyncio
+
     async def _depth() -> int:
         redis = Redis.from_url(redis_url, decode_responses=True)
         depth = await redis.llen("queue:jobs:list")
@@ -93,9 +94,7 @@ def test_purchase_webhook_enqueues_job(
     assert asyncio.run(_depth()) == 1
 
     # Duplicate call should be accepted but not enqueue
-    r2 = client.post(
-        "/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"}
-    )
+    r2 = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"})
     assert r2.status_code == 202
     assert r2.json()["duplicate"] is True
     assert asyncio.run(_depth()) == 1

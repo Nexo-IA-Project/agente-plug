@@ -54,8 +54,7 @@ class PurchaseHandler:
             )
 
         is_loja_express = any(
-            tag in event.product.lower()
-            for tag in settings.loja_express_product_tags
+            tag in event.product.lower() for tag in settings.loja_express_product_tags
         )
 
         if is_loja_express and self._criar_uc is not None:

@@ -1,5 +1,6 @@
 # apps/api/src/agent/skills/buscar_conhecimento/synonym_expander.py
 """Expande keywords com sinônimos para melhorar o recall da busca RAG."""
+
 from __future__ import annotations
 
 _SYNONYMS: dict[str, list[str]] = {

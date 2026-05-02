@@ -1,5 +1,7 @@
-import pytest
 from unittest.mock import AsyncMock
+
+import pytest
+
 from shared.adapters.hubla.client import HublaClient
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
 
@@ -25,9 +27,7 @@ async def test_redis_refund_mutex_acquire_returns_true_when_key_free():
     mutex = RedisRefundMutex(redis_client=redis, ttl_seconds=3600)
     result = await mutex.acquire(1, "5511999990000", "prod-1")
     assert result is True
-    redis.set.assert_called_once_with(
-        "refund:mutex:1:5511999990000:prod-1", "1", nx=True, ex=3600
-    )
+    redis.set.assert_called_once_with("refund:mutex:1:5511999990000:prod-1", "1", nx=True, ex=3600)
 
 
 @pytest.mark.asyncio

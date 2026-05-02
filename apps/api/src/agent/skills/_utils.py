@@ -1,5 +1,6 @@
 # apps/api/src/agent/skills/_utils.py
 """Shared helpers used by every skill folder."""
+
 from __future__ import annotations
 
 from pathlib import Path

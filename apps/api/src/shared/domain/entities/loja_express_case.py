@@ -8,12 +8,12 @@ from uuid import uuid4
 
 class LojaExpressCaseStatus(StrEnum):
     AGUARDANDO_FORMULARIO = "aguardando_formulario"
-    LEMBRETE_D1_ENVIADO   = "lembrete_d1_enviado"
-    CHECK_D3_ENVIADO      = "check_d3_enviado"
-    ALERTA_D5_ENVIADO     = "alerta_d5_enviado"
-    PRAZO_CRITICO_D7      = "prazo_critico_d7"
-    ENTREGUE              = "entregue"
-    ESCALADO              = "escalado"
+    LEMBRETE_D1_ENVIADO = "lembrete_d1_enviado"
+    CHECK_D3_ENVIADO = "check_d3_enviado"
+    ALERTA_D5_ENVIADO = "alerta_d5_enviado"
+    PRAZO_CRITICO_D7 = "prazo_critico_d7"
+    ENTREGUE = "entregue"
+    ESCALADO = "escalado"
 
 
 @dataclass

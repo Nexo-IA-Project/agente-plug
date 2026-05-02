@@ -19,11 +19,7 @@ class LongTermMemory:
     async def get(self, *, account_id: UUID, contact_id: UUID) -> dict[str, Any]:
         return await self.repo.get_facts(account_id=account_id, contact_id=contact_id)
 
-    async def update(
-        self, *, account_id: UUID, contact_id: UUID, facts: dict[str, Any]
-    ) -> None:
+    async def update(self, *, account_id: UUID, contact_id: UUID, facts: dict[str, Any]) -> None:
         current = await self.repo.get_facts(account_id=account_id, contact_id=contact_id)
         merged = {**current, **facts}
-        await self.repo.update_facts(
-            account_id=account_id, contact_id=contact_id, facts=merged
-        )
+        await self.repo.update_facts(account_id=account_id, contact_id=contact_id, facts=merged)

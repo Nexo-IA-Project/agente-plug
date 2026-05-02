@@ -2,27 +2,35 @@ from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 
 
 def test_access_case_default_student_cpf_is_none():
-    case = AccessCase(account_id=1, contact_id="c", conversation_id="cv",
-                      purchase_id="p", product_name="P")
+    case = AccessCase(
+        account_id=1, contact_id="c", conversation_id="cv", purchase_id="p", product_name="P"
+    )
     assert case.student_cpf is None
 
 
 def test_access_case_default_search_attempts_is_zero():
-    case = AccessCase(account_id=1, contact_id="c", conversation_id="cv",
-                      purchase_id="p", product_name="P")
+    case = AccessCase(
+        account_id=1, contact_id="c", conversation_id="cv", purchase_id="p", product_name="P"
+    )
     assert case.search_attempts == 0
 
 
 def test_access_case_with_student_cpf():
-    case = AccessCase(account_id=1, contact_id="c", conversation_id="cv",
-                      purchase_id="p", product_name="Curso",
-                      student_cpf="123.456.789-00")
+    case = AccessCase(
+        account_id=1,
+        contact_id="c",
+        conversation_id="cv",
+        purchase_id="p",
+        product_name="Curso",
+        student_cpf="123.456.789-00",
+    )
     assert case.student_cpf == "123.456.789-00"
 
 
 def test_access_case_search_attempts_mutable():
-    case = AccessCase(account_id=1, contact_id="c", conversation_id="cv",
-                      purchase_id="p", product_name="Curso")
+    case = AccessCase(
+        account_id=1, contact_id="c", conversation_id="cv", purchase_id="p", product_name="Curso"
+    )
     case.search_attempts = 2
     assert case.search_attempts == 2
 

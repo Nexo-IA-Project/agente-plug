@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/buscar_aluno_cademi/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.buscar_aluno_cademi.skill import BuscarAlunoCademiTool
 from agent.skills.buscar_aluno_cademi.use_case import BuscarAlunoCademi

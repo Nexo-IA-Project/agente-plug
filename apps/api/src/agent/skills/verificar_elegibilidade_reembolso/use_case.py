@@ -19,7 +19,10 @@ class VerificarElegibilidadeReembolso:
 
         historico = await self._legal_history.buscar(email=email, account_id=account_id)
         if historico and historico.teve_reembolso:
-            return {"elegivel": False, "motivo": "Aluno já utilizou o direito de reembolso anteriormente."}
+            return {
+                "elegivel": False,
+                "motivo": "Aluno já utilizou o direito de reembolso anteriormente.",
+            }
 
         if not compra.dentro_prazo_reembolso:
             return {

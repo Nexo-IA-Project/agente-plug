@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from agent.guards import GuardResult
-from agent.react_node import make_raciocinar_node, make_pos_execucao_node
+from agent.react_node import make_pos_execucao_node, make_raciocinar_node
 
 
 def fake_config(account_id: str = "t1", phone: str = "5511999", conv_id: str = "c1"):

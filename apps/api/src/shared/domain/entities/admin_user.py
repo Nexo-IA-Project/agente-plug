@@ -7,7 +7,7 @@ from uuid import uuid4
 
 
 class AdminRole(StrEnum):
-    ADMIN  = "admin"
+    ADMIN = "admin"
     EDITOR = "editor"
     VIEWER = "viewer"
 

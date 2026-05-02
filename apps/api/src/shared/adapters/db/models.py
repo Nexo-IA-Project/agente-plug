@@ -28,9 +28,7 @@ class Base(DeclarativeBase):
 
 
 def _pk() -> Mapped[uuid.UUID]:
-    return mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    return mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
 
 class AccountModel(Base):
@@ -62,9 +60,7 @@ class ContactModel(Base):
         onupdate=sa_text("NOW()"),
         nullable=False,
     )
-    __table_args__ = (
-        UniqueConstraint("account_id", "phone", name="uq_contacts_account_phone"),
-    )
+    __table_args__ = (UniqueConstraint("account_id", "phone", name="uq_contacts_account_phone"),)
 
 
 class ConversationModel(Base):
@@ -113,9 +109,7 @@ class MessageModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
-    __table_args__ = (
-        Index("ix_messages_conv_created", "conversation_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_messages_conv_created", "conversation_id", "created_at"),)
 
 
 class WebhookEventModel(Base):
@@ -198,9 +192,7 @@ class AuditEventModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
-    __table_args__ = (
-        Index("ix_audit_events_account_created", "account_id", "created_at"),
-    )
+    __table_args__ = (Index("ix_audit_events_account_created", "account_id", "created_at"),)
 
 
 class IntegrationConfigModel(Base):
@@ -262,9 +254,7 @@ class AccessCaseModel(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("idx_access_cases_account_contact", "account_id", "contact_id"),
-    )
+    __table_args__ = (Index("idx_access_cases_account_contact", "account_id", "contact_id"),)
 
 
 class RefundCaseModel(Base):
@@ -296,9 +286,7 @@ class RefundCaseModel(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("idx_refund_cases_account_contact", "account_id", "contact_id"),
-    )
+    __table_args__ = (Index("idx_refund_cases_account_contact", "account_id", "contact_id"),)
 
 
 class LojaExpressCaseModel(Base):
@@ -328,9 +316,7 @@ class LojaExpressCaseModel(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("idx_loja_express_cases_account_contact", "account_id", "contact_id"),
-    )
+    __table_args__ = (Index("idx_loja_express_cases_account_contact", "account_id", "contact_id"),)
 
 
 class KnowledgeDocumentModel(Base):
@@ -405,9 +391,7 @@ class AdminUserModel(Base):
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
 
-    __table_args__ = (
-        UniqueConstraint("account_id", "email", name="uq_admin_users_account_email"),
-    )
+    __table_args__ = (UniqueConstraint("account_id", "email", name="uq_admin_users_account_email"),)
 
 
 class ConversationMessageModel(Base):

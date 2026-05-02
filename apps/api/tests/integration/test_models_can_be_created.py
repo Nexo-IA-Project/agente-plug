@@ -19,9 +19,7 @@ async def test_insert_account_contact_conversation(db_session: AsyncSession) -> 
     await db_session.flush()
 
     contact_id = uuid.uuid4()
-    db_session.add(
-        ContactModel(id=contact_id, account_id=account_id, phone="+5511999", name="Ana")
-    )
+    db_session.add(ContactModel(id=contact_id, account_id=account_id, phone="+5511999", name="Ana"))
     await db_session.flush()
 
     now = datetime.now(UTC)

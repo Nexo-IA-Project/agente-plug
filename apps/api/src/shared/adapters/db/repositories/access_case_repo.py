@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 from shared.adapters.db.models import AccessCaseModel
+from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 
 
 class AccessCaseRepository:
@@ -85,9 +85,7 @@ class AccessCaseRepository:
         model.search_attempts = search_attempts
         await self._session.flush()
 
-    async def find_by_phone(
-        self, *, account_id: int, phone: str
-    ) -> AccessCase | None:
+    async def find_by_phone(self, *, account_id: int, phone: str) -> AccessCase | None:
         result = await self._session.execute(
             select(AccessCaseModel)
             .where(AccessCaseModel.account_id == account_id)

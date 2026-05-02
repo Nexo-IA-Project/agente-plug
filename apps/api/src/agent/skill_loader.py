@@ -1,5 +1,6 @@
 # apps/api/src/agent/skill_loader.py
 """Dynamic skill loader — discovers all skill folders and wires adapters."""
+
 from __future__ import annotations
 
 import importlib

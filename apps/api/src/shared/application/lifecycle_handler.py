@@ -76,9 +76,7 @@ class LifecycleHandler:
         await self._conv_repo.update_status(conv.id, "CLOSED_BY_TIMEOUT")
         log.info("idle_close_sent", account_id=account_id, conversation_id=conversation_id)
 
-    async def schedule_idle_ping(
-        self, account_id: str, phone: str, conversation_id: str
-    ) -> None:
+    async def schedule_idle_ping(self, account_id: str, phone: str, conversation_id: str) -> None:
         await self._scheduler.create_job(
             job_type="IDLE_PING",
             account_id=account_id,

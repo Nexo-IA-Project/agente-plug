@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/verificar_caso_acesso/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.verificar_caso_acesso.skill import VerificarCasoAcessoTool
 from agent.skills.verificar_caso_acesso.use_case import VerificarCasoAcesso

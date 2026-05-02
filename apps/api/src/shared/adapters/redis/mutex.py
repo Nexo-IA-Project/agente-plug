@@ -34,9 +34,7 @@ class RedisMutex:
         deadline = asyncio.get_event_loop().time() + timeout
         acquired = False
         while True:
-            acquired = bool(
-                await self.redis.set(full_key, token, nx=True, ex=ttl_seconds)
-            )
+            acquired = bool(await self.redis.set(full_key, token, nx=True, ex=ttl_seconds))
             if acquired:
                 break
             if asyncio.get_event_loop().time() >= deadline:

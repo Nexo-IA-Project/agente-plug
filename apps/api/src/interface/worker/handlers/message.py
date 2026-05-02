@@ -67,8 +67,11 @@ async def handle_message(payload: dict) -> None:
 
     # Extrai última AIMessage sem tool_call — é a resposta ao aluno
     last_ai = next(
-        (m for m in reversed(result.get("messages", []))
-         if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)),
+        (
+            m
+            for m in reversed(result.get("messages", []))
+            if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)
+        ),
         None,
     )
 

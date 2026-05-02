@@ -28,9 +28,7 @@ class FakeLLM:
                 return value
         default = self.json_responses.get("default", {})
         if not default:
-            raise RuntimeError(
-                f"FakeLLM missing json response for user={user!r} system={system!r}"
-            )
+            raise RuntimeError(f"FakeLLM missing json response for user={user!r} system={system!r}")
         return default
 
     async def complete_text(

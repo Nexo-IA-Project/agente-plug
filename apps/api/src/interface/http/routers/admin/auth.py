@@ -4,10 +4,10 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from shared.config.settings import get_settings
 from shared.adapters.db.models import AdminUserModel
 from shared.adapters.db.session import session_scope
 from shared.adapters.kb.jwt_handler import create_access_token, verify_password
+from shared.config.settings import get_settings
 
 router = APIRouter(tags=["admin-auth"])
 

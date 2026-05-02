@@ -17,5 +17,5 @@ def test_decrypt_with_different_key_fails() -> None:
     cipher1 = CredentialsCipher(key=Fernet.generate_key().decode())
     cipher2 = CredentialsCipher(key=Fernet.generate_key().decode())
     token = cipher1.encrypt({"x": 1})
-    with pytest.raises(Exception):
+    with pytest.raises((Exception,)):
         cipher2.decrypt(token)

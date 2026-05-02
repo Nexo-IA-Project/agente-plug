@@ -1,8 +1,9 @@
 """ToolRegistry — manages OpenAI function calling tool definitions and handlers."""
+
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from agent.context import AgentContext
@@ -66,7 +67,7 @@ class ToolRegistry:
         try:
             return self._entries[name].handler
         except KeyError:
-            raise KeyError(f"No tool registered with name '{name}'")
+            raise KeyError(f"No tool registered with name '{name}'") from None
 
     async def dispatch(self, name: str, ctx: AgentContext, **kwargs: Any) -> str:
         """Call the handler for *name*, injecting *ctx* as the first argument."""

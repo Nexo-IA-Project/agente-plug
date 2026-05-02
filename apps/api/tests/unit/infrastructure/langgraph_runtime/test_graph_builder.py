@@ -56,6 +56,7 @@ def test_build_graph_accepts_refund_params():
     from unittest.mock import AsyncMock
 
     from agent.graph import build_graph
+
     graph = build_graph(
         access_repo=AsyncMock(),
         cademi=AsyncMock(),

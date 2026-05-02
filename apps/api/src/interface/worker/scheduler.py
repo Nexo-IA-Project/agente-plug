@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 
-from shared.application.scheduler.runner import SchedulerRunner
 from shared.adapters.observability.logger import get_logger
+from shared.application.scheduler.runner import SchedulerRunner
 
 log = get_logger(__name__)
 

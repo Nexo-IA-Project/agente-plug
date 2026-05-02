@@ -1,7 +1,10 @@
 from __future__ import annotations
-import pytest
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from shared.application.message_dispatcher import MessageDispatcher
 
 

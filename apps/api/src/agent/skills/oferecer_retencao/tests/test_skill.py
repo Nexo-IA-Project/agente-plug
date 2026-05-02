@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/oferecer_retencao/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.oferecer_retencao.skill import OfereceRetencaoTool
 from agent.skills.oferecer_retencao.use_case import OfereceRetencao

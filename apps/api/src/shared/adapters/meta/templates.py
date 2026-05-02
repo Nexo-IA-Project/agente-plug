@@ -10,9 +10,7 @@ class InMemoryMetaTemplates:
 
     _templates: dict[str, dict[str, Any]] = field(default_factory=dict)
 
-    def register(
-        self, *, name: str, meta_id: str, language: str, variables: list[str]
-    ) -> None:
+    def register(self, *, name: str, meta_id: str, language: str, variables: list[str]) -> None:
         self._templates[name] = {
             "meta_id": meta_id,
             "language": language,

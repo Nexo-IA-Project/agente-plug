@@ -26,6 +26,7 @@ class AgentState(MessagesState):
 # Deprecated aliases — remove when Task 16 deletes old pipeline
 # ---------------------------------------------------------------------------
 
+
 class MessageEnvelope(dict):  # type: ignore[type-arg]
     """Deprecated: role/content dict used by the old ConversationState pipeline."""
 

@@ -7,10 +7,10 @@ from uuid import uuid4
 
 
 class DocumentStatus(StrEnum):
-    PENDING    = "pending"
+    PENDING = "pending"
     PROCESSING = "processing"
-    INDEXED    = "indexed"
-    ERROR      = "error"
+    INDEXED = "indexed"
+    ERROR = "error"
 
 
 @dataclass

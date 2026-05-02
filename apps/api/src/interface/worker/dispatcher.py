@@ -9,7 +9,7 @@ from shared.adapters.observability.logger import bind_context, get_logger
 StopSignal = object()
 log = get_logger(__name__)
 
-Handler = Callable[[dict], Awaitable[None]]
+Handler = Callable[..., Awaitable[None]]
 
 
 @dataclass
@@ -39,9 +39,9 @@ class WorkerDispatcher:
         self._sem = asyncio.Semaphore(self.max_concurrency)
         dispatched = 0
 
-        async def _run_job(msg: dict) -> None:
+        async def _run_job(msg: dict[str, object]) -> None:
             async with self._sem:
-                kind = msg.get("kind", "")
+                kind = str(msg.get("kind", ""))
                 payload = msg.get("payload", {})
                 bind_context(job_kind=kind)
                 handler = self.handlers.get(kind)

@@ -7,10 +7,10 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.contact import Contact
-from shared.domain.value_objects.phone import Phone
 from shared.adapters.db.models import ContactModel
 from shared.adapters.db.repositories.base import require_account_id
+from shared.domain.entities.contact import Contact
+from shared.domain.value_objects.phone import Phone
 
 
 def _to_entity(model: ContactModel) -> Contact:

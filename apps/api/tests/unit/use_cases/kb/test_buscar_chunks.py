@@ -11,6 +11,7 @@ from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
 
 # ── BuscarChunks ──────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_buscar_chunks_returns_results():
     chunk_repo = AsyncMock()
@@ -18,9 +19,9 @@ async def test_buscar_chunks_returns_results():
     usage_repo = AsyncMock()
 
     embeddings.embed = AsyncMock(return_value=[0.1, 0.2, 0.3])
-    chunk_repo.similarity_search = AsyncMock(return_value=[
-        {"chunk_id": "c1", "text": "answer text", "score": 0.85}
-    ])
+    chunk_repo.similarity_search = AsyncMock(
+        return_value=[{"chunk_id": "c1", "text": "answer text", "score": 0.85}]
+    )
 
     uc = BuscarChunks(chunk_repo=chunk_repo, embeddings=embeddings, usage_repo=usage_repo)
     results = await uc.execute(account_id=1, query="my question", top_k=5, threshold=0.5)
@@ -44,12 +45,11 @@ async def test_buscar_chunks_logs_when_no_results():
     results = await uc.execute(account_id=1, query="no results query", top_k=5, threshold=0.8)
 
     assert results == []
-    usage_repo.record_no_result.assert_awaited_once_with(
-        account_id=1, query="no results query"
-    )
+    usage_repo.record_no_result.assert_awaited_once_with(account_id=1, query="no results query")
 
 
 # ── ListarDocumentos ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_listar_documentos_delegates_to_repo():
@@ -62,6 +62,7 @@ async def test_listar_documentos_delegates_to_repo():
 
 
 # ── DeletarDocumento ──────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_deletar_documento_deletes_chunks_then_document():

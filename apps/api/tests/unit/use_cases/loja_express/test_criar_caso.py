@@ -16,9 +16,7 @@ def _make_deps():
     repo.update = AsyncMock()
     chatnexo = AsyncMock()
     scheduler = AsyncMock()
-    scheduler.create_job = AsyncMock(
-        side_effect=["job-d1", "job-d3", "job-d5", "job-d7"]
-    )
+    scheduler.create_job = AsyncMock(side_effect=["job-d1", "job-d3", "job-d5", "job-d7"])
     return repo, chatnexo, scheduler
 
 
@@ -77,10 +75,7 @@ async def test_schedules_four_jobs_with_correct_types():
         contact_name="João Silva",
     )
     assert scheduler.create_job.call_count == 4
-    job_types_called = [
-        c.kwargs["job_type"]
-        for c in scheduler.create_job.call_args_list
-    ]
+    job_types_called = [c.kwargs["job_type"] for c in scheduler.create_job.call_args_list]
     assert JobType.LOJA_EXPRESS_D1 in job_types_called
     assert JobType.LOJA_EXPRESS_D3 in job_types_called
     assert JobType.LOJA_EXPRESS_D5 in job_types_called

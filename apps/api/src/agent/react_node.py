@@ -8,15 +8,17 @@ import structlog
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langgraph.config import RunnableConfig
 
-from shared.domain.policies.communication_rules import CommunicationRules
 from agent.guards import GuardService
-from agent.state import AgentState
 from agent.prompt import build_system_prompt
+from agent.state import AgentState
+from shared.domain.policies.communication_rules import CommunicationRules
 
 log = structlog.get_logger(__name__)
 
 _CANCEL_WORDS = ("cancela", "para", "esquece", "desiste")
-_FALLBACK_MESSAGE = "Desculpe, não consegui processar sua solicitação. Um humano vai te ajudar em breve."
+_FALLBACK_MESSAGE = (
+    "Desculpe, não consegui processar sua solicitação. Um humano vai te ajudar em breve."
+)
 _communication_rules = CommunicationRules()
 
 
@@ -27,6 +29,7 @@ def _is_cancel(content: str) -> bool:
 def _roteador(state: AgentState) -> str:
     """Routes after raciocinar: execute tool if LLM made a tool call, else END."""
     from langgraph.graph import END
+
     last = state["messages"][-1]
     return "executar" if getattr(last, "tool_calls", None) else END
 
@@ -105,23 +108,27 @@ def make_pos_execucao_node(capability_repo: Any, memory_extractor: Any):
         # Registra analytics em background
         if skill_name and capability_repo:
             with contextlib.suppress(RuntimeError):
-                _bg_tasks.append(asyncio.create_task(
-                    capability_repo.record(
-                        conversation_id=cfg["conversation_id"],
-                        skill_name=skill_name,
+                _bg_tasks.append(
+                    asyncio.create_task(
+                        capability_repo.record(
+                            conversation_id=cfg["conversation_id"],
+                            skill_name=skill_name,
+                        )
                     )
-                ))
+                )
 
         # Extrai long_term_facts em background
         if memory_extractor:
             with contextlib.suppress(RuntimeError):
-                _bg_tasks.append(asyncio.create_task(
-                    memory_extractor.extract_and_save(
-                        account_id=cfg["account_id"],
-                        phone=cfg["phone"],
-                        messages=state["messages"],
+                _bg_tasks.append(
+                    asyncio.create_task(
+                        memory_extractor.extract_and_save(
+                            account_id=cfg["account_id"],
+                            phone=cfg["phone"],
+                            messages=state["messages"],
+                        )
                     )
-                ))
+                )
 
         # Reinjeta mensagens pendentes para o próximo turno de raciocinar
         pending = state.get("mensagens_pendentes") or []

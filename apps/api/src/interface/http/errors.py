@@ -4,8 +4,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from shared.domain.errors import DomainError, TenantIsolationError
 from shared.adapters.observability.logger import get_logger
+from shared.domain.errors import DomainError, TenantIsolationError
 
 log = get_logger(__name__)
 

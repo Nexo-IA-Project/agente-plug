@@ -3,8 +3,8 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 from shared.adapters.db.models import LojaExpressCaseModel
+from shared.domain.entities.loja_express_case import LojaExpressCase, LojaExpressCaseStatus
 
 
 class LojaExpressCaseRepository:

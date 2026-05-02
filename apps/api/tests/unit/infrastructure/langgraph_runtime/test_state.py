@@ -4,14 +4,13 @@ from uuid import uuid4
 
 from langchain_core.messages import HumanMessage
 
-from shared.domain.value_objects.intent import Intent
-from shared.domain.value_objects.sentiment import Sentiment
 from agent.state import (
     AgentState,
     ConversationState,
     make_initial_state,
 )
-
+from shared.domain.value_objects.intent import Intent
+from shared.domain.value_objects.sentiment import Sentiment
 
 # ---------------------------------------------------------------------------
 # New AgentState tests (Core v2)

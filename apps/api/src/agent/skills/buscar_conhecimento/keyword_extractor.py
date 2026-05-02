@@ -1,5 +1,6 @@
 # apps/api/src/agent/skills/buscar_conhecimento/keyword_extractor.py
 """Extrai keywords relevantes de uma query em português brasileiro."""
+
 from __future__ import annotations
 
 import re

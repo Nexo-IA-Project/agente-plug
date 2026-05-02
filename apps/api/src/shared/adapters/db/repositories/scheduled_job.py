@@ -8,9 +8,9 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.scheduled_job import JobStatus, JobType, ScheduledJob
 from shared.adapters.db.models import ScheduledJobModel
 from shared.adapters.db.repositories.base import require_account_id
+from shared.domain.entities.scheduled_job import JobStatus, JobType, ScheduledJob
 
 
 def _to_entity(model: ScheduledJobModel) -> ScheduledJob:

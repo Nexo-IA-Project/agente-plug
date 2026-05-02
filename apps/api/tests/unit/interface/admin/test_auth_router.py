@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 def _make_app():
     from interface.http.routers.admin.auth import router
+
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     return app
@@ -27,9 +28,10 @@ async def test_login_returns_token_on_valid_credentials():
     mock_user_model.account_id = 1
     mock_user_model.role = "admin"
 
-    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
-
+    with (
+        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
+    ):
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(
             return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=mock_user_model))
@@ -61,9 +63,10 @@ async def test_login_returns_401_on_wrong_password():
     mock_user_model.email = "admin@test.com"
     mock_user_model.account_id = 1
 
-    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
-
+    with (
+        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
+    ):
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(
             return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=mock_user_model))
@@ -84,9 +87,10 @@ async def test_login_returns_401_on_wrong_password():
 
 @pytest.mark.asyncio
 async def test_login_returns_401_when_user_not_found():
-    with patch("interface.http.routers.admin.auth.get_db") as mock_get_db, \
-         patch("interface.http.routers.admin.auth.get_settings") as mock_settings:
-
+    with (
+        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
+    ):
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(
             return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None))

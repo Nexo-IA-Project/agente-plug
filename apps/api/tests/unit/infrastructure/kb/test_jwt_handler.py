@@ -31,6 +31,7 @@ def test_create_and_verify_token():
 
 def test_verify_token_wrong_secret_raises():
     from jose import JWTError
+
     data = {"sub": "user@example.com"}
     token = create_access_token(data, secret="correct-secret", expire_minutes=10)
     with pytest.raises(JWTError):

@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/verificar_elegibilidade_reembolso/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.verificar_elegibilidade_reembolso.skill import VerificarElegibilidadeReembolsoTool
 from agent.skills.verificar_elegibilidade_reembolso.use_case import VerificarElegibilidadeReembolso

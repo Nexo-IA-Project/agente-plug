@@ -7,13 +7,13 @@ from uuid import uuid4
 
 
 class RefundCaseStatus(StrEnum):
-    COLLECTING        = "collecting"
+    COLLECTING = "collecting"
     CHECKING_DEADLINE = "checking_deadline"
-    IN_RETENTION      = "in_retention"
-    OFFER_ACCEPTED    = "offer_accepted"
-    REFUNDED          = "refunded"
-    DENIED            = "denied"
-    ESCALATED         = "escalated"
+    IN_RETENTION = "in_retention"
+    OFFER_ACCEPTED = "offer_accepted"
+    REFUNDED = "refunded"
+    DENIED = "denied"
+    ESCALATED = "escalated"
 
 
 @dataclass

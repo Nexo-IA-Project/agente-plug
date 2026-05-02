@@ -1,10 +1,11 @@
 # apps/api/src/agent/skills/buscar_conhecimento_com_contexto/use_case.py
 from __future__ import annotations
 
-from shared.domain.ports.knowledge import KnowledgePort
+import contextlib
 
 from agent.skills.buscar_conhecimento.keyword_extractor import extract_keywords
 from agent.skills.buscar_conhecimento.synonym_expander import expand_synonyms
+from shared.domain.ports.knowledge import KnowledgePort
 
 
 class BuscarConhecimentoComContexto:
@@ -50,9 +51,7 @@ class BuscarConhecimentoComContexto:
 
     async def _log(self, account_id: int, query: str, strategy: str, found: bool) -> None:
         if self._usage_log:
-            try:
+            with contextlib.suppress(Exception):
                 await self._usage_log.registrar(
                     account_id=account_id, query=query, strategy=strategy, found=found
                 )
-            except Exception:
-                pass

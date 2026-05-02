@@ -39,6 +39,7 @@ def test_chunk_size_boundary():
     """A text of exactly chunk_size tokens → exactly 1 chunk."""
     chunker = TextChunker(chunk_size=100, overlap=10)
     import tiktoken
+
     enc = tiktoken.get_encoding("cl100k_base")
     tokens = enc.encode("hello ") * 100  # 100 repetitions of "hello " ≈ 100 tokens
     text = enc.decode(tokens[:100])

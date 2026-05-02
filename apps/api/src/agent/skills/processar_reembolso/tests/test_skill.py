@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/processar_reembolso/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.processar_reembolso.skill import ProcessarReembolsoTool
 from agent.skills.processar_reembolso.use_case import ProcessarReembolso

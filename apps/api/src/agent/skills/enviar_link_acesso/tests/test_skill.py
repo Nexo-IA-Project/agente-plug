@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/enviar_link_acesso/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.enviar_link_acesso.skill import EnviarLinkAcessoTool
 from agent.skills.enviar_link_acesso.use_case import EnviarLinkAcesso

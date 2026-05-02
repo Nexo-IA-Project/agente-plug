@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 from shared.adapters.db.repositories.document_repo import DocumentRepository
+from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeDocument
 
 
 def _make_doc(**kwargs) -> KnowledgeDocument:
@@ -36,7 +36,9 @@ async def test_save_adds_and_flushes():
 @pytest.mark.asyncio
 async def test_get_returns_none_when_not_found():
     session = AsyncMock()
-    session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
+    session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+    )
     repo = DocumentRepository(session)
     result = await repo.get("nonexistent-id", account_id=1)
     assert result is None
@@ -46,6 +48,7 @@ async def test_get_returns_none_when_not_found():
 async def test_get_returns_entity_when_found():
     session = AsyncMock()
     from shared.adapters.db.models import KnowledgeDocumentModel
+
     model = KnowledgeDocumentModel(
         id="doc-1",
         account_id=1,
@@ -60,7 +63,9 @@ async def test_get_returns_entity_when_found():
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=model)))
+    session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=model))
+    )
     repo = DocumentRepository(session)
     result = await repo.get("doc-1", account_id=1)
     assert result is not None
@@ -73,11 +78,20 @@ async def test_get_returns_entity_when_found():
 async def test_update_status_flushes():
     session = AsyncMock()
     from shared.adapters.db.models import KnowledgeDocumentModel
+
     model = KnowledgeDocumentModel(
-        id="doc-1", account_id=1, filename="f.pdf", mime_type="application/pdf",
-        file_size_bytes=0, status="pending", chunk_count=0, tags=[],
-        error_message=None, created_by="a",
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        id="doc-1",
+        account_id=1,
+        filename="f.pdf",
+        mime_type="application/pdf",
+        file_size_bytes=0,
+        status="pending",
+        chunk_count=0,
+        tags=[],
+        error_message=None,
+        created_by="a",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.get = AsyncMock(return_value=model)
     repo = DocumentRepository(session)
@@ -90,11 +104,20 @@ async def test_update_status_flushes():
 async def test_update_status_with_error_message():
     session = AsyncMock()
     from shared.adapters.db.models import KnowledgeDocumentModel
+
     model = KnowledgeDocumentModel(
-        id="doc-1", account_id=1, filename="f.pdf", mime_type="application/pdf",
-        file_size_bytes=0, status="processing", chunk_count=0, tags=[],
-        error_message=None, created_by="a",
-        created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+        id="doc-1",
+        account_id=1,
+        filename="f.pdf",
+        mime_type="application/pdf",
+        file_size_bytes=0,
+        status="processing",
+        chunk_count=0,
+        tags=[],
+        error_message=None,
+        created_by="a",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.get = AsyncMock(return_value=model)
     repo = DocumentRepository(session)

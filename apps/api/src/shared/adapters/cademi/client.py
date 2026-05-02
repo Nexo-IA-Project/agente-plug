@@ -9,16 +9,10 @@ class CademiClient:
         self._api_key = api_key
 
     async def get_student_by_email(self, email: str) -> CademiStudent | None:
-        raise NotImplementedError(
-            "CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01"
-        )
+        raise NotImplementedError("CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01")
 
     async def get_student_by_cpf(self, cpf: str) -> CademiStudent | None:
-        raise NotImplementedError(
-            "CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01"
-        )
+        raise NotImplementedError("CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01")
 
     async def get_access_link(self, student_id: str, product_id: str) -> str:
-        raise NotImplementedError(
-            "CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01"
-        )
+        raise NotImplementedError("CademiClient não implementado — ver OPEN_QUESTIONS.md#CQ-W01")

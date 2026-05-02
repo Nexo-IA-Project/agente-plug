@@ -5,8 +5,8 @@ import asyncio
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from shared.domain.entities.knowledge_document import KnowledgeDocument
 from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
+from shared.domain.entities.knowledge_document import KnowledgeDocument
 
 router = APIRouter(tags=["admin-documents"])
 
@@ -47,9 +47,7 @@ async def list_documents(
     limit: int = 20,
     deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
 ) -> list[DocumentOut]:
-    docs = await deps.listar(
-        account_id=deps.account_id, offset=offset, limit=limit
-    )
+    docs = await deps.listar(account_id=deps.account_id, offset=offset, limit=limit)
     return [DocumentOut.from_entity(d) for d in docs]
 
 
@@ -82,9 +80,7 @@ async def upload_document(
     await deps.doc_repo.save(doc)
 
     task = asyncio.create_task(
-        deps.ingerir(
-            doc_id=doc.id, content=content, account_id=deps.account_id
-        )
+        deps.ingerir(doc_id=doc.id, content=content, account_id=deps.account_id)
     )
     _BACKGROUND_TASKS.add(task)
     task.add_done_callback(_BACKGROUND_TASKS.discard)

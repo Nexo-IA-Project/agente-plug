@@ -25,7 +25,9 @@ class PriorityQueue:
     def _list_key(self) -> str:
         return f"queue:{self.name}:list"
 
-    async def enqueue(self, payload: dict[str, Any], *, priority: Priority = Priority.NORMAL) -> str:
+    async def enqueue(
+        self, payload: dict[str, Any], *, priority: Priority = Priority.NORMAL
+    ) -> str:
         job_id = uuid.uuid4().hex
         envelope = json.dumps({"id": job_id, "payload": payload})
         if self.priority_enabled:

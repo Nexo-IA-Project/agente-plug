@@ -2,9 +2,9 @@ import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
+from shared.adapters.clock.system_clock import FrozenClock
 from shared.application.scheduler.runner import SchedulerRunner
 from shared.domain.entities.scheduled_job import JobStatus, JobType, ScheduledJob
-from shared.adapters.clock.system_clock import FrozenClock
 
 
 async def test_runner_executes_due_job() -> None:

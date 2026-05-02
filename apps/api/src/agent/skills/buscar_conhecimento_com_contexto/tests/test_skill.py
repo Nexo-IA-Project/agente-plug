@@ -1,8 +1,9 @@
 # apps/api/src/agent/skills/buscar_conhecimento_com_contexto/tests/test_skill.py
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from agent.skills.buscar_conhecimento_com_contexto.skill import BuscarConhecimentoComContextoTool
 from agent.skills.buscar_conhecimento_com_contexto.use_case import BuscarConhecimentoComContexto

@@ -7,6 +7,7 @@ from shared.domain.entities.knowledge_document import DocumentStatus, KnowledgeD
 
 # ── KnowledgeDocument ─────────────────────────────────────────────────────────
 
+
 def test_knowledge_document_defaults():
     doc = KnowledgeDocument(
         account_id=1,
@@ -45,6 +46,7 @@ def test_knowledge_document_with_tags():
 
 # ── KnowledgeChunk ────────────────────────────────────────────────────────────
 
+
 def test_knowledge_chunk_defaults():
     chunk = KnowledgeChunk(
         document_id="doc-123",
@@ -61,6 +63,7 @@ def test_knowledge_chunk_defaults():
 
 
 # ── AdminUser ─────────────────────────────────────────────────────────────────
+
 
 def test_admin_user_defaults():
     user = AdminUser(

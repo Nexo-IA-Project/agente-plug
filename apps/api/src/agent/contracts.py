@@ -1,4 +1,5 @@
 """Lightweight result types used across agent skills and use-cases."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -28,9 +29,9 @@ class Precondition:
     block_message: str = ""
 
     @classmethod
-    def ok(cls) -> "Precondition":
+    def ok(cls) -> Precondition:
         return cls(passed=True)
 
     @classmethod
-    def block(cls, message: str) -> "Precondition":
+    def block(cls, message: str) -> Precondition:
         return cls(passed=False, block_message=message)

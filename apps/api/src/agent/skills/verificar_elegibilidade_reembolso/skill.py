@@ -1,8 +1,6 @@
 # apps/api/src/agent/skills/verificar_elegibilidade_reembolso/skill.py
 from __future__ import annotations
 
-from typing import Type
-
 from langchain_core.tools import BaseTool
 from langgraph.config import get_config
 from pydantic import BaseModel, ConfigDict
@@ -21,7 +19,7 @@ class _Input(BaseModel):
 class VerificarElegibilidadeReembolsoTool(BaseTool):
     name: str = "verificar_elegibilidade_reembolso"
     description: str = _load_instructions(__file__)
-    args_schema: Type[BaseModel] = _Input
+    args_schema: type[BaseModel] = _Input
 
     _use_case: VerificarElegibilidadeReembolso
 

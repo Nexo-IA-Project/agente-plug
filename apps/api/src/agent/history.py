@@ -1,4 +1,5 @@
 """ConversationHistory — persists the OpenAI message list for a thread in PostgreSQL."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
