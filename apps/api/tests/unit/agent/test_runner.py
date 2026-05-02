@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from agent.context import AgentContext
 from agent.runner import _FALLBACK, run_agent
 from agent.tool_registry import ToolRegistry
-
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -124,7 +122,11 @@ async def test_tool_call_is_dispatched_and_result_appended():
     registry.register(
         name="buscar_aluno",
         description="Busca aluno",
-        parameters={"type": "object", "properties": {"phone": {"type": "string"}}, "required": ["phone"]},
+        parameters={
+            "type": "object",
+            "properties": {"phone": {"type": "string"}},
+            "required": ["phone"],
+        },
         handler=_handler,
     )
 
