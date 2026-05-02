@@ -82,7 +82,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.SERVER_APP_TAILSCALE_IP }}
+          host: ${{ secrets.SERVER_APP_IP }}
           username: root
           password: ${{ secrets.SERVER_APP_SSH_PASS }}
           script: |
