@@ -11,16 +11,17 @@ export function TopBar() {
         <input
           type="text"
           placeholder="Buscar..."
+          aria-label="Buscar"
           className="w-full rounded-lg border border-outline-variant bg-surface-container py-2 pl-10 pr-4 text-body-sm text-on-surface placeholder:text-on-surface-variant outline-none focus:ring-2 focus:ring-primary transition-all"
         />
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+        <button aria-label="Notificações" className="relative flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>notifications</span>
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
         </button>
-        <button className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
+        <button aria-label="Ajuda" className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>help_outline</span>
         </button>
         <ThemeToggle />

@@ -9,7 +9,14 @@ export function UploadProgress({ filename, progress }: { filename: string; progr
         </div>
         <span className="text-mono-label font-mono text-on-surface-variant">{progress}%</span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest"
+        role="progressbar"
+        aria-valuenow={progress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Progresso do upload"
+      >
         <div className="h-full rounded-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
       </div>
     </div>
