@@ -1,13 +1,10 @@
-"""OpenAI function calling agent loop.
-
-Replaces the LangGraph-based graph.py / react_node.py with a direct, transparent
-implementation that has no framework dependencies beyond the OpenAI SDK.
-"""
+"""OpenAI function calling agent loop."""
 
 from __future__ import annotations
 
 import asyncio
 import json
+import time
 from typing import Any, cast
 
 import structlog
@@ -20,9 +17,15 @@ from openai.types.chat.chat_completion_message_function_tool_call import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agent.context import AgentContext
+from agent.guards import GuardService
 from agent.history import ConversationHistory
 from agent.prompt import build_system_prompt
 from agent.tool_registry import ToolRegistry
+from shared.adapters.observability.metrics import (
+    AGENT_ITERATIONS,
+    AGENT_RUN_DURATION,
+    AGENT_TOOL_CALLS,
+)
 
 log = structlog.get_logger(__name__)
 
@@ -38,17 +41,61 @@ async def run_agent(
     session: AsyncSession,
     client: AsyncOpenAI,
     long_term_facts: list[str] | None = None,
+    guard_service: GuardService | None = None,
     model: str = "gpt-4o",
 ) -> str:
     """Run the agent loop for one user turn. Returns the assistant's final reply."""
+    t0 = time.monotonic()
+    outcome = "success"
+    try:
+        reply = await _run(
+            ctx=ctx,
+            user_message=user_message,
+            registry=registry,
+            session=session,
+            client=client,
+            long_term_facts=long_term_facts or [],
+            guard_service=guard_service,
+            model=model,
+        )
+    except Exception:
+        outcome = "error"
+        raise
+    finally:
+        AGENT_RUN_DURATION.labels(outcome=outcome).observe(time.monotonic() - t0)
+    return reply
+
+
+async def _run(
+    *,
+    ctx: AgentContext,
+    user_message: str,
+    registry: ToolRegistry,
+    session: AsyncSession,
+    client: AsyncOpenAI,
+    long_term_facts: list[str],
+    guard_service: GuardService | None,
+    model: str,
+) -> str:
     history = ConversationHistory(session=session)
     raw_messages: list[dict[str, Any]] = await history.load(ctx.thread_id)
     raw_messages.append({"role": "user", "content": user_message})
 
-    system_prompt = build_system_prompt(long_term_facts or [])
+    forced_instruction: str | None = None
+    if guard_service is not None:
+        guard_result = guard_service.check(user_message, {"messages": raw_messages})
+        if guard_result.blocked:
+            log.info(
+                "agent_guard_blocked",
+                reason=guard_result.reason,
+                thread_id=ctx.thread_id,
+            )
+            forced_instruction = guard_result.forced_instruction or None
+
     tool_defs: list[ChatCompletionToolParam] = registry.get_tools()
 
     for iteration in range(_MAX_ITERATIONS):
+        system_prompt = build_system_prompt(long_term_facts, forced_instruction=forced_instruction)
         all_messages = cast(
             list[ChatCompletionMessageParam],
             [{"role": "system", "content": system_prompt}, *raw_messages],
@@ -64,11 +111,11 @@ async def run_agent(
         choice: Choice = completion.choices[0]
         assistant_msg: dict[str, Any] = choice.message.model_dump(mode="json", exclude_none=True)
         raw_messages.append(assistant_msg)
+        AGENT_ITERATIONS.labels(outcome="iteration").inc()
 
         if choice.finish_reason != "tool_calls" or not choice.message.tool_calls:
             break
 
-        # Filter to function tool calls only — custom tool calls don't have .function
         fn_tool_calls: list[ChatCompletionMessageFunctionToolCall] = [
             tc
             for tc in choice.message.tool_calls
@@ -80,10 +127,22 @@ async def run_agent(
             tools=[tc.function.name for tc in fn_tool_calls],
             thread_id=ctx.thread_id,
         )
+        for tc in fn_tool_calls:
+            AGENT_TOOL_CALLS.labels(tool_name=tc.function.name).inc()
+
         tool_msgs = await _dispatch_all(fn_tool_calls, registry, ctx)
         raw_messages.extend(tool_msgs)
+
+        # Re-check guards after tool execution using updated message history
+        if guard_service is not None:
+            guard_result = guard_service.check("", {"messages": raw_messages})
+            if guard_result.blocked:
+                forced_instruction = guard_result.forced_instruction or None
+            else:
+                forced_instruction = None
     else:
         log.warning("agent_max_iterations_exceeded", thread_id=ctx.thread_id)
+        AGENT_ITERATIONS.labels(outcome="max_iterations").inc()
         raw_messages.append({"role": "assistant", "content": _FALLBACK})
 
     await history.save(ctx.thread_id, raw_messages)

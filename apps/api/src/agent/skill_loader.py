@@ -43,9 +43,3 @@ def build_registry(adapters: Adapters) -> ToolRegistry:
             skill = module.make_skill(adapters)
             register_skill(registry, skill)
     return registry
-
-
-# Kept for backward compatibility while graph.py / react_node.py are still present
-def load_skills(adapters: Adapters) -> list:  # type: ignore[type-arg]
-    """Deprecated: use build_registry() instead."""
-    return []

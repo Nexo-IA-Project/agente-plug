@@ -14,6 +14,7 @@ def test_settings_load_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "ADMIN_API_KEY": "admin-key",
         "META_API_KEY": "meta-key",
         "INTEGRATION_CREDENTIALS_KEY": "YEqfuO1aT0ibxW5p3oACqKm4sVqlKwpz9wZ0qCc0Yfs=",
+        "JWT_SECRET": "test-jwt-secret-with-enough-entropy-32chars",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)

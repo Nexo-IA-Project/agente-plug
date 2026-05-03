@@ -104,6 +104,28 @@ access_cpf_fallback_total = Counter(
     registry=REGISTRY,
 )
 
+AGENT_RUN_DURATION = Histogram(
+    "agent_run_duration_seconds",
+    "Total time spent in the OpenAI function calling loop per user turn",
+    ["outcome"],
+    registry=REGISTRY,
+    buckets=(0.5, 1, 2, 5, 10, 20, 30, 60, 120),
+)
+
+AGENT_TOOL_CALLS = Counter(
+    "agent_tool_calls_total",
+    "Tool calls dispatched by the agent",
+    ["tool_name"],
+    registry=REGISTRY,
+)
+
+AGENT_ITERATIONS = Counter(
+    "agent_iterations_total",
+    "Number of LLM iterations in the agent loop",
+    ["outcome"],
+    registry=REGISTRY,
+)
+
 
 def render_latest() -> bytes:
     return generate_latest(REGISTRY)

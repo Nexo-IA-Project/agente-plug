@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 from collections.abc import Callable
 from dataclasses import dataclass
 
@@ -36,7 +37,7 @@ def configure(
 
 async def _verify_api_key(request: Request) -> None:
     key = request.headers.get("x-api-key", "")
-    if key != _cfg.expected_api_key:
+    if not secrets.compare_digest(key, _cfg.expected_api_key):
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="401").inc()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid api key")
 

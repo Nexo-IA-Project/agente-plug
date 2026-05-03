@@ -1,4 +1,4 @@
-"""Unit tests for runner.py (Task 3) — mocked OpenAI client and session."""
+"""Unit tests for runner.py — mocked OpenAI client and session."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from agent.context import AgentContext
+from agent.guards import GuardResult, GuardService
 from agent.runner import _FALLBACK, run_agent
 from agent.tool_registry import ToolRegistry
 
@@ -224,3 +225,83 @@ async def test_fallback_returned_when_max_iterations_exceeded():
 
     assert reply == _FALLBACK
     assert client.chat.completions.create.await_count == 10
+
+
+# ── guard integration ─────────────────────────────────────────────────────────
+
+
+def _make_blocking_guard(forced: str) -> GuardService:
+    class _BlockGuard:
+        def check(self, message: str, state: dict) -> GuardResult:
+            return GuardResult(blocked=True, reason="test", forced_instruction=forced)
+
+    return GuardService([_BlockGuard()])
+
+
+def _make_pass_guard() -> GuardService:
+    class _PassGuard:
+        def check(self, message: str, state: dict) -> GuardResult:
+            return GuardResult(blocked=False)
+
+    return GuardService([_PassGuard()])
+
+
+@pytest.mark.asyncio
+async def test_blocked_guard_injects_forced_instruction_into_system_prompt():
+    captured_messages: list = []
+
+    async def _create(**kwargs):  # type: ignore[no-untyped-def]
+        captured_messages.extend(kwargs.get("messages", []))
+        return _make_completion("escalei")
+
+    client = AsyncMock()
+    client.chat.completions.create = _create
+
+    guard_service = _make_blocking_guard("INSTRUÇÃO: escalar agora")
+    ctx = _make_ctx()
+    session = _mock_session()
+    registry = ToolRegistry()
+
+    await run_agent(
+        ctx=ctx,
+        user_message="ameaça legal",
+        registry=registry,
+        session=session,
+        client=client,
+        guard_service=guard_service,
+        model="gpt-4o-mini",
+    )
+
+    system = next((m for m in captured_messages if m.get("role") == "system"), None)
+    assert system is not None
+    assert "INSTRUÇÃO: escalar agora" in system["content"]
+
+
+@pytest.mark.asyncio
+async def test_pass_guard_does_not_inject_forced_instruction():
+    captured_messages: list = []
+
+    async def _create(**kwargs):  # type: ignore[no-untyped-def]
+        captured_messages.extend(kwargs.get("messages", []))
+        return _make_completion("tudo certo")
+
+    client = AsyncMock()
+    client.chat.completions.create = _create
+
+    ctx = _make_ctx()
+    session = _mock_session()
+    registry = ToolRegistry()
+
+    await run_agent(
+        ctx=ctx,
+        user_message="preciso de ajuda",
+        registry=registry,
+        session=session,
+        client=client,
+        guard_service=_make_pass_guard(),
+        model="gpt-4o-mini",
+    )
+
+    system = next((m for m in captured_messages if m.get("role") == "system"), None)
+    assert system is not None
+    assert "INSTRUÇÃO PRIORITÁRIA" not in system["content"]

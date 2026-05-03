@@ -14,6 +14,7 @@ from interface.http.routers import (
     webhook_purchase,
 )
 from interface.http.routers.admin import auth as admin_auth
+from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import search as admin_search
 from shared.adapters.db.queue import PostgresJobQueue
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_auth.router, prefix="/admin")
     app.include_router(admin_documents.router, prefix="/admin")
     app.include_router(admin_search.router, prefix="/admin")
+    app.include_router(admin_dlq.router, prefix="/admin")
     return app
 
 

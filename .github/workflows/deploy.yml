@@ -115,6 +115,35 @@ jobs:
           # Subir nova versão (recria containers um a um)
           docker compose --env-file /root/.env.prod -f docker-compose.prod.yml up -d --force-recreate api worker web
 
-          # Aguardar healthchecks
-          sleep 15
+          # Aguardar até api ficar healthy (max 90s)
+          echo "Aguardando API ficar healthy..."
+          for i in $(seq 1 18); do
+            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$(docker compose --env-file /root/.env.prod -f docker-compose.prod.yml ps -q api)" 2>/dev/null || echo "unknown")
+            echo "  [${i}/18] api health: ${STATUS}"
+            if [ "${STATUS}" = "healthy" ]; then
+              echo "API healthy!"
+              break
+            fi
+            if [ "${i}" = "18" ]; then
+              echo "ERRO: API não ficou healthy em 90s"
+              docker compose --env-file /root/.env.prod -f docker-compose.prod.yml logs --tail=50 api
+              exit 1
+            fi
+            sleep 5
+          done
+
           docker compose --env-file /root/.env.prod -f docker-compose.prod.yml ps
+
+          # Smoke test: verificar health via Cloudflare Tunnel
+          echo "Smoke test..."
+          for i in 1 2 3; do
+            if curl -sf --max-time 10 https://api-iag2.ianexo.com.br/health | grep -q '"ok"'; then
+              echo "Smoke test passou!"
+              break
+            fi
+            echo "  tentativa ${i}/3 falhou, aguardando 10s..."
+            sleep 10
+            if [ "${i}" = "3" ]; then
+              echo "AVISO: smoke test não confirmou /health via túnel (pode ser latência DNS)"
+            fi
+          done

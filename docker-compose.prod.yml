@@ -18,8 +18,10 @@ services:
       - "127.0.0.1:8000:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      retries: 3
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 30s
 
   worker:
     image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
@@ -37,5 +39,7 @@ services:
       - "127.0.0.1:3000:3000"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/"]
-      interval: 30s
-      retries: 3
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 45s

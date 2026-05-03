@@ -1,34 +1,39 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import structlog
-from langchain_core.messages import AIMessage, HumanMessage
+from openai import AsyncOpenAI
 
+from agent.context import AgentContext
+from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
+from agent.runner import run_agent
+from agent.skill_loader import Adapters, build_registry
+from shared.adapters.cademi.client import CademiClient
+from shared.adapters.chatnexo.client import ChatNexoClient
+from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
+from shared.adapters.db.repositories.chunk_repo import ChunkRepository
+from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
+from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
+from shared.adapters.db.session import session_scope
+from shared.adapters.hubla.client import HublaClient
+from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
+from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.lead_lock import LeadLock, LeadLockError
-from shared.application.lifecycle_handler import LifecycleHandler
-from shared.application.message_dispatcher import MessageDispatcher
+from shared.adapters.redis.refund_mutex import RedisRefundMutex
+from shared.config.settings import get_settings
 
 log = structlog.get_logger(__name__)
 
 
-def _get_agent() -> Any:
-    """Monta e retorna o grafo compilado. Singleton por processo."""
-    # TODO: injetar deps reais de infraestrutura (session factory, redis, etc.)
-    # Placeholder — substituir por DI container quando disponível
-    raise NotImplementedError("_get_agent: configure DI container em main.py e injete via closure")
+class _NullLegalHistory:
+    """Stub until a proper DB-backed LegalHistoryPort is implemented."""
 
-
-def _get_dispatcher() -> MessageDispatcher:
-    raise NotImplementedError("_get_dispatcher: configure em main.py")
-
-
-def _get_lifecycle() -> LifecycleHandler:
-    raise NotImplementedError("_get_lifecycle: configure em main.py")
-
-
-def _get_scheduler() -> Any:
-    raise NotImplementedError("_get_scheduler: configure em main.py")
+    async def has_prior_refund_mention(
+        self, *, account_id: int, contact_id: str, purchase_date: Any
+    ) -> bool:
+        return False
 
 
 async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None = None) -> None:
@@ -79,48 +84,56 @@ async def _process_message(
     conversation_id: str,
     text: str,
 ) -> None:
-    agent = _get_agent()
-    dispatcher = _get_dispatcher()
-    lifecycle = _get_lifecycle()
-    scheduler = _get_scheduler()
+    settings = get_settings()
+    redis = get_redis()
+    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    # Cancela jobs de idle pendentes (nova mensagem = aluno voltou)
-    await scheduler.cancel_pending_idle_jobs(account_id=account_id, phone=phone)
-
-    config = {
-        "configurable": {
-            "thread_id": f"{account_id}:{phone}",
-            "account_id": account_id,
-            "phone": phone,
-            "conversation_id": conversation_id,
-        }
-    }
-
-    result = await agent.ainvoke(
-        {"messages": [HumanMessage(text)]},
-        config=config,
+    chatnexo = ChatNexoClient.from_settings()
+    cademi = CademiClient(
+        base_url=settings.cademi_api_url,
+        api_key=settings.cademi_api_key,
     )
+    hubla = HublaClient()
+    refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
 
-    # Extrai última AIMessage sem tool_call — é a resposta ao aluno
-    last_ai = next(
-        (
-            m
-            for m in reversed(result.get("messages", []))
-            if isinstance(m, AIMessage) and not getattr(m, "tool_calls", None)
-        ),
-        None,
-    )
+    async with session_scope() as session:
+        knowledge_repo = EmbeddingsKnowledgeAdapter(
+            chunk_repo=ChunkRepository(session),
+            openai_client=openai_client,
+            embedding_model=settings.kb_embedding_model,
+        )
+        adapters = Adapters(
+            access_repo=AccessCaseRepository(session),
+            cademi=cademi,
+            chatnexo=chatnexo,
+            refund_repo=RefundCaseRepository(session),
+            hubla=hubla,
+            legal_history=_NullLegalHistory(),
+            refund_mutex=refund_mutex,
+            knowledge_repo=knowledge_repo,
+            usage_log_repo=UsageLogRepository(session),
+        )
+        registry = build_registry(adapters)
+        guard_service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
 
-    if last_ai and last_ai.content:
-        await dispatcher.send(
+        ctx = AgentContext(
             account_id=account_id,
+            phone=phone,
             conversation_id=conversation_id,
-            content=last_ai.content,
+            thread_id=f"{account_id}:{phone}",
+        )
+        reply = await run_agent(
+            ctx=ctx,
+            user_message=text,
+            registry=registry,
+            session=session,
+            client=openai_client,
+            guard_service=guard_service,
         )
 
-    # Agenda idle check
-    await lifecycle.schedule_idle_ping(
-        account_id=account_id,
-        phone=phone,
-        conversation_id=conversation_id,
+    await chatnexo.send_message(
+        account_id=UUID(account_id),
+        conversation_id=int(conversation_id),
+        text=reply,
     )
+    log.info("message_reply_sent", account_id=account_id, conversation_id=conversation_id)

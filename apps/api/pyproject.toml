@@ -14,8 +14,6 @@ dependencies = [
   "alembic>=1.14",
   "redis>=5.2",
   "openai>=1.54",
-  "langgraph>=0.2",
-  "langgraph-checkpoint-postgres>=2.0",
   "httpx>=0.27",
   "structlog>=24.4",
   "prometheus-client>=0.21",
@@ -77,20 +75,12 @@ plugins = ["pydantic.mypy"]
 explicit_package_bases = true
 mypy_path = "src"
 
-# Legacy LangChain/LangGraph modules — ignored until migration to OpenAI function calling is complete
 [[tool.mypy.overrides]]
 module = [
-  "agent.graph",
-  "agent.react_node",
   "agent.skill_loader",
-  "agent.state",
-  "agent.checkpointer",
   "agent.prompt",
   "agent.guards.*",
   "agent.skills.*",
-  "langchain_core.*",
-  "langgraph.*",
-  "langchain.*",
   "pgvector.*",
 ]
 ignore_errors = true
