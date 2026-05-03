@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from langchain_core.messages import AIMessage
-
 from agent.guards import GuardResult
 
 _THRESHOLD = 3
@@ -10,7 +8,9 @@ _THRESHOLD = 3
 class LoopDetectorGuard:
     def check(self, message: str, state: dict) -> GuardResult:
         recent_ai = [
-            str(m.content) for m in state.get("messages", [])[-6:] if isinstance(m, AIMessage)
+            str(m.get("content", ""))
+            for m in state.get("messages", [])[-6:]
+            if isinstance(m, dict) and m.get("role") == "assistant" and m.get("content")
         ]
         tail = recent_ai[-_THRESHOLD:]
         if len(tail) >= _THRESHOLD and len(set(tail)) == 1:

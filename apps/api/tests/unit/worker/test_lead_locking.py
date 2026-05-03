@@ -118,7 +118,7 @@ async def test_handle_message_without_lock_does_not_require_lead_lock() -> None:
 
     with (
         patch(
-            "interface.worker.handlers.message._get_agent",
+            "interface.worker.handlers.message._process_message",
             side_effect=NotImplementedError("stub"),
         ),
         pytest.raises(NotImplementedError, match="stub"),

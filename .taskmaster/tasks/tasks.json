@@ -159,7 +159,7 @@
           "1",
           "2"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -220,7 +220,8 @@
             "testStrategy": "Comprehensive unit and integration tests to verify loop functionality.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:21:00.864Z"
       },
       {
         "id": "4",
@@ -232,7 +233,7 @@
         "dependencies": [
           "1"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -293,7 +294,8 @@
             "testStrategy": "Run tests to confirm the adapter's accuracy and reliability.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:21:05.508Z"
       },
       {
         "id": "5",
@@ -305,7 +307,7 @@
         "dependencies": [
           "4"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -365,7 +367,8 @@
             "testStrategy": "Integration tests to verify system-wide compatibility and performance.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:21:13.096Z"
       },
       {
         "id": "6",
@@ -1109,7 +1112,7 @@
         "dependencies": [
           "5"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1170,7 +1173,8 @@
             "testStrategy": "Ensure all tests pass and no references to LangChain or LangGraph remain.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:29:12.597Z"
       },
       {
         "id": "17",
@@ -1180,7 +1184,7 @@
         "testStrategy": "Build and run Docker images locally to verify size and functionality.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1241,7 +1245,8 @@
             "testStrategy": "Verify image size, build time, and application functionality in local environment.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:33:18.877Z"
       },
       {
         "id": "18",
@@ -1253,7 +1258,7 @@
         "dependencies": [
           "5"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1315,7 +1320,8 @@
             "testStrategy": "Unit tests to verify prompt assembly and correctness.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:33:18.884Z"
       },
       {
         "id": "19",
@@ -1327,7 +1333,7 @@
         "dependencies": [
           "5"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1387,7 +1393,8 @@
             "testStrategy": "Integration tests to verify middleware execution within the agent loop.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:33:18.891Z"
       },
       {
         "id": "20",
@@ -1471,7 +1478,7 @@
         "dependencies": [
           "6"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1533,7 +1540,8 @@
             "testStrategy": "Access the /metrics endpoint and verify all metrics are exposed correctly.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:33:18.896Z"
       },
       {
         "id": "22",
@@ -1623,7 +1631,7 @@
         "dependencies": [
           "16"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1685,7 +1693,8 @@
             "testStrategy": "Approval from stakeholders and final peer review feedback.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:37:41.469Z"
       },
       {
         "id": "24",
@@ -1697,7 +1706,7 @@
         "dependencies": [
           "7"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1757,7 +1766,8 @@
             "testStrategy": "Integration tests focusing on endpoint functionality and security aspects.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T03:37:41.462Z"
       },
       {
         "id": "25",
@@ -2348,9 +2358,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-05-03T00:03:46.723Z",
+      "lastModified": "2026-05-03T03:37:41.469Z",
       "taskCount": 32,
-      "completedCount": 8,
+      "completedCount": 18,
       "tags": [
         "master"
       ]

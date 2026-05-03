@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from langchain_core.messages import AIMessage
-
 from agent.guards import (
     GuardResult,
     GuardService,
@@ -10,8 +8,12 @@ from agent.guards import (
 )
 
 
+def _ai_msg(content: str) -> dict:
+    return {"role": "assistant", "content": content}
+
+
 def _state(messages: list) -> dict:
-    return {"messages": messages, "skill_em_andamento": None, "mensagens_pendentes": []}
+    return {"messages": messages}
 
 
 def test_legal_mention_guard_blocks_on_procon():
@@ -34,7 +36,7 @@ def test_legal_mention_guard_passes_normal_message():
 
 
 def test_loop_detector_blocks_when_ai_repeats():
-    repeated = AIMessage("Olá! Como posso ajudar?")
+    repeated = _ai_msg("Olá! Como posso ajudar?")
     state = _state([repeated, repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is True
@@ -44,7 +46,7 @@ def test_loop_detector_blocks_when_ai_repeats():
 
 
 def test_loop_detector_passes_varied_messages():
-    state = _state([AIMessage("Mensagem 1"), AIMessage("Mensagem 2"), AIMessage("Mensagem 3")])
+    state = _state([_ai_msg("Mensagem 1"), _ai_msg("Mensagem 2"), _ai_msg("Mensagem 3")])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is False
 
@@ -58,20 +60,20 @@ def test_guard_service_returns_first_blocked():
 
 def test_guard_service_passes_clean_message():
     service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
-    result = service.check("preciso de ajuda", _state([AIMessage("Ok"), AIMessage("Tudo bem?")]))
+    result = service.check("preciso de ajuda", _state([_ai_msg("Ok"), _ai_msg("Tudo bem?")]))
     assert result.blocked is False
 
 
 def test_loop_detector_does_not_block_below_threshold():
-    repeated = AIMessage("Olá! Como posso ajudar?")
+    repeated = _ai_msg("Olá! Como posso ajudar?")
     state = _state([repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is False
 
 
 def test_loop_detector_blocks_on_tail_not_full_window():
-    different = AIMessage("Mensagem diferente")
-    repeated = AIMessage("Resposta em loop")
+    different = _ai_msg("Mensagem diferente")
+    repeated = _ai_msg("Resposta em loop")
     state = _state([different, repeated, repeated, repeated])
     result = LoopDetectorGuard().check("oi", state)
     assert result.blocked is True

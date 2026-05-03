@@ -45,7 +45,3 @@ def build_registry(adapters: Adapters) -> ToolRegistry:
     return registry
 
 
-# Kept for backward compatibility while graph.py / react_node.py are still present
-def load_skills(adapters: Adapters) -> list:  # type: ignore[type-arg]
-    """Deprecated: use build_registry() instead."""
-    return []
