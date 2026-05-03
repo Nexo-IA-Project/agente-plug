@@ -62,8 +62,8 @@ class Settings(BaseSettings):
     # Capability Knowledge (RAG)
     kb_attempt_1_threshold: float = Field(default=0.55, ge=0.0, le=1.0)
 
-    # JWT
-    jwt_secret: str = "change-me-in-production"
+    # JWT — deve ser configurado via JWT_SECRET no ambiente (sem valor padrão)
+    jwt_secret: str
     jwt_expire_minutes: int = 60
 
 

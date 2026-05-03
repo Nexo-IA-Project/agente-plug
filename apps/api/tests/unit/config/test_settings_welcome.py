@@ -14,6 +14,7 @@ def test_cademi_and_welcome_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
         "ADMIN_API_KEY": "admin",
         "META_API_KEY": "meta",
         "INTEGRATION_CREDENTIALS_KEY": "YEqfuO1aT0ibxW5p3oACqKm4sVqlKwpz9wZ0qCc0Yfs=",
+        "JWT_SECRET": "test-jwt-secret-enough-entropy-32chars-ok",
     }
     for k, v in env.items():
         monkeypatch.setenv(k, v)

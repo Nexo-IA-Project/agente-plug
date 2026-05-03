@@ -13,6 +13,7 @@ def test_refund_deadline_days_default():
         admin_api_key="x",
         meta_api_key="x",
         integration_credentials_key="x" * 32,
+        jwt_secret="test-jwt-secret-with-enough-entropy-xxxxx",
     )
     assert s.refund_deadline_days == 7
     assert s.refund_mutex_ttl_seconds == 3600

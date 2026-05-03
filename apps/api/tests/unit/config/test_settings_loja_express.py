@@ -13,6 +13,7 @@ def _make_settings(**overrides) -> Settings:
         "admin_api_key": "x",
         "meta_api_key": "x",
         "integration_credentials_key": "x" * 32,
+        "jwt_secret": "test-jwt-secret-enough-entropy-32chars-ok",
     }
     defaults.update(overrides)
     return Settings(**defaults)
