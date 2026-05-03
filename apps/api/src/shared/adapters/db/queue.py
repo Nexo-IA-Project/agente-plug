@@ -115,7 +115,5 @@ class PostgresJobQueue:
 
     async def depth(self) -> int:
         async with self.sessionmaker() as session:
-            result = await session.execute(
-                select(func.count()).select_from(JobQueueModel)
-            )
+            result = await session.execute(select(func.count()).select_from(JobQueueModel))
             return int(result.scalar() or 0)
