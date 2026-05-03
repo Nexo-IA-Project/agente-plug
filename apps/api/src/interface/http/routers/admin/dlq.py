@@ -89,9 +89,7 @@ async def delete_dlq_entry(entry_id: str) -> None:
 
     async with session_scope() as session:
         result = await session.execute(
-            delete(JobDlqModel)
-            .where(JobDlqModel.id == entry_uuid)
-            .returning(JobDlqModel.id)
+            delete(JobDlqModel).where(JobDlqModel.id == entry_uuid).returning(JobDlqModel.id)
         )
         deleted = result.fetchone()
 
@@ -114,14 +112,10 @@ async def requeue_dlq_entry(entry_id: str) -> RequeueResponse:
         )
 
     async with session_scope() as session:
-        result = await session.execute(
-            select(JobDlqModel).where(JobDlqModel.id == entry_uuid)
-        )
+        result = await session.execute(select(JobDlqModel).where(JobDlqModel.id == entry_uuid))
         entry = result.scalar_one_or_none()
         if entry is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="DLQ entry not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="DLQ entry not found")
 
         session.add(
             JobQueueModel(
@@ -132,9 +126,7 @@ async def requeue_dlq_entry(entry_id: str) -> RequeueResponse:
                 priority=20,
             )
         )
-        await session.execute(
-            delete(JobDlqModel).where(JobDlqModel.id == entry_uuid)
-        )
+        await session.execute(delete(JobDlqModel).where(JobDlqModel.id == entry_uuid))
 
     return RequeueResponse(requeued=1)
 

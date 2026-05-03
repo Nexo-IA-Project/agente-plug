@@ -226,6 +226,7 @@ async def test_fallback_returned_when_max_iterations_exceeded():
     assert reply == _FALLBACK
     assert client.chat.completions.create.await_count == 10
 
+
 # ── guard integration ─────────────────────────────────────────────────────────
 
 

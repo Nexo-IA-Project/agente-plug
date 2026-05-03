@@ -43,5 +43,3 @@ def build_registry(adapters: Adapters) -> ToolRegistry:
             skill = module.make_skill(adapters)
             register_skill(registry, skill)
     return registry
-
-
