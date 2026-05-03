@@ -407,3 +407,41 @@ class ConversationMessageModel(Base):
         onupdate=sa_text("NOW()"),
         nullable=False,
     )
+
+
+class JobQueueModel(Base):
+    """Persistent job queue — rows are deleted on dequeue (SELECT FOR UPDATE SKIP LOCKED)."""
+
+    __tablename__ = "job_queue"
+
+    id: Mapped[uuid.UUID] = _pk()
+    kind: Mapped[str] = mapped_column(String(80), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    attempt: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String, nullable=True)
+    priority: Mapped[int] = mapped_column(Integer, default=20, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    __table_args__ = (
+        Index(
+            "ix_job_queue_dequeue",
+            "priority",
+            "created_at",
+        ),
+    )
+
+
+class JobDlqModel(Base):
+    """Dead-letter queue — jobs that exhausted all retry attempts."""
+
+    __tablename__ = "job_dlq"
+
+    id: Mapped[uuid.UUID] = _pk()
+    kind: Mapped[str] = mapped_column(String(80), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )

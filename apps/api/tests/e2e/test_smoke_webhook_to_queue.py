@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
-from redis.asyncio import Redis
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import create_async_engine
 from testcontainers.postgres import PostgresContainer
 from testcontainers.redis import RedisContainer
 
@@ -61,7 +64,7 @@ def test_purchase_webhook_enqueues_job(
 
     cfg = AlembicConfig("alembic.ini")
     cfg.set_main_option("sqlalchemy.url", db_url)
-    command.upgrade(cfg, "head")
+    command.upgrade(cfg, "heads")
 
     client = TestClient(m.app)
 
@@ -82,14 +85,14 @@ def test_purchase_webhook_enqueues_job(
     assert r.status_code == 202
     assert r.json()["duplicate"] is False
 
-    # Queue should have 1 item
-    import asyncio
-
+    # Queue should have 1 job in job_queue table
     async def _depth() -> int:
-        redis = Redis.from_url(redis_url, decode_responses=True)
-        depth = await redis.llen("queue:jobs:list")
-        await redis.aclose()
-        return depth
+        engine = create_async_engine(db_url)
+        async with engine.connect() as conn:
+            result = await conn.execute(text("SELECT COUNT(*) FROM job_queue"))
+            count = result.scalar()
+        await engine.dispose()
+        return int(count or 0)
 
     assert asyncio.run(_depth()) == 1
 
