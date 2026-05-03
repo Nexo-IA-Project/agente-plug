@@ -1042,7 +1042,7 @@
         "dependencies": [
           "13"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1103,7 +1103,8 @@
             "testStrategy": "Manual testing with test pull requests to confirm enforcement.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T04:22:18.188Z"
       },
       {
         "id": "16",
@@ -1409,7 +1410,7 @@
         "dependencies": [
           "3"
         ],
-        "status": "pending",
+        "status": "deferred",
         "subtasks": [
           {
             "id": 1,
@@ -1469,7 +1470,8 @@
             "testStrategy": "Integration tests to verify streaming behavior and response assembly.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T04:22:21.802Z"
       },
       {
         "id": "21",
@@ -1558,7 +1560,7 @@
           "7",
           "8"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1622,7 +1624,8 @@
             "testStrategy": "Ensure report accuracy and completeness with peer review.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T04:23:52.866Z"
       },
       {
         "id": "23",
@@ -2363,9 +2366,9 @@
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-05-03T04:04:50.059Z",
+      "lastModified": "2026-05-03T04:23:52.867Z",
       "taskCount": 32,
-      "completedCount": 23,
+      "completedCount": 25,
       "tags": [
         "master"
       ]
