@@ -85,5 +85,25 @@ class ChatNexoClient:
             json={"tag": tag},
         )
 
+    async def get_open_conversation(self, account_id: int, contact_phone: str) -> str | None:
+        """Return the open conversation ID for a contact, or None if not found."""
+        response = await self.http.get(
+            f"/accounts/{account_id}/conversations",
+            params={"contact_phone": contact_phone, "status": "open"},
+        )
+        response.raise_for_status()
+        data = response.json()
+        items = data.get("data", []) if isinstance(data, dict) else data
+        return str(items[0]["id"]) if items else None
+
+    async def create_conversation(self, account_id: int, contact_phone: str) -> str:
+        """Create a new conversation for a contact and return its ID."""
+        response = await self._post(
+            f"/accounts/{account_id}/conversations",
+            json={"contact_phone": contact_phone},
+        )
+        data = response.json()
+        return str(data["id"])
+
     async def aclose(self) -> None:
         await self.http.aclose()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 import structlog
 from openai import AsyncOpenAI
@@ -87,10 +88,7 @@ async def _process_message(
     redis = get_redis()
     openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    chatnexo = ChatNexoClient(
-        base_url=settings.chatnexo_base_url,
-        api_key=settings.chatnexo_api_key,
-    )
+    chatnexo = ChatNexoClient.from_settings()
     cademi = CademiClient(
         base_url=settings.cademi_api_url,
         api_key=settings.cademi_api_key,
@@ -134,8 +132,8 @@ async def _process_message(
         )
 
     await chatnexo.send_message(
-        account_id=account_id,
-        conversation_id=conversation_id,
+        account_id=UUID(account_id),
+        conversation_id=int(conversation_id),
         text=reply,
     )
     log.info("message_reply_sent", account_id=account_id, conversation_id=conversation_id)
