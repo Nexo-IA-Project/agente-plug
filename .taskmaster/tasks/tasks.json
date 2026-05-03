@@ -1932,7 +1932,7 @@
           "25",
           "26"
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1995,7 +1995,8 @@
             "testStrategy": "Analyze performance data and adjust configurations as needed.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:18.647Z"
       },
       {
         "id": "28",
@@ -2003,7 +2004,7 @@
         "description": "Manually test functionality from Tasks 1-5: AgentContext, ConversationHistory, OpenAI runner, Skill Protocol, Skills migrated. Verify runner returns text, tool calls dispatch correctly, history persists in PostgreSQL.",
         "details": "",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "5"
         ],
@@ -2071,7 +2072,8 @@
             "testStrategy": "Test each migrated skill to confirm functionality and integration.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:23.229Z"
       },
       {
         "id": "29",
@@ -2079,7 +2081,7 @@
         "description": "Manually test Tasks 6-10: concurrent WorkerDispatcher, retry+DLQ, lead lock, Hetzner infra, PostgreSQL. Verify 20 simultaneous messages process without blocking, failed jobs appear in DLQ.",
         "details": "",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "10"
         ],
@@ -2143,7 +2145,8 @@
             "testStrategy": "Perform database operations and check for correct data storage and retrieval.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:27.699Z"
       },
       {
         "id": "30",
@@ -2151,7 +2154,7 @@
         "description": "Manually test Tasks 11-15: Docker Compose deploy, Cloudflare Tunnel, CI pipeline, CD pipeline, branch protection. Verify curl https://api-iag2.ianexo.com.br/health returns 200, PR triggers CI.",
         "details": "",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "15"
         ],
@@ -2215,7 +2218,8 @@
             "testStrategy": "Attempt to push changes to protected branches and verify restrictions.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:31.785Z"
       },
       {
         "id": "31",
@@ -2223,7 +2227,7 @@
         "description": "Manually test Tasks 16-20: LangChain removed, prompt_builder, guards middleware, streaming, metrics. Verify grep langchain returns 0 results, agent responds correctly end-to-end.",
         "details": "",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "20"
         ],
@@ -2287,7 +2291,8 @@
             "testStrategy": "Compare collected metrics against expected values and verify dashboard displays.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:36.065Z"
       },
       {
         "id": "32",
@@ -2295,7 +2300,7 @@
         "description": "Final validation: zero-downtime deploy, security audit, production launch. Verify uv run pytest green, mypy clean, CD deploys in <3min, uptime monitor active.",
         "details": "",
         "testStrategy": "",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           "27"
         ],
@@ -2361,14 +2366,15 @@
             "testStrategy": "Simulate downtime and verify alerts are triggered correctly.",
             "parentId": "undefined"
           }
-        ]
+        ],
+        "updatedAt": "2026-05-03T05:10:39.849Z"
       }
     ],
     "metadata": {
       "version": "1.0.0",
-      "lastModified": "2026-05-03T04:23:52.867Z",
+      "lastModified": "2026-05-03T05:10:39.850Z",
       "taskCount": 32,
-      "completedCount": 25,
+      "completedCount": 31,
       "tags": [
         "master"
       ]
