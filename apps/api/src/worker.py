@@ -34,6 +34,7 @@ async def main() -> None:
 
     dispatcher = WorkerDispatcher(
         queue=queue,
+        dlq=queue,
         handlers={
             "purchase": handle_purchase,
             "message": handle_message,
