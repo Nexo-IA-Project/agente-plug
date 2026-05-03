@@ -10,12 +10,12 @@ from interface.worker.handlers.purchase import handle_purchase
 from interface.worker.handlers.scheduled import handle_scheduled
 from interface.worker.scheduler import SchedulerLoop
 from shared.adapters.clock.system_clock import SystemClock
+from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import get_sessionmaker
 from shared.adapters.observability.logger import configure_logging, get_logger
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.mutex import RedisMutex
-from shared.adapters.redis.queue import PriorityQueue
 from shared.application.scheduler.runner import SchedulerRunner
 from shared.config.settings import get_settings
 from shared.domain.entities.scheduled_job import JobType, ScheduledJob
@@ -29,7 +29,7 @@ async def main() -> None:
     log.info("worker_starting")
 
     redis = get_redis()
-    queue = PriorityQueue(redis, name="jobs", priority_enabled=settings.enable_priority_queue)
+    queue = PostgresJobQueue(sessionmaker=get_sessionmaker())
     mutex = RedisMutex(redis)
 
     dispatcher = WorkerDispatcher(
