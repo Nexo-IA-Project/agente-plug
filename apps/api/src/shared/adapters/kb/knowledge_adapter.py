@@ -5,7 +5,7 @@ from __future__ import annotations
 from openai import AsyncOpenAI
 
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
-from shared.domain.entities.knowledge_chunk import KnowledgeChunk
+from shared.domain.ports.knowledge import KnowledgeChunk
 
 
 class EmbeddingsKnowledgeAdapter:
@@ -38,7 +38,7 @@ class EmbeddingsKnowledgeAdapter:
         )
         return [
             KnowledgeChunk(
-                id=str(row["id"]),
+                id=str(row["chunk_id"]),
                 document_id=str(row["document_id"]),
                 account_id=account_id,
                 text=str(row["text"]),
