@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import secrets
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
@@ -20,32 +19,48 @@ class _Config:
     dedup: object | None = None
     event_repo_factory: Callable[[], object] | None = None
     queue: object | None = None
-    expected_api_key: str = ""
+    token_validator: Callable[[str], Awaitable[bool]] | None = None
 
 
 _cfg = _Config()
 
 
 def configure(
-    *, dedup, event_repo_factory: Callable[[], object], queue, expected_api_key: str
+    *,
+    dedup,
+    event_repo_factory: Callable[[], object],
+    queue,
+    token_validator: Callable[[str], Awaitable[bool]],
 ) -> None:
     _cfg.dedup = dedup
     _cfg.event_repo_factory = event_repo_factory
     _cfg.queue = queue
-    _cfg.expected_api_key = expected_api_key
+    _cfg.token_validator = token_validator
 
 
-async def _verify_api_key(request: Request) -> None:
-    key = request.headers.get("x-api-key", "")
-    if not secrets.compare_digest(key, _cfg.expected_api_key):
+async def _verify_bearer_token(request: Request) -> None:
+    auth = request.headers.get("authorization", "")
+    if not auth.startswith("Bearer "):
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="401").inc()
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid api key")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="missing bearer token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = auth.removeprefix("Bearer ").strip()
+    if _cfg.token_validator is None or not await _cfg.token_validator(token):
+        WEBHOOK_RECEIVED.labels(source="chatnexo", status="401").inc()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @router.post(
     "/webhook/message",
     status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(_verify_api_key)],
+    dependencies=[Depends(_verify_bearer_token)],
 )
 async def receive(
     payload: IncomingMessagePayload,
@@ -53,7 +68,7 @@ async def receive(
     if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
         raise RuntimeError("webhook_message router not configured; call configure() before serving")
     first = await _cfg.dedup.try_mark(
-        key=f"message:{payload.chatnexo_message_id}", ttl_seconds=3600
+        key=f"message:{payload.message_id}", ttl_seconds=3600
     )
     if not first:
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="202-dup").inc()
@@ -62,7 +77,7 @@ async def receive(
     repo = _cfg.event_repo_factory()
     await repo.insert_if_new(
         source=WebhookSource.CHATNEXO,
-        external_id=payload.chatnexo_message_id,
+        external_id=payload.message_id,
         payload=payload.model_dump(),
     )
 
@@ -70,7 +85,7 @@ async def receive(
     WEBHOOK_RECEIVED.labels(source="chatnexo", status="202").inc()
     log.info(
         "message_webhook_enqueued",
-        chatnexo_message_id=payload.chatnexo_message_id,
+        message_id=payload.message_id,
         job_id=job_id,
     )
     return {"accepted": True, "duplicate": False, "job_id": job_id}
