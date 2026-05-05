@@ -13,6 +13,7 @@ from interface.http.routers import (
     webhook_message,
     webhook_purchase,
 )
+from interface.http.routers.admin import api_tokens as admin_api_tokens
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(metrics.router)
     app.include_router(webhook_purchase.router)
     app.include_router(webhook_message.router)
+    app.include_router(admin_api_tokens.router, prefix="/admin")
     app.include_router(admin_auth.router, prefix="/admin")
     app.include_router(admin_documents.router, prefix="/admin")
     app.include_router(admin_search.router, prefix="/admin")

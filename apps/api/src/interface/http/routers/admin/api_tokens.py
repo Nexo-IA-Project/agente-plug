@@ -67,9 +67,7 @@ class TokenListItem(BaseModel):
     last_used_at: datetime | None
 
 
-@router.post(
-    "/api-tokens", response_model=TokenCreatedResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/api-tokens", response_model=TokenCreatedResponse, status_code=status.HTTP_201_CREATED)
 async def create_token(
     body: CreateTokenRequest,
     auth: AdminAuth = Depends(_require_admin),  # noqa: B008
