@@ -20,7 +20,6 @@ from shared.adapters.db.session import session_scope
 from shared.adapters.hubla.client import HublaClient
 from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
 from shared.adapters.redis.client import get_redis
-from shared.adapters.redis.lead_lock import LeadLock, LeadLockError
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
 from shared.config.settings import get_settings
 
@@ -36,9 +35,9 @@ class _NullLegalHistory:
         return False
 
 
-async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None = None) -> None:
+async def handle_message(payload: dict[str, Any]) -> None:
     account_id: str = payload["account_id"]
-    phone: str = payload["phone"]
+    phone: str = payload["contact_phone"]
     conversation_id: str = payload["conversation_id"]
     text: str = payload["text"]
 
@@ -49,30 +48,12 @@ async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None 
         conversation_id=conversation_id,
     )
 
-    if lead_lock is not None:
-        try:
-            async with lead_lock.acquire(account_id=account_id, phone=phone):
-                await _process_message(
-                    account_id=account_id,
-                    phone=phone,
-                    conversation_id=conversation_id,
-                    text=text,
-                )
-        except LeadLockError:
-            log.warning(
-                "message_job_lead_locked",
-                account_id=account_id,
-                phone=phone,
-                conversation_id=conversation_id,
-            )
-            raise
-    else:
-        await _process_message(
-            account_id=account_id,
-            phone=phone,
-            conversation_id=conversation_id,
-            text=text,
-        )
+    await _process_message(
+        account_id=account_id,
+        phone=phone,
+        conversation_id=conversation_id,
+        text=text,
+    )
 
     log.info("message_job_done", account_id=account_id, conversation_id=conversation_id)
 
