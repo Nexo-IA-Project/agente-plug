@@ -14,7 +14,6 @@ class OpenAIClient:
     client: AsyncOpenAI
     chat_model: str = "gpt-4o-mini"
     embed_model: str = "text-embedding-3-small"
-    whisper_model: str = "whisper-1"
 
     @classmethod
     def from_settings(cls) -> OpenAIClient:
@@ -59,13 +58,6 @@ class OpenAIClient:
             temperature=temperature,
         )
         return resp.choices[0].message.content or ""
-
-    async def transcribe_audio(self, *, audio_bytes: bytes) -> str:
-        result = await self.client.audio.transcriptions.create(
-            model=self.whisper_model,
-            file=("audio.ogg", audio_bytes),
-        )
-        return result.text
 
     async def embed(self, *, texts: list[str]) -> list[list[float]]:
         resp = await self.client.embeddings.create(model=self.embed_model, input=texts)

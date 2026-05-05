@@ -11,7 +11,6 @@ class FakeLLM:
     json_responses: dict[str, dict[str, Any]] = field(default_factory=dict)
     text_responses: dict[str, str] = field(default_factory=dict)
     embeddings: list[list[float]] = field(default_factory=list)
-    transcription: str = "transcribed text"
     calls: list[dict[str, Any]] = field(default_factory=list)
 
     async def complete_json(
@@ -45,10 +44,6 @@ class FakeLLM:
             if key in user or key in system:
                 return value
         return self.text_responses.get("default", "")
-
-    async def transcribe_audio(self, *, audio_bytes: bytes) -> str:
-        self.calls.append({"kind": "transcribe", "bytes": len(audio_bytes)})
-        return self.transcription
 
     async def embed(self, *, texts: list[str]) -> list[list[float]]:
         self.calls.append({"kind": "embed", "count": len(texts)})
