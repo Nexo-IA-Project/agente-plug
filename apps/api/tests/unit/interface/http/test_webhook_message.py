@@ -86,6 +86,7 @@ def test_message_endpoint_rejects_missing_auth():
 def test_payload_rejects_missing_inbox_id():
     from pydantic import ValidationError
     from shared.adapters.chatnexo.schemas import IncomingMessagePayload
+
     body = _valid_body()
     del body["inbox_id"]
     with pytest.raises(ValidationError):
@@ -94,6 +95,7 @@ def test_payload_rejects_missing_inbox_id():
 
 def test_payload_has_correct_fields():
     from shared.adapters.chatnexo.schemas import IncomingMessagePayload
+
     fields = IncomingMessagePayload.model_fields
     assert "inbox_id" in fields
     assert "message_id" in fields

@@ -67,9 +67,7 @@ async def receive(
 ) -> dict:
     if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
         raise RuntimeError("webhook_message router not configured; call configure() before serving")
-    first = await _cfg.dedup.try_mark(
-        key=f"message:{payload.message_id}", ttl_seconds=3600
-    )
+    first = await _cfg.dedup.try_mark(key=f"message:{payload.message_id}", ttl_seconds=3600)
     if not first:
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="202-dup").inc()
         return {"accepted": True, "duplicate": True}

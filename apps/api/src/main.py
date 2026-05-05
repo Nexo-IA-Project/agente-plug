@@ -45,6 +45,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     async def _validate_token(raw_token: str) -> bool:
         from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
+
         async with get_sessionmaker()() as session:
             repo = ApiTokenRepository(session)
             return await repo.validate(raw_token=raw_token)
