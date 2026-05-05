@@ -42,6 +42,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         session = get_sessionmaker()()
         return WebhookEventRepository(session)
 
+    async def _validate_token(raw_token: str) -> bool:
+        from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
+        async with get_sessionmaker()() as session:
+            repo = ApiTokenRepository(session)
+            return await repo.validate(raw_token=raw_token)
+
     webhook_purchase.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
@@ -52,7 +58,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
         queue=queue,
-        expected_api_key=settings.chatnexo_api_key,
+        token_validator=_validate_token,
     )
 
     yield
