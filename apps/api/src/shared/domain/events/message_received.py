@@ -10,6 +10,6 @@ class MessageReceived:
     account_id: UUID
     conversation_id: UUID
     contact_id: UUID
-    chatnexo_message_id: str
+    message_id: str
     text: str
     occurred_at: datetime | None = None
