@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 
+import pytest
+
 from shared.adapters.db.repositories.api_token_repo import generate_token, hash_token
 
 
