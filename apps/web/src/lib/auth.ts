@@ -1,19 +1,21 @@
 // apps/web/src/lib/auth.ts
 
 const TOKEN_COOKIE = "nexoia_token";
+const TOKEN_KEY = "nexoia_token";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export function getToken(): string | null {
-  if (typeof document === "undefined") return null;
-  const match = document.cookie.match(/(?:^|;\s*)nexoia_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
   document.cookie = `${TOKEN_COOKIE}=${encodeURIComponent(token)}; path=/; samesite=lax; max-age=${MAX_AGE}`;
 }
 
 export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
   document.cookie = `${TOKEN_COOKIE}=; path=/; max-age=0`;
 }
 

@@ -1,0 +1,5 @@
+# Override local: remapeia postgres para porta 5435 (5432 ocupada por outro projeto)
+services:
+  postgres:
+    ports:
+      - "5435:5432"
