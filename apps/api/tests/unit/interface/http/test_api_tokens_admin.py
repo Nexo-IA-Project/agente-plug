@@ -53,7 +53,7 @@ def test_create_token_returns_token_value():
 
     assert r.status_code == 201
     data = r.json()
-    assert data["token"] == "nxia_abc123"
+    assert data["raw_token"] == "nxia_abc123"
     assert data["name"] == "prod"
     assert data["is_active"] is True
 

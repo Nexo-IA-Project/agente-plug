@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import Any
-from uuid import UUID
 
 import structlog
 from openai import AsyncOpenAI
@@ -36,9 +35,9 @@ class _NullLegalHistory:
 
 
 async def handle_message(payload: dict[str, Any]) -> None:
-    account_id: str = payload["account_id"]
+    account_id: int = int(payload["account_id"])
     phone: str = payload["contact_phone"]
-    conversation_id: str = payload["conversation_id"]
+    conversation_id: int = int(payload["conversation_id"])
     text: str = payload["text"]
 
     log.info(
@@ -60,9 +59,9 @@ async def handle_message(payload: dict[str, Any]) -> None:
 
 async def _process_message(
     *,
-    account_id: str,
+    account_id: int,
     phone: str,
-    conversation_id: str,
+    conversation_id: int,
     text: str,
 ) -> None:
     settings = get_settings()
@@ -98,9 +97,9 @@ async def _process_message(
         guard_service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
 
         ctx = AgentContext(
-            account_id=account_id,
+            account_id=str(account_id),
             phone=phone,
-            conversation_id=conversation_id,
+            conversation_id=str(conversation_id),
             thread_id=f"{account_id}:{phone}",
         )
         reply = await run_agent(
@@ -113,8 +112,8 @@ async def _process_message(
         )
 
     await chatnexo.send_message(
-        account_id=UUID(account_id),
-        conversation_id=int(conversation_id),
+        account_id=account_id,
+        conversation_id=conversation_id,
         text=reply,
     )
     log.info("message_reply_sent", account_id=account_id, conversation_id=conversation_id)

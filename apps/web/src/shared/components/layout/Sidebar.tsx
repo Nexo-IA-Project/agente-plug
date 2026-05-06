@@ -12,7 +12,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const FOOTER_ITEMS = [
-  { label: "Configurações", href: "/settings", icon: "settings" },
+  { label: "Tokens de API", href: "/settings/tokens", icon: "key" },
   { label: "Suporte", href: "/support", icon: "contact_support" },
 ] as const;
 

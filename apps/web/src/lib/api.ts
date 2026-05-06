@@ -4,6 +4,7 @@ import type {
   KbDocumentListResponse,
   UploadDocumentResponse,
 } from "@/types/api";
+import { getToken } from "@/lib/auth";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -12,12 +13,15 @@ async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
+    credentials: "include",
+    ...options,
     headers: {
       Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
-    ...options,
   });
 
   if (!res.ok) {
@@ -25,7 +29,6 @@ async function apiFetch<T>(
     throw new Error(`API ${res.status}: ${body}`);
   }
 
-  // 204 No Content
   if (res.status === 204) return undefined as T;
 
   return res.json() as Promise<T>;
@@ -51,7 +54,6 @@ export async function uploadDocument(
   return apiFetch<UploadDocumentResponse>("/admin/documents", {
     method: "POST",
     body: form,
-    // Do NOT set Content-Type — browser sets multipart boundary automatically
   });
 }
 
@@ -59,6 +61,44 @@ export async function deleteDocument(
   documentId: string,
 ): Promise<void> {
   return apiFetch<void>(`/admin/documents/${documentId}`, {
+    method: "DELETE",
+  });
+}
+
+// ─── API Tokens Admin ─────────────────────────────────────────────────────────
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  token_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  is_active: boolean;
+}
+
+export interface CreateApiTokenResponse {
+  id: string;
+  name: string;
+  raw_token: string;
+  created_at: string;
+}
+
+export async function listApiTokens(): Promise<ApiToken[]> {
+  return apiFetch<ApiToken[]>("/admin/api-tokens");
+}
+
+export async function createApiToken(
+  name: string,
+): Promise<CreateApiTokenResponse> {
+  return apiFetch<CreateApiTokenResponse>("/admin/api-tokens", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export async function revokeApiToken(tokenId: string): Promise<void> {
+  return apiFetch<void>(`/admin/api-tokens/${tokenId}`, {
     method: "DELETE",
   });
 }
