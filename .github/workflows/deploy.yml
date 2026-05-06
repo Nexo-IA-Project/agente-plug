@@ -98,6 +98,17 @@ jobs:
 
       - name: Run unit tests
         working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost/test
+          REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: sk-test
+          CHATNEXO_BASE_URL: http://localhost:4000
+          CHATNEXO_API_KEY: test
+          HUBLA_WEBHOOK_SECRET: test
+          ADMIN_API_KEY: test
+          META_API_KEY: test
+          INTEGRATION_CREDENTIALS_KEY: dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0dGVzdA==
+          JWT_SECRET: test-jwt-secret-with-enough-entropy-for-ci
         run: uv run pytest tests/unit -x -q
 
   security-audit:
