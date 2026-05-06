@@ -32,7 +32,10 @@ class Settings(BaseSettings):
     meta_api_key: str
     integration_credentials_key: str
 
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
 
     enable_priority_queue: bool = False
     log_level: str = "INFO"
