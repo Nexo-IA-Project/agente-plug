@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock
-import pytest
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -85,6 +85,7 @@ def test_message_endpoint_rejects_missing_auth():
 
 def test_payload_rejects_missing_inbox_id():
     from pydantic import ValidationError
+
     from shared.adapters.chatnexo.schemas import IncomingMessagePayload
 
     body = _valid_body()
