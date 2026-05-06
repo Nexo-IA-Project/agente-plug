@@ -13,13 +13,15 @@ async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
     credentials: "include",
+    ...options,
     headers: {
       Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
-    ...options,
   });
 
   if (!res.ok) {

@@ -36,6 +36,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:3001",
     ]
+    cors_origin_regex: str | None = None
 
     enable_priority_queue: bool = False
     log_level: str = "INFO"
