@@ -4,7 +4,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, status
 from jose import JWTError
 from pydantic import BaseModel
 
@@ -23,15 +23,22 @@ class AdminAuth:
     user_role: str
 
 
-async def _require_admin(authorization: str | None = Header(default=None)) -> AdminAuth:
-    if not authorization or not authorization.startswith("Bearer "):
+async def _require_admin(
+    authorization: str | None = Header(default=None),
+    nexoia_token: str | None = Cookie(default=None),
+) -> AdminAuth:
+    token: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+    elif nexoia_token:
+        token = nexoia_token
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Authorization header",
+            detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
     settings = get_settings()
-    token = authorization.removeprefix("Bearer ").strip()
     try:
         payload = verify_token(token, secret=settings.jwt_secret)
     except JWTError as exc:

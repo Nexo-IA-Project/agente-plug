@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 
-from fastapi import Header, HTTPException, status
+from fastapi import Cookie, Header, HTTPException, status
 from jose import JWTError
 from openai import AsyncOpenAI
 
@@ -37,16 +37,21 @@ class AdminDeps:
 
 async def get_admin_deps(
     authorization: str | None = Header(default=None),
+    nexoia_token: str | None = Cookie(default=None),
 ) -> AsyncIterator[AdminDeps]:
-    if not authorization or not authorization.startswith("Bearer "):
+    token: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+    elif nexoia_token:
+        token = nexoia_token
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid Authorization header",
+            detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     settings = get_settings()
-    token = authorization.removeprefix("Bearer ").strip()
 
     try:
         payload = verify_token(token, secret=settings.jwt_secret)

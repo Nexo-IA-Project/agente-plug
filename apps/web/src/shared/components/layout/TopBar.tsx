@@ -4,11 +4,19 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
 import { clearToken } from "@/lib/auth";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 export function TopBar() {
   const router = useRouter();
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Limpa localStorage + cookie não-HttpOnly
     clearToken();
+    // Pede ao servidor para deletar o cookie HttpOnly (JS não consegue fazer isso)
+    await fetch(`${API_URL}/admin/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     router.push("/login");
   }
 

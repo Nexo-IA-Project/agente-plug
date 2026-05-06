@@ -9,19 +9,14 @@ import { getToken } from "@/lib/auth";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
 async function apiFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
+    credentials: "include",
     headers: {
       Accept: "application/json",
-      ...authHeaders(),
       ...(options?.headers ?? {}),
     },
     ...options,
