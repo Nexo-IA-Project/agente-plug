@@ -14,6 +14,7 @@
 | ⑤ | **Capability Loja Express** — follow-up D+0/D+1/D+3/D+5/D+7 | [spec](specs/2026-04-18-nexoia-capability-loja-express-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-loja-express-v2.md) (plano v1 obsoleto) | ✅ Concluído |
 | ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano v2](plans/2026-04-25-nexoia-kb-admin-v2.md) (plano v1 obsoleto) | ✅ Concluído |
 | ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-knowledge-v2.md) (plano v1 obsoleto) | ✅ Concluído |
+| ⑧ | **Account Settings** — página de configuração de credenciais e comportamento via UI | [spec](specs/2026-05-06-nexoia-account-settings-design.md) | ⏳ Pendente | ⏳ Pendente |
 
 ## Legenda
 
