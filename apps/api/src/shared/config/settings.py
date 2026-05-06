@@ -1,12 +1,22 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Resolve caminhos absolutos para encontrar .env.local independente do cwd
+_API_DIR = Path(__file__).parent.parent.parent.parent  # apps/api/
+_REPO_ROOT = _API_DIR.parent.parent  # raiz do monorepo
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env.local", ".env"),
+        env_file=(
+            str(_API_DIR / ".env.local"),
+            str(_REPO_ROOT / ".env.local"),
+            str(_API_DIR / ".env"),
+            str(_REPO_ROOT / ".env"),
+        ),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
