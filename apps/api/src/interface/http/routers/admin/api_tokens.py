@@ -61,7 +61,7 @@ class CreateTokenRequest(BaseModel):
 class TokenCreatedResponse(BaseModel):
     id: uuid.UUID
     name: str
-    token: str
+    raw_token: str
     is_active: bool
     created_at: datetime | None
 
@@ -88,7 +88,7 @@ async def create_token(
     return TokenCreatedResponse(
         id=model.id,
         name=model.name,
-        token=raw_token,
+        raw_token=raw_token,
         is_active=model.is_active,
         created_at=model.created_at,
     )
