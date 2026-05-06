@@ -6,7 +6,11 @@ const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const stored = localStorage.getItem(TOKEN_KEY);
+  if (stored) return stored;
+  // fallback: cookie (caso localStorage seja limpo externamente)
+  const match = document.cookie.match(/(?:^|;\s*)nexoia_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
 export function setToken(token: string): void {

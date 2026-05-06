@@ -22,7 +22,7 @@ export default function LoginPage() {
     try {
       const token = await loginRequest(email, password, accountId);
       setToken(token);
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
     } finally {
