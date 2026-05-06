@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
@@ -24,7 +24,5 @@ class Message:
     direction: MessageDirection
     source: MessageSource
     content: str
-    media_urls: list[str] = field(default_factory=list)
-    classification_hint: str | None = None
     correlation_id: str | None = None
     created_at: datetime | None = None

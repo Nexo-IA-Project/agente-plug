@@ -13,6 +13,7 @@ from interface.http.routers import (
     webhook_message,
     webhook_purchase,
 )
+from interface.http.routers.admin import api_tokens as admin_api_tokens
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
@@ -42,6 +43,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         session = get_sessionmaker()()
         return WebhookEventRepository(session)
 
+    async def _validate_token(raw_token: str) -> bool:
+        from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
+
+        async with get_sessionmaker()() as session:
+            repo = ApiTokenRepository(session)
+            return await repo.validate(raw_token=raw_token)
+
     webhook_purchase.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
@@ -52,7 +60,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
         queue=queue,
-        expected_api_key=settings.chatnexo_api_key,
+        token_validator=_validate_token,
     )
 
     yield
@@ -68,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(metrics.router)
     app.include_router(webhook_purchase.router)
     app.include_router(webhook_message.router)
+    app.include_router(admin_api_tokens.router, prefix="/admin")
     app.include_router(admin_auth.router, prefix="/admin")
     app.include_router(admin_documents.router, prefix="/admin")
     app.include_router(admin_search.router, prefix="/admin")

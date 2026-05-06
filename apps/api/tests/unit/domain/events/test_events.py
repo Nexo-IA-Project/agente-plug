@@ -26,10 +26,8 @@ def test_message_received_fields() -> None:
         account_id=uuid4(),
         conversation_id=uuid4(),
         contact_id=uuid4(),
-        chatnexo_message_id="m-1",
+        message_id="m-1",
         text="ola",
-        media_urls=[],
-        classification_hint=None,
         occurred_at=datetime.now(UTC),
     )
     assert event.text == "ola"

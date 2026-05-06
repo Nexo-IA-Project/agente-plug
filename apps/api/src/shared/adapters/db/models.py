@@ -103,8 +103,6 @@ class MessageModel(Base):
     direction: Mapped[str] = mapped_column(String(10), nullable=False)
     source: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)
-    media_urls: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
-    classification_hint: Mapped[str | None] = mapped_column(String(50))
     correlation_id: Mapped[str | None] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
@@ -445,3 +443,15 @@ class JobDlqModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
+
+
+class ApiTokenModel(Base):
+    __tablename__ = "api_tokens"
+    id: Mapped[uuid.UUID] = _pk()
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
