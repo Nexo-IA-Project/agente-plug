@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     hubla_webhook_secret: str
     admin_api_key: str
     meta_api_key: str
+    meta_waba_id: str = ""
     integration_credentials_key: str
 
     cors_origins: list[str] = [
