@@ -85,7 +85,7 @@ export async function deleteDocument(
 export interface ApiToken {
   id: string;
   name: string;
-  token_prefix: string;
+  token_prefix: string | null;
   created_at: string;
   last_used_at: string | null;
   is_active: boolean;

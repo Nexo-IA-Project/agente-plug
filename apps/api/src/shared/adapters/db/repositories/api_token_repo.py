@@ -11,10 +11,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import ApiTokenModel
 
+_PREFIX_LEN = 9  # "nxia_XXXX" → shown in token list as prefix
+
 
 def generate_token() -> str:
     """Generates a raw token: nxia_<64 hex chars>. Show only on creation."""
     return "nxia_" + secrets.token_hex(32)
+
+
+def token_prefix(raw: str) -> str:
+    return raw[:_PREFIX_LEN]
 
 
 def hash_token(token: str) -> str:
@@ -32,6 +38,7 @@ class ApiTokenRepository:
             id=uuid.uuid4(),
             name=name,
             token_hash=hash_token(raw),
+            token_prefix=token_prefix(raw),
         )
         self.session.add(model)
         await self.session.flush()

@@ -450,6 +450,7 @@ class ApiTokenModel(Base):
     id: Mapped[uuid.UUID] = _pk()
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    token_prefix: Mapped[str | None] = mapped_column(String(12), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
