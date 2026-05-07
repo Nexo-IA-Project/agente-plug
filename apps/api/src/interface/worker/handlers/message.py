@@ -5,6 +5,8 @@ from typing import Any
 import structlog
 from openai import AsyncOpenAI
 
+from cryptography.fernet import Fernet
+
 from agent.context import AgentContext
 from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
 from agent.runner import run_agent
@@ -12,6 +14,7 @@ from agent.skill_loader import Adapters, build_registry
 from shared.adapters.cademi.client import CademiClient
 from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
+from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
 from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
 from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
@@ -66,17 +69,19 @@ async def _process_message(
 ) -> None:
     settings = get_settings()
     redis = get_redis()
-    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    chatnexo = ChatNexoClient.from_settings()
-    cademi = CademiClient(
-        base_url=settings.cademi_api_url,
-        api_key=settings.cademi_api_key,
-    )
-    hubla = HublaClient()
-    refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
+    fernet = Fernet(settings.integration_credentials_key.encode())
 
     async with session_scope() as session:
+        config_repo = AccountConfigRepository(session=session, fernet=fernet)
+        account_config = await config_repo.get(account_id=account_id)
+
+        openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
+        chatnexo = ChatNexoClient.from_account_config(account_config)
+        cademi = CademiClient.from_account_config(account_config)
+        hubla = HublaClient()
+        refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
+
         knowledge_repo = EmbeddingsKnowledgeAdapter(
             chunk_repo=ChunkRepository(session),
             openai_client=openai_client,
