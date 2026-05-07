@@ -15,9 +15,9 @@
 | ⑥ | **KB Admin** — painel de gerenciamento de conhecimento | [spec](specs/2026-04-18-nexoia-kb-admin-design.md) | [plano v2](plans/2026-04-25-nexoia-kb-admin-v2.md) (plano v1 obsoleto) | ✅ Concluído |
 | ⑦ | **Capability Knowledge** — RAG com 3 tentativas + sinônimos + keywords | [spec](specs/2026-04-18-nexoia-capability-knowledge-design.md) | [plano v2](plans/2026-04-25-nexoia-capability-knowledge-v2.md) (plano v1 obsoleto) | ✅ Concluído |
 | ⑧ | **Account Settings** — página de configuração de credenciais e comportamento via UI | [spec](specs/2026-05-06-nexoia-account-settings-design.md) | [plano](plans/2026-05-06-nexoia-account-settings.md) | ✅ Concluído |
-| ⑨ | **Follow-up Engine** — motor de sequências pós-compra dinâmicas (backend + API) | [spec](specs/2026-05-07-nexoia-followup-engine-design.md) | — | ⏳ Pendente |
-| ⑩ | **Follow-up Flow Manager** — tela de gestão de flows e steps no painel admin | [spec](specs/2026-05-07-nexoia-followup-flow-manager-design.md) | — | ⏳ Pendente |
-| ⑪ | **Meta Template Manager** — criação e gestão de templates WhatsApp via Meta API | [spec](specs/2026-05-07-nexoia-meta-template-manager-design.md) | — | ⏳ Pendente |
+| ⑨ | **Follow-up Engine** — motor de sequências pós-compra dinâmicas (backend + API) | [spec](specs/2026-05-07-nexoia-followup-engine-design.md) | [plano](plans/2026-05-07-nexoia-followup-engine.md) | ⏳ Pendente |
+| ⑩ | **Follow-up Flow Manager** — tela de gestão de flows e steps no painel admin | [spec](specs/2026-05-07-nexoia-followup-flow-manager-design.md) | [plano](plans/2026-05-07-nexoia-followup-flow-manager.md) | ⏳ Pendente |
+| ⑪ | **Meta Template Manager** — criação e gestão de templates WhatsApp via Meta API | [spec](specs/2026-05-07-nexoia-meta-template-manager-design.md) | [plano](plans/2026-05-07-nexoia-meta-template-manager.md) | ⏳ Pendente |
 
 ## Legenda
 
