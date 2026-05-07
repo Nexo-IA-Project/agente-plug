@@ -213,9 +213,13 @@ export default function ApiTokensPage() {
                     {token.name}
                   </td>
                   <td className="px-6 py-4">
-                    <code className="rounded bg-surface-container-highest px-2 py-1 font-mono text-sm text-on-surface-variant">
-                      {token.token_prefix}…
-                    </code>
+                    {token.token_prefix ? (
+                      <code className="rounded bg-surface-container-highest px-2 py-1 font-mono text-sm text-on-surface-variant">
+                        {token.token_prefix}…
+                      </code>
+                    ) : (
+                      <span className="text-on-surface-variant/40 text-sm">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-body-sm text-on-surface-variant">
                     {formatDate(token.created_at)}

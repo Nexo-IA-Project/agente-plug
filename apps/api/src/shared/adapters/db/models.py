@@ -450,8 +450,79 @@ class ApiTokenModel(Base):
     id: Mapped[uuid.UUID] = _pk()
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    token_prefix: Mapped[str | None] = mapped_column(String(12), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class FollowupFlowModel(Base):
+    __tablename__ = "followup_flows"
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    product_tags: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+
+class FollowupStepModel(Base):
+    __tablename__ = "followup_steps"
+    id: Mapped[uuid.UUID] = _pk()
+    flow_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("followup_flows.id"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    meta_template_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    __table_args__ = (Index("ix_followup_steps_flow_position", "flow_id", "position"),)
+
+
+class FollowupEnrollmentModel(Base):
+    __tablename__ = "followup_enrollments"
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
+    flow_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    contact_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False
+    )
+    conversation_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    contact_phone: Mapped[str] = mapped_column(String(30), nullable=False)
+    purchase_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+
+class FollowupEnrollmentStepModel(Base):
+    __tablename__ = "followup_enrollment_steps"
+    id: Mapped[uuid.UUID] = _pk()
+    enrollment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("followup_enrollments.id"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False)
+    meta_template_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    scheduled_job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

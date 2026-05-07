@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -8,7 +7,6 @@ import structlog
 
 from shared.config.settings import get_settings
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
-from shared.domain.entities.scheduled_job import JobType
 from shared.domain.events.purchase_received import PurchaseReceived
 from shared.domain.ports.chatnexo import ChatNexoPort
 
@@ -25,6 +23,7 @@ class PurchaseHandler:
         loja_express_case_repo: Any = None,
         loja_express_port: Any = None,
         criar_uc: Any = None,
+        enroll_contact_uc: Any = None,
     ) -> None:
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
@@ -33,6 +32,7 @@ class PurchaseHandler:
         self._loja_express_case_repo = loja_express_case_repo
         self._loja_express_port = loja_express_port
         self._criar_uc = criar_uc
+        self._enroll_contact_uc = enroll_contact_uc
 
     async def execute(self, event: PurchaseReceived) -> None:
         settings = get_settings()
@@ -74,6 +74,26 @@ class PurchaseHandler:
             )
             return
 
+        # Follow-up dinâmico (coexiste com Loja Express, exceto para produtos Loja Express)
+        if not is_loja_express and self._enroll_contact_uc is not None:
+            from uuid import UUID as _UUID
+
+            enrolled = await self._enroll_contact_uc.execute(
+                account_id=event.account_id,
+                contact_id=_UUID(str(contact.id)),
+                conversation_id=str(conversation_id),
+                contact_phone=event.contact_phone,
+                purchase_id=event.purchase_id,
+                product=event.product,
+                purchase_time=event.occurred_at,
+            )
+            if enrolled is not None:
+                log.info(
+                    "followup_enrolled_from_purchase",
+                    enrollment_id=str(enrolled.id),
+                    purchase_id=event.purchase_id,
+                )
+
         # Normal welcome flow (Access capability)
         case = AccessCase(
             id=str(uuid4()),
@@ -93,12 +113,14 @@ class PurchaseHandler:
             variables={"nome": event.contact_name, "produto": event.product},
         )
 
-        await self._scheduler.create_job(
-            job_type=JobType.FOLLOWUP_D1,
-            account_id=account_id,
-            conversation_id=conversation_id,
-            run_at=datetime.now(UTC) + timedelta(hours=24),
-        )
+        # Legacy D+1 follow-up (mantido para compatibilidade — create_job não existe no scheduler)
+        # await self._scheduler.schedule(
+        #     account_id=event.account_id,
+        #     conversation_id=UUID(str(conversation_id)),
+        #     job_type=JobType.FOLLOWUP_D1,
+        #     payload={},
+        #     run_at=datetime.now(UTC) + timedelta(hours=24),
+        # )
 
         log.info(
             "purchase_handled",

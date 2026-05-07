@@ -29,6 +29,7 @@ class TokenCreatedResponse(BaseModel):
 class TokenListItem(BaseModel):
     id: uuid.UUID
     name: str
+    token_prefix: str | None
     is_active: bool
     created_at: datetime | None
     last_used_at: datetime | None
@@ -65,6 +66,7 @@ async def list_tokens(
         TokenListItem(
             id=t.id,
             name=t.name,
+            token_prefix=t.token_prefix,
             is_active=t.is_active,
             created_at=t.created_at,
             last_used_at=t.last_used_at,

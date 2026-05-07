@@ -44,7 +44,13 @@ async def main() -> None:
     )
 
     async def _scheduled_handler(job: ScheduledJob) -> None:
-        await handle_scheduled({"job_type": job.job_type.value, "payload": job.payload})
+        flat_payload = {
+            "job_type": job.job_type.value,
+            "account_id": str(job.account_id),
+            "conversation_id": str(job.conversation_id) if job.conversation_id else "",
+            **job.payload,
+        }
+        await handle_scheduled(flat_payload)
 
     runner = SchedulerRunner(
         repo=ScheduledJobRepository(get_sessionmaker()()),
