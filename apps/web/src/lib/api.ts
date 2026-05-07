@@ -190,3 +190,18 @@ export async function reorderFollowupSteps(
     body: JSON.stringify({ steps: items }),
   });
 }
+
+// ─── Meta Templates ──────────────────────────────────────────────────────────
+
+import type { CreateTemplateDto, MetaTemplate } from "@/features/templates/types";
+
+export async function listMetaTemplates(): Promise<MetaTemplate[]> {
+  return apiFetch("/admin/meta-templates");
+}
+
+export async function createMetaTemplate(dto: CreateTemplateDto): Promise<MetaTemplate> {
+  return apiFetch("/admin/meta-templates", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
