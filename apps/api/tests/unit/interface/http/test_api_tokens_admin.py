@@ -7,8 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.admin_auth import require_admin as _require_admin
 from interface.http.routers.admin import api_tokens as tokens_router
-from interface.http.routers.admin.api_tokens import AdminAuth, _require_admin
 from shared.adapters.db.models import ApiTokenModel
 
 

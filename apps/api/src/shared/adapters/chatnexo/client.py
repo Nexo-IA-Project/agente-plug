@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 from tenacity import (
@@ -13,6 +13,9 @@ from tenacity import (
 
 from shared.config.settings import get_settings
 from shared.domain.value_objects.escalation_reason import EscalationReason
+
+if TYPE_CHECKING:
+    from shared.domain.entities.account_config import AccountConfig
 
 
 class ChatNexoError(RuntimeError):
@@ -26,6 +29,8 @@ _retry = retry(
     reraise=True,
 )
 
+_API_PREFIX = "/api/v1"
+
 
 @dataclass
 class ChatNexoClient:
@@ -36,14 +41,28 @@ class ChatNexoClient:
         s = get_settings()
         client = httpx.AsyncClient(
             base_url=s.chatnexo_base_url,
-            headers={"X-Api-Key": s.chatnexo_api_key},
+            headers={"api_access_token": s.chatnexo_api_key},
+            timeout=httpx.Timeout(10.0, connect=3.0),
+        )
+        return cls(http=client)
+
+    @classmethod
+    def from_account_config(cls, config: AccountConfig) -> ChatNexoClient:
+        client = httpx.AsyncClient(
+            base_url=config.integration.chatnexo_base_url,
+            headers={"api_access_token": config.integration.chatnexo_api_key},
             timeout=httpx.Timeout(10.0, connect=3.0),
         )
         return cls(http=client)
 
     @_retry
     async def _post(self, path: str, json: dict[str, Any]) -> httpx.Response:
-        response = await self.http.post(path, json=json)
+        response = await self.http.post(f"{_API_PREFIX}{path}", json=json)
+        response.raise_for_status()
+        return response
+
+    async def _get(self, path: str, **kwargs: Any) -> httpx.Response:
+        response = await self.http.get(f"{_API_PREFIX}{path}", **kwargs)
         response.raise_for_status()
         return response
 
@@ -86,11 +105,10 @@ class ChatNexoClient:
 
     async def get_open_conversation(self, account_id: int, contact_phone: str) -> str | None:
         """Return the open conversation ID for a contact, or None if not found."""
-        response = await self.http.get(
+        response = await self._get(
             f"/accounts/{account_id}/conversations",
             params={"contact_phone": contact_phone, "status": "open"},
         )
-        response.raise_for_status()
         data = response.json()
         items = data.get("data", []) if isinstance(data, dict) else data
         return str(items[0]["id"]) if items else None
