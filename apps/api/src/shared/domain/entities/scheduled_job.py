@@ -16,6 +16,7 @@ class JobType(StrEnum):
     LOJA_EXPRESS_D3 = "loja_express_d3"
     LOJA_EXPRESS_D5 = "loja_express_d5"
     LOJA_EXPRESS_D7 = "loja_express_d7"
+    FOLLOWUP_STEP = "followup_step"
 
 
 class JobStatus(StrEnum):
