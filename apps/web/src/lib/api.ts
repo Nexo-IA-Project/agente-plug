@@ -5,6 +5,7 @@ import type {
   UploadDocumentResponse,
 } from "@/types/api";
 import { getToken } from "@/lib/auth";
+import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -100,5 +101,19 @@ export async function createApiToken(
 export async function revokeApiToken(tokenId: string): Promise<void> {
   return apiFetch<void>(`/admin/api-tokens/${tokenId}`, {
     method: "DELETE",
+  });
+}
+
+// ─── Account Settings ─────────────────────────────────────────────────────────
+
+export async function getAccountSettings(): Promise<AccountSettings> {
+  return apiFetch<AccountSettings>("/admin/settings");
+}
+
+export async function updateAccountSettings(patch: AccountSettingsPatch): Promise<AccountSettings> {
+  return apiFetch<AccountSettings>("/admin/settings", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
   });
 }
