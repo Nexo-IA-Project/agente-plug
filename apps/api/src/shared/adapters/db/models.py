@@ -503,9 +503,7 @@ class FollowupEnrollmentModel(Base):
     contact_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False
     )
-    conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
-    )
+    conversation_id: Mapped[str] = mapped_column(String(200), nullable=False)
     contact_phone: Mapped[str] = mapped_column(String(30), nullable=False)
     purchase_id: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")

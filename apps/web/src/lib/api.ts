@@ -24,12 +24,17 @@ async function apiFetch<T>(
   options?: RequestInit,
 ): Promise<T> {
   const token = getToken();
+  const autoContentType: Record<string, string> =
+    options?.body && typeof options.body === "string"
+      ? { "Content-Type": "application/json" }
+      : {};
   const res = await fetch(`${API_URL}${path}`, {
     credentials: "include",
     ...options,
     headers: {
       Accept: "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...autoContentType,
       ...(options?.headers ?? {}),
     },
   });

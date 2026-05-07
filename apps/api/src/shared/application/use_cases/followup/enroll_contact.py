@@ -27,7 +27,7 @@ class EnrollContact:
         *,
         account_id: UUID,
         contact_id: UUID,
-        conversation_id: UUID,
+        conversation_id: str,
         contact_phone: str,
         purchase_id: str,
         product: str,
@@ -65,7 +65,7 @@ class EnrollContact:
             )
             job = await self._job_repo.schedule(
                 account_id=account_id,
-                conversation_id=conversation_id,
+                conversation_id=None,  # chatnexo ID está no payload abaixo
                 job_type=JobType.FOLLOWUP_STEP,
                 payload={
                     "enrollment_step_id": str(enrollment_step.id),

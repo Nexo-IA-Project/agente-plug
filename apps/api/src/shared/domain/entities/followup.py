@@ -45,7 +45,7 @@ class FollowupEnrollment:
     account_id: UUID
     flow_id: UUID
     contact_id: UUID
-    conversation_id: UUID
+    conversation_id: str  # chatnexo external conversation ID (string)
     contact_phone: str
     purchase_id: str
     id: UUID = field(default_factory=uuid4)

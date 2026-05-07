@@ -22,7 +22,7 @@ class DispatchFollowupStep:
         *,
         enrollment_step_id: UUID,
         account_id: UUID,
-        conversation_id: UUID,
+        conversation_id: str,
         contact_phone: str,
     ) -> str:
         step = await self._enrollment_repo.find_step_by_id(enrollment_step_id)

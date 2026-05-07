@@ -76,14 +76,12 @@ class PurchaseHandler:
 
         # Follow-up dinâmico (coexiste com Loja Express, exceto para produtos Loja Express)
         if not is_loja_express and self._enroll_contact_uc is not None:
-            import uuid as _uuid
+            from uuid import UUID as _UUID
 
-            contact_uuid = _uuid.UUID(str(contact.id))
-            conv_uuid = _uuid.UUID(str(conversation_id))
             enrolled = await self._enroll_contact_uc.execute(
                 account_id=event.account_id,
-                contact_id=contact_uuid,
-                conversation_id=conv_uuid,
+                contact_id=_UUID(str(contact.id)),
+                conversation_id=str(conversation_id),
                 contact_phone=event.contact_phone,
                 purchase_id=event.purchase_id,
                 product=event.product,

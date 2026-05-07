@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from contextlib import asynccontextmanager
+from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -8,17 +9,36 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_handle_scheduled_followup_step_calls_dispatch():
+    step_id = str(uuid4())
+    account_id = str(uuid4())
+    conv_id = "42"  # chatnexo external string, não UUID
+
     mock_dispatch = AsyncMock()
     mock_dispatch.execute = AsyncMock(return_value="SENT")
 
-    step_id = str(uuid4())
-    account_id = str(uuid4())
-    conv_id = str(uuid4())
+    mock_session = AsyncMock()
 
-    with patch(
-        "interface.worker.handlers.scheduled._get_dispatch_followup_step_handler",
-        return_value=mock_dispatch,
+    @asynccontextmanager
+    async def _fake_scope():
+        yield mock_session
+
+    with (
+        patch("shared.adapters.db.session.session_scope", _fake_scope),
+        patch("shared.config.settings.get_settings", return_value=MagicMock(integration_credentials_key="Zm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm8=")),
+        patch("shared.adapters.db.repositories.account_config_repo.AccountConfigRepository") as mock_repo_cls,
+        patch("shared.adapters.chatnexo.client.ChatNexoClient") as mock_chatnexo_cls,
+        patch("shared.adapters.db.repositories.followup_enrollment_repo.FollowupEnrollmentRepository"),
+        patch("agent.history.ConversationHistory"),
+        patch(
+            "shared.application.use_cases.followup.dispatch_followup_step.DispatchFollowupStep",
+            return_value=mock_dispatch,
+        ),
     ):
+        mock_repo_instance = AsyncMock()
+        mock_repo_instance.get = AsyncMock(return_value=MagicMock())
+        mock_repo_cls.return_value = mock_repo_instance
+        mock_chatnexo_cls.from_account_config = MagicMock(return_value=AsyncMock())
+
         from interface.worker.handlers.scheduled import handle_scheduled
 
         await handle_scheduled(
@@ -32,3 +52,6 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
         )
 
     mock_dispatch.execute.assert_called_once()
+    call_kwargs = mock_dispatch.execute.call_args.kwargs
+    assert call_kwargs["conversation_id"] == conv_id  # str, não UUID
+    assert call_kwargs["contact_phone"] == "5511999990000"
