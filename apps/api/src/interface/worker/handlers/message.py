@@ -3,9 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from openai import AsyncOpenAI
-
 from cryptography.fernet import Fernet
+from openai import AsyncOpenAI
 
 from agent.context import AgentContext
 from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
