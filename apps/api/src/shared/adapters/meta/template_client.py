@@ -44,11 +44,11 @@ class MetaTemplateClient:
         self._api_key = api_key
 
     @classmethod
-    def from_account_config(cls, config: Any) -> "MetaTemplateClient":
+    def from_account_config(cls, config: Any) -> MetaTemplateClient:
         return cls(api_key=config.integration.meta_api_key)
 
     @classmethod
-    def from_settings(cls, settings: Any) -> "MetaTemplateClient":
+    def from_settings(cls, settings: Any) -> MetaTemplateClient:
         return cls(api_key=settings.meta_api_key)
 
     async def list_templates(self, waba_id: str) -> list[MetaTemplate]:
@@ -71,9 +71,7 @@ class MetaTemplateClient:
         data = resp.json()
         return [_parse_template(t) for t in data.get("data", [])]
 
-    async def create_template(
-        self, waba_id: str, payload: CreateTemplatePayload
-    ) -> MetaTemplate:
+    async def create_template(self, waba_id: str, payload: CreateTemplatePayload) -> MetaTemplate:
         url = f"{_BASE_URL}/{waba_id}/message_templates"
         body = {
             "name": payload.name,
@@ -93,7 +91,11 @@ class MetaTemplateClient:
             )
         if resp.status_code not in (200, 201):
             content_type = resp.headers.get("content-type", "")
-            error_body = resp.json() if content_type.startswith("application/json") else {"message": resp.text}
+            error_body = (
+                resp.json()
+                if content_type.startswith("application/json")
+                else {"message": resp.text}
+            )
             log.warning("meta_create_template_error", status=resp.status_code, body=error_body)
             resp.raise_for_status()
         raw = resp.json()

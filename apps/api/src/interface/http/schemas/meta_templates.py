@@ -24,6 +24,6 @@ class MetaTemplateResponse(BaseModel):
 
 class CreateTemplateRequest(BaseModel):
     name: str
-    category: str          # MARKETING | UTILITY | AUTHENTICATION
-    language: str          # pt_BR | en_US
+    category: str  # MARKETING | UTILITY | AUTHENTICATION
+    language: str  # pt_BR | en_US
     components: list[dict[str, Any]]

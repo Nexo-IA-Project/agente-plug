@@ -6,7 +6,7 @@ from typing import Any, Protocol
 
 @dataclass
 class MetaTemplateComponent:
-    type: str          # HEADER | BODY | FOOTER | BUTTONS
+    type: str  # HEADER | BODY | FOOTER | BUTTONS
     format: str | None = None
     text: str | None = None
     buttons: list[dict[str, Any]] | None = None
@@ -17,9 +17,9 @@ class MetaTemplateComponent:
 class MetaTemplate:
     id: str
     name: str
-    category: str       # MARKETING | UTILITY | AUTHENTICATION
-    language: str       # pt_BR | en_US
-    status: str         # APPROVED | PENDING | REJECTED
+    category: str  # MARKETING | UTILITY | AUTHENTICATION
+    language: str  # pt_BR | en_US
+    status: str  # APPROVED | PENDING | REJECTED
     components: list[MetaTemplateComponent]
     rejection_reason: str | None = None
 

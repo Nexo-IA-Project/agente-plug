@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 def _make_app():
     from fastapi import FastAPI
+
     from interface.http.routers.admin.meta_templates import router
 
     app = FastAPI()
@@ -30,6 +31,7 @@ def _mock_auth_override():
 def client():
     app = _make_app()
     from interface.http.deps.admin_auth import require_admin
+
     app.dependency_overrides[require_admin] = _mock_auth_override()
     return TestClient(app)
 
