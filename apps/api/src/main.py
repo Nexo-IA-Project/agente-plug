@@ -19,6 +19,7 @@ from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import search as admin_search
+from interface.http.routers.admin import followup as admin_followup
 from interface.http.routers.admin import settings as admin_settings
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
@@ -93,6 +94,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_search.router, prefix="/admin")
     app.include_router(admin_dlq.router, prefix="/admin")
     app.include_router(admin_settings.router, prefix="/admin")
+    app.include_router(admin_followup.router, prefix="/admin")
     return app
 
 
