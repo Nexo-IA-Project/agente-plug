@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 from tenacity import (
@@ -13,6 +13,9 @@ from tenacity import (
 
 from shared.config.settings import get_settings
 from shared.domain.value_objects.escalation_reason import EscalationReason
+
+if TYPE_CHECKING:
+    from shared.domain.entities.account_config import AccountConfig
 
 
 class ChatNexoError(RuntimeError):
@@ -37,6 +40,15 @@ class ChatNexoClient:
         client = httpx.AsyncClient(
             base_url=s.chatnexo_base_url,
             headers={"X-Api-Key": s.chatnexo_api_key},
+            timeout=httpx.Timeout(10.0, connect=3.0),
+        )
+        return cls(http=client)
+
+    @classmethod
+    def from_account_config(cls, config: AccountConfig) -> ChatNexoClient:
+        client = httpx.AsyncClient(
+            base_url=config.integration.chatnexo_base_url,
+            headers={"X-Api-Key": config.integration.chatnexo_api_key},
             timeout=httpx.Timeout(10.0, connect=3.0),
         )
         return cls(http=client)
