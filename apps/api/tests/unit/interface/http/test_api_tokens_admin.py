@@ -27,6 +27,7 @@ def _fake_token_model(name: str = "prod") -> ApiTokenModel:
     m = MagicMock(spec=ApiTokenModel)
     m.id = uuid.uuid4()
     m.name = name
+    m.token_prefix = None
     m.is_active = True
     m.created_at = datetime(2026, 5, 5, 12, 0, 0)
     m.last_used_at = None

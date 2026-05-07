@@ -24,10 +24,19 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
 
     with (
         patch("shared.adapters.db.session.session_scope", _fake_scope),
-        patch("shared.config.settings.get_settings", return_value=MagicMock(integration_credentials_key="Zm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm8=")),
-        patch("shared.adapters.db.repositories.account_config_repo.AccountConfigRepository") as mock_repo_cls,
+        patch(
+            "shared.config.settings.get_settings",
+            return_value=MagicMock(
+                integration_credentials_key="Zm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm9vYmFyZm8="
+            ),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.AccountConfigRepository"
+        ) as mock_repo_cls,
         patch("shared.adapters.chatnexo.client.ChatNexoClient") as mock_chatnexo_cls,
-        patch("shared.adapters.db.repositories.followup_enrollment_repo.FollowupEnrollmentRepository"),
+        patch(
+            "shared.adapters.db.repositories.followup_enrollment_repo.FollowupEnrollmentRepository"
+        ),
         patch("agent.history.ConversationHistory"),
         patch(
             "shared.application.use_cases.followup.dispatch_followup_step.DispatchFollowupStep",
