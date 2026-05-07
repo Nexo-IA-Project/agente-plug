@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: "Base de Conhecimento", href: "/kb", icon: "database" },
   { label: "Contas", href: "/accounts", icon: "group" },
   { label: "Follow-up", href: "/followup", icon: "schedule_send" },
+  { label: "Templates", href: "/templates", icon: "sms" },
   { label: "Configurações", href: "/settings", icon: "settings", exact: true },
 ] as const;
 
