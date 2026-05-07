@@ -9,11 +9,9 @@ import pytest
 from shared.application.use_cases.followup.enroll_contact import EnrollContact
 from shared.domain.entities.followup import (
     EnrollmentStatus,
-    FollowupEnrollment,
     FollowupFlow,
     FollowupStep,
 )
-
 
 _ACCOUNT_ID = UUID("00000000-0000-0000-0000-000000000001")
 _CONTACT_ID = uuid4()

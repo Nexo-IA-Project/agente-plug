@@ -12,9 +12,7 @@ log = structlog.get_logger(__name__)
 
 
 class DispatchFollowupStep:
-    def __init__(
-        self, *, enrollment_repo: Any, chatnexo: Any, conversation_history: Any
-    ) -> None:
+    def __init__(self, *, enrollment_repo: Any, chatnexo: Any, conversation_history: Any) -> None:
         self._enrollment_repo = enrollment_repo
         self._chatnexo = chatnexo
         self._history = conversation_history
@@ -45,10 +43,12 @@ class DispatchFollowupStep:
 
         thread_id = f"{account_id}:{contact_phone}"
         messages = await self._history.load(thread_id=thread_id)
-        messages.append({
-            "role": "assistant",
-            "content": f"[Mensagem automática de follow-up enviada: template={step.meta_template_name}]",
-        })
+        messages.append(
+            {
+                "role": "assistant",
+                "content": f"[Mensagem automática de follow-up enviada: template={step.meta_template_name}]",
+            }
+        )
         await self._history.save(thread_id=thread_id, messages=messages)
 
         step.status = EnrollmentStepStatus.SENT

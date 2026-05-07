@@ -490,9 +490,7 @@ class FollowupStepModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
-    __table_args__ = (
-        Index("ix_followup_steps_flow_position", "flow_id", "position"),
-    )
+    __table_args__ = (Index("ix_followup_steps_flow_position", "flow_id", "position"),)
 
 
 class FollowupEnrollmentModel(Base):

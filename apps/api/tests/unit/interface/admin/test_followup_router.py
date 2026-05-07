@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,7 +9,9 @@ from fastapi.testclient import TestClient
 
 def _make_app():
     from fastapi import FastAPI
+
     from interface.http.routers.admin.followup import router
+
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     return app
@@ -19,6 +21,7 @@ def _make_app():
 def client():
     app = _make_app()
     from interface.http.deps.admin_auth import AdminAuth, require_admin
+
     auth = AdminAuth(account_id=1, user_email="a@b.com", user_role="admin")
     app.dependency_overrides[require_admin] = lambda: auth
     return TestClient(app)

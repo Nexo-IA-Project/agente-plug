@@ -61,7 +61,9 @@ async def list_flows(auth: AdminAuth = Depends(require_admin)) -> list[FollowupF
     return [_flow_to_resp(f) for f in flows]
 
 
-@router.post("/followup/flows", response_model=FollowupFlowResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/followup/flows", response_model=FollowupFlowResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_flow(
     body: CreateFlowRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
@@ -119,7 +121,11 @@ async def list_steps(
     return [_step_to_resp(s) for s in steps]
 
 
-@router.post("/followup/flows/{flow_id}/steps", response_model=FollowupStepResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/followup/flows/{flow_id}/steps",
+    response_model=FollowupStepResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_step(
     flow_id: UUID,
     body: CreateStepRequest,

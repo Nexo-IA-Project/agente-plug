@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -10,7 +9,9 @@ from shared.application.use_cases.followup.dispatch_followup_step import Dispatc
 from shared.domain.entities.followup import EnrollmentStepStatus, FollowupEnrollmentStep
 
 
-def _make_step(status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING) -> FollowupEnrollmentStep:
+def _make_step(
+    status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING,
+) -> FollowupEnrollmentStep:
     return FollowupEnrollmentStep(
         id=uuid4(),
         enrollment_id=uuid4(),
@@ -89,6 +90,7 @@ async def test_dispatch_marks_enrollment_completed_when_all_steps_sent():
     )
 
     from shared.domain.entities.followup import EnrollmentStatus
+
     enrollment_repo.update_enrollment_status.assert_called_once_with(
         step.enrollment_id, EnrollmentStatus.COMPLETED
     )

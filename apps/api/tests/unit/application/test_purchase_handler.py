@@ -78,6 +78,7 @@ async def test_sends_welcome_template():
 @pytest.mark.asyncio
 async def test_enrolls_dynamic_followup_when_uc_provided():
     from uuid import uuid4
+
     contact_id = uuid4()
     conv_id = str(uuid4())
     contact_repo = AsyncMock()

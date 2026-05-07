@@ -33,9 +33,7 @@ class EnrollContact:
         product: str,
         purchase_time: Any,
     ) -> FollowupEnrollment | None:
-        flow = await self._flow_repo.find_active_by_product(
-            account_id=account_id, product=product
-        )
+        flow = await self._flow_repo.find_active_by_product(account_id=account_id, product=product)
         if flow is None:
             log.info("followup_no_flow_found", account_id=str(account_id), product=product)
             return None

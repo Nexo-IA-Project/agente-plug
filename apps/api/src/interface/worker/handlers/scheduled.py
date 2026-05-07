@@ -71,6 +71,7 @@ async def handle_scheduled(payload: dict) -> None:
         )
     elif job_type == "followup_step":
         from uuid import UUID as _UUID
+
         dispatch = _get_dispatch_followup_step_handler()
         await dispatch.execute(
             enrollment_step_id=_UUID(payload["enrollment_step_id"]),

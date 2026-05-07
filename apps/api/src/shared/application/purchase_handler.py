@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import uuid4
 
@@ -8,7 +7,6 @@ import structlog
 
 from shared.config.settings import get_settings
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
-from shared.domain.entities.scheduled_job import JobType
 from shared.domain.events.purchase_received import PurchaseReceived
 from shared.domain.ports.chatnexo import ChatNexoPort
 
@@ -79,6 +77,7 @@ class PurchaseHandler:
         # Follow-up dinâmico (coexiste com Loja Express, exceto para produtos Loja Express)
         if not is_loja_express and self._enroll_contact_uc is not None:
             import uuid as _uuid
+
             contact_uuid = _uuid.UUID(str(contact.id))
             conv_uuid = _uuid.UUID(str(conversation_id))
             enrolled = await self._enroll_contact_uc.execute(

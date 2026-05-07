@@ -21,12 +21,14 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
     ):
         from interface.worker.handlers.scheduled import handle_scheduled
 
-        await handle_scheduled({
-            "job_type": "followup_step",
-            "account_id": account_id,
-            "conversation_id": conv_id,
-            "contact_phone": "5511999990000",
-            "enrollment_step_id": step_id,
-        })
+        await handle_scheduled(
+            {
+                "job_type": "followup_step",
+                "account_id": account_id,
+                "conversation_id": conv_id,
+                "contact_phone": "5511999990000",
+                "enrollment_step_id": step_id,
+            }
+        )
 
     mock_dispatch.execute.assert_called_once()

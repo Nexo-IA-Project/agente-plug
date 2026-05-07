@@ -42,8 +42,7 @@ class FollowupFlowRepository:
         self, *, account_id: uuid.UUID, product: str
     ) -> FollowupFlow | None:
         result = await self.session.execute(
-            select(FollowupFlowModel)
-            .where(
+            select(FollowupFlowModel).where(
                 FollowupFlowModel.account_id == account_id,
                 FollowupFlowModel.is_active.is_(True),
             )

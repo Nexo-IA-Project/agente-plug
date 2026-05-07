@@ -6,4 +6,4 @@ def test_followup_step_job_type_value():
 
 
 def test_followup_step_is_lowercase():
-    assert JobType.FOLLOWUP_STEP == JobType.FOLLOWUP_STEP.lower()
+    assert JobType.FOLLOWUP_STEP.lower() == JobType.FOLLOWUP_STEP

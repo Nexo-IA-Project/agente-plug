@@ -23,11 +23,16 @@ async def test_handle_purchase_calls_purchase_handler():
 
     with (
         patch("interface.worker.handlers.purchase.session_scope", _fake_session_scope),
-        patch("interface.worker.handlers.purchase.get_settings", return_value=MagicMock(
-            integration_credentials_key="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-        )),
+        patch(
+            "interface.worker.handlers.purchase.get_settings",
+            return_value=MagicMock(
+                integration_credentials_key="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+            ),
+        ),
         patch("interface.worker.handlers.purchase.AccountConfigRepository") as MockConfigRepo,
-        patch("interface.worker.handlers.purchase.PurchaseHandler", return_value=mock_handler_instance),
+        patch(
+            "interface.worker.handlers.purchase.PurchaseHandler", return_value=mock_handler_instance
+        ),
         patch("interface.worker.handlers.purchase.ChatNexoClient") as MockChatNexo,
         patch("interface.worker.handlers.purchase.ContactRepository"),
         patch("interface.worker.handlers.purchase.AccessCaseRepository"),
