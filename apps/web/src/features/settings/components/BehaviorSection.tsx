@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { updateAccountSettings } from "@/lib/api";
-import { useToast } from "@/shared/hooks/useToast";
-import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
+import { useBehaviorForm } from "@/features/settings/hooks/useBehaviorForm";
+import type { AccountSettings } from "@/features/settings/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -247,30 +245,7 @@ interface Props {
 }
 
 export function BehaviorSection({ initial, onSaved }: Props) {
-  const toast = useToast();
-  const [values, setValues] = useState<Partial<AccountSettings>>({});
-  const [saving, setSaving] = useState(false);
-
-  const hasChanges = Object.keys(values).length > 0;
-
-  function handleChange(key: keyof AccountSettings, value: number) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  async function handleSave() {
-    if (!hasChanges) return;
-    setSaving(true);
-    try {
-      const updated = await updateAccountSettings(values as AccountSettingsPatch);
-      onSaved(updated);
-      setValues({});
-      toast.success("Comportamento do agente salvo com sucesso.");
-    } catch {
-      toast.error("Erro ao salvar configurações.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { values, saving, hasChanges, setValue, discard, save } = useBehaviorForm(onSaved);
 
   return (
     <section>
@@ -293,7 +268,7 @@ export function BehaviorSection({ initial, onSaved }: Props) {
             group={group}
             settings={initial}
             values={values}
-            onChange={handleChange}
+            onChange={setValue}
           />
         ))}
       </div>
@@ -307,14 +282,14 @@ export function BehaviorSection({ initial, onSaved }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setValues({})}
+              onClick={discard}
               className="rounded-xl px-4 py-2 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container"
             >
               Descartar
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={save}
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
             >

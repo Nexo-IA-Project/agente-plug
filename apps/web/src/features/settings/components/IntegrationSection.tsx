@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { updateAccountSettings } from "@/lib/api";
-import { useToast } from "@/shared/hooks/useToast";
-import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
+import { useIntegrationForm } from "@/features/settings/hooks/useIntegrationForm";
+import type { AccountSettings } from "@/features/settings/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -229,50 +227,8 @@ interface Props {
 }
 
 export function IntegrationSection({ initial, onSaved }: Props) {
-  const toast = useToast();
-  const [editing, setEditing] = useState<Set<keyof AccountSettings>>(new Set());
-  const [values, setValues] = useState<Partial<AccountSettings>>({});
-  const [saving, setSaving] = useState(false);
-
-  const hasChanges = Object.keys(values).length > 0;
-
-  function startEdit(key: keyof AccountSettings) {
-    setEditing((prev) => new Set([...prev, key]));
-    setValues((prev) => ({ ...prev, [key]: "" }));
-  }
-
-  function cancelEdit(key: keyof AccountSettings) {
-    setEditing((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
-      return next;
-    });
-    setValues((prev) => {
-      const next = { ...prev };
-      delete next[key];
-      return next;
-    });
-  }
-
-  function handleChange(key: keyof AccountSettings, value: string | number) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  async function handleSave() {
-    if (!hasChanges) return;
-    setSaving(true);
-    try {
-      const updated = await updateAccountSettings(values as AccountSettingsPatch);
-      onSaved(updated);
-      setEditing(new Set());
-      setValues({});
-      toast.success("Integrações salvas com sucesso.");
-    } catch {
-      toast.error("Erro ao salvar configurações.");
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { editing, values, saving, hasChanges, startEdit, cancelEdit, setValue, discard, save } =
+    useIntegrationForm(onSaved);
 
   return (
     <section>
@@ -298,7 +254,7 @@ export function IntegrationSection({ initial, onSaved }: Props) {
             values={values}
             onStartEdit={startEdit}
             onCancelEdit={cancelEdit}
-            onChange={handleChange}
+            onChange={setValue}
           />
         ))}
       </div>
@@ -312,14 +268,14 @@ export function IntegrationSection({ initial, onSaved }: Props) {
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => { setEditing(new Set()); setValues({}); }}
+              onClick={discard}
               className="rounded-xl px-4 py-2 text-body-sm text-on-surface-variant transition-colors hover:bg-surface-container"
             >
               Descartar
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={save}
               disabled={saving}
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-body-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
             >
