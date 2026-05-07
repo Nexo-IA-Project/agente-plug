@@ -1,0 +1,66 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import StrEnum
+from uuid import UUID, uuid4
+
+
+class EnrollmentStatus(StrEnum):
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class EnrollmentStepStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+
+
+@dataclass(slots=True)
+class FollowupFlow:
+    id: UUID
+    account_id: UUID
+    name: str
+    product_tags: list[str]
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(slots=True)
+class FollowupStep:
+    id: UUID
+    flow_id: UUID
+    position: int
+    delay_from_purchase_hours: int
+    meta_template_name: str
+    template_variables: dict
+    created_at: datetime
+
+
+@dataclass(slots=True)
+class FollowupEnrollment:
+    account_id: UUID
+    flow_id: UUID
+    contact_id: UUID
+    conversation_id: UUID
+    contact_phone: str
+    purchase_id: str
+    id: UUID = field(default_factory=uuid4)
+    status: EnrollmentStatus = EnrollmentStatus.ACTIVE
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+
+@dataclass(slots=True)
+class FollowupEnrollmentStep:
+    enrollment_id: UUID
+    position: int
+    delay_from_purchase_hours: int
+    meta_template_name: str
+    template_variables: dict
+    id: UUID = field(default_factory=uuid4)
+    scheduled_job_id: UUID | None = None
+    status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING
+    sent_at: datetime | None = None
