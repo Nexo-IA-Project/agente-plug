@@ -16,6 +16,10 @@ def _get_followup_handler():
     raise NotImplementedError("_get_followup_handler: configure DI em main.py")
 
 
+def _get_dispatch_followup_step_handler():
+    raise NotImplementedError("_get_dispatch_followup_step_handler: configure DI em worker.py")
+
+
 async def handle_scheduled(payload: dict) -> None:
     job_type: str = payload["job_type"]
     account_id: str = payload["account_id"]
@@ -64,6 +68,15 @@ async def handle_scheduled(payload: dict) -> None:
             contact_id=contact_id,
             conversation_id=conversation_id,
             day=7,
+        )
+    elif job_type == "followup_step":
+        from uuid import UUID as _UUID
+        dispatch = _get_dispatch_followup_step_handler()
+        await dispatch.execute(
+            enrollment_step_id=_UUID(payload["enrollment_step_id"]),
+            account_id=_UUID(payload["account_id"]),
+            conversation_id=_UUID(payload["conversation_id"]),
+            contact_phone=payload.get("contact_phone", ""),
         )
     else:
         log.warning("unknown_job_type", job_type=job_type)

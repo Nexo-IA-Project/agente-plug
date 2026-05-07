@@ -76,20 +76,26 @@ async def test_sends_welcome_template():
 
 
 @pytest.mark.asyncio
-async def test_schedules_d1_followup_job():
+async def test_enrolls_dynamic_followup_when_uc_provided():
+    from uuid import uuid4
+    contact_id = uuid4()
+    conv_id = str(uuid4())
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    contact_repo.find_or_create.return_value = MagicMock(id=contact_id, phone="5511999990000")
     chatnexo = AsyncMock()
-    chatnexo.get_open_conversation.return_value = "conv-1"
+    chatnexo.get_open_conversation.return_value = conv_id
     access_case_repo = AsyncMock()
     scheduler = AsyncMock()
+    enroll_uc = AsyncMock()
+    enroll_uc.execute.return_value = None  # sem flow ativo — enrollment retorna None
     handler = PurchaseHandler(
         contact_repo=contact_repo,
         chatnexo=chatnexo,
         access_case_repo=access_case_repo,
         scheduler=scheduler,
+        enroll_contact_uc=enroll_uc,
     )
     await handler.execute(fake_event())
-    scheduler.create_job.assert_called_once()
-    call_kwargs = scheduler.create_job.call_args.kwargs
-    assert "FOLLOWUP_D1" in str(call_kwargs.get("job_type", "")).upper()
+    enroll_uc.execute.assert_called_once()
+    # scheduler.create_job legado foi removido — não deve ser chamado
+    scheduler.create_job.assert_not_called()

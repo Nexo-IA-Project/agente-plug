@@ -57,24 +57,27 @@ class EnrollContact:
         enrollment_steps: list[FollowupEnrollmentStep] = []
         for step in steps:
             run_at = purchase_time + timedelta(hours=step.delay_from_purchase_hours)
-            job = await self._job_repo.schedule(
-                account_id=account_id,
-                conversation_id=conversation_id,
-                job_type=JobType.FOLLOWUP_STEP,
-                payload={
-                    "enrollment_step_id": None,
-                },
-                run_at=run_at,
-            )
             enrollment_step = FollowupEnrollmentStep(
                 enrollment_id=enrollment.id,
                 position=step.position,
                 delay_from_purchase_hours=step.delay_from_purchase_hours,
                 meta_template_name=step.meta_template_name,
                 template_variables=step.template_variables,
-                scheduled_job_id=job.id,
                 status=EnrollmentStepStatus.PENDING,
             )
+            job = await self._job_repo.schedule(
+                account_id=account_id,
+                conversation_id=conversation_id,
+                job_type=JobType.FOLLOWUP_STEP,
+                payload={
+                    "enrollment_step_id": str(enrollment_step.id),
+                    "account_id": str(account_id),
+                    "conversation_id": str(conversation_id),
+                    "contact_phone": contact_phone,
+                },
+                run_at=run_at,
+            )
+            enrollment_step.scheduled_job_id = job.id
             enrollment_steps.append(enrollment_step)
 
         await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
