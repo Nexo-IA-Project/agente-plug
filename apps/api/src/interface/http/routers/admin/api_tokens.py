@@ -6,7 +6,8 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin as _require_admin
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.admin_auth import require_admin as _require_admin
 from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
 from shared.adapters.db.session import session_scope
 
