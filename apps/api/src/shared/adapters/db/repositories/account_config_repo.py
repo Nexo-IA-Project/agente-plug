@@ -59,7 +59,7 @@ class AccountConfigRepository:
         result = await self.session.execute(select(AccountModel).limit(1))
         return result.scalar_one_or_none()
 
-    async def get(self, *, account_id: int) -> AccountConfig:  # noqa: ARG002
+    async def get(self, *, account_id: int) -> AccountConfig:
         model = await self._load_model()
         raw: dict = dict(model.settings or {}) if model else {}
 
@@ -123,7 +123,7 @@ class AccountConfigRepository:
             ),
         )
 
-    async def update(self, *, account_id: int, patch: AccountConfigPatch) -> AccountConfig:  # noqa: ARG002
+    async def update(self, *, account_id: int, patch: AccountConfigPatch) -> AccountConfig:
         model = await self._load_model()
         if model is None:
             model = AccountModel(name="default", settings={})
