@@ -6,6 +6,15 @@ import type {
 } from "@/types/api";
 import { getToken } from "@/lib/auth";
 import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
+import type {
+  CreateFlowDto,
+  CreateStepDto,
+  FollowupFlow,
+  FollowupStep,
+  ReorderItem,
+  UpdateFlowDto,
+  UpdateStepDto,
+} from "@/features/followup/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -116,5 +125,68 @@ export async function updateAccountSettings(patch: AccountSettingsPatch): Promis
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
+  });
+}
+
+// ─── Follow-up Flows ─────────────────────────────────────────────────────────
+
+export async function listFollowupFlows(): Promise<FollowupFlow[]> {
+  return apiFetch<FollowupFlow[]>("/admin/followup/flows");
+}
+
+export async function createFollowupFlow(dto: CreateFlowDto): Promise<FollowupFlow> {
+  return apiFetch<FollowupFlow>("/admin/followup/flows", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateFollowupFlow(id: string, dto: UpdateFlowDto): Promise<FollowupFlow> {
+  return apiFetch<FollowupFlow>(`/admin/followup/flows/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteFollowupFlow(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/followup/flows/${id}`, { method: "DELETE" });
+}
+
+export async function listFollowupSteps(flowId: string): Promise<FollowupStep[]> {
+  return apiFetch<FollowupStep[]>(`/admin/followup/flows/${flowId}/steps`);
+}
+
+export async function createFollowupStep(
+  flowId: string,
+  dto: CreateStepDto
+): Promise<FollowupStep> {
+  return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps`, {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateFollowupStep(
+  flowId: string,
+  stepId: string,
+  dto: UpdateStepDto
+): Promise<FollowupStep> {
+  return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps/${stepId}`, {
+    method: "PUT",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteFollowupStep(flowId: string, stepId: string): Promise<void> {
+  return apiFetch<void>(`/admin/followup/flows/${flowId}/steps/${stepId}`, { method: "DELETE" });
+}
+
+export async function reorderFollowupSteps(
+  flowId: string,
+  items: ReorderItem[]
+): Promise<void> {
+  return apiFetch<void>(`/admin/followup/flows/${flowId}/steps/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify({ steps: items }),
   });
 }
