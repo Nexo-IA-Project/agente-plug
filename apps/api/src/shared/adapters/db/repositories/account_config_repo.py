@@ -16,13 +16,15 @@ from shared.domain.entities.account_config import (
     IntegrationConfig,
 )
 
-_SENSITIVE = frozenset({
-    "chatnexo_api_key",
-    "hubla_webhook_secret",
-    "cademi_api_key",
-    "openai_api_key",
-    "meta_api_key",
-})
+_SENSITIVE = frozenset(
+    {
+        "chatnexo_api_key",
+        "hubla_webhook_secret",
+        "cademi_api_key",
+        "openai_api_key",
+        "meta_api_key",
+    }
+)
 
 
 def _mask(value: str) -> str:
@@ -89,21 +91,35 @@ class AccountConfigRepository:
                 cademi_api_url=gs("cademi_api_url", s.cademi_api_url),
                 cademi_api_key=gs("cademi_api_key", s.cademi_api_key),
                 cademi_max_retries=int(i.get("cademi_max_retries", s.cademi_max_retries)),
-                cademi_retry_base_seconds=float(i.get("cademi_retry_base_seconds", s.cademi_retry_base_seconds)),
+                cademi_retry_base_seconds=float(
+                    i.get("cademi_retry_base_seconds", s.cademi_retry_base_seconds)
+                ),
                 openai_api_key=gs("openai_api_key", s.openai_api_key),
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
             ),
             behavior=BehaviorConfig(
                 idle_ping_minutes=gi("idle_ping_minutes", s.idle_ping_minutes),
                 idle_close_minutes=gi("idle_close_minutes", s.idle_close_minutes),
-                intent_confidence_threshold=gf("intent_confidence_threshold", s.intent_confidence_threshold),
-                message_buffer_wait_seconds=gi("message_buffer_wait_seconds", s.message_buffer_wait_seconds),
+                intent_confidence_threshold=gf(
+                    "intent_confidence_threshold", s.intent_confidence_threshold
+                ),
+                message_buffer_wait_seconds=gi(
+                    "message_buffer_wait_seconds", s.message_buffer_wait_seconds
+                ),
                 refund_deadline_days=gi("refund_deadline_days", s.refund_deadline_days),
                 welcome_d1_delay_hours=gi("welcome_d1_delay_hours", s.welcome_d1_delay_hours),
-                loja_express_d1_delay_hours=gi("loja_express_d1_delay_hours", s.loja_express_d1_delay_hours),
-                loja_express_d3_delay_hours=gi("loja_express_d3_delay_hours", s.loja_express_d3_delay_hours),
-                loja_express_d5_delay_hours=gi("loja_express_d5_delay_hours", s.loja_express_d5_delay_hours),
-                loja_express_d7_delay_hours=gi("loja_express_d7_delay_hours", s.loja_express_d7_delay_hours),
+                loja_express_d1_delay_hours=gi(
+                    "loja_express_d1_delay_hours", s.loja_express_d1_delay_hours
+                ),
+                loja_express_d3_delay_hours=gi(
+                    "loja_express_d3_delay_hours", s.loja_express_d3_delay_hours
+                ),
+                loja_express_d5_delay_hours=gi(
+                    "loja_express_d5_delay_hours", s.loja_express_d5_delay_hours
+                ),
+                loja_express_d7_delay_hours=gi(
+                    "loja_express_d7_delay_hours", s.loja_express_d7_delay_hours
+                ),
             ),
         )
 
@@ -118,8 +134,15 @@ class AccountConfigRepository:
         i = dict(current.get("integration", {}))
         b = dict(current.get("behavior", {}))
 
-        for key in ("chatnexo_base_url", "chatnexo_api_key", "hubla_webhook_secret",
-                    "cademi_api_url", "cademi_api_key", "openai_api_key", "meta_api_key"):
+        for key in (
+            "chatnexo_base_url",
+            "chatnexo_api_key",
+            "hubla_webhook_secret",
+            "cademi_api_url",
+            "cademi_api_key",
+            "openai_api_key",
+            "meta_api_key",
+        ):
             val: str | None = getattr(patch, key)
             if _should_skip(val):
                 continue
@@ -131,10 +154,18 @@ class AccountConfigRepository:
         if patch.cademi_retry_base_seconds is not None:
             i["cademi_retry_base_seconds"] = patch.cademi_retry_base_seconds
 
-        for key in ("idle_ping_minutes", "idle_close_minutes", "intent_confidence_threshold",
-                    "message_buffer_wait_seconds", "refund_deadline_days", "welcome_d1_delay_hours",
-                    "loja_express_d1_delay_hours", "loja_express_d3_delay_hours",
-                    "loja_express_d5_delay_hours", "loja_express_d7_delay_hours"):
+        for key in (
+            "idle_ping_minutes",
+            "idle_close_minutes",
+            "intent_confidence_threshold",
+            "message_buffer_wait_seconds",
+            "refund_deadline_days",
+            "welcome_d1_delay_hours",
+            "loja_express_d1_delay_hours",
+            "loja_express_d3_delay_hours",
+            "loja_express_d5_delay_hours",
+            "loja_express_d7_delay_hours",
+        ):
             val_any = getattr(patch, key)
             if val_any is not None:
                 b[key] = val_any

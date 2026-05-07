@@ -65,7 +65,9 @@ def test_get_settings_returns_masked_api_keys():
         patch("interface.http.routers.admin.settings.GetAccountConfig") as MockUC,
         patch("interface.http.routers.admin.settings.get_settings") as mock_settings,
     ):
-        mock_settings.return_value.integration_credentials_key = "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        mock_settings.return_value.integration_credentials_key = (
+            "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        )
         mock_session = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -95,7 +97,9 @@ def test_put_settings_accepts_partial_patch():
         patch("interface.http.routers.admin.settings.UpdateAccountConfig") as MockUC,
         patch("interface.http.routers.admin.settings.get_settings") as mock_settings,
     ):
-        mock_settings.return_value.integration_credentials_key = "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        mock_settings.return_value.integration_credentials_key = (
+            "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        )
         mock_session = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -122,13 +126,17 @@ def test_put_settings_returns_422_for_invalid_value():
         patch("interface.http.routers.admin.settings.UpdateAccountConfig") as MockUC,
         patch("interface.http.routers.admin.settings.get_settings") as mock_settings,
     ):
-        mock_settings.return_value.integration_credentials_key = "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        mock_settings.return_value.integration_credentials_key = (
+            "miMM5SEWzPGSwr4F3RYIcp5voAgDStG65JDROm0JX1I="
+        )
         mock_session = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=mock_session)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
         uc_instance = AsyncMock()
-        uc_instance.execute.side_effect = ValueError("intent_confidence_threshold deve estar entre 0.0 e 1.0")
+        uc_instance.execute.side_effect = ValueError(
+            "intent_confidence_threshold deve estar entre 0.0 e 1.0"
+        )
         MockUC.return_value = uc_instance
 
         r = client.put("/admin/settings", json={"intent_confidence_threshold": 2.0})

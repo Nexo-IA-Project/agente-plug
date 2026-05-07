@@ -78,15 +78,17 @@ async def test_get_returns_env_defaults_when_jsonb_empty():
 async def test_get_uses_db_values_over_env_defaults():
     fernet = _make_fernet()
     encrypted_key = fernet.encrypt(b"sk-db-key").decode()
-    account = _mock_account({
-        "integration": {
-            "chatnexo_base_url": "http://from-db",
-            "openai_api_key": encrypted_key,
-        },
-        "behavior": {
-            "idle_ping_minutes": 45,
-        },
-    })
+    account = _mock_account(
+        {
+            "integration": {
+                "chatnexo_base_url": "http://from-db",
+                "openai_api_key": encrypted_key,
+            },
+            "behavior": {
+                "idle_ping_minutes": 45,
+            },
+        }
+    )
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 
@@ -123,9 +125,7 @@ async def test_update_encrypts_sensitive_fields():
 async def test_update_ignores_masked_values():
     fernet = _make_fernet()
     encrypted_orig = fernet.encrypt(b"sk-original").decode()
-    account = _mock_account({
-        "integration": {"openai_api_key": encrypted_orig}
-    })
+    account = _mock_account({"integration": {"openai_api_key": encrypted_orig}})
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 

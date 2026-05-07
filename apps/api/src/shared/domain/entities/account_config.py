@@ -40,6 +40,7 @@ class AccountConfig:
 @dataclass
 class AccountConfigPatch:
     """Patch parcial — apenas campos não-None são atualizados."""
+
     chatnexo_base_url: str | None = field(default=None)
     chatnexo_api_key: str | None = field(default=None)
     hubla_webhook_secret: str | None = field(default=None)
