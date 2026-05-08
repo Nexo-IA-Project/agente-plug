@@ -15,8 +15,13 @@ export function useMetaTemplates() {
     try {
       const data = await listMetaTemplates();
       setTemplates(data);
-    } catch {
-      setError("Não foi possível carregar os templates. Verifique META_WABA_ID nas configurações.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("422") || msg.toLowerCase().includes("waba")) {
+        setTemplates([]);
+      } else {
+        setError("Não foi possível carregar os templates. Tente novamente.");
+      }
     } finally {
       setLoading(false);
     }

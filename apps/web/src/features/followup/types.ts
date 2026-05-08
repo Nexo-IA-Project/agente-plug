@@ -13,8 +13,9 @@ export interface FollowupStep {
   flow_id: string;
   position: number;
   delay_from_purchase_hours: number;
-  meta_template_name: string;
+  meta_template_name: string | null;
   template_variables: Record<string, string>;
+  message_text: string | null;
   created_at: string;
 }
 
@@ -32,15 +33,17 @@ export interface UpdateFlowDto {
 export interface CreateStepDto {
   position: number;
   delay_from_purchase_hours: number;
-  meta_template_name: string;
+  meta_template_name: string | null;
   template_variables: Record<string, string>;
+  message_text: string | null;
 }
 
 export interface UpdateStepDto {
   position?: number;
   delay_from_purchase_hours?: number;
-  meta_template_name?: string;
+  meta_template_name?: string | null;
   template_variables?: Record<string, string>;
+  message_text?: string | null;
 }
 
 export interface ReorderItem {

@@ -61,6 +61,7 @@ class EnrollContact:
                 delay_from_purchase_hours=step.delay_from_purchase_hours,
                 meta_template_name=step.meta_template_name,
                 template_variables=step.template_variables,
+                message_text=step.message_text,
                 status=EnrollmentStepStatus.PENDING,
             )
             job = await self._job_repo.schedule(

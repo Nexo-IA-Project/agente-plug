@@ -44,7 +44,7 @@ async def _get_client(auth: AdminAuth) -> tuple[MetaTemplateClient, str]:
         repo = AccountConfigRepository(session=session, fernet=fernet)
         config = await repo.get(account_id=auth.account_id)
     client = MetaTemplateClient.from_account_config(config)
-    waba_id = settings.meta_waba_id
+    waba_id = config.integration.meta_waba_id or settings.meta_waba_id
     return client, waba_id
 
 
@@ -54,10 +54,7 @@ async def list_templates(
 ) -> list[MetaTemplateResponse]:
     client, waba_id = await _get_client(auth)
     if not waba_id:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="META_WABA_ID não configurado em Settings",
-        )
+        return []
     try:
         templates = await client.list_templates(waba_id)
     except Exception as exc:

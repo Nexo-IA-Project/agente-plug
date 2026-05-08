@@ -48,6 +48,7 @@ def _step_to_resp(s) -> FollowupStepResponse:
         delay_from_purchase_hours=s.delay_from_purchase_hours,
         meta_template_name=s.meta_template_name,
         template_variables=s.template_variables,
+        message_text=s.message_text,
         created_at=s.created_at,
     )
 
@@ -139,6 +140,7 @@ async def create_step(
             delay_from_purchase_hours=body.delay_from_purchase_hours,
             meta_template_name=body.meta_template_name,
             template_variables=body.template_variables,
+            message_text=body.message_text,
         )
     return _step_to_resp(step)
 
@@ -158,6 +160,9 @@ async def update_step(
             delay_from_purchase_hours=body.delay_from_purchase_hours,
             meta_template_name=body.meta_template_name,
             template_variables=body.template_variables,
+            message_text=body.message_text,
+            clear_template=body.message_text is not None and body.meta_template_name is None,
+            clear_message_text=body.meta_template_name is not None and body.message_text is None,
         )
     if step is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step não encontrado")

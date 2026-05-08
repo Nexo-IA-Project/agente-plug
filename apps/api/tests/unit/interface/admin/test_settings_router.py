@@ -37,6 +37,7 @@ def _make_config() -> AccountConfig:
             cademi_retry_base_seconds=1.0,
             openai_api_key="sk-proj-openai-key",
             meta_api_key="meta-key",
+            meta_waba_id="123456789",
         ),
         behavior=BehaviorConfig(
             idle_ping_minutes=30,

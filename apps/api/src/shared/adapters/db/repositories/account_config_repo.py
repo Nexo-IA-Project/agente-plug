@@ -47,7 +47,10 @@ def _encrypt(fernet: Fernet, value: str) -> str:
 
 
 def _should_skip(value: str | None) -> bool:
-    return value is None or "****" in value
+    # None = "não editado, manter como está".
+    # Valor terminando em "****" = display mascarado retornado no GET (ex: "sk-proj-****" ou "****"),
+    # não deve ser persistido.
+    return value is None or value.endswith("****")
 
 
 @dataclass
@@ -96,6 +99,7 @@ class AccountConfigRepository:
                 ),
                 openai_api_key=gs("openai_api_key", s.openai_api_key),
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
+                meta_waba_id=i.get("meta_waba_id") or s.meta_waba_id,
             ),
             behavior=BehaviorConfig(
                 idle_ping_minutes=gi("idle_ping_minutes", s.idle_ping_minutes),
@@ -142,6 +146,7 @@ class AccountConfigRepository:
             "cademi_api_key",
             "openai_api_key",
             "meta_api_key",
+            "meta_waba_id",
         ):
             val: str | None = getattr(patch, key)
             if _should_skip(val):

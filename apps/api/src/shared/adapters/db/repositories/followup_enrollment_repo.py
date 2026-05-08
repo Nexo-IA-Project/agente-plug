@@ -40,6 +40,7 @@ def _step_to_entity(m: FollowupEnrollmentStepModel) -> FollowupEnrollmentStep:
         scheduled_job_id=m.scheduled_job_id,
         status=EnrollmentStepStatus(m.status),
         sent_at=m.sent_at,
+        message_text=m.message_text,
     )
 
 
@@ -73,6 +74,7 @@ class FollowupEnrollmentRepository:
                 delay_from_purchase_hours=step.delay_from_purchase_hours,
                 meta_template_name=step.meta_template_name,
                 template_variables=step.template_variables,
+                message_text=step.message_text,
                 scheduled_job_id=step.scheduled_job_id,
                 status=step.status.value,
                 sent_at=step.sent_at,

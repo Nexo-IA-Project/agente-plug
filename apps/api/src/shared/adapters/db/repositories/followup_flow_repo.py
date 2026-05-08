@@ -31,6 +31,7 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
         meta_template_name=m.meta_template_name,
         template_variables=dict(m.template_variables or {}),
         created_at=m.created_at,
+        message_text=m.message_text,
     )
 
 
@@ -120,8 +121,9 @@ class FollowupFlowRepository:
         flow_id: uuid.UUID,
         position: int,
         delay_from_purchase_hours: int,
-        meta_template_name: str,
+        meta_template_name: str | None,
         template_variables: dict,
+        message_text: str | None = None,
     ) -> FollowupStep:
         model = FollowupStepModel(
             id=uuid.uuid4(),
@@ -130,6 +132,7 @@ class FollowupFlowRepository:
             delay_from_purchase_hours=delay_from_purchase_hours,
             meta_template_name=meta_template_name,
             template_variables=template_variables,
+            message_text=message_text,
         )
         self.session.add(model)
         await self.session.flush()
@@ -144,6 +147,9 @@ class FollowupFlowRepository:
         meta_template_name: str | None = None,
         template_variables: dict | None = None,
         position: int | None = None,
+        message_text: str | None = None,
+        clear_template: bool = False,
+        clear_message_text: bool = False,
     ) -> FollowupStep | None:
         model = await self.session.get(FollowupStepModel, step_id)
         if model is None:
@@ -152,10 +158,16 @@ class FollowupFlowRepository:
             model.delay_from_purchase_hours = delay_from_purchase_hours
         if meta_template_name is not None:
             model.meta_template_name = meta_template_name
+        if clear_template:
+            model.meta_template_name = None
         if template_variables is not None:
             model.template_variables = template_variables
         if position is not None:
             model.position = position
+        if message_text is not None:
+            model.message_text = message_text
+        if clear_message_text:
+            model.message_text = None
         await self.session.flush()
         await self.session.refresh(model)
         return _step_to_entity(model)

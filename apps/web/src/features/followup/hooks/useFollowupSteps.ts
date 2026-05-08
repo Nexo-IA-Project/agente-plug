@@ -16,6 +16,11 @@ export function useFollowupSteps(flowId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!flowId) {
+      setSteps([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
