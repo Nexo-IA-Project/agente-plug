@@ -36,14 +36,20 @@ const HEADER_OPTS: { value: HeaderType; label: string; icon: string }[] = [
 const inputCls = "field-input";
 const labelCls = "field-label";
 
-function slugifyTemplateName(input: string): string {
+function slugifyLive(input: string): string {
+  // Versão ao vivo: preserva trailing `_` pra usuário poder continuar digitando
+  // depois de espaço/separador. Trim final é feito no submit (slugifyFinal).
   return input
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // remove diacríticos (acentos)
     .replace(/[^a-z0-9]+/g, "_") // qualquer outro caractere → underscore
-    .replace(/^_+|_+$/g, "") // remove underscores nas pontas
+    .replace(/^_+/, "") // só remove underscores no início
     .slice(0, 512);
+}
+
+function slugifyFinal(input: string): string {
+  return slugifyLive(input).replace(/_+$/, "");
 }
 
 export function TemplateForm({ onCreate }: Props) {
@@ -114,7 +120,7 @@ export function TemplateForm({ onCreate }: Props) {
     }
 
     return {
-      name,
+      name: slugifyFinal(name),
       category,
       language,
       components,
@@ -172,7 +178,7 @@ export function TemplateForm({ onCreate }: Props) {
               <label className={labelCls}>Nome do template</label>
               <input
                 value={name}
-                onChange={(e) => setName(slugifyTemplateName(e.target.value))}
+                onChange={(e) => setName(slugifyLive(e.target.value))}
                 required
                 placeholder="ex: welcome_message"
                 className={inputCls}

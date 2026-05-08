@@ -144,8 +144,13 @@ async def create_template(
     client, waba_id, app_id = await _get_meta_client_and_waba(auth)
     if not waba_id:
         raise HTTPException(status_code=422, detail="META_WABA_ID não configurado em Settings")
-    if not app_id:
-        raise HTTPException(status_code=422, detail="META_APP_ID não configurado em Settings")
+    # META_APP_ID só é necessário para upload de mídia (resumable upload).
+    # Templates sem mídia não dependem dele.
+    if body.media_url and not app_id:
+        raise HTTPException(
+            status_code=422,
+            detail="META_APP_ID não configurado em Settings (necessário p/ template com mídia)",
+        )
 
     settings = get_settings()
     storage = R2Storage.from_settings(settings)
