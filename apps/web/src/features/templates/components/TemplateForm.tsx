@@ -31,7 +31,7 @@ const labelCls = "field-label";
 
 export function TemplateForm({ onCreate }: Props) {
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<"MARKETING" | "UTILITY" | "AUTHENTICATION">("MARKETING");
+  const [category, setCategory] = useState<"MARKETING" | "UTILITY">("MARKETING");
   const [language, setLanguage] = useState("pt_BR");
   const [headerType, setHeaderType] = useState<HeaderType>("NONE");
   const [headerText, setHeaderText] = useState("");
@@ -177,7 +177,6 @@ export function TemplateForm({ onCreate }: Props) {
                 >
                   <option value="MARKETING">Marketing</option>
                   <option value="UTILITY">Utilitário</option>
-                  <option value="AUTHENTICATION">Autenticação</option>
                 </select>
               </div>
               <div>

@@ -12,7 +12,6 @@ interface Props {
 function getCategoryIcon(category: string): string {
   if (category === "MARKETING") return "campaign";
   if (category === "UTILITY") return "build";
-  if (category === "AUTHENTICATION") return "lock";
   return "receipt_long";
 }
 
