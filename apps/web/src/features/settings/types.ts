@@ -9,6 +9,7 @@ export interface AccountSettings {
   openai_api_key: string;
   meta_api_key: string;
   meta_waba_id: string;
+  meta_app_id: string;
   idle_ping_minutes: number;
   idle_close_minutes: number;
   intent_confidence_threshold: number;

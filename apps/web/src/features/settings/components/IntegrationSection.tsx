@@ -72,6 +72,7 @@ const SERVICES: ServiceGroup[] = [
     fields: [
       { key: "meta_api_key", label: "API Key", type: "secret", description: "Token de acesso à Meta Graph API" },
       { key: "meta_waba_id", label: "WABA ID", type: "text", description: "ID da conta WhatsApp Business (ex: 123456789)" },
+      { key: "meta_app_id", label: "App ID", type: "text", description: "ID do App Meta (necessário para upload de mídia em templates)" },
     ],
   },
 ];

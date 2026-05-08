@@ -100,6 +100,7 @@ class AccountConfigRepository:
                 openai_api_key=gs("openai_api_key", s.openai_api_key),
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
                 meta_waba_id=i.get("meta_waba_id") or s.meta_waba_id,
+                meta_app_id=i.get("meta_app_id") or (s.meta_app_id or ""),
             ),
             behavior=BehaviorConfig(
                 idle_ping_minutes=gi("idle_ping_minutes", s.idle_ping_minutes),
@@ -147,6 +148,7 @@ class AccountConfigRepository:
             "openai_api_key",
             "meta_api_key",
             "meta_waba_id",
+            "meta_app_id",
         ):
             val: str | None = getattr(patch, key)
             if _should_skip(val):

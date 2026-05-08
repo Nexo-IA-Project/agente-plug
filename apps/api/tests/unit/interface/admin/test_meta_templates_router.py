@@ -83,7 +83,7 @@ def test_create_template_duplicate_name_returns_409(client):
         from shared.adapters.meta.template_client import MetaTemplateClient
 
         mock_client = AsyncMock(spec=MetaTemplateClient)
-        mock_get.return_value = (mock_client, "waba-123")
+        mock_get.return_value = (mock_client, "waba-123", "app-1")
 
         settings = MagicMock()
         settings.integration_credentials_key = "a" * 44
@@ -140,7 +140,7 @@ def test_list_templates_returns_empty_when_no_waba_id(client):
         from shared.adapters.meta.template_client import MetaTemplateClient
 
         mock_client = AsyncMock(spec=MetaTemplateClient)
-        mock_get.return_value = (mock_client, "")  # empty waba_id
+        mock_get.return_value = (mock_client, "", "")  # empty waba_id
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)
@@ -179,7 +179,7 @@ def test_list_templates_returns_records(client):
         from shared.adapters.meta.template_client import MetaTemplateClient
 
         mock_client = AsyncMock(spec=MetaTemplateClient)
-        mock_get.return_value = (mock_client, "waba-123")
+        mock_get.return_value = (mock_client, "waba-123", "app-1")
 
         mock_session = AsyncMock()
         mock_session.__aenter__ = AsyncMock(return_value=mock_session)

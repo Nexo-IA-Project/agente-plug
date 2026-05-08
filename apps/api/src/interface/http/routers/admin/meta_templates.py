@@ -60,7 +60,8 @@ async def _get_account_uuid(session: AsyncSession) -> UUID:
     return result.scalar_one()
 
 
-async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient, str]:
+async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient, str, str]:
+    """Retorna (client, waba_id, app_id) — todos lidos do AccountConfig com fallback p/ env."""
     settings = get_settings()
     fernet = Fernet(settings.integration_credentials_key.encode())
     async with session_scope() as session:
@@ -68,7 +69,8 @@ async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient
         config = await repo.get(account_id=auth.account_id)
     client = MetaTemplateClient.from_account_config(config)
     waba_id = config.integration.meta_waba_id or settings.meta_waba_id or ""
-    return client, waba_id
+    app_id = config.integration.meta_app_id or (settings.meta_app_id or "")
+    return client, waba_id, app_id
 
 
 async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict]:
@@ -139,13 +141,13 @@ async def create_template(
     body: CreateTemplateRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> MetaTemplateResponse:
-    client, waba_id = await _get_meta_client_and_waba(auth)
+    client, waba_id, app_id = await _get_meta_client_and_waba(auth)
     if not waba_id:
-        raise HTTPException(status_code=422, detail="META_WABA_ID não configurado")
-    settings = get_settings()
-    if not settings.meta_app_id:
-        raise HTTPException(status_code=422, detail="META_APP_ID não configurado")
+        raise HTTPException(status_code=422, detail="META_WABA_ID não configurado em Settings")
+    if not app_id:
+        raise HTTPException(status_code=422, detail="META_APP_ID não configurado em Settings")
 
+    settings = get_settings()
     storage = R2Storage.from_settings(settings)
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
@@ -155,7 +157,7 @@ async def create_template(
             record = await use_case.execute(CreateTemplateInput(
                 account_id=account_uuid,
                 waba_id=waba_id,
-                app_id=settings.meta_app_id,
+                app_id=app_id,
                 name=body.name,
                 category=body.category,
                 language=body.language,
@@ -190,7 +192,7 @@ async def create_template(
 async def list_templates(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> list[MetaTemplateResponse]:
-    client, waba_id = await _get_meta_client_and_waba(auth)
+    client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
@@ -205,7 +207,7 @@ async def delete_template(
     template_id: UUID,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
-    client, waba_id = await _get_meta_client_and_waba(auth)
+    client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
     storage = R2Storage.from_settings(get_settings())
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)

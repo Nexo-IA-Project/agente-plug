@@ -28,6 +28,7 @@ def _make_config() -> AccountConfig:
             openai_api_key="sk-test",
             meta_api_key="meta",
             meta_waba_id="",
+            meta_app_id="",
         ),
         behavior=BehaviorConfig(
             idle_ping_minutes=30,
