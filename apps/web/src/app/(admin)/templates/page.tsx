@@ -4,39 +4,54 @@ import { useState } from "react";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { TemplateList } from "@/features/templates/components/TemplateList";
 import { TemplateModal } from "@/features/templates/components/TemplateModal";
-import { DeleteTemplateDialog } from "@/features/templates/components/DeleteTemplateDialog";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { useToast } from "@/shared/hooks/useToast";
 import type { MetaTemplate } from "@/features/templates/types";
-import type { FlowUsage } from "@/features/templates/components/DeleteTemplateDialog";
+
+interface FlowUsage {
+  id: string;
+  name: string;
+  step_position: number;
+}
 
 export default function TemplatesPage() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
-  const [toDelete, setToDelete] = useState<MetaTemplate | null>(null);
-  const [conflictFlows, setConflictFlows] = useState<FlowUsage[] | null>(null);
+  const confirm = useConfirm();
   const toast = useToast();
 
-  async function handleDelete() {
-    if (!toDelete) return;
+  async function handleDelete(template: MetaTemplate) {
+    const ok = await confirm({
+      title: "Excluir template",
+      description: `Vamos excluir "${template.name}" da Meta, do storage e do banco. Esta ação não pode ser desfeita.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
+
     try {
-      await remove(toDelete.id);
+      await remove(template.id);
       toast.success("Template excluído");
-      setToDelete(null);
-      setConflictFlows(null);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       try {
         const parsed = JSON.parse(msg);
         if (parsed?.detail?.code === "META_TEMPLATE_IN_USE") {
-          setConflictFlows(parsed.detail.flows as FlowUsage[]);
+          const flows = (parsed.detail.flows as FlowUsage[]) ?? [];
+          const list = flows
+            .map((f) => `${f.name} (passo ${f.step_position})`)
+            .join(", ");
+          toast.error(
+            `Não é possível excluir: template em uso por ${flows.length} flow${
+              flows.length === 1 ? "" : "s"
+            }: ${list}`,
+          );
           return;
         }
       } catch {
         // not JSON
       }
       toast.error(`Falha ao excluir: ${msg}`);
-      setToDelete(null);
-      setConflictFlows(null);
     }
   }
 
@@ -70,10 +85,7 @@ export default function TemplatesPage() {
         templates={templates}
         onRefresh={reload}
         onNew={() => setModalOpen(true)}
-        onDelete={(t) => {
-          setConflictFlows(null);
-          setToDelete(t);
-        }}
+        onDelete={handleDelete}
       />
 
       <TemplateModal
@@ -83,16 +95,6 @@ export default function TemplatesPage() {
           await create(dto);
           toast.success("Template enviado para aprovação da Meta");
           await reload();
-        }}
-      />
-
-      <DeleteTemplateDialog
-        template={toDelete}
-        conflictFlows={conflictFlows}
-        onConfirm={handleDelete}
-        onClose={() => {
-          setToDelete(null);
-          setConflictFlows(null);
         }}
       />
     </div>
