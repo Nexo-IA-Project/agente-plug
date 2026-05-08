@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import type { FollowupFlow } from "../types";
 
 interface Props {
@@ -14,9 +15,20 @@ interface Props {
 }
 
 export function FlowCard({ flow, stepCount, position, onEdit, onToggle, onDelete }: Props) {
+  const confirm = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: flow.id,
   });
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Excluir flow",
+      description: `Tem certeza que deseja excluir o flow "${flow.name}"? Esta ação não pode ser desfeita.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (ok) onDelete();
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -109,9 +121,7 @@ export function FlowCard({ flow, stepCount, position, onEdit, onToggle, onDelete
           {flow.is_active ? "Pausar" : "Ativar"}
         </button>
         <button
-          onClick={() => {
-            if (confirm(`Excluir o flow "${flow.name}"?`)) onDelete();
-          }}
+          onClick={handleDelete}
           className="rounded-lg p-1.5 text-on-surface-variant/50 transition-colors hover:bg-error-container hover:text-error"
           aria-label="Excluir"
         >

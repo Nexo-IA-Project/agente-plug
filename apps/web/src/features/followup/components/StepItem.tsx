@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { DelayBadge } from "./DelayBadge";
 import type { FollowupStep } from "../types";
 
@@ -16,8 +17,19 @@ interface Props {
 }
 
 export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown }: Props) {
+  const confirm = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id });
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Excluir step",
+      description: "Tem certeza que deseja excluir este step? Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (ok) await onDelete();
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -116,9 +128,7 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
           </span>
         </button>
         <button
-          onClick={() => {
-            if (confirm("Excluir este step?")) void onDelete();
-          }}
+          onClick={() => void handleDelete()}
           className="rounded-lg p-1.5 text-error hover:bg-error-container"
           aria-label="Excluir step"
         >

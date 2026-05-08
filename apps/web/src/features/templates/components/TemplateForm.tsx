@@ -26,9 +26,8 @@ const HEADER_OPTS: { value: HeaderType; label: string; icon: string }[] = [
   { value: "DOCUMENT", label: "Doc", icon: "description" },
 ];
 
-const inputCls =
-  "w-full rounded-lg border border-outline bg-surface px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-on-surface-variant/50";
-const labelCls = "mb-1 block text-xs font-medium text-on-surface-variant";
+const inputCls = "field-input";
+const labelCls = "field-label";
 
 export function TemplateForm({ onCreate }: Props) {
   const [name, setName] = useState("");
@@ -267,7 +266,7 @@ export function TemplateForm({ onCreate }: Props) {
                 required
                 rows={5}
                 placeholder={"Olá {{1}}, seu acesso ao {{2}} está disponível!"}
-                className={inputCls}
+                className="field-textarea"
               />
               <p className="mt-1 text-xs text-on-surface-variant">
                 Use {`{{1}}`}, {`{{2}}`}... para variáveis dinâmicas. {bodyText.length}/1024

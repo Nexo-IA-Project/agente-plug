@@ -52,13 +52,21 @@ export function useFollowupFlows() {
   }, []);
 
   const reorder = useCallback(async (items: ReorderItem[]): Promise<void> => {
-    await reorderFollowupFlows(items);
     const posMap = new Map(items.map((i) => [i.id, i.position]));
-    setFlows((prev) =>
-      prev
+    // Optimistic update: aplica a nova ordem na UI antes do request.
+    let snapshot: FollowupFlow[] = [];
+    setFlows((prev) => {
+      snapshot = prev;
+      return prev
         .map((f) => ({ ...f, position: posMap.get(f.id) ?? f.position }))
-        .sort((a, b) => a.position - b.position)
-    );
+        .sort((a, b) => a.position - b.position);
+    });
+    try {
+      await reorderFollowupFlows(items);
+    } catch (err) {
+      setFlows(snapshot);
+      throw err;
+    }
   }, []);
 
   return { flows, loading, error, reload: load, create, update, remove, reorder };

@@ -83,6 +83,7 @@ export default function FollowupPage() {
     const items = reordered.map((f, i) => ({ id: f.id, position: i + 1 }));
     try {
       await reorder(items);
+      toast.success("Ordem atualizada");
     } catch {
       toast.error("Erro ao reordenar — tente novamente");
     }

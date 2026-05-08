@@ -41,9 +41,8 @@ function toHours(value: number, unit: DelayUnit): number {
   return value * 24;
 }
 
-const inputCls =
-  "w-full rounded-xl border border-outline bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-shadow";
-const labelCls = "mb-1.5 block text-label-sm font-medium text-on-surface-variant";
+const inputCls = "field-input";
+const labelCls = "field-label";
 
 export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) {
   // Fade in ao montar
@@ -176,12 +175,12 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
               min={0}
               value={delayValue}
               onChange={(e) => setDelayValue(Number(e.target.value))}
-              className="w-24 rounded-xl border border-outline bg-surface px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+              className="field-input !w-24"
             />
             <select
               value={delayUnit}
               onChange={(e) => setDelayUnit(e.target.value as DelayUnit)}
-              className="flex-1 rounded-xl border border-outline bg-surface px-3 py-2.5 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
+              className="field-select flex-1"
             >
               <option value="minutos">Minutos</option>
               <option value="horas">Horas</option>
@@ -309,7 +308,7 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
               required={mode === "text"}
               rows={4}
               placeholder="Digite a mensagem que será enviada..."
-              className={inputCls}
+              className="field-textarea"
             />
           </div>
         )}

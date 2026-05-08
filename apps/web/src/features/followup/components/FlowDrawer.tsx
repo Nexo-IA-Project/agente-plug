@@ -86,9 +86,8 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     }
   }
 
-  const inputCls =
-    "w-full rounded-xl border border-outline bg-surface px-3 py-2.5 text-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary transition-shadow";
-  const labelCls = "mb-1.5 block text-label-sm font-medium text-on-surface-variant";
+  const inputCls = "field-input";
+  const labelCls = "field-label";
 
   return (
     <>
