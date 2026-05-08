@@ -36,6 +36,16 @@ const HEADER_OPTS: { value: HeaderType; label: string; icon: string }[] = [
 const inputCls = "field-input";
 const labelCls = "field-label";
 
+function slugifyTemplateName(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove diacríticos (acentos)
+    .replace(/[^a-z0-9]+/g, "_") // qualquer outro caractere → underscore
+    .replace(/^_+|_+$/g, "") // remove underscores nas pontas
+    .slice(0, 512);
+}
+
 export function TemplateForm({ onCreate }: Props) {
   const [name, setName] = useState("");
   const [category, setCategory] = useState<"MARKETING" | "UTILITY">("MARKETING");
@@ -162,13 +172,13 @@ export function TemplateForm({ onCreate }: Props) {
               <label className={labelCls}>Nome do template</label>
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(slugifyTemplateName(e.target.value))}
                 required
                 placeholder="ex: welcome_message"
                 className={inputCls}
               />
               <p className="mt-1 text-xs text-on-surface-variant">
-                Somente letras minúsculas, números e underscores.
+                Convertido em tempo real para snake_case (a-z, 0-9, _).
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -346,6 +356,7 @@ export function TemplateForm({ onCreate }: Props) {
           headerType={headerType === "NONE" ? undefined : headerType}
           footer={footerText || undefined}
           buttons={previewButtons}
+          bodyExamples={bodyExamples}
         />
       </div>
     </div>

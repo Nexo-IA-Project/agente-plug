@@ -11,15 +11,40 @@ interface Props {
   headerType?: "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
   footer?: string;
   buttons?: TemplateButton[];
+  bodyExamples?: string[];
+  headerExample?: string;
 }
 
-function renderBody(text: string): string {
-  return text
-    .replace(/\{\{(\d+)\}\}/g, (_, n) => `<span class="font-medium text-teal-700 dark:text-teal-300">{{${n}}}</span>`)
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function renderWithVars(text: string, examples: string[]): string {
+  return escapeHtml(text)
+    .replace(/\{\{(\d+)\}\}/g, (_, n: string) => {
+      const idx = parseInt(n, 10) - 1;
+      const ex = examples[idx];
+      if (ex && ex.trim()) {
+        return `<span class="font-medium text-teal-700 dark:text-teal-300">${escapeHtml(ex)}</span>`;
+      }
+      return `<span class="font-medium text-teal-700 dark:text-teal-300">{{${n}}}</span>`;
+    })
     .replace(/\n/g, "<br />");
 }
 
-export function TemplatePreview({ body, header, headerType = "TEXT", footer, buttons = [] }: Props) {
+export function TemplatePreview({
+  body,
+  header,
+  headerType = "TEXT",
+  footer,
+  buttons = [],
+  bodyExamples = [],
+  headerExample,
+}: Props) {
   const hasHeader = header && headerType === "TEXT";
   const isMediaHeader = headerType === "IMAGE" || headerType === "VIDEO" || headerType === "DOCUMENT";
 
@@ -105,13 +130,14 @@ export function TemplatePreview({ body, header, headerType = "TEXT", footer, but
 
           {/* Chat area */}
           <div
+            className="wa-chat-scroll"
             style={{
               flex: 1,
               overflowY: "auto",
               padding: "10px 8px",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "flex-end",
+              justifyContent: "flex-start",
             }}
           >
             {/* Message bubble */}
@@ -154,15 +180,18 @@ export function TemplatePreview({ body, header, headerType = "TEXT", footer, but
                 <div style={{ padding: "8px 10px 4px" }}>
                   {/* Text header */}
                   {hasHeader && (
-                    <p style={{ fontWeight: 700, fontSize: 12, color: "#1a1a1a", marginBottom: 4, lineHeight: 1.4 }}>
-                      {header}
-                    </p>
+                    <p
+                      style={{ fontWeight: 700, fontSize: 12, color: "#1a1a1a", marginBottom: 4, lineHeight: 1.4 }}
+                      dangerouslySetInnerHTML={{
+                        __html: renderWithVars(header || "", headerExample ? [headerExample] : []),
+                      }}
+                    />
                   )}
 
                   {/* Body */}
                   <p
                     style={{ fontSize: 12, color: "#303030", lineHeight: 1.5, wordBreak: "break-word" }}
-                    dangerouslySetInnerHTML={{ __html: renderBody(body) }}
+                    dangerouslySetInnerHTML={{ __html: renderWithVars(body, bodyExamples) }}
                   />
 
                   {/* Footer */}
