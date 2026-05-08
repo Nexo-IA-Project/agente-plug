@@ -7,6 +7,7 @@ interface Props {
   templates: MetaTemplate[];
   onRefresh: () => void;
   onNew: () => void;
+  onDelete: (template: MetaTemplate) => void;
 }
 
 function getCategoryIcon(category: string): string {
@@ -21,7 +22,7 @@ function getBodyPreview(template: MetaTemplate): string | null {
   return body.text.length > 140 ? body.text.slice(0, 140) + "…" : body.text;
 }
 
-export function TemplateList({ templates, onRefresh, onNew }: Props) {
+export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -152,6 +153,17 @@ export function TemplateList({ templates, onRefresh, onNew }: Props) {
                       </p>
                     )}
                   </div>
+
+                  {/* Ações */}
+                  <button
+                    onClick={() => onDelete(t)}
+                    title="Excluir template"
+                    className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-on-surface-variant opacity-0 transition-all hover:bg-error-container hover:text-error group-hover:opacity-100"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                      delete
+                    </span>
+                  </button>
                 </div>
               );
             })}

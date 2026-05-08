@@ -4,12 +4,41 @@ import { useState } from "react";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { TemplateList } from "@/features/templates/components/TemplateList";
 import { TemplateModal } from "@/features/templates/components/TemplateModal";
+import { DeleteTemplateDialog } from "@/features/templates/components/DeleteTemplateDialog";
 import { useToast } from "@/shared/hooks/useToast";
+import type { MetaTemplate } from "@/features/templates/types";
+import type { FlowUsage } from "@/features/templates/components/DeleteTemplateDialog";
 
 export default function TemplatesPage() {
-  const { templates, loading, error, reload, create } = useMetaTemplates();
+  const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<MetaTemplate | null>(null);
+  const [conflictFlows, setConflictFlows] = useState<FlowUsage[] | null>(null);
   const toast = useToast();
+
+  async function handleDelete() {
+    if (!toDelete) return;
+    try {
+      await remove(toDelete.id);
+      toast.success("Template excluído");
+      setToDelete(null);
+      setConflictFlows(null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.detail?.code === "META_TEMPLATE_IN_USE") {
+          setConflictFlows(parsed.detail.flows as FlowUsage[]);
+          return;
+        }
+      } catch {
+        // not JSON
+      }
+      toast.error(`Falha ao excluir: ${msg}`);
+      setToDelete(null);
+      setConflictFlows(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -41,6 +70,10 @@ export default function TemplatesPage() {
         templates={templates}
         onRefresh={reload}
         onNew={() => setModalOpen(true)}
+        onDelete={(t) => {
+          setConflictFlows(null);
+          setToDelete(t);
+        }}
       />
 
       <TemplateModal
@@ -50,6 +83,16 @@ export default function TemplatesPage() {
           await create(dto);
           toast.success("Template enviado para aprovação da Meta");
           await reload();
+        }}
+      />
+
+      <DeleteTemplateDialog
+        template={toDelete}
+        conflictFlows={conflictFlows}
+        onConfirm={handleDelete}
+        onClose={() => {
+          setToDelete(null);
+          setConflictFlows(null);
         }}
       />
     </div>
