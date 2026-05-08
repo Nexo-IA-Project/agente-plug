@@ -12,10 +12,18 @@ log = structlog.get_logger(__name__)
 
 
 class DispatchFollowupStep:
-    def __init__(self, *, enrollment_repo: Any, chatnexo: Any, conversation_history: Any) -> None:
+    def __init__(
+        self,
+        *,
+        enrollment_repo: Any,
+        chatnexo: Any,
+        conversation_history: Any,
+        meta_template_repo: Any = None,
+    ) -> None:
         self._enrollment_repo = enrollment_repo
         self._chatnexo = chatnexo
         self._history = conversation_history
+        self._template_repo = meta_template_repo
 
     async def execute(
         self,
@@ -42,13 +50,36 @@ class DispatchFollowupStep:
             )
             dispatch_label = f"texto_livre: {step.message_text[:40]}"
         else:
-            header_link = getattr(step, "media_url", None) or None
-            header_kind = getattr(step, "media_kind", None) or None
+            header_link: str | None = None
+            header_kind: str | None = None
+            language: str | None = None
+
+            if self._template_repo is not None and step.meta_template_name:
+                template = await self._template_repo.get_by_name(
+                    name=step.meta_template_name,
+                    account_id=account_id,
+                )
+                if template is not None:
+                    header_link = template.media_url or None
+                    header_kind = template.media_kind.lower() if template.media_kind else None
+                    language = template.language or None
+                    log.debug(
+                        "followup_step_template_loaded",
+                        template_name=step.meta_template_name,
+                        has_media=bool(header_link),
+                    )
+                else:
+                    log.warning(
+                        "followup_step_template_not_found",
+                        template_name=step.meta_template_name,
+                        account_id=str(account_id),
+                    )
+
             await self._chatnexo.send_template(
                 account_id=str(account_id),
                 conversation_id=str(conversation_id),
                 template_name=step.meta_template_name,
-                language=getattr(step, "language", None) or None,
+                language=language,
                 variables=step.template_variables,
                 header_link=header_link,
                 header_kind=header_kind,
