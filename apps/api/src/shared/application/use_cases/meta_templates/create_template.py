@@ -44,7 +44,7 @@ class CreateTemplate:
         *,
         repo: MetaTemplateRepository,
         meta_client: MetaTemplateClient,
-        storage: StoragePort,
+        storage: StoragePort | None,
     ) -> None:
         self._repo = repo
         self._meta = meta_client

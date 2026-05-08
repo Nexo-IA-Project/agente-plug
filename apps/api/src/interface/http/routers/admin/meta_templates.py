@@ -153,7 +153,14 @@ async def create_template(
         )
 
     settings = get_settings()
-    storage = R2Storage.from_settings(settings)
+    # R2 só é necessário quando há mídia. Sem mídia, passa None.
+    if body.media_url:
+        try:
+            storage: R2Storage | None = R2Storage.from_settings(settings)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+    else:
+        storage = None
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
@@ -213,7 +220,7 @@ async def delete_template(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
     client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
-    storage = R2Storage.from_settings(get_settings())
+    storage = R2Storage.from_settings_optional(get_settings())
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)

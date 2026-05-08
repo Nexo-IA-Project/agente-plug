@@ -51,6 +51,14 @@ class R2Storage:
             public_base_url=settings.r2_public_base_url,
         )
 
+    @classmethod
+    def from_settings_optional(cls, settings: Any) -> R2Storage | None:
+        """Retorna None se R2 não estiver configurado, sem levantar erro."""
+        try:
+            return cls.from_settings(settings)
+        except RuntimeError:
+            return None
+
     async def upload(
         self, *, key: str, data: bytes, content_type: str
     ) -> StorageObject:
