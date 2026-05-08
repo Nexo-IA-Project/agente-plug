@@ -55,6 +55,70 @@ def _make_template_record(**kwargs):
     return record
 
 
+def test_create_template_duplicate_name_returns_409(client):
+    """IntegrityError de nome duplicado → 409 META_TEMPLATE_NAME_DUPLICATE, não 502."""
+    from sqlalchemy.exc import IntegrityError
+
+    with (
+        patch(
+            "interface.http.routers.admin.meta_templates._get_meta_client_and_waba",
+            new_callable=AsyncMock,
+        ) as mock_get,
+        patch(
+            "interface.http.routers.admin.meta_templates.session_scope",
+        ) as mock_scope,
+        patch(
+            "interface.http.routers.admin.meta_templates.MetaTemplateRepository",
+        ),
+        patch(
+            "interface.http.routers.admin.meta_templates.CreateTemplate",
+        ) as mock_create_cls,
+        patch(
+            "interface.http.routers.admin.meta_templates.R2Storage",
+        ),
+        patch(
+            "interface.http.routers.admin.meta_templates.get_settings",
+        ) as mock_settings,
+    ):
+        from shared.adapters.meta.template_client import MetaTemplateClient
+
+        mock_client = AsyncMock(spec=MetaTemplateClient)
+        mock_get.return_value = (mock_client, "waba-123")
+
+        settings = MagicMock()
+        settings.integration_credentials_key = "a" * 44
+        settings.meta_app_id = "app-123"
+        mock_settings.return_value = settings
+
+        mock_session = AsyncMock()
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+        mock_scope.return_value = mock_session
+
+        mock_create_instance = AsyncMock()
+        mock_create_instance.execute = AsyncMock(
+            side_effect=IntegrityError("duplicate key", params=None, orig=Exception())
+        )
+        mock_create_cls.return_value = mock_create_instance
+
+        resp = client.post(
+            "/admin/meta-templates",
+            json={
+                "name": "existing_template",
+                "category": "MARKETING",
+                "language": "pt_BR",
+                "components": [{"type": "BODY", "text": "Olá {{1}}"}],
+                "media_url": None,
+                "media_object_key": None,
+                "media_kind": None,
+            },
+        )
+
+    assert resp.status_code == 409
+    body = resp.json()
+    assert body["detail"]["code"] == "META_TEMPLATE_NAME_DUPLICATE"
+
+
 def test_list_templates_returns_empty_when_no_waba_id(client):
     """Sem WABA_ID configurado, retorna lista vazia em vez de 422 — UX para
     primeiro acesso antes do admin cadastrar credenciais Meta."""

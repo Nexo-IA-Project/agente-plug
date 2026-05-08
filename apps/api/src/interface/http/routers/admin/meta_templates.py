@@ -5,6 +5,7 @@ from uuid import UUID
 
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from interface.http.schemas.meta_templates import (
@@ -158,6 +159,14 @@ async def create_template(
             raise HTTPException(
                 status_code=422,
                 detail={"code": "META_TEMPLATE_VALIDATION_FAILED", "detail": str(exc)},
+            ) from exc
+        except IntegrityError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "META_TEMPLATE_NAME_DUPLICATE",
+                    "message": "Já existe um template com esse nome nesta conta",
+                },
             ) from exc
         except Exception as exc:
             raise HTTPException(
