@@ -86,11 +86,14 @@ export function TemplateForm({ onCreate }: Props) {
       });
     }
 
-    components.push({
+    const bodyComponent: Record<string, unknown> = {
       type: "BODY",
       text: bodyText,
-      example: { body_text: [bodyExamples] },
-    });
+    };
+    if (bodyExamples.length > 0 && bodyExamples.some((e) => e.trim())) {
+      bodyComponent.example = { body_text: [bodyExamples] };
+    }
+    components.push(bodyComponent);
 
     if (footerText.trim()) {
       components.push({ type: "FOOTER", text: footerText.trim() });
