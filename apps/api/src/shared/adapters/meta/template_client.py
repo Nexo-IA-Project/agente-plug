@@ -107,3 +107,59 @@ class MetaTemplateClient:
             status=raw.get("status", "PENDING"),
             components=[_parse_component(c) for c in payload.components],
         )
+
+    async def create_resumable_upload_session(
+        self, *, app_id: str, file_size: int, file_type: str
+    ) -> str:
+        url = f"{_BASE_URL}/{app_id}/uploads"
+        async with httpx.AsyncClient() as http:
+            resp = await http.post(
+                url,
+                params={"file_length": file_size, "file_type": file_type},
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                timeout=15,
+            )
+        if resp.status_code != 200:
+            log.warning("meta_create_upload_session_error", status=resp.status_code, body=resp.text[:200])
+            resp.raise_for_status()
+        data = resp.json()
+        session_id = data.get("id", "")
+        if not session_id:
+            raise RuntimeError(f"Meta upload session sem id: {data}")
+        return session_id
+
+    async def upload_media_resumable(
+        self, *, session_id: str, data: bytes
+    ) -> str:
+        url = f"{_BASE_URL}/{session_id}"
+        async with httpx.AsyncClient() as http:
+            resp = await http.post(
+                url,
+                content=data,
+                headers={
+                    "Authorization": f"OAuth {self._api_key}",
+                    "file_offset": "0",
+                },
+                timeout=60,
+            )
+        if resp.status_code != 200:
+            log.warning("meta_upload_media_error", status=resp.status_code, body=resp.text[:200])
+            resp.raise_for_status()
+        body = resp.json()
+        handle = body.get("h", "")
+        if not handle:
+            raise RuntimeError(f"Meta upload sem handle: {body}")
+        return handle
+
+    async def delete_template(self, *, waba_id: str, name: str) -> None:
+        url = f"{_BASE_URL}/{waba_id}/message_templates"
+        async with httpx.AsyncClient() as http:
+            resp = await http.delete(
+                url,
+                params={"name": name},
+                headers={"Authorization": f"Bearer {self._api_key}"},
+                timeout=15,
+            )
+        if resp.status_code not in (200, 204):
+            log.warning("meta_delete_template_error", status=resp.status_code, body=resp.text[:200])
+            resp.raise_for_status()
