@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-import httpx
 import structlog
 
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
@@ -67,10 +66,7 @@ class CreateTemplate:
         # 2. Resumable upload Meta (se houver mídia)
         if payload.media_url and payload.media_object_key and payload.media_kind:
             try:
-                async with httpx.AsyncClient(timeout=60) as http:
-                    r = await http.get(payload.media_url)
-                    r.raise_for_status()
-                    media_bytes = r.content
+                media_bytes = await self._storage.download(key=payload.media_object_key)
 
                 session_id = await self._meta.create_resumable_upload_session(
                     app_id=payload.app_id,

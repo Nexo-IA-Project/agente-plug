@@ -71,3 +71,20 @@ async def test_head_returns_none_when_not_found(r2: R2Storage) -> None:
         obj = await r2.head(key="missing.jpg")
 
     assert obj is None
+
+
+@pytest.mark.asyncio
+async def test_download_returns_bytes(r2: R2Storage) -> None:
+    from io import BytesIO
+
+    mock_client = MagicMock()
+    mock_client.get_object.return_value = {
+        "Body": BytesIO(b"hello world"),
+    }
+    with patch.object(r2, "_client", mock_client):
+        data = await r2.download(key="accounts/x/templates/foo.jpg")
+
+    mock_client.get_object.assert_called_once_with(
+        Bucket="my-bucket", Key="accounts/x/templates/foo.jpg"
+    )
+    assert data == b"hello world"

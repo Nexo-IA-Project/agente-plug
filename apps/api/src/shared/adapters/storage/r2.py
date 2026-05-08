@@ -34,7 +34,7 @@ class R2Storage:
         )
 
     @classmethod
-    def from_settings(cls, settings: Any) -> "R2Storage":
+    def from_settings(cls, settings: Any) -> R2Storage:
         if not all([
             settings.r2_account_id,
             settings.r2_access_key_id,
@@ -94,3 +94,14 @@ class R2Storage:
             sha256=resp.get("Metadata", {}).get("sha256", ""),
             content_type=resp.get("ContentType", ""),
         )
+
+    async def download(self, *, key: str) -> bytes:
+        """Baixa bytes do objeto via S3 API (não via URL pública)."""
+        resp = await asyncio.to_thread(
+            self._client.get_object, Bucket=self._bucket, Key=key
+        )
+        body = resp["Body"]
+        # boto3 stream → bytes
+        data = await asyncio.to_thread(body.read)
+        log.info("r2_download", key=key, size=len(data))
+        return data
