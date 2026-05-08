@@ -5,7 +5,9 @@ from uuid import UUID
 
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from interface.http.schemas.meta_templates import (
@@ -13,6 +15,7 @@ from interface.http.schemas.meta_templates import (
     MetaTemplateResponse,
     UploadMediaResponse,
 )
+from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
 from shared.adapters.db.session import session_scope
@@ -52,6 +55,11 @@ def _to_response(model) -> MetaTemplateResponse:
     )
 
 
+async def _get_account_uuid(session: AsyncSession) -> UUID:
+    result = await session.execute(select(AccountModel.id).limit(1))
+    return result.scalar_one()
+
+
 async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient, str]:
     settings = get_settings()
     fernet = Fernet(settings.integration_credentials_key.encode())
@@ -65,8 +73,6 @@ async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient
 
 async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict]:
     """Retorna lista de flows que usam o template (id, name, step_position)."""
-    from sqlalchemy import select
-
     from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
 
     async with session_scope() as session:
@@ -103,9 +109,11 @@ async def upload_media(
     data = await file.read()
     storage = R2Storage.from_settings(get_settings())
     use_case = UploadTemplateMedia(storage=storage)
+    async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
     try:
         out = await use_case.execute(UploadTemplateMediaInput(
-            account_id=auth.account_id,
+            account_id=account_uuid,
             kind=kind,  # type: ignore[arg-type]
             data=data,
             mime=file.content_type or "application/octet-stream",
@@ -140,11 +148,12 @@ async def create_template(
 
     storage = R2Storage.from_settings(settings)
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         use_case = CreateTemplate(repo=repo, meta_client=client, storage=storage)
         try:
             record = await use_case.execute(CreateTemplateInput(
-                account_id=auth.account_id,
+                account_id=account_uuid,
                 waba_id=waba_id,
                 app_id=settings.meta_app_id,
                 name=body.name,
@@ -183,9 +192,10 @@ async def list_templates(
 ) -> list[MetaTemplateResponse]:
     client, waba_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         records = await ListTemplates(repo=repo, meta_client=client).execute(
-            account_id=auth.account_id, waba_id=waba_id,
+            account_id=account_uuid, waba_id=waba_id,
         )
     return [_to_response(r) for r in records]
 
@@ -198,6 +208,7 @@ async def delete_template(
     client, waba_id = await _get_meta_client_and_waba(auth)
     storage = R2Storage.from_settings(get_settings())
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         use_case = DeleteTemplate(
             repo=repo, meta_client=client, storage=storage,
@@ -205,7 +216,7 @@ async def delete_template(
         )
         try:
             await use_case.execute(
-                account_id=auth.account_id, template_id=template_id, waba_id=waba_id,
+                account_id=account_uuid, template_id=template_id, waba_id=waba_id,
             )
         except LookupError as exc:
             raise HTTPException(status_code=404, detail="META_TEMPLATE_NOT_FOUND") from exc
