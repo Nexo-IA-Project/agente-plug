@@ -34,19 +34,28 @@ class DispatchFollowupStep:
             log.info("followup_step_skipped", step_id=str(step.id), status=step.status)
             return "IGNORADO"
 
-        await self._chatnexo.send_template(
-            account_id=str(account_id),
-            conversation_id=str(conversation_id),
-            template_name=step.meta_template_name,
-            variables=step.template_variables,
-        )
+        if step.message_text:
+            await self._chatnexo.send_message(
+                account_id=str(account_id),
+                conversation_id=str(conversation_id),
+                text=step.message_text,
+            )
+            dispatch_label = f"texto_livre: {step.message_text[:40]}"
+        else:
+            await self._chatnexo.send_template(
+                account_id=str(account_id),
+                conversation_id=str(conversation_id),
+                template_name=step.meta_template_name,
+                variables=step.template_variables,
+            )
+            dispatch_label = f"template={step.meta_template_name}"
 
         thread_id = f"{account_id}:{contact_phone}"
         messages = await self._history.load(thread_id=thread_id)
         messages.append(
             {
                 "role": "assistant",
-                "content": f"[Mensagem automática de follow-up enviada: template={step.meta_template_name}]",
+                "content": f"[Mensagem automática de follow-up enviada: {dispatch_label}]",
             }
         )
         await self._history.save(thread_id=thread_id, messages=messages)
@@ -64,5 +73,6 @@ class DispatchFollowupStep:
             "followup_step_dispatched",
             step_id=str(step.id),
             template=step.meta_template_name,
+            has_text=bool(step.message_text),
         )
         return "SENT"

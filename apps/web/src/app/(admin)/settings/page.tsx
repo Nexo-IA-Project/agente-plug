@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
-import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
 import type { AccountSettings } from "@/features/settings/types";
 
 export default function SettingsPage() {
@@ -61,7 +60,7 @@ export default function SettingsPage() {
           </p>
           <h1 className="mt-1 text-h1 font-sans font-bold text-on-background">Configurações</h1>
           <p className="mt-1 text-body-base text-on-surface-variant">
-            Credenciais de integração e parâmetros do agente. As alterações têm efeito imediato.
+            Credenciais de integração com serviços externos. As alterações têm efeito imediato.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container px-4 py-2">
@@ -76,7 +75,6 @@ export default function SettingsPage() {
 
       {/* Sections */}
       <IntegrationSection initial={settings} onSaved={setSettings} />
-      <BehaviorSection initial={settings} onSaved={setSettings} />
     </div>
   );
 }

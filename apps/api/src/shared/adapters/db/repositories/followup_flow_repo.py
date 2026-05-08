@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
@@ -19,6 +19,7 @@ def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
         is_active=m.is_active,
         created_at=m.created_at,
         updated_at=m.updated_at,
+        position=m.position,
     )
 
 
@@ -31,6 +32,7 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
         meta_template_name=m.meta_template_name,
         template_variables=dict(m.template_variables or {}),
         created_at=m.created_at,
+        message_text=m.message_text,
     )
 
 
@@ -66,24 +68,45 @@ class FollowupFlowRepository:
         result = await self.session.execute(
             select(FollowupFlowModel)
             .where(FollowupFlowModel.account_id == account_id)
-            .order_by(FollowupFlowModel.created_at)
+            .order_by(FollowupFlowModel.position, FollowupFlowModel.created_at)
         )
         return [_flow_to_entity(m) for m in result.scalars().all()]
 
     async def create_flow(
         self, *, account_id: uuid.UUID, name: str, product_tags: list[str]
     ) -> FollowupFlow:
+        # Próxima posição = max atual + 1 (ou 1 se vazio).
+        max_pos = await self.session.scalar(
+            select(func.coalesce(func.max(FollowupFlowModel.position), 0)).where(
+                FollowupFlowModel.account_id == account_id
+            )
+        )
         model = FollowupFlowModel(
             id=uuid.uuid4(),
             account_id=account_id,
             name=name,
             product_tags=product_tags,
             is_active=True,
+            position=int(max_pos or 0) + 1,
         )
         self.session.add(model)
         await self.session.flush()
         await self.session.refresh(model)
         return _flow_to_entity(model)
+
+    async def reorder_flows(
+        self, *, account_id: uuid.UUID, items: list[tuple[uuid.UUID, int]]
+    ) -> None:
+        """Atualiza a position de cada flow listado em items.
+
+        Apenas flows que pertencem à account são afetados (isolamento de tenant).
+        """
+        for flow_id, position in items:
+            model = await self.session.get(FollowupFlowModel, flow_id)
+            if model is None or model.account_id != account_id:
+                continue
+            model.position = position
+        await self.session.flush()
 
     async def update_flow(
         self,
@@ -120,8 +143,9 @@ class FollowupFlowRepository:
         flow_id: uuid.UUID,
         position: int,
         delay_from_purchase_hours: int,
-        meta_template_name: str,
+        meta_template_name: str | None,
         template_variables: dict,
+        message_text: str | None = None,
     ) -> FollowupStep:
         model = FollowupStepModel(
             id=uuid.uuid4(),
@@ -130,6 +154,7 @@ class FollowupFlowRepository:
             delay_from_purchase_hours=delay_from_purchase_hours,
             meta_template_name=meta_template_name,
             template_variables=template_variables,
+            message_text=message_text,
         )
         self.session.add(model)
         await self.session.flush()
@@ -144,6 +169,9 @@ class FollowupFlowRepository:
         meta_template_name: str | None = None,
         template_variables: dict | None = None,
         position: int | None = None,
+        message_text: str | None = None,
+        clear_template: bool = False,
+        clear_message_text: bool = False,
     ) -> FollowupStep | None:
         model = await self.session.get(FollowupStepModel, step_id)
         if model is None:
@@ -152,10 +180,16 @@ class FollowupFlowRepository:
             model.delay_from_purchase_hours = delay_from_purchase_hours
         if meta_template_name is not None:
             model.meta_template_name = meta_template_name
+        if clear_template:
+            model.meta_template_name = None
         if template_variables is not None:
             model.template_variables = template_variables
         if position is not None:
             model.position = position
+        if message_text is not None:
+            model.message_text = message_text
+        if clear_message_text:
+            model.message_text = None
         await self.session.flush()
         await self.session.refresh(model)
         return _step_to_entity(model)

@@ -2,18 +2,34 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { DelayBadge } from "./DelayBadge";
 import type { FollowupStep } from "../types";
 
 interface Props {
   step: FollowupStep;
+  isFirst: boolean;
+  isLast: boolean;
   onEdit: () => void;
   onDelete: () => Promise<void>;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
-export function StepItem({ step, onEdit, onDelete }: Props) {
+export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown }: Props) {
+  const confirm = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id });
+
+  async function handleDelete() {
+    const ok = await confirm({
+      title: "Excluir step",
+      description: "Tem certeza que deseja excluir este step? Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (ok) await onDelete();
+  }
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -27,6 +43,7 @@ export function StepItem({ step, onEdit, onDelete }: Props) {
       style={style}
       className="flex items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3"
     >
+      {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
@@ -37,13 +54,69 @@ export function StepItem({ step, onEdit, onDelete }: Props) {
           drag_indicator
         </span>
       </button>
-      <span className="w-6 text-center text-label-sm font-mono text-on-surface-variant">
+
+      {/* Up/Down buttons */}
+      <div className="flex flex-col gap-0.5">
+        <button
+          type="button"
+          onClick={onMoveUp}
+          disabled={isFirst}
+          className="rounded p-0.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Mover para cima"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+            keyboard_arrow_up
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={isLast}
+          className="rounded p-0.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Mover para baixo"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>
+            keyboard_arrow_down
+          </span>
+        </button>
+      </div>
+
+      {/* Position */}
+      <span className="w-6 text-center font-mono text-label-sm text-on-surface-variant">
         {step.position}
       </span>
+
+      {/* Delay badge */}
       <DelayBadge hours={step.delay_from_purchase_hours} />
-      <span className="flex-1 text-body-sm font-mono text-on-surface">
-        {step.meta_template_name}
-      </span>
+
+      {/* Label */}
+      <div className="min-w-0 flex-1">
+        {step.meta_template_name ? (
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "14px" }}>
+              receipt_long
+            </span>
+            <span className="truncate font-mono text-body-sm text-on-surface">
+              {step.meta_template_name}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "14px" }}>
+              chat
+            </span>
+            <span className="truncate text-body-sm text-on-surface-variant italic">
+              {step.message_text
+                ? step.message_text.length > 40
+                  ? step.message_text.slice(0, 40) + "…"
+                  : step.message_text
+                : "Texto livre"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
       <div className="flex gap-2">
         <button
           onClick={onEdit}
@@ -55,9 +128,7 @@ export function StepItem({ step, onEdit, onDelete }: Props) {
           </span>
         </button>
         <button
-          onClick={() => {
-            if (confirm("Excluir este step?")) void onDelete();
-          }}
+          onClick={() => void handleDelete()}
           className="rounded-lg p-1.5 text-error hover:bg-error-container"
           aria-label="Excluir step"
         >

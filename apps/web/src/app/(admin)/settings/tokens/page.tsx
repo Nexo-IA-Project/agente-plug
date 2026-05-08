@@ -9,9 +9,11 @@ import {
   type CreateApiTokenResponse,
 } from "@/lib/api";
 import { useToast } from "@/shared/hooks/useToast";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 
 export default function ApiTokensPage() {
   const toast = useToast();
+  const confirm = useConfirm();
   const [tokens, setTokens] = useState<ApiToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -55,7 +57,13 @@ export default function ApiTokensPage() {
   }
 
   async function handleRevoke(tokenId: string, name: string) {
-    if (!confirm(`Revogar o token "${name}"? Esta ação não pode ser desfeita.`)) return;
+    const ok = await confirm({
+      title: "Revogar token",
+      description: `Tem certeza que deseja revogar o token "${name}"? Esta ação não pode ser desfeita e qualquer integração que usa este token irá parar de funcionar.`,
+      confirmLabel: "Revogar",
+      variant: "danger",
+    });
+    if (!ok) return;
     setRevoking(tokenId);
     try {
       await revokeApiToken(tokenId);
@@ -154,7 +162,7 @@ export default function ApiTokensPage() {
                 placeholder="ex: chatnexo-webhook"
                 autoFocus
                 required
-                className="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-body-base text-on-surface placeholder:text-on-surface-variant/40 focus:border-primary focus:outline-none transition-colors"
+                className="field-input"
               />
             </div>
             <button

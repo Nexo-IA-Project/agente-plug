@@ -8,6 +8,7 @@ export interface AccountSettings {
   cademi_retry_base_seconds: number;
   openai_api_key: string;
   meta_api_key: string;
+  meta_waba_id: string;
   idle_ping_minutes: number;
   idle_close_minutes: number;
   intent_confidence_threshold: number;

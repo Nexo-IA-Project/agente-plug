@@ -16,6 +16,11 @@ export function useFollowupSteps(flowId: string) {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!flowId) {
+      setSteps([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -62,13 +67,20 @@ export function useFollowupSteps(flowId: string) {
 
   const reorder = useCallback(
     async (items: ReorderItem[]): Promise<void> => {
-      await reorderFollowupSteps(flowId, items);
       const posMap = new Map(items.map((i) => [i.id, i.position]));
-      setSteps((prev) =>
-        prev
+      let snapshot: FollowupStep[] = [];
+      setSteps((prev) => {
+        snapshot = prev;
+        return prev
           .map((s) => ({ ...s, position: posMap.get(s.id) ?? s.position }))
-          .sort((a, b) => a.position - b.position)
-      );
+          .sort((a, b) => a.position - b.position);
+      });
+      try {
+        await reorderFollowupSteps(flowId, items);
+      } catch (err) {
+        setSteps(snapshot);
+        throw err;
+      }
     },
     [flowId]
   );

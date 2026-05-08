@@ -23,6 +23,13 @@ Monorepo com backend Python (FastAPI + OpenAI function calling) e frontend Next.
 **11 subsistemas implementados (todos ✅ Concluídos):**  
 Core · Capability Welcome · Capability Access · Capability Refund · Capability Loja Express · KB Admin · Capability Knowledge · Account Settings · Follow-up Engine · Follow-up Flow Manager · Meta Template Manager
 
+**Branch `feat/dynamic-followup-meta-templates`:**
+- `meta_waba_id` editável em Account Settings (não só .env)
+- `FollowupStep` suporta `message_text` (texto livre) como alternativa ao template Meta
+- `FollowupFlow` ganhou coluna `position` — ordem persistida via `PATCH /admin/followup/flows/reorder`
+- `/templates`: listagem full-width + modal de criação com efeito scale-from-center
+- `/followup`: drawer modal único (cresce do centro) com edição de flow + steps inline
+
 ---
 
 ## Backend (`apps/api/`)
@@ -175,14 +182,21 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 | `conversation_messages` | Thread OpenAI por conversa (JSONB) |
 | `api_tokens` | Tokens de API (hash + prefix `nxia_XXXX`) |
 | `meta_templates` | Templates WhatsApp aprovados na Meta |
-| `followup_flows` | Flows de follow-up (name, product_tags) |
-| `followup_steps` | Steps de um flow (delay_hours, template) |
+| `followup_flows` | Flows de follow-up (name, product_tags, position) |
+| `followup_steps` | Steps de um flow (delay_hours, template ou message_text para texto livre) |
 | `followup_enrollments` | Inscrição de contato em um flow |
 | `followup_enrollment_steps` | Execução de cada step do enrollment |
 
-**Migrations:** `apps/api/migrations/versions/` — 14 arquivos. Usar `alembic upgrade heads` (plural, dois heads ativos por merge de branches).
+**Migrations:** `apps/api/migrations/versions/` — 16 arquivos. Usar `alembic upgrade heads` (plural, dois heads ativos por merge de branches).
 
 **token_prefix:** Campo em `api_tokens` armazena os primeiros 9 chars do token raw (`nxia_XXXX`) para exibição no painel. Tokens existentes antes da migration `c4d5e6f7a8b9` têm prefix `null` e mostram "—".
+
+**meta_waba_id:** Agora é campo de `IntegrationConfig` (armazenado no JSONB `accounts.settings`), editável na UI de Settings. O fallback ainda lê `META_WABA_ID` do `.env.local` se não configurado na UI.
+
+**FollowupStep.message_text:** Campo nullable adicionado na migration `d1e2f3a4b5c6`. Steps com `message_text` enviam texto livre via `send_message`; steps com `meta_template_name` enviam template.
+
+**FollowupFlow.position:** Adicionado na migration `e2f3a4b5c6d7`. Define ordem dos flows na listagem; reordenado via drag-and-drop persistido em `PATCH /admin/followup/flows/reorder`.
+
 
 ### Endpoints HTTP
 
@@ -225,7 +239,8 @@ GET    /admin/followup/flows/{id}/steps    → [FollowupStep]
 POST   /admin/followup/flows/{id}/steps   → FollowupStep (201)
 PUT    /admin/followup/flows/{id}/steps/{step_id}   → FollowupStep
 DELETE /admin/followup/flows/{id}/steps/{step_id}   → 204
-POST   /admin/followup/flows/{id}/reorder-steps     → 200
+PATCH  /admin/followup/flows/{id}/steps/reorder     → 204
+PATCH  /admin/followup/flows/reorder                → 204
 ```
 
 **Meta Templates (`/admin`)**

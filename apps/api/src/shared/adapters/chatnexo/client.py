@@ -66,7 +66,7 @@ class ChatNexoClient:
         response.raise_for_status()
         return response
 
-    async def send_message(self, *, account_id: int, conversation_id: int, text: str) -> None:
+    async def send_message(self, *, account_id: str, conversation_id: str, text: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
             json={"type": "text", "content": text},
@@ -75,8 +75,8 @@ class ChatNexoClient:
     async def send_template(
         self,
         *,
-        account_id: int,
-        conversation_id: int,
+        account_id: str,
+        conversation_id: str,
         template_name: str,
         variables: dict[str, Any],
     ) -> None:
@@ -90,20 +90,20 @@ class ChatNexoClient:
         )
 
     async def transfer_to_human(
-        self, *, account_id: int, conversation_id: int, reason: EscalationReason
+        self, *, account_id: str, conversation_id: str, reason: EscalationReason
     ) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/transfer",
             json={"reason": reason.value},
         )
 
-    async def add_tag(self, *, account_id: int, conversation_id: int, tag: str) -> None:
+    async def add_tag(self, *, account_id: str, conversation_id: str, tag: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/tags",
             json={"tag": tag},
         )
 
-    async def get_open_conversation(self, account_id: int, contact_phone: str) -> str | None:
+    async def get_open_conversation(self, account_id: str, contact_phone: str) -> str | None:
         """Return the open conversation ID for a contact, or None if not found."""
         response = await self._get(
             f"/accounts/{account_id}/conversations",
@@ -113,7 +113,7 @@ class ChatNexoClient:
         items = data.get("data", []) if isinstance(data, dict) else data
         return str(items[0]["id"]) if items else None
 
-    async def create_conversation(self, account_id: int, contact_phone: str) -> str:
+    async def create_conversation(self, account_id: str, contact_phone: str) -> str:
         """Create a new conversation for a contact and return its ID."""
         response = await self._post(
             f"/accounts/{account_id}/conversations",

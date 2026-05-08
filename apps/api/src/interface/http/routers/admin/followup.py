@@ -12,6 +12,7 @@ from interface.http.schemas.followup import (
     CreateStepRequest,
     FollowupFlowResponse,
     FollowupStepResponse,
+    ReorderFlowsRequest,
     ReorderStepsRequest,
     UpdateFlowRequest,
     UpdateStepRequest,
@@ -35,6 +36,7 @@ def _flow_to_resp(f) -> FollowupFlowResponse:
         name=f.name,
         product_tags=f.product_tags,
         is_active=f.is_active,
+        position=f.position,
         created_at=f.created_at,
         updated_at=f.updated_at,
     )
@@ -48,6 +50,7 @@ def _step_to_resp(s) -> FollowupStepResponse:
         delay_from_purchase_hours=s.delay_from_purchase_hours,
         meta_template_name=s.meta_template_name,
         template_variables=s.template_variables,
+        message_text=s.message_text,
         created_at=s.created_at,
     )
 
@@ -139,6 +142,7 @@ async def create_step(
             delay_from_purchase_hours=body.delay_from_purchase_hours,
             meta_template_name=body.meta_template_name,
             template_variables=body.template_variables,
+            message_text=body.message_text,
         )
     return _step_to_resp(step)
 
@@ -158,6 +162,9 @@ async def update_step(
             delay_from_purchase_hours=body.delay_from_purchase_hours,
             meta_template_name=body.meta_template_name,
             template_variables=body.template_variables,
+            message_text=body.message_text,
+            clear_template=body.message_text is not None and body.meta_template_name is None,
+            clear_message_text=body.meta_template_name is not None and body.message_text is None,
         )
     if step is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step não encontrado")
@@ -187,3 +194,17 @@ async def reorder_steps(
         repo = FollowupFlowRepository(session=session)
         for item in body.steps:
             await repo.update_step(item.id, position=item.position)
+
+
+@router.patch("/followup/flows/reorder", status_code=status.HTTP_204_NO_CONTENT)
+async def reorder_flows(
+    body: ReorderFlowsRequest,
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> None:
+    async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
+        repo = FollowupFlowRepository(session=session)
+        await repo.reorder_flows(
+            account_id=account_uuid,
+            items=[(item.id, item.position) for item in body.flows],
+        )

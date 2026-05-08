@@ -53,7 +53,9 @@ def test_list_templates_returns_502_on_meta_error(client):
     assert "Meta" in resp.json()["detail"]
 
 
-def test_list_templates_returns_422_when_no_waba_id(client):
+def test_list_templates_returns_empty_when_no_waba_id(client):
+    """Sem WABA_ID configurado, retorna lista vazia em vez de 422 — UX para
+    primeiro acesso antes do admin cadastrar credenciais Meta."""
     with patch(
         "interface.http.routers.admin.meta_templates._get_client",
         new_callable=AsyncMock,
@@ -65,5 +67,5 @@ def test_list_templates_returns_422_when_no_waba_id(client):
 
         resp = client.get("/admin/meta-templates")
 
-    assert resp.status_code == 422
-    assert "META_WABA_ID" in resp.json()["detail"]
+    assert resp.status_code == 200
+    assert resp.json() == []

@@ -27,6 +27,7 @@ class FollowupFlow:
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    position: int = 0
 
 
 @dataclass(slots=True)
@@ -35,9 +36,10 @@ class FollowupStep:
     flow_id: UUID
     position: int
     delay_from_purchase_hours: int
-    meta_template_name: str
+    meta_template_name: str | None
     template_variables: dict
     created_at: datetime
+    message_text: str | None = None
 
 
 @dataclass(slots=True)
@@ -58,9 +60,10 @@ class FollowupEnrollmentStep:
     enrollment_id: UUID
     position: int
     delay_from_purchase_hours: int
-    meta_template_name: str
+    meta_template_name: str | None
     template_variables: dict
     id: UUID = field(default_factory=uuid4)
     scheduled_job_id: UUID | None = None
     status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING
     sent_at: datetime | None = None
+    message_text: str | None = None

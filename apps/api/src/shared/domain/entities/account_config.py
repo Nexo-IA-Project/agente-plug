@@ -15,6 +15,7 @@ class IntegrationConfig:
     cademi_retry_base_seconds: float
     openai_api_key: str
     meta_api_key: str
+    meta_waba_id: str
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class AccountConfigPatch:
     cademi_retry_base_seconds: float | None = field(default=None)
     openai_api_key: str | None = field(default=None)
     meta_api_key: str | None = field(default=None)
+    meta_waba_id: str | None = field(default=None)
     idle_ping_minutes: int | None = field(default=None)
     idle_close_minutes: int | None = field(default=None)
     intent_confidence_threshold: float | None = field(default=None)

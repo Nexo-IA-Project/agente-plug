@@ -116,8 +116,8 @@ async def _process_message(
         )
 
     await chatnexo.send_message(
-        account_id=account_id,
-        conversation_id=conversation_id,
+        account_id=str(account_id),
+        conversation_id=str(conversation_id),
         text=reply,
     )
     log.info("message_reply_sent", account_id=account_id, conversation_id=conversation_id)

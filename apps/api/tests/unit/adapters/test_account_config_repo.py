@@ -129,7 +129,8 @@ async def test_update_ignores_masked_values():
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 
-    patch_obj = AccountConfigPatch(openai_api_key="sk-proj-****abcd")
+    # Valor mascarado real produzido por _mask() — termina em "****".
+    patch_obj = AccountConfigPatch(openai_api_key="sk-proj-****")
 
     with patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s:
         _setup_default_settings(mock_s)

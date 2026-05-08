@@ -11,8 +11,9 @@ class FollowupStepResponse(BaseModel):
     flow_id: UUID
     position: int
     delay_from_purchase_hours: int
-    meta_template_name: str
+    meta_template_name: str | None
     template_variables: dict
+    message_text: str | None
     created_at: datetime
 
 
@@ -22,6 +23,7 @@ class FollowupFlowResponse(BaseModel):
     name: str
     product_tags: list[str]
     is_active: bool
+    position: int
     created_at: datetime
     updated_at: datetime
 
@@ -40,8 +42,9 @@ class UpdateFlowRequest(BaseModel):
 class CreateStepRequest(BaseModel):
     position: int
     delay_from_purchase_hours: int
-    meta_template_name: str
+    meta_template_name: str | None = None
     template_variables: dict = {}
+    message_text: str | None = None
 
 
 class UpdateStepRequest(BaseModel):
@@ -49,6 +52,7 @@ class UpdateStepRequest(BaseModel):
     delay_from_purchase_hours: int | None = None
     meta_template_name: str | None = None
     template_variables: dict | None = None
+    message_text: str | None = None
 
 
 class ReorderItem(BaseModel):
@@ -58,3 +62,7 @@ class ReorderItem(BaseModel):
 
 class ReorderStepsRequest(BaseModel):
     steps: list[ReorderItem]
+
+
+class ReorderFlowsRequest(BaseModel):
+    flows: list[ReorderItem]

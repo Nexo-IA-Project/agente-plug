@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Trash2 } from "lucide-react";
 import { deleteDocument } from "@/lib/api";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import type { KbDocument } from "@/types/api";
 
 interface DocumentTableProps {
@@ -52,9 +53,16 @@ function statusLabel(status: KbDocument["status"]): string {
 export function DocumentTable({ documents }: DocumentTableProps) {
   const [rows, setRows] = useState<KbDocument[]>(documents);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   async function handleDelete(id: string) {
-    if (!confirm("Remover este documento da base de conhecimento?")) return;
+    const ok = await confirm({
+      title: "Remover documento",
+      description: "Tem certeza que deseja remover este documento da base de conhecimento? Esta ação não pode ser desfeita.",
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       await deleteDocument(id);

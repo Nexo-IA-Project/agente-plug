@@ -71,6 +71,7 @@ const SERVICES: ServiceGroup[] = [
     description: "API oficial do WhatsApp Business",
     fields: [
       { key: "meta_api_key", label: "API Key", type: "secret", description: "Token de acesso à Meta Graph API" },
+      { key: "meta_waba_id", label: "WABA ID", type: "text", description: "ID da conta WhatsApp Business (ex: 123456789)" },
     ],
   },
 ];
@@ -79,7 +80,9 @@ const SERVICES: ServiceGroup[] = [
 
 function isConfigured(value: string | number): boolean {
   const str = String(value);
-  return str !== "" && str !== "0" && !str.startsWith("****") || str.includes("****");
+  if (str === "" || str === "0") return false;
+  // Valor mascarado ("xxxxx****") indica que está cadastrado mas oculto.
+  return str.includes("****") || !str.startsWith("****");
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy import (
@@ -467,6 +468,7 @@ class FollowupFlowModel(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     product_tags: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
@@ -486,8 +488,9 @@ class FollowupStepModel(Base):
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    meta_template_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
@@ -521,8 +524,9 @@ class FollowupEnrollmentStepModel(Base):
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False)
-    meta_template_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     scheduled_job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
