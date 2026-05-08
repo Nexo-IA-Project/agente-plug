@@ -27,6 +27,7 @@ class FollowupFlow:
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    position: int = 0
 
 
 @dataclass(slots=True)

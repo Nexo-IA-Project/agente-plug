@@ -468,6 +468,7 @@ class FollowupFlowModel(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     product_tags: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )

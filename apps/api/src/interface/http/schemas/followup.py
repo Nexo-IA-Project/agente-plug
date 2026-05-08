@@ -23,6 +23,7 @@ class FollowupFlowResponse(BaseModel):
     name: str
     product_tags: list[str]
     is_active: bool
+    position: int
     created_at: datetime
     updated_at: datetime
 
@@ -61,3 +62,7 @@ class ReorderItem(BaseModel):
 
 class ReorderStepsRequest(BaseModel):
     steps: list[ReorderItem]
+
+
+class ReorderFlowsRequest(BaseModel):
+    flows: list[ReorderItem]

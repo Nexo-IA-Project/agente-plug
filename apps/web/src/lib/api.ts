@@ -196,6 +196,13 @@ export async function reorderFollowupSteps(
   });
 }
 
+export async function reorderFollowupFlows(items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>(`/admin/followup/flows/reorder`, {
+    method: "PATCH",
+    body: JSON.stringify({ flows: items }),
+  });
+}
+
 // ─── Meta Templates ──────────────────────────────────────────────────────────
 
 import type { CreateTemplateDto, MetaTemplate } from "@/features/templates/types";

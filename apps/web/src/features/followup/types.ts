@@ -4,6 +4,7 @@ export interface FollowupFlow {
   name: string;
   product_tags: string[];
   is_active: boolean;
+  position: number;
   created_at: string;
   updated_at: string;
 }

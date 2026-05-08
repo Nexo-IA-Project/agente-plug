@@ -1,5 +1,7 @@
 "use client";
 
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import type { FollowupFlow } from "../types";
 
 interface Props {
@@ -12,8 +14,21 @@ interface Props {
 }
 
 export function FlowCard({ flow, stepCount, position, onEdit, onToggle, onDelete }: Props) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: flow.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={`group relative flex items-center gap-4 rounded-2xl border bg-surface-container-low px-5 py-4 transition-shadow hover:shadow-md ${
         flow.is_active
           ? "border-outline-variant/60"
@@ -26,6 +41,18 @@ export function FlowCard({ flow, stepCount, position, onEdit, onToggle, onDelete
           flow.is_active ? "bg-success" : "bg-outline-variant"
         }`}
       />
+
+      {/* Drag handle */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="shrink-0 cursor-grab text-on-surface-variant/40 transition-colors hover:text-on-surface-variant active:cursor-grabbing"
+        aria-label="Arrastar para reordenar"
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+          drag_indicator
+        </span>
+      </button>
 
       {/* Posição */}
       <span className="w-6 shrink-0 text-center font-mono text-label-sm text-on-surface-variant/50">
