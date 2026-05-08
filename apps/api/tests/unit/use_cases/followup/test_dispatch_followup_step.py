@@ -55,7 +55,10 @@ async def test_dispatch_sends_template_and_saves_to_history():
         account_id=str(account_id),
         conversation_id=str(conversation_id),
         template_name="mv_boas_vindas",
+        language=None,
         variables={"nome": "{{1}}"},
+        header_link=None,
+        header_kind=None,
     )
     history.load.assert_called_once_with(thread_id=thread_id)
     history.save.assert_called_once()

@@ -42,11 +42,16 @@ class DispatchFollowupStep:
             )
             dispatch_label = f"texto_livre: {step.message_text[:40]}"
         else:
+            header_link = getattr(step, "media_url", None) or None
+            header_kind = getattr(step, "media_kind", None) or None
             await self._chatnexo.send_template(
                 account_id=str(account_id),
                 conversation_id=str(conversation_id),
                 template_name=step.meta_template_name,
+                language=getattr(step, "language", None) or None,
                 variables=step.template_variables,
+                header_link=header_link,
+                header_kind=header_kind,
             )
             dispatch_label = f"template={step.meta_template_name}"
 

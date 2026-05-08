@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from shared.domain.value_objects.escalation_reason import EscalationReason
 
@@ -15,7 +15,10 @@ class ChatNexoPort(Protocol):
         account_id: str,
         conversation_id: str,
         template_name: str,
-        variables: dict[str, Any],
+        language: str | None = None,
+        variables: dict[str, Any] | None = None,
+        header_link: str | None = None,
+        header_kind: Literal["image", "video", "document"] | None = None,
     ) -> None: ...
 
     async def transfer_to_human(
