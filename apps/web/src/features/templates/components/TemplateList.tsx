@@ -148,16 +148,16 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
               const statusIcon = isApproved
                 ? { name: "verified", color: "text-success" }
                 : isRejected
-                  ? { name: "cancel", color: "text-error" }
-                  : { name: "hourglass_top", color: "text-amber-500" };
+                  ? { name: "do_not_disturb_on", color: "text-error" }
+                  : { name: "pending", color: "text-amber-500" };
 
               const cardClass = [
-                "group relative flex gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
+                "group relative flex items-center gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
                 isApproved
                   ? "border-success/20 hover:border-success/40 hover:shadow-[0_4px_24px_-8px_rgba(34,197,94,0.18)]"
                   : isRejected
-                    ? "border-error/25 hover:border-error/40"
-                    : "border-outline-variant/60 hover:border-outline-variant",
+                    ? "border-error/25 hover:border-error/40 hover:shadow-[0_4px_24px_-8px_rgba(220,38,38,0.18)]"
+                    : "border-outline-variant/60 hover:border-outline-variant hover:shadow-[0_4px_24px_-8px_rgba(245,158,11,0.18)]",
               ].join(" ");
 
               return (
@@ -304,12 +304,12 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                   </div>
 
                   {/* Ações */}
-                  <div className="relative flex shrink-0 items-start">
+                  <div className="relative flex shrink-0 items-center self-center">
                     <button
                       onClick={() => onDelete(t)}
                       title="Excluir template"
                       aria-label={`Excluir template ${t.name}`}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error focus-visible:bg-error/10 focus-visible:text-error"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error focus-visible:bg-error/10 focus-visible:text-error"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
                         delete

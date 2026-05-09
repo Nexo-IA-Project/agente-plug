@@ -14,6 +14,59 @@ interface FlowUsage {
   step_position: number;
 }
 
+// TODO: remover após validar visual — mocks só pra ver PENDING e REJECTED na UI.
+const PREVIEW_MOCKS: MetaTemplate[] = [
+  {
+    id: "mock-pending-1",
+    name: "promo_black_friday",
+    category: "MARKETING",
+    language: "pt_BR",
+    status: "PENDING",
+    components: [
+      {
+        type: "BODY",
+        text: "Oi {{1}}, só hoje! Aproveite {{2}}% de desconto em todos os cursos. Use o cupom NEXOIA na finalização.",
+      },
+      {
+        type: "BUTTONS",
+        buttons: [
+          { type: "URL", text: "Aproveitar agora" },
+          { type: "QUICK_REPLY", text: "Não, obrigado" },
+        ],
+      },
+    ],
+    media_url: null,
+    media_kind: null,
+    rejection_reason: null,
+    meta_template_id: "1234567890",
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "mock-rejected-1",
+    name: "convite_bonus_v2",
+    category: "UTILITY",
+    language: "pt_BR",
+    status: "REJECTED",
+    components: [
+      {
+        type: "HEADER",
+        format: "IMAGE",
+        example: { header_handle: [] },
+      },
+      {
+        type: "BODY",
+        text: "Parabéns {{1}}! Você ganhou acesso ao bônus exclusivo. Clique abaixo pra resgatar.",
+      },
+    ],
+    media_url: null,
+    media_kind: "IMAGE",
+    rejection_reason:
+      "O conteúdo da mensagem se enquadra como Marketing, mas a categoria foi enviada como Utility. Recategorize e reenvie.",
+    meta_template_id: "0987654321",
+    created_at: new Date().toISOString(),
+  },
+];
+
 export default function TemplatesPage() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
@@ -82,7 +135,7 @@ export default function TemplatesPage() {
       style={{ height: "calc(100vh - 64px)" }}
     >
       <TemplateList
-        templates={templates}
+        templates={[...templates, ...PREVIEW_MOCKS]}
         onRefresh={reload}
         onNew={() => setModalOpen(true)}
         onDelete={handleDelete}
