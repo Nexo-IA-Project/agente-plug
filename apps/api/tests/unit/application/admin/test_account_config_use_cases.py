@@ -37,10 +37,6 @@ def _make_config() -> AccountConfig:
             message_buffer_wait_seconds=0,
             refund_deadline_days=7,
             welcome_d1_delay_hours=24,
-            loja_express_d1_delay_hours=24,
-            loja_express_d3_delay_hours=72,
-            loja_express_d5_delay_hours=120,
-            loja_express_d7_delay_hours=168,
         ),
     )
 
