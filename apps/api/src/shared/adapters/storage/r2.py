@@ -8,7 +8,7 @@ import boto3
 import structlog
 from botocore.exceptions import ClientError
 
-from shared.domain.ports.storage import StorageObject
+from shared.domain.ports.storage import StorageObject, StoragePort
 
 log = structlog.get_logger(__name__)
 
@@ -52,12 +52,20 @@ class R2Storage:
         )
 
     @classmethod
-    def from_settings_optional(cls, settings: Any) -> R2Storage | None:
-        """Retorna None se R2 não estiver configurado, sem levantar erro."""
+    def from_settings_or_null(cls, settings: Any) -> StoragePort:
+        """Retorna R2Storage se configurado, senão NullStorage (no-op).
+
+        Permite que use cases que NÃO dependem efetivamente de storage
+        (ex.: deletar template sem mídia) sigam recebendo um StoragePort
+        sempre presente, sem `Optional` espalhando guards.
+        """
+        # Import local pra evitar dependência circular módulo↔módulo.
+        from shared.adapters.storage.null_storage import NullStorage
+
         try:
             return cls.from_settings(settings)
         except RuntimeError:
-            return None
+            return NullStorage()
 
     async def upload(
         self, *, key: str, data: bytes, content_type: str

@@ -27,7 +27,7 @@ class DeleteTemplate:
         *,
         repo: MetaTemplateRepository,
         meta_client: MetaTemplateClient,
-        storage: StoragePort | None,
+        storage: StoragePort,
         flow_usage_check: FlowUsageCheck,
     ) -> None:
         self._repo = repo
@@ -46,7 +46,7 @@ class DeleteTemplate:
 
         await self._meta.delete_template(waba_id=waba_id, name=template.name)
 
-        if template.media_object_key and self._storage is not None:
+        if template.media_object_key:
             try:
                 await self._storage.delete(key=template.media_object_key)
             except Exception as exc:
