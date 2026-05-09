@@ -17,14 +17,15 @@ _ACCOUNT_ID = UUID("00000000-0000-0000-0000-000000000001")
 _CONTACT_ID = uuid4()
 _CONV_ID = uuid4()
 _FLOW_ID = uuid4()
+_COURSE_ID = uuid4()
 
 
 def _make_flow() -> FollowupFlow:
     return FollowupFlow(
         id=_FLOW_ID,
         account_id=_ACCOUNT_ID,
+        course_id=_COURSE_ID,
         name="Máquina de Vendas",
-        product_tags=["maquina_de_vendas"],
         is_active=True,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
