@@ -18,13 +18,14 @@ log = get_logger(__name__)
 class PurchasePayload(BaseModel):
     purchase_id: str
     account_id: int
-    name: str
+    customer_name: str
     email: str
     phone: str
-    product: str
+    document: str | None = Field(default=None)
+    product_id: str
+    product_name: str
     amount_brl: int
     occurred_at: str = Field(..., description="ISO 8601")
-    document: str | None = Field(default=None)
 
 
 @dataclass
@@ -83,8 +84,18 @@ async def receive(
         payload=payload.model_dump(),
     )
 
-    job_payload = payload.model_dump()
-    job_payload["student_cpf"] = payload.document
+    job_payload = {
+        "purchase_id": payload.purchase_id,
+        "account_id": payload.account_id,
+        "customer_name": payload.customer_name,
+        "contact_email": payload.email,
+        "contact_phone": payload.phone,
+        "product_id": payload.product_id,
+        "product_name": payload.product_name,
+        "amount_brl": payload.amount_brl,
+        "occurred_at": payload.occurred_at,
+        "student_cpf": payload.document,
+    }
     job_id = await _cfg.queue.enqueue({"kind": "purchase", "payload": job_payload})
     WEBHOOK_RECEIVED.labels(source="hubla", status="202").inc()
     log.info("purchase_webhook_enqueued", purchase_id=payload.purchase_id, job_id=job_id)

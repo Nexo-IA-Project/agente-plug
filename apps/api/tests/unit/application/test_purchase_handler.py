@@ -11,14 +11,18 @@ from shared.application.purchase_handler import PurchaseHandler
 from shared.domain.events.purchase_received import PurchaseReceived
 
 
-def fake_event(product: str = "Mentoria de Tráfego") -> PurchaseReceived:
+def fake_event(
+    product_id: str = "prod-mentoria",
+    product_name: str = "Mentoria de Tráfego",
+) -> PurchaseReceived:
     return PurchaseReceived(
         purchase_id="p-1",
         account_id=UUID("00000000-0000-0000-0000-000000000001"),
-        contact_name="João Silva",
+        customer_name="João Silva",
         contact_email="joao@test.com",
         contact_phone="5511999990000",
-        product=product,
+        product_id=product_id,
+        product_name=product_name,
         amount_brl=49700,
         occurred_at=datetime.now(UTC),
     )
@@ -38,7 +42,10 @@ def _make_handler(
     if not contact_repo.find_or_create.return_value:
         contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = chatnexo or AsyncMock()
-    if chatnexo.get_open_conversation.return_value is None and not chatnexo.create_conversation.return_value:
+    if (
+        chatnexo.get_open_conversation.return_value is None
+        and not chatnexo.create_conversation.return_value
+    ):
         chatnexo.create_conversation.return_value = "conv-1"
     return PurchaseHandler(
         contact_repo=contact_repo,
@@ -120,7 +127,7 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
         flow_repo=flow_repo,
         enroll_contact_uc=enroll_uc,
     )
-    event = fake_event(product="Mkt 360")
+    event = fake_event(product_id="prod-mkt-360", product_name="Mkt 360")
     await handler.execute(event)
 
     assert enroll_uc.execute.await_count == 2
@@ -154,7 +161,7 @@ async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(ca
         enroll_contact_uc=enroll_uc,
     )
 
-    await handler.execute(fake_event(product="prod-unknown"))
+    await handler.execute(fake_event(product_id="prod-unknown", product_name="Unknown"))
 
     enroll_uc.execute.assert_not_awaited()
     flow_repo.list_active_by_course.assert_not_called()

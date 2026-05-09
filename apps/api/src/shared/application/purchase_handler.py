@@ -16,14 +16,10 @@ class PurchaseHandler:
     """
     Processa eventos de compra:
       1. Cria/encontra contato e abre conversa.
-      2. Tenta resolver o produto via course_repo.find_active_by_hubla_id.
+      2. Tenta resolver o produto via course_repo.find_active_by_hubla_id (event.product_id).
          - Curso encontrado: enrolla contato em todos os flows ativos do curso.
          - Curso não encontrado: loga warning e segue sem enrollment.
       3. Sempre cria AccessCase e dispara welcome_purchase template (Access capability).
-
-    Nota (T15): PurchasePayload/PurchaseReceived ainda usa o campo único `product`.
-    Por enquanto tratamos `event.product` como tanto product_id (matching) quanto
-    product_name (snapshot). T15 vai dividir em product_id/product_name/customer_name.
     """
 
     def __init__(
@@ -50,7 +46,7 @@ class PurchaseHandler:
         contact = await self._contact_repo.find_or_create(
             account_id=account_id,
             phone=event.contact_phone,
-            name=event.contact_name,
+            name=event.customer_name,
             email=event.contact_email,
         )
 
@@ -62,12 +58,12 @@ class PurchaseHandler:
                 account_id=account_id, contact_phone=contact.phone
             )
 
-        # Resolve curso via hubla_id (T15: vai usar product_id dedicado).
-        course = await self._course_repo.find_active_by_hubla_id(event.account_id, event.product)
+        # Resolve curso via hubla_id (matching usa product_id).
+        course = await self._course_repo.find_active_by_hubla_id(event.account_id, event.product_id)
         if course is None:
             log.warning(
                 "course_not_found",
-                product_id=event.product,
+                product_id=event.product_id,
                 account_id=account_id,
             )
         else:
@@ -80,8 +76,8 @@ class PurchaseHandler:
                     contact_phone=event.contact_phone,
                     purchase_id=event.purchase_id,
                     flow_id=flow.id,
-                    customer_name=event.contact_name,
-                    product_name=event.product,
+                    customer_name=event.customer_name,
+                    product_name=event.product_name,
                     purchase_time=event.occurred_at,
                 )
             log.info(
@@ -98,7 +94,7 @@ class PurchaseHandler:
             contact_id=contact.id,
             conversation_id=conversation_id,
             purchase_id=event.purchase_id,
-            product_name=event.product,
+            product_name=event.product_name,
             status=AccessCaseStatus.LINK_SENT,
         )
         await self._access_case_repo.save(case)
@@ -107,7 +103,7 @@ class PurchaseHandler:
             account_id=account_id,
             conversation_id=conversation_id,
             template_name="welcome_purchase",
-            variables={"nome": event.contact_name, "produto": event.product},
+            variables={"nome": event.customer_name, "produto": event.product_name},
         )
 
         log.info(

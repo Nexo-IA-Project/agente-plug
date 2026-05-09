@@ -11,10 +11,11 @@ def test_purchase_received_fields() -> None:
     event = PurchaseReceived(
         purchase_id="p-1",
         account_id=uuid4(),
-        contact_name="Ana",
+        customer_name="Ana",
         contact_email="ana@test",
         contact_phone="+5511999",
-        product="Curso X",
+        product_id="prod-x",
+        product_name="Curso X",
         amount_brl=19700,
         occurred_at=datetime.now(UTC),
     )

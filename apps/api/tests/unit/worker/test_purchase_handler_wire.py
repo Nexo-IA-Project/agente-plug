@@ -52,10 +52,11 @@ async def test_handle_purchase_calls_purchase_handler():
             {
                 "purchase_id": "p-1",
                 "account_id": "00000000-0000-0000-0000-000000000001",
-                "contact_name": "João",
+                "customer_name": "João",
                 "contact_email": "joao@test.com",
                 "contact_phone": "5511999990000",
-                "product": "Mentoria",
+                "product_id": "prod-mentoria",
+                "product_name": "Mentoria",
                 "amount_brl": 49700,
                 "occurred_at": "2026-04-24T00:00:00+00:00",
             }

@@ -30,10 +30,11 @@ async def handle_purchase(payload: dict) -> None:
     event = PurchaseReceived(
         purchase_id=payload["purchase_id"],
         account_id=UUID(payload["account_id"]),
-        contact_name=payload["contact_name"],
+        customer_name=payload["customer_name"],
         contact_email=payload["contact_email"],
         contact_phone=payload["contact_phone"],
-        product=payload["product"],
+        product_id=payload["product_id"],
+        product_name=payload["product_name"],
         amount_brl=int(payload["amount_brl"]),
         occurred_at=datetime.fromisoformat(payload["occurred_at"]),
     )
