@@ -24,6 +24,8 @@ def _enrollment_to_entity(m: FollowupEnrollmentModel) -> FollowupEnrollment:
         conversation_id=m.conversation_id,
         contact_phone=m.contact_phone,
         purchase_id=m.purchase_id,
+        customer_name=m.customer_name,
+        product_name=m.product_name,
         status=EnrollmentStatus(m.status),
         created_at=m.created_at,
     )
@@ -61,6 +63,8 @@ class FollowupEnrollmentRepository:
             conversation_id=enrollment.conversation_id,
             contact_phone=enrollment.contact_phone,
             purchase_id=enrollment.purchase_id,
+            customer_name=enrollment.customer_name,
+            product_name=enrollment.product_name,
             status=enrollment.status.value,
         )
         self.session.add(enrollment_model)

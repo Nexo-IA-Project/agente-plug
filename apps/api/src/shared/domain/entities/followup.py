@@ -49,6 +49,8 @@ class FollowupEnrollment:
     conversation_id: str  # chatnexo external conversation ID (string)
     contact_phone: str
     purchase_id: str
+    customer_name: str
+    product_name: str
     id: UUID = field(default_factory=uuid4)
     status: EnrollmentStatus = EnrollmentStatus.ACTIVE
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

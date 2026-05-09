@@ -50,6 +50,8 @@ class EnrollContact:
             conversation_id=conversation_id,
             contact_phone=contact_phone,
             purchase_id=purchase_id,
+            customer_name="",  # T8 irá popular via PurchasePayload
+            product_name="",  # T8 irá popular via PurchasePayload
         )
 
         enrollment_steps: list[FollowupEnrollmentStep] = []
