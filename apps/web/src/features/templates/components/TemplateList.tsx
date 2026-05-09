@@ -206,13 +206,6 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                     >
                       {getCategoryIcon(t.category)}
                     </span>
-                    {/* Pulse no PENDING */}
-                    {isPending && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-0 rounded-xl ring-2 ring-warning/50 animate-pulse"
-                      />
-                    )}
                   </div>
 
                   {/* Conteúdo */}
