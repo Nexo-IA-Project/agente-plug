@@ -37,12 +37,10 @@ async def test_handle_purchase_calls_purchase_handler():
         patch("interface.worker.handlers.purchase.ContactRepository"),
         patch("interface.worker.handlers.purchase.AccessCaseRepository"),
         patch("interface.worker.handlers.purchase.ScheduledJobRepository"),
-        patch("interface.worker.handlers.purchase.LojaExpressCaseRepository"),
+        patch("interface.worker.handlers.purchase.SqlCourseRepository"),
         patch("interface.worker.handlers.purchase.FollowupFlowRepository"),
         patch("interface.worker.handlers.purchase.FollowupEnrollmentRepository"),
-        patch("interface.worker.handlers.purchase.CriarCasoLojaExpress"),
         patch("interface.worker.handlers.purchase.EnrollContact"),
-        patch("interface.worker.handlers.purchase.LojaExpressStubClient"),
         patch("interface.worker.handlers.purchase.Fernet"),
     ):
         MockConfigRepo.return_value.get = AsyncMock(return_value=mock_account_config)
