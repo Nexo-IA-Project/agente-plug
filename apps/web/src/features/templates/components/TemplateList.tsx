@@ -140,10 +140,16 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
               const btnCount = buttonsCount(t);
 
               const railClass = isApproved
-                ? "bg-gradient-to-b from-success via-success to-success/40"
+                ? "bg-success"
                 : isRejected
-                  ? "bg-gradient-to-b from-error via-error to-error/40"
-                  : "bg-gradient-to-b from-amber-400 via-amber-400 to-amber-400/40";
+                  ? "bg-error"
+                  : "bg-amber-500";
+
+              const statusIcon = isApproved
+                ? { name: "verified", color: "text-success" }
+                : isRejected
+                  ? { name: "cancel", color: "text-error" }
+                  : { name: "hourglass_top", color: "text-amber-500" };
 
               const cardClass = [
                 "group relative flex gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
@@ -178,7 +184,7 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                         ? "bg-success/10 text-success"
                         : isRejected
                           ? "bg-error/10 text-error"
-                          : "bg-primary-container text-on-primary-container",
+                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
                     ].join(" ")}
                   >
                     <span
@@ -191,7 +197,7 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                     {isPending && (
                       <span
                         aria-hidden
-                        className="absolute inset-0 rounded-xl ring-2 ring-amber-400/50 animate-pulse"
+                        className="absolute inset-0 rounded-xl ring-2 ring-amber-500/50 animate-pulse"
                       />
                     )}
                   </div>
@@ -204,16 +210,20 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                         {t.name}
                       </h3>
                       <TemplateStatusBadge status={t.status} />
-                      {isApproved && (
-                        <span
-                          aria-hidden
-                          className="material-symbols-outlined text-success"
-                          style={{ fontSize: "16px", fontVariationSettings: "'FILL' 1" }}
-                          title="Aprovado pela Meta"
-                        >
-                          verified
-                        </span>
-                      )}
+                      <span
+                        aria-hidden
+                        className={`material-symbols-outlined ${statusIcon.color}`}
+                        style={{ fontSize: "18px", fontVariationSettings: "'FILL' 1" }}
+                        title={
+                          isApproved
+                            ? "Aprovado pela Meta"
+                            : isRejected
+                              ? "Rejeitado pela Meta"
+                              : "Em análise pela Meta"
+                        }
+                      >
+                        {statusIcon.name}
+                      </span>
                     </div>
 
                     {/* Linha 2: metadata inline */}
@@ -293,13 +303,13 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                     )}
                   </div>
 
-                  {/* Ações — slide da direita ao hover */}
+                  {/* Ações */}
                   <div className="relative flex shrink-0 items-start">
                     <button
                       onClick={() => onDelete(t)}
                       title="Excluir template"
                       aria-label={`Excluir template ${t.name}`}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl text-on-surface-variant opacity-0 transition-all duration-200 translate-x-2 hover:bg-error/10 hover:text-error group-hover:opacity-100 group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:translate-x-0"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error focus-visible:bg-error/10 focus-visible:text-error"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
                         delete
