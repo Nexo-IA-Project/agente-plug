@@ -21,14 +21,17 @@ Monorepo com backend Python (FastAPI + OpenAI function calling) e frontend Next.
 - `apps/web/` — Frontend Next.js 15, porta 3000
 
 **11 subsistemas implementados (todos ✅ Concluídos):**  
-Core · Capability Welcome · Capability Access · Capability Refund · Capability Loja Express · KB Admin · Capability Knowledge · Account Settings · Follow-up Engine · Follow-up Flow Manager · Meta Template Manager
+Core · Capability Welcome · Capability Access · Capability Refund · Course Catalog · KB Admin · Capability Knowledge · Account Settings · Follow-up Engine · Follow-up Flow Manager · Meta Template Manager
 
 **Branch `feat/dynamic-followup-meta-templates`:**
-- `meta_waba_id` editável em Account Settings (não só .env)
+- Novo subsistema **Course Catalog**: entidade `Course` (com `hubla_id`) é a única forma de vincular flows a produtos — substitui `product_tags`
+- `FollowupFlow` agora referencia `course_id` (FK obrigatória); `product_tags` e `position` foram removidos
 - `FollowupStep` suporta `message_text` (texto livre) como alternativa ao template Meta
-- `FollowupFlow` ganhou coluna `position` — ordem persistida via `PATCH /admin/followup/flows/reorder`
+- Variáveis dinâmicas em `FollowupStep`: cada variável usa `StepVariableBinding` com 4 sources dinâmicos (`customer_name`, `product_name`, `contact_phone`, `contact_email`) ou `static` (valor fixo)
+- Capability `Loja Express` foi descontinuada — Loja Express agora é apenas mais um curso no catálogo (sem D+0/D+1/D+3/D+5/D+7 hardcoded); seed migration converte os flows existentes
+- `meta_waba_id` editável em Account Settings (não só .env)
 - `/templates`: listagem full-width + modal de criação com efeito scale-from-center
-- `/followup`: drawer modal único (cresce do centro) com edição de flow + steps inline
+- `/followup` e `/courses`: usam **Drawer compartilhado** (`shared/components/Drawer`) — substitui o modal anterior
 
 ---
 
@@ -74,7 +77,7 @@ apps/api/src/
 │   ├── http/
 │   │   ├── routers/
 │   │   │   ├── admin/           # 9 routers: auth, settings, api_tokens, documents,
-│   │   │   │                    #   search, meta_templates, followup, dlq
+│   │   │   │                    #   search, meta_templates, followup, courses, dlq
 │   │   │   ├── webhook_message.py
 │   │   │   ├── webhook_purchase.py
 │   │   │   ├── metrics.py
@@ -97,7 +100,6 @@ apps/api/src/
 │   │   ├── hubla/               # Parsing de payload de compra
 │   │   ├── kb/                  # Chunking, embedding, pgvector search
 │   │   ├── llm/                 # OpenAI client wrapper
-│   │   ├── loja_express/        # LojaExpressClient
 │   │   ├── meta/                # MetaClient — templates e envio
 │   │   ├── observability/       # Structured logging, Prometheus metrics
 │   │   └── redis/               # RedisDedup, get_redis
@@ -105,9 +107,8 @@ apps/api/src/
 │   │   ├── use_cases/
 │   │   │   ├── admin/           # Use cases de admin (KB upload, settings)
 │   │   │   ├── knowledge/       # RAG: busca 4 tentativas + sinônimos
-│   │   │   ├── loja_express/    # Follow-up D+0→D+7
 │   │   │   ├── refund/          # Reembolso + CDC + retenção
-│   │   │   └── followup/        # EnrollContact, DispatchFollowupStep
+│   │   │   └── followup/        # EnrollContact, DispatchFollowupStep, VariableResolver
 │   │   ├── message_dispatcher.py # Roteamento de mensagens recebidas
 │   │   ├── purchase_handler.py   # Processamento de compras Hubla
 │   │   └── lifecycle_handler.py  # Idle ping / close de conversas
@@ -178,16 +179,16 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 | `kb_usage_logs` | Log de buscas no KB |
 | `access_cases` | Casos de acesso a produto |
 | `refund_cases` | Casos de reembolso |
-| `loja_express_cases` | Casos de follow-up Loja Express |
+| `courses` | Catálogo de cursos (`name`, `hubla_id`, `is_active`) — vincula flows a produtos |
 | `conversation_messages` | Thread OpenAI por conversa (JSONB) |
 | `api_tokens` | Tokens de API (hash + prefix `nxia_XXXX`) |
 | `meta_templates` | Templates WhatsApp aprovados na Meta |
-| `followup_flows` | Flows de follow-up (name, product_tags, position) |
-| `followup_steps` | Steps de um flow (delay_hours, template ou message_text para texto livre) |
+| `followup_flows` | Flows de follow-up (name, `course_id` FK, is_active) |
+| `followup_steps` | Steps de um flow (delay_hours, template ou message_text para texto livre, template_variables com `StepVariableBinding`) |
 | `followup_enrollments` | Inscrição de contato em um flow |
 | `followup_enrollment_steps` | Execução de cada step do enrollment |
 
-**Migrations:** `apps/api/migrations/versions/` — 16 arquivos. Usar `alembic upgrade heads` (plural, dois heads ativos por merge de branches).
+**Migrations:** `apps/api/migrations/versions/` — 20 arquivos. Usar `alembic upgrade heads` (plural, dois heads ativos por merge de branches).
 
 **token_prefix:** Campo em `api_tokens` armazena os primeiros 9 chars do token raw (`nxia_XXXX`) para exibição no painel. Tokens existentes antes da migration `c4d5e6f7a8b9` têm prefix `null` e mostram "—".
 
@@ -195,7 +196,9 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 
 **FollowupStep.message_text:** Campo nullable adicionado na migration `d1e2f3a4b5c6`. Steps com `message_text` enviam texto livre via `send_message`; steps com `meta_template_name` enviam template.
 
-**FollowupFlow.position:** Adicionado na migration `e2f3a4b5c6d7`. Define ordem dos flows na listagem; reordenado via drag-and-drop persistido em `PATCH /admin/followup/flows/reorder`.
+**Course catalog (`b5c6d7e8f9a0_dynamic_followup_by_course`):** Cria tabela `courses`, dropa `loja_express_cases`, remove `product_tags`/`position` de `followup_flows` e adiciona `course_id` (FK NOT NULL com `ON DELETE RESTRICT`). Snapshots de `course_name`/`step_meta_template_name`/`step_message_text` foram adicionados em `followup_enrollments`/`followup_enrollment_steps` para manter histórico mesmo após edições.
+
+**StepVariableBinding:** `followup_steps.template_variables` agora é um dict `{nome_variavel: {source, value?}}` onde `source` é um dos 4 dinâmicos (`customer_name`, `product_name`, `contact_phone`, `contact_email`) ou `static` (com `value` obrigatório). Resolvido em runtime pelo `VariableResolver` ao despachar o step.
 
 
 ### Endpoints HTTP
@@ -229,10 +232,18 @@ POST   /admin/documents/{id}/reindex        → 501 Not Implemented
 POST   /admin/search/test                   → busca teste no KB
 ```
 
+**Courses (`/admin`)**
+```
+GET    /admin/courses           → [Course] (com flow_count)
+POST   /admin/courses           → Course (201) | 409 se hubla_id duplicado
+PUT    /admin/courses/{id}      → Course | 404
+DELETE /admin/courses/{id}      → 204 | 409 se houver flows vinculados
+```
+
 **Follow-up (`/admin`)**
 ```
-GET    /admin/followup/flows                → [FollowupFlow]
-POST   /admin/followup/flows               → FollowupFlow (201)
+GET    /admin/followup/flows                → [FollowupFlow] (inclui course summary)
+POST   /admin/followup/flows               → FollowupFlow (201) — exige course_id
 PUT    /admin/followup/flows/{id}          → FollowupFlow
 DELETE /admin/followup/flows/{id}          → 204
 GET    /admin/followup/flows/{id}/steps    → [FollowupStep]
@@ -240,7 +251,6 @@ POST   /admin/followup/flows/{id}/steps   → FollowupStep (201)
 PUT    /admin/followup/flows/{id}/steps/{step_id}   → FollowupStep
 DELETE /admin/followup/flows/{id}/steps/{step_id}   → 204
 PATCH  /admin/followup/flows/{id}/steps/reorder     → 204
-PATCH  /admin/followup/flows/reorder                → 204
 ```
 
 **Meta Templates (`/admin`)**
@@ -276,10 +286,9 @@ O worker (`python -m worker`) faz poll na `job_queue` e despacha por `kind`:
 | `kind` | Handler | Descrição |
 |---|---|---|
 | `message` | `handle_message` | Processa mensagem recebida: agent loop + resposta |
-| `purchase` | `handle_purchase` | Processa compra Hubla: cria contact/conversation, agenda welcome |
+| `purchase` | `handle_purchase` | Processa compra Hubla: cria contact/conversation, faz lookup do `Course` por `hubla_id` e agenda welcome + enrollment em flows do curso |
 | `scheduled_welcome` | `handle_scheduled` | Welcome D+1 para novos alunos |
-| `scheduled_loja_express` | `handle_scheduled` | Follow-up D+0/D+1/D+3/D+5/D+7 Loja Express |
-| `followup_step` | `handle_scheduled` | Despacha step de followup flow (Meta template) |
+| `followup_step` | `handle_scheduled` | Despacha step de followup flow (Meta template ou texto livre) com variáveis resolvidas pelo `VariableResolver` |
 
 ### Configuração — Settings
 
@@ -320,8 +329,6 @@ KB_MAX_FILE_SIZE_MB=20
 ```
 WELCOME_CHECK_DELAY_HOURS=1, WELCOME_D1_DELAY_HOURS=24
 REFUND_DEADLINE_DAYS=7, REFUND_MUTEX_TTL_SECONDS=3600
-LOJA_EXPRESS_PRODUCT_TAGS=["loja_express","loja-express"]
-LOJA_EXPRESS_D1/D3/D5/D7_DELAY_HOURS=24/72/120/168
 ```
 
 **JWT:** `JWT_EXPIRE_MINUTES=60`
@@ -360,8 +367,9 @@ npm run lint     # ESLint
 /(admin)/dashboard               → painel principal
 /(admin)/accounts                → gerenciar contas
 /(admin)/kb                      → Knowledge Base (lista documentos)
-/(admin)/followup                → lista de followup flows
-/(admin)/followup/[id]           → editor de flow + steps
+/(admin)/courses                 → catálogo de cursos (CRUD com drawer)
+/(admin)/followup                → lista de followup flows (filtrável por curso)
+/(admin)/followup/[id]           → editor de flow + steps inline
 /(admin)/settings                → configurações da conta (OPENAI_API_KEY, ChatNexo, etc)
 /(admin)/settings/tokens         → gerenciar API tokens (criar, listar, revogar)
 /(admin)/templates               → lista de Meta templates
@@ -374,12 +382,15 @@ Cada feature é autocontida em `src/features/<domínio>/`:
 ```
 features/
   accounts/     → Gerenciar contas da plataforma
+  courses/      → Catálogo de cursos (CRUD via drawer, vincula flows a produtos Hubla)
   dashboard/    → Dashboard com estatísticas
-  followup/     → Criar/editar flows e steps (drag-and-drop reorder)
+  followup/     → Criar/editar flows e steps (drag-and-drop de steps, variáveis dinâmicas)
   kb/           → Upload e busca de documentos KB
   settings/     → Configurações de integração e comportamento da IA
   templates/    → CRUD de Meta WhatsApp templates com preview ao vivo
 ```
+
+Componente compartilhado **`shared/components/Drawer`**: drawer modal único usado pelas features `courses` e `followup` (substitui modais antigos). Cresce do centro com efeito scale-from-center, fecha por ESC ou clique fora.
 
 Estrutura padrão por feature:
 ```
@@ -410,7 +421,7 @@ Toda comunicação com o backend passa por `apiFetch()` que:
 - Trata 204 (retorna `undefined`)
 - Lança `Error` para status não-ok
 
-Funções exportadas: `listDocuments`, `uploadDocument`, `deleteDocument`, `listApiTokens`, `createApiToken`, `revokeApiToken`, `getAccountSettings`, `updateAccountSettings`, `listFollowupFlows`, `createFollowupFlow`, `updateFollowupFlow`, `deleteFollowupFlow`, `listFollowupSteps`, `createFollowupStep`, `updateFollowupStep`, `deleteFollowupStep`, `reorderFollowupSteps`, `listMetaTemplates`, `createMetaTemplate`
+Funções exportadas: `listDocuments`, `uploadDocument`, `deleteDocument`, `listApiTokens`, `createApiToken`, `revokeApiToken`, `getAccountSettings`, `updateAccountSettings`, `listFollowupFlows`, `createFollowupFlow`, `updateFollowupFlow`, `deleteFollowupFlow`, `listFollowupSteps`, `createFollowupStep`, `updateFollowupStep`, `deleteFollowupStep`, `reorderFollowupSteps`, `listCourses`, `createCourse`, `updateCourse`, `deleteCourse`, `listMetaTemplates`, `createMetaTemplate`, `deleteMetaTemplate`, `uploadTemplateMedia`
 
 ---
 
@@ -461,7 +472,7 @@ docs/superpowers/plans/    → planos de implementação com tasks detalhadas (1
 docs/superpowers/INDEX.md  → índice dos 11 subsistemas (todos ✅ Concluídos)
 ```
 
-Subsistemas documentados: Core, Welcome, Access, Refund, Loja Express, KB Admin, Capability Knowledge, Account Settings, Follow-up Engine, Follow-up Flow Manager, Meta Template Manager.
+Subsistemas documentados: Core, Welcome, Access, Refund, Course Catalog, KB Admin, Capability Knowledge, Account Settings, Follow-up Engine, Follow-up Flow Manager, Meta Template Manager.
 
 ---
 
