@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import type { MetaTemplate } from "../types";
 import { TemplateStatusBadge } from "./TemplateStatusBadge";
 
@@ -16,10 +17,46 @@ function getCategoryIcon(category: string): string {
   return "receipt_long";
 }
 
-function getBodyPreview(template: MetaTemplate): string | null {
-  const body = template.components.find((c) => c.type === "BODY");
-  if (!body?.text) return null;
-  return body.text.length > 140 ? body.text.slice(0, 140) + "…" : body.text;
+function highlightVars(text: string): React.ReactNode {
+  const parts = text.split(/(\{\{\d+\}\})/g);
+  return parts.map((p, i) =>
+    /^\{\{\d+\}\}$/.test(p) ? (
+      <span
+        key={i}
+        className="mx-[1px] inline-flex items-center rounded-md bg-primary/10 px-1.5 py-px font-mono text-[0.78em] font-medium text-primary"
+      >
+        {p}
+      </span>
+    ) : (
+      <span key={i}>{p}</span>
+    ),
+  );
+}
+
+function getBodyComponent(template: MetaTemplate) {
+  return template.components.find((c) => c.type === "BODY");
+}
+
+function countVars(text: string | undefined): number {
+  if (!text) return 0;
+  const matches = text.match(/\{\{\d+\}\}/g) ?? [];
+  return new Set(matches).size;
+}
+
+function getMediaInfo(
+  template: MetaTemplate,
+): { icon: string; label: string } | null {
+  const header = template.components.find((c) => c.type === "HEADER");
+  if (!header || header.format === "TEXT" || !header.format) return null;
+  if (header.format === "IMAGE") return { icon: "image", label: "Imagem" };
+  if (header.format === "VIDEO") return { icon: "videocam", label: "Vídeo" };
+  if (header.format === "DOCUMENT") return { icon: "description", label: "Doc" };
+  return null;
+}
+
+function buttonsCount(template: MetaTemplate): number {
+  const btns = template.components.find((c) => c.type === "BUTTONS");
+  return btns?.buttons?.length ?? 0;
 }
 
 export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
@@ -92,79 +129,184 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
             {templates.map((t) => {
               const isApproved = t.status === "APPROVED";
               const isRejected = t.status === "REJECTED";
-              const preview = getBodyPreview(t);
+              const isPending = t.status === "PENDING";
+
+              const body = getBodyComponent(t);
+              const preview = body?.text ?? null;
+              const previewTruncated =
+                preview && preview.length > 220 ? preview.slice(0, 220) + "…" : preview;
+              const varsCount = countVars(body?.text);
+              const media = getMediaInfo(t);
+              const btnCount = buttonsCount(t);
+
+              const railClass = isApproved
+                ? "bg-gradient-to-b from-success via-success to-success/40"
+                : isRejected
+                  ? "bg-gradient-to-b from-error via-error to-error/40"
+                  : "bg-gradient-to-b from-amber-400 via-amber-400 to-amber-400/40";
+
+              const cardClass = [
+                "group relative flex gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
+                isApproved
+                  ? "border-success/20 hover:border-success/40 hover:shadow-[0_4px_24px_-8px_rgba(34,197,94,0.18)]"
+                  : isRejected
+                    ? "border-error/25 hover:border-error/40"
+                    : "border-outline-variant/60 hover:border-outline-variant",
+              ].join(" ");
 
               return (
-                <div
-                  key={t.id}
-                  className="group relative flex items-center gap-4 rounded-2xl border border-outline-variant/60 bg-surface-container-low px-5 py-4 transition-shadow hover:shadow-md"
-                >
-                  {/* Status bar lateral */}
+                <article key={t.id} className={cardClass}>
+                  {/* Background tint para APPROVED — bem sutil */}
+                  {isApproved && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-success/[0.06] via-transparent to-transparent"
+                    />
+                  )}
+
+                  {/* Rail vertical */}
                   <div
-                    className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${
-                      isApproved
-                        ? "bg-success"
-                        : isRejected
-                          ? "bg-error"
-                          : "bg-amber-400"
-                    }`}
+                    aria-hidden
+                    className={`absolute left-0 top-0 bottom-0 w-[3px] ${railClass}`}
                   />
 
-                  {/* Ícone categoria */}
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-container">
+                  {/* Ícone de categoria */}
+                  <div
+                    className={[
+                      "relative flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors",
+                      isApproved
+                        ? "bg-success/10 text-success"
+                        : isRejected
+                          ? "bg-error/10 text-error"
+                          : "bg-primary-container text-on-primary-container",
+                    ].join(" ")}
+                  >
                     <span
-                      className="material-symbols-outlined text-on-primary-container"
+                      className="material-symbols-outlined"
                       style={{ fontSize: "22px", fontVariationSettings: "'FILL' 1" }}
                     >
                       {getCategoryIcon(t.category)}
                     </span>
+                    {/* Pulse no PENDING */}
+                    {isPending && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 rounded-xl ring-2 ring-amber-400/50 animate-pulse"
+                      />
+                    )}
                   </div>
 
-                  {/* Info */}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="truncate font-mono text-body-md font-semibold text-on-surface">
+                  {/* Conteúdo */}
+                  <div className="relative min-w-0 flex-1">
+                    {/* Linha 1: nome + status */}
+                    <div className="flex items-center gap-3">
+                      <h3 className="truncate font-mono text-[15px] font-semibold tracking-tight text-on-surface">
                         {t.name}
-                      </span>
+                      </h3>
                       <TemplateStatusBadge status={t.status} />
-                    </div>
-                    <div className="mt-0.5 flex items-center gap-3 text-label-sm text-on-surface-variant">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
-                          label
+                      {isApproved && (
+                        <span
+                          aria-hidden
+                          className="material-symbols-outlined text-success"
+                          style={{ fontSize: "16px", fontVariationSettings: "'FILL' 1" }}
+                          title="Aprovado pela Meta"
+                        >
+                          verified
                         </span>
+                      )}
+                    </div>
+
+                    {/* Linha 2: metadata inline */}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-on-surface-variant">
+                      <span className="font-medium uppercase tracking-wider">
                         {t.category}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
-                          translate
-                        </span>
-                        {t.language}
+                      <span aria-hidden className="text-outline">
+                        ·
                       </span>
+                      <span className="font-mono">{t.language}</span>
+
+                      {varsCount > 0 && (
+                        <>
+                          <span aria-hidden className="text-outline">
+                            ·
+                          </span>
+                          <span>
+                            {varsCount} variáve{varsCount > 1 ? "is" : "l"}
+                          </span>
+                        </>
+                      )}
+
+                      {media && (
+                        <>
+                          <span aria-hidden className="text-outline">
+                            ·
+                          </span>
+                          <span className="inline-flex items-center gap-0.5">
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: "13px" }}
+                            >
+                              {media.icon}
+                            </span>
+                            {media.label}
+                          </span>
+                        </>
+                      )}
+
+                      {btnCount > 0 && (
+                        <>
+                          <span aria-hidden className="text-outline">
+                            ·
+                          </span>
+                          <span className="inline-flex items-center gap-0.5">
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: "13px" }}
+                            >
+                              smart_button
+                            </span>
+                            {btnCount}
+                          </span>
+                        </>
+                      )}
                     </div>
-                    {preview && (
-                      <p className="mt-1.5 truncate text-body-sm text-on-surface-variant/80">
-                        {preview}
+
+                    {/* Preview do body com variáveis chip */}
+                    {previewTruncated && (
+                      <p className="mt-2.5 text-sm leading-relaxed text-on-surface-variant/80">
+                        {highlightVars(previewTruncated)}
                       </p>
                     )}
-                    {t.rejection_reason && (
-                      <p className="mt-1.5 rounded-lg bg-error-container/40 px-2 py-1 text-xs text-error">
-                        Motivo: {t.rejection_reason}
-                      </p>
+
+                    {/* Motivo de rejeição inline */}
+                    {isRejected && t.rejection_reason && (
+                      <div className="mt-2.5 flex items-start gap-2 rounded-lg border border-error/20 bg-error/5 px-3 py-2 text-xs text-error">
+                        <span
+                          className="material-symbols-outlined mt-px shrink-0"
+                          style={{ fontSize: "15px" }}
+                        >
+                          info
+                        </span>
+                        <span className="leading-relaxed">{t.rejection_reason}</span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Ações */}
-                  <button
-                    onClick={() => onDelete(t)}
-                    title="Excluir template"
-                    className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-on-surface-variant opacity-0 transition-all hover:bg-error-container hover:text-error group-hover:opacity-100"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
-                      delete
-                    </span>
-                  </button>
-                </div>
+                  {/* Ações — slide da direita ao hover */}
+                  <div className="relative flex shrink-0 items-start">
+                    <button
+                      onClick={() => onDelete(t)}
+                      title="Excluir template"
+                      aria-label={`Excluir template ${t.name}`}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-on-surface-variant opacity-0 transition-all duration-200 translate-x-2 hover:bg-error/10 hover:text-error group-hover:opacity-100 group-hover:translate-x-0 focus-visible:opacity-100 focus-visible:translate-x-0"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                        delete
+                      </span>
+                    </button>
+                  </div>
+                </article>
               );
             })}
           </div>
