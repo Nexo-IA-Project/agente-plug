@@ -7,6 +7,10 @@ from uuid import UUID
 import structlog
 
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
+from shared.application.use_cases.followup.variable_resolver import (
+    ResolutionContext,
+    VariableResolver,
+)
 from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
@@ -17,11 +21,13 @@ class DispatchFollowupStep:
         self,
         *,
         enrollment_repo: Any,
+        contact_repo: Any,
         chatnexo: Any,
         conversation_history: Any,
         meta_template_repo: MetaTemplateRepository,
     ) -> None:
         self._enrollment_repo = enrollment_repo
+        self._contact_repo = contact_repo
         self._chatnexo = chatnexo
         self._history = conversation_history
         self._template_repo = meta_template_repo
@@ -76,12 +82,36 @@ class DispatchFollowupStep:
                         account_id=str(account_id),
                     )
 
+            enrollment = await self._enrollment_repo.find_enrollment_by_id(
+                step.enrollment_id
+            )
+            contact_email: str | None = None
+            customer_name = ""
+            product_name = ""
+            phone_value = contact_phone
+            if enrollment is not None:
+                customer_name = enrollment.customer_name or ""
+                product_name = enrollment.product_name or ""
+                phone_value = enrollment.contact_phone or contact_phone
+                contact = await self._contact_repo.find_by_id(enrollment.contact_id)
+                contact_email = getattr(contact, "email", None) if contact else None
+
+            ctx = ResolutionContext(
+                customer_name=customer_name,
+                product_name=product_name,
+                contact_phone=phone_value,
+                contact_email=contact_email,
+            )
+            resolved_vars = VariableResolver().resolve_all(
+                step.template_variables or {}, ctx
+            )
+
             await self._chatnexo.send_template(
                 account_id=str(account_id),
                 conversation_id=str(conversation_id),
                 template_name=step.meta_template_name,
                 language=language,
-                variables=step.template_variables,
+                variables=resolved_vars,
                 header_link=header_link,
                 header_kind=header_kind,
             )

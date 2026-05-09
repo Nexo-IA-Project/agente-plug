@@ -90,6 +90,12 @@ class FollowupEnrollmentRepository:
         model = await self.session.get(FollowupEnrollmentStepModel, step_id)
         return None if model is None else _step_to_entity(model)
 
+    async def find_enrollment_by_id(
+        self, enrollment_id: uuid.UUID
+    ) -> FollowupEnrollment | None:
+        model = await self.session.get(FollowupEnrollmentModel, enrollment_id)
+        return None if model is None else _enrollment_to_entity(model)
+
     async def update_step(self, step: FollowupEnrollmentStep) -> None:
         model = await self.session.get(FollowupEnrollmentStepModel, step.id)
         if model is None:

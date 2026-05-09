@@ -77,6 +77,7 @@ async def handle_scheduled(payload: dict) -> None:
         from agent.history import ConversationHistory
         from shared.adapters.chatnexo.client import ChatNexoClient
         from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
+        from shared.adapters.db.repositories.contact import ContactRepository
         from shared.adapters.db.repositories.followup_enrollment_repo import (
             FollowupEnrollmentRepository,
         )
@@ -95,6 +96,7 @@ async def handle_scheduled(payload: dict) -> None:
             chatnexo = ChatNexoClient.from_account_config(config)
             dispatch = DispatchFollowupStep(
                 enrollment_repo=FollowupEnrollmentRepository(session=session),
+                contact_repo=ContactRepository(session=session),
                 chatnexo=chatnexo,
                 conversation_history=ConversationHistory(session=session),
                 meta_template_repo=MetaTemplateRepository(session=session),
