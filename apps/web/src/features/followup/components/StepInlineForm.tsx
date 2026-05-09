@@ -2,30 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { listMetaTemplates } from "@/lib/api";
-import type { MetaTemplate, TemplateComponent } from "@/features/templates/types";
-import type { CreateStepDto, FollowupStep, UpdateStepDto } from "../types";
+import type { MetaTemplate } from "@/features/templates/types";
+import type {
+  CreateStepInput,
+  FollowupStep,
+  StepVariableBinding,
+  UpdateStepInput,
+} from "../types";
+import { StepVariableEditor } from "./StepVariableEditor";
 
 type StepMode = "template" | "text";
 type DelayUnit = "minutos" | "horas" | "dias";
 
 interface Props {
   step?: FollowupStep;
-  nextPosition: number;
-  onSave: (dto: CreateStepDto | UpdateStepDto) => Promise<void>;
+  /** Mantido para compatibilidade com StepList; não é mais usado no form (server resolve posição). */
+  nextPosition?: number;
+  onSave: (dto: CreateStepInput | UpdateStepInput) => Promise<void>;
   onCancel: () => void;
-}
-
-const LEAD_FIELDS = [
-  { label: "Nome do contato", value: "{{contact.name}}" },
-  { label: "Telefone", value: "{{contact.phone}}" },
-  { label: "E-mail", value: "{{contact.email}}" },
-];
-
-function extractVariables(components: TemplateComponent[]): string[] {
-  const body = components.find((c) => c.type === "BODY");
-  if (!body?.text) return [];
-  const matches = [...body.text.matchAll(/\{\{(\d+)\}\}/g)];
-  return [...new Set(matches.map((m) => m[1]))].sort((a, b) => Number(a) - Number(b));
 }
 
 function hoursToDisplay(hours: number): { value: number; unit: DelayUnit } {
@@ -41,10 +35,15 @@ function toHours(value: number, unit: DelayUnit): number {
   return value * 24;
 }
 
+function getTemplateBody(template: MetaTemplate | undefined): string | null {
+  if (!template) return null;
+  return template.components.find((c) => c.type === "BODY")?.text ?? null;
+}
+
 const inputCls = "field-input";
 const labelCls = "field-label";
 
-export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) {
+export function StepInlineForm({ step, onSave, onCancel }: Props) {
   // Fade in ao montar
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -58,15 +57,13 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
   );
   const [delayValue, setDelayValue] = useState(initialDisplay.value);
   const [delayUnit, setDelayUnit] = useState<DelayUnit>(initialDisplay.unit);
-  const [position, setPosition] = useState(step?.position ?? nextPosition);
 
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(step?.meta_template_name ?? "");
-  const [variables, setVariables] = useState<Record<string, string>>(
-    step?.template_variables ?? {}
-  );
-  const [varLeadMode, setVarLeadMode] = useState<Record<string, boolean>>({});
+  const [templateVariables, setTemplateVariables] = useState<
+    Record<string, StepVariableBinding>
+  >(step?.template_variables ?? {});
   const [messageText, setMessageText] = useState(step?.message_text ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -81,12 +78,18 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
   }, [mode]);
 
   const currentTemplate = templates.find((t) => t.name === selectedTemplate);
-  const templateVars = currentTemplate ? extractVariables(currentTemplate.components) : [];
+  const templateBody = getTemplateBody(currentTemplate);
 
   function onTemplateChange(name: string) {
+    if (
+      name !== selectedTemplate &&
+      Object.keys(templateVariables).length > 0 &&
+      !confirm("Trocar de template vai apagar as variáveis configuradas. Continuar?")
+    ) {
+      return;
+    }
     setSelectedTemplate(name);
-    setVariables({});
-    setVarLeadMode({});
+    setTemplateVariables({});
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -95,21 +98,21 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
     const hours = toHours(delayValue, delayUnit);
     try {
       if (mode === "template") {
-        await onSave({
-          position,
+        const dto: UpdateStepInput = {
           delay_from_purchase_hours: hours,
           meta_template_name: selectedTemplate || null,
-          template_variables: variables,
+          template_variables: templateVariables,
           message_text: null,
-        });
+        };
+        await onSave(dto);
       } else {
-        await onSave({
-          position,
+        const dto: UpdateStepInput = {
           delay_from_purchase_hours: hours,
           meta_template_name: null,
           template_variables: {},
           message_text: messageText,
-        });
+        };
+        await onSave(dto);
       }
     } finally {
       setSaving(false);
@@ -194,18 +197,6 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
           </p>
         </div>
 
-        {/* Posição */}
-        <div>
-          <label className={labelCls}>Posição na sequência</label>
-          <input
-            type="number"
-            min={1}
-            value={position}
-            onChange={(e) => setPosition(Number(e.target.value))}
-            className={inputCls}
-          />
-        </div>
-
         {/* Template mode */}
         {mode === "template" && (
           <div className="space-y-4">
@@ -239,60 +230,22 @@ export function StepInlineForm({ step, nextPosition, onSave, onCancel }: Props) 
               )}
             </div>
 
-            {currentTemplate && (
-              <div className="rounded-xl border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant">
-                {currentTemplate.components.find((c) => c.type === "BODY")?.text ?? ""}
+            {currentTemplate && templateBody && (
+              <div className="rounded-xl border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap">
+                {templateBody}
               </div>
             )}
 
-            {templateVars.length > 0 && (
-              <div className="space-y-3">
+            {currentTemplate && (
+              <div className="space-y-2">
                 <label className="block text-label-sm font-medium text-on-surface">
                   Variáveis do template
                 </label>
-                {templateVars.map((varN) => (
-                  <div key={varN}>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <span className="rounded bg-surface-container px-1.5 py-0.5 font-mono text-xs text-primary">
-                        {`{{${varN}}}`}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVarLeadMode((m) => ({ ...m, [varN]: !m[varN] }))
-                        }
-                        className="text-xs text-on-surface-variant underline-offset-2 hover:text-primary hover:underline"
-                      >
-                        {varLeadMode[varN] ? "Digitar valor" : "Usar campo do lead"}
-                      </button>
-                    </div>
-                    {varLeadMode[varN] ? (
-                      <select
-                        value={variables[varN] ?? ""}
-                        onChange={(e) =>
-                          setVariables((v) => ({ ...v, [varN]: e.target.value }))
-                        }
-                        className={inputCls}
-                      >
-                        <option value="">— Selecionar campo —</option>
-                        {LEAD_FIELDS.map((f) => (
-                          <option key={f.value} value={f.value}>
-                            {f.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        value={variables[varN] ?? ""}
-                        onChange={(e) =>
-                          setVariables((v) => ({ ...v, [varN]: e.target.value }))
-                        }
-                        placeholder={`Valor para {{${varN}}}`}
-                        className={inputCls}
-                      />
-                    )}
-                  </div>
-                ))}
+                <StepVariableEditor
+                  templateBody={templateBody}
+                  bindings={templateVariables}
+                  onChange={setTemplateVariables}
+                />
               </div>
             )}
           </div>
