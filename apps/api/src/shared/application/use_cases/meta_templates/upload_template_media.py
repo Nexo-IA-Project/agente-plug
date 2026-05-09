@@ -46,12 +46,14 @@ class UploadTemplateMedia:
         if err:
             raise ValueError(err.code)
 
-        ext = _EXT_BY_MIME.get(payload.mime) or PurePosixPath(payload.original_filename).suffix.lstrip(".") or "bin"
+        ext = (
+            _EXT_BY_MIME.get(payload.mime)
+            or PurePosixPath(payload.original_filename).suffix.lstrip(".")
+            or "bin"
+        )
         key = f"accounts/{payload.account_id}/templates/{uuid4()}.{ext}"
 
-        obj = await self._storage.upload(
-            key=key, data=payload.data, content_type=payload.mime
-        )
+        obj = await self._storage.upload(key=key, data=payload.data, content_type=payload.mime)
         return UploadTemplateMediaOutput(
             media_url=obj.url,
             media_object_key=obj.object_key,

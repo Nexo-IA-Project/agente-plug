@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 from uuid import UUID
 
 import structlog
@@ -12,7 +12,7 @@ from shared.domain.ports.storage import StoragePort
 log = structlog.get_logger(__name__)
 
 
-class MetaTemplateInUse(Exception):
+class MetaTemplateInUseError(Exception):
     def __init__(self, flows: list[dict]) -> None:
         super().__init__("template em uso por flows")
         self.flows = flows
@@ -42,7 +42,7 @@ class DeleteTemplate:
 
         flows = await self._check_usage(account_id, template.name)
         if flows:
-            raise MetaTemplateInUse(flows=flows)
+            raise MetaTemplateInUseError(flows=flows)
 
         await self._meta.delete_template(waba_id=waba_id, name=template.name)
 

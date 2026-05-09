@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from cryptography.fernet import Fernet
@@ -27,7 +27,7 @@ from shared.application.use_cases.meta_templates.create_template import (
 )
 from shared.application.use_cases.meta_templates.delete_template import (
     DeleteTemplate,
-    MetaTemplateInUse,
+    MetaTemplateInUseError,
 )
 from shared.application.use_cases.meta_templates.list_templates import ListTemplates
 from shared.application.use_cases.meta_templates.upload_template_media import (
@@ -35,6 +35,7 @@ from shared.application.use_cases.meta_templates.upload_template_media import (
     UploadTemplateMediaInput,
 )
 from shared.config.settings import get_settings
+from shared.domain.ports.storage import StoragePort
 
 router = APIRouter(tags=["admin-meta-templates"])
 
@@ -73,7 +74,7 @@ async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient
     return client, waba_id, app_id
 
 
-async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict]:
+async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict[str, Any]]:
     """Retorna lista de flows que usam o template (id, name, step_position)."""
     from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
 
@@ -105,9 +106,7 @@ async def upload_media(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> UploadMediaResponse:
     if kind not in {"IMAGE", "VIDEO", "DOCUMENT"}:
-        raise HTTPException(
-            status_code=422, detail={"code": "MEDIA_KIND_INVALID"}
-        )
+        raise HTTPException(status_code=422, detail={"code": "MEDIA_KIND_INVALID"})
     data = await file.read()
     try:
         storage = R2Storage.from_settings(get_settings())
@@ -117,13 +116,15 @@ async def upload_media(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
     try:
-        out = await use_case.execute(UploadTemplateMediaInput(
-            account_id=account_uuid,
-            kind=kind,  # type: ignore[arg-type]
-            data=data,
-            mime=file.content_type or "application/octet-stream",
-            original_filename=file.filename or "upload",
-        ))
+        out = await use_case.execute(
+            UploadTemplateMediaInput(
+                account_id=account_uuid,
+                kind=kind,  # type: ignore[arg-type]
+                data=data,
+                mime=file.content_type or "application/octet-stream",
+                original_filename=file.filename or "upload",
+            )
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail={"code": str(exc)}) from exc
     return UploadMediaResponse(
@@ -158,6 +159,7 @@ async def create_template(
     settings = get_settings()
     # Quando há mídia, R2 real é obrigatório (resumable upload exige bytes acessíveis).
     # Sem mídia, qualquer StoragePort serve — usamos NullStorage via from_settings_or_null.
+    storage: StoragePort
     if body.media_url:
         try:
             storage = R2Storage.from_settings(settings)
@@ -170,18 +172,20 @@ async def create_template(
         repo = MetaTemplateRepository(session=session)
         use_case = CreateTemplate(repo=repo, meta_client=client, storage=storage)
         try:
-            record = await use_case.execute(CreateTemplateInput(
-                account_id=account_uuid,
-                waba_id=waba_id,
-                app_id=app_id,
-                name=body.name,
-                category=body.category,
-                language=body.language,
-                components=body.components,
-                media_url=body.media_url,
-                media_object_key=body.media_object_key,
-                media_kind=body.media_kind,
-            ))
+            record = await use_case.execute(
+                CreateTemplateInput(
+                    account_id=account_uuid,
+                    waba_id=waba_id,
+                    app_id=app_id,
+                    name=body.name,
+                    category=body.category,
+                    language=body.language,
+                    components=body.components,
+                    media_url=body.media_url,
+                    media_object_key=body.media_object_key,
+                    media_kind=body.media_kind,
+                )
+            )
         except ValueError as exc:
             raise HTTPException(
                 status_code=422,
@@ -213,7 +217,8 @@ async def list_templates(
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         records = await ListTemplates(repo=repo, meta_client=client).execute(
-            account_id=account_uuid, waba_id=waba_id,
+            account_id=account_uuid,
+            waba_id=waba_id,
         )
     return [_to_response(r) for r in records]
 
@@ -229,16 +234,20 @@ async def delete_template(
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         use_case = DeleteTemplate(
-            repo=repo, meta_client=client, storage=storage,
+            repo=repo,
+            meta_client=client,
+            storage=storage,
             flow_usage_check=_flow_usage_check,
         )
         try:
             await use_case.execute(
-                account_id=account_uuid, template_id=template_id, waba_id=waba_id,
+                account_id=account_uuid,
+                template_id=template_id,
+                waba_id=waba_id,
             )
         except LookupError as exc:
             raise HTTPException(status_code=404, detail="META_TEMPLATE_NOT_FOUND") from exc
-        except MetaTemplateInUse as exc:
+        except MetaTemplateInUseError as exc:
             raise HTTPException(
                 status_code=409,
                 detail={"code": "META_TEMPLATE_IN_USE", "flows": exc.flows},

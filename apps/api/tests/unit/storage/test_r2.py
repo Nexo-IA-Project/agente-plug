@@ -64,9 +64,7 @@ async def test_head_returns_none_when_not_found(r2: R2Storage) -> None:
     from botocore.exceptions import ClientError
 
     mock_client = MagicMock()
-    mock_client.head_object.side_effect = ClientError(
-        {"Error": {"Code": "404"}}, "HeadObject"
-    )
+    mock_client.head_object.side_effect = ClientError({"Error": {"Code": "404"}}, "HeadObject")
     with patch.object(r2, "_client", mock_client):
         obj = await r2.head(key="missing.jpg")
 

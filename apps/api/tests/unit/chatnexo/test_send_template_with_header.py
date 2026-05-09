@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -17,8 +17,11 @@ async def test_send_template_without_header():
     client = ChatNexoClient(http=http)
 
     await client.send_template(
-        account_id="a", conversation_id="c",
-        template_name="t", language="pt_BR", variables={"1": "Fabio"},
+        account_id="a",
+        conversation_id="c",
+        template_name="t",
+        language="pt_BR",
+        variables={"1": "Fabio"},
     )
 
     http.post.assert_called_once()
@@ -37,8 +40,11 @@ async def test_send_template_with_image_header():
     client = ChatNexoClient(http=http)
 
     await client.send_template(
-        account_id="a", conversation_id="c",
-        template_name="t", language="pt_BR", variables={"1": "x"},
+        account_id="a",
+        conversation_id="c",
+        template_name="t",
+        language="pt_BR",
+        variables={"1": "x"},
         header_link="https://media.example.com/x.jpg",
         header_kind="image",
     )

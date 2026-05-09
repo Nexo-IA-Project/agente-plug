@@ -120,7 +120,9 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code != 200:
-            log.warning("meta_create_upload_session_error", status=resp.status_code, body=resp.text[:200])
+            log.warning(
+                "meta_create_upload_session_error", status=resp.status_code, body=resp.text[:200]
+            )
             resp.raise_for_status()
         data = resp.json()
         session_id = data.get("id", "")
@@ -128,9 +130,7 @@ class MetaTemplateClient:
             raise RuntimeError(f"Meta upload session sem id: {data}")
         return session_id
 
-    async def upload_media_resumable(
-        self, *, session_id: str, data: bytes
-    ) -> str:
+    async def upload_media_resumable(self, *, session_id: str, data: bytes) -> str:
         url = f"{_BASE_URL}/{session_id}"
         async with httpx.AsyncClient() as http:
             resp = await http.post(

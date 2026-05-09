@@ -14,9 +14,7 @@ class StorageObject:
 
 
 class StoragePort(Protocol):
-    async def upload(
-        self, *, key: str, data: bytes, content_type: str
-    ) -> StorageObject: ...
+    async def upload(self, *, key: str, data: bytes, content_type: str) -> StorageObject: ...
 
     async def delete(self, *, key: str) -> None: ...
 

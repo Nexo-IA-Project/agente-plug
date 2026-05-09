@@ -16,9 +16,7 @@ log = structlog.get_logger(__name__)
 
 
 class NullStorage(StoragePort):
-    async def upload(
-        self, *, key: str, data: bytes, content_type: str
-    ) -> StorageObject:
+    async def upload(self, *, key: str, data: bytes, content_type: str) -> StorageObject:
         raise NotImplementedError(
             "NullStorage.upload chamado — operação requer storage configurado (R2)."
         )

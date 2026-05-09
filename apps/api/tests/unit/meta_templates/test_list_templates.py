@@ -24,9 +24,7 @@ async def test_list_does_not_call_meta_when_no_waba_id():
         _make_template(id=uuid4(), name="ok", status="APPROVED"),
     ]
 
-    out = await ListTemplates(repo=repo, meta_client=meta).execute(
-        account_id=uuid4(), waba_id=""
-    )
+    out = await ListTemplates(repo=repo, meta_client=meta).execute(account_id=uuid4(), waba_id="")
 
     assert len(out) == 1
     meta.list_templates.assert_not_awaited()
@@ -52,9 +50,7 @@ async def test_list_syncs_pending_status_from_meta():
         ),
     ]
 
-    await ListTemplates(repo=repo, meta_client=meta).execute(
-        account_id=uuid4(), waba_id="w"
-    )
+    await ListTemplates(repo=repo, meta_client=meta).execute(account_id=uuid4(), waba_id="w")
 
     meta.list_templates.assert_awaited_once_with("w")
     repo.update_status.assert_awaited_once_with(
@@ -83,9 +79,7 @@ async def test_list_imports_meta_templates_not_in_db():
         ),
     ]
 
-    await ListTemplates(repo=repo, meta_client=meta).execute(
-        account_id=uuid4(), waba_id="w"
-    )
+    await ListTemplates(repo=repo, meta_client=meta).execute(account_id=uuid4(), waba_id="w")
 
     repo.create.assert_awaited_once()
     kwargs = repo.create.await_args.kwargs

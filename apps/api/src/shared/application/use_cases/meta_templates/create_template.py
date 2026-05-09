@@ -52,12 +52,14 @@ class CreateTemplate:
 
     async def execute(self, payload: CreateTemplateInput) -> Any:
         # 1. Validate
-        errors = validate_template_payload({
-            "name": payload.name,
-            "category": payload.category,
-            "language": payload.language,
-            "components": payload.components,
-        })
+        errors = validate_template_payload(
+            {
+                "name": payload.name,
+                "category": payload.category,
+                "language": payload.language,
+                "components": payload.components,
+            }
+        )
         if errors:
             raise ValueError(f"VALIDATION_FAILED: {[e.code for e in errors]}")
 

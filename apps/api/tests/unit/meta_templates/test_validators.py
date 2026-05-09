@@ -54,117 +54,188 @@ def test_body_required():
 
 def test_body_too_long():
     long_body = "a" * 1025
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": long_body},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": long_body},
+            ]
+        )
+    )
     assert any(e.code == "BODY_TEXT_TOO_LONG" for e in errors)
 
 
 def test_body_variables_must_be_sequential():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "Olá {{1}} e {{3}}",
-         "example": {"body_text": [["a", "b"]]}},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {
+                    "type": "BODY",
+                    "text": "Olá {{1}} e {{3}}",
+                    "example": {"body_text": [["a", "b"]]},
+                },
+            ]
+        )
+    )
     assert any(e.code == "VARIABLES_NOT_SEQUENTIAL" for e in errors)
 
 
 def test_body_variables_no_adjacent():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "Olá {{1}}{{2}}",
-         "example": {"body_text": [["a", "b"]]}},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "Olá {{1}}{{2}}", "example": {"body_text": [["a", "b"]]}},
+            ]
+        )
+    )
     assert any(e.code == "VARIABLES_ADJACENT" for e in errors)
 
 
 def test_body_variable_missing_example():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "Olá {{1}}"},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "Olá {{1}}"},
+            ]
+        )
+    )
     assert any(e.code == "VARIABLE_MISSING_EXAMPLE" for e in errors)
 
 
 def test_header_text_too_long():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "HEADER", "format": "TEXT", "text": "x" * 61},
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "HEADER", "format": "TEXT", "text": "x" * 61},
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+            ]
+        )
+    )
     assert any(e.code == "HEADER_TEXT_TOO_LONG" for e in errors)
 
 
 def test_header_text_max_one_variable():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "HEADER", "format": "TEXT", "text": "{{1}} e {{2}}",
-         "example": {"header_text": ["a", "b"]}},
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {
+                    "type": "HEADER",
+                    "format": "TEXT",
+                    "text": "{{1}} e {{2}}",
+                    "example": {"header_text": ["a", "b"]},
+                },
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+            ]
+        )
+    )
     assert any(e.code == "HEADER_TOO_MANY_VARIABLES" for e in errors)
 
 
 def test_footer_too_long():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "FOOTER", "text": "x" * 61},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {"type": "FOOTER", "text": "x" * 61},
+            ]
+        )
+    )
     assert any(e.code == "FOOTER_TOO_LONG" for e in errors)
 
 
 def test_footer_no_variables():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "FOOTER", "text": "Vai {{1}}"},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {"type": "FOOTER", "text": "Vai {{1}}"},
+            ]
+        )
+    )
     assert any(e.code == "FOOTER_HAS_VARIABLES" for e in errors)
 
 
 def test_button_label_too_long():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "BUTTONS", "buttons": [
-            {"type": "QUICK_REPLY", "text": "x" * 26},
-        ]},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {
+                    "type": "BUTTONS",
+                    "buttons": [
+                        {"type": "QUICK_REPLY", "text": "x" * 26},
+                    ],
+                },
+            ]
+        )
+    )
     assert any(e.code == "BUTTON_LABEL_TOO_LONG" for e in errors)
 
 
 def test_button_url_invalid():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "BUTTONS", "buttons": [
-            {"type": "URL", "text": "Ir", "url": "not-a-url"},
-        ]},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {
+                    "type": "BUTTONS",
+                    "buttons": [
+                        {"type": "URL", "text": "Ir", "url": "not-a-url"},
+                    ],
+                },
+            ]
+        )
+    )
     assert any(e.code == "BUTTON_URL_INVALID" for e in errors)
 
 
 def test_button_phone_e164_required():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "BUTTONS", "buttons": [
-            {"type": "PHONE_NUMBER", "text": "Liga", "phone_number": "11912345678"},
-        ]},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {
+                    "type": "BUTTONS",
+                    "buttons": [
+                        {"type": "PHONE_NUMBER", "text": "Liga", "phone_number": "11912345678"},
+                    ],
+                },
+            ]
+        )
+    )
     assert any(e.code == "BUTTON_PHONE_INVALID" for e in errors)
 
 
 def test_buttons_too_many_total():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "BUTTONS", "buttons": [
-            {"type": "QUICK_REPLY", "text": f"q{i}"} for i in range(11)
-        ]},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {
+                    "type": "BUTTONS",
+                    "buttons": [{"type": "QUICK_REPLY", "text": f"q{i}"} for i in range(11)],
+                },
+            ]
+        )
+    )
     assert any(e.code == "BUTTONS_TOO_MANY" for e in errors)
 
 
 def test_buttons_too_many_cta():
-    errors = validate_template_payload(_payload(components=[
-        {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        {"type": "BUTTONS", "buttons": [
-            {"type": "URL", "text": "a", "url": "https://a.com"},
-            {"type": "URL", "text": "b", "url": "https://b.com"},
-            {"type": "URL", "text": "c", "url": "https://c.com"},
-        ]},
-    ]))
+    errors = validate_template_payload(
+        _payload(
+            components=[
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                {
+                    "type": "BUTTONS",
+                    "buttons": [
+                        {"type": "URL", "text": "a", "url": "https://a.com"},
+                        {"type": "URL", "text": "b", "url": "https://b.com"},
+                        {"type": "URL", "text": "c", "url": "https://c.com"},
+                    ],
+                },
+            ]
+        )
+    )
     assert any(e.code == "BUTTONS_TOO_MANY_CTA" for e in errors)
 
 

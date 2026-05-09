@@ -46,11 +46,12 @@ def _make_template_record(**kwargs):
     record.language = kwargs.get("language", "pt_BR")
     record.status = kwargs.get("status", "APPROVED")
     record.components = kwargs.get("components", [])
-    record.media_url = kwargs.get("media_url", None)
-    record.media_kind = kwargs.get("media_kind", None)
-    record.rejection_reason = kwargs.get("rejection_reason", None)
+    record.media_url = kwargs.get("media_url")
+    record.media_kind = kwargs.get("media_kind")
+    record.rejection_reason = kwargs.get("rejection_reason")
     record.meta_template_id = kwargs.get("meta_template_id", "meta-123")
     from datetime import datetime
+
     record.created_at = kwargs.get("created_at", datetime(2024, 1, 1))
     return record
 
@@ -132,7 +133,7 @@ def test_list_templates_returns_empty_when_no_waba_id(client):
         ) as mock_scope,
         patch(
             "interface.http.routers.admin.meta_templates.MetaTemplateRepository",
-        ) as mock_repo_cls,
+        ),
         patch(
             "interface.http.routers.admin.meta_templates.ListTemplates",
         ) as mock_list_cls,

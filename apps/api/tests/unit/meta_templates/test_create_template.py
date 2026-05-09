@@ -17,26 +17,26 @@ async def test_create_template_without_media():
     meta_client = AsyncMock()
     storage = AsyncMock()
     repo.create.return_value = MagicMock(id=uuid4())
-    meta_client.create_template.return_value = MagicMock(
-        id="meta_id_123", status="PENDING"
-    )
+    meta_client.create_template.return_value = MagicMock(id="meta_id_123", status="PENDING")
 
     use_case = CreateTemplate(repo=repo, meta_client=meta_client, storage=storage)
 
-    await use_case.execute(CreateTemplateInput(
-        account_id=uuid4(),
-        waba_id="waba1",
-        app_id="app1",
-        name="boas_vindas",
-        category="UTILITY",
-        language="pt_BR",
-        components=[
-            {"type": "BODY", "text": "Olá {{1}}", "example": {"body_text": [["Fabio"]]}},
-        ],
-        media_url=None,
-        media_object_key=None,
-        media_kind=None,
-    ))
+    await use_case.execute(
+        CreateTemplateInput(
+            account_id=uuid4(),
+            waba_id="waba1",
+            app_id="app1",
+            name="boas_vindas",
+            category="UTILITY",
+            language="pt_BR",
+            components=[
+                {"type": "BODY", "text": "Olá {{1}}", "example": {"body_text": [["Fabio"]]}},
+            ],
+            media_url=None,
+            media_object_key=None,
+            media_kind=None,
+        )
+    )
 
     meta_client.create_resumable_upload_session.assert_not_awaited()
     storage.delete.assert_not_awaited()
@@ -54,21 +54,23 @@ async def test_create_template_with_media_does_resumable_upload():
     meta_client.create_template.return_value = MagicMock(id="m_id", status="PENDING")
 
     use_case = CreateTemplate(repo=repo, meta_client=meta_client, storage=storage)
-    await use_case.execute(CreateTemplateInput(
-        account_id=uuid4(),
-        waba_id="waba1",
-        app_id="app1",
-        name="com_imagem",
-        category="UTILITY",
-        language="pt_BR",
-        components=[
-            {"type": "HEADER", "format": "IMAGE", "example": {"header_handle": []}},
-            {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-        ],
-        media_url="https://media.example.com/x.jpg",
-        media_object_key="accounts/x/templates/x.jpg",
-        media_kind="IMAGE",
-    ))
+    await use_case.execute(
+        CreateTemplateInput(
+            account_id=uuid4(),
+            waba_id="waba1",
+            app_id="app1",
+            name="com_imagem",
+            category="UTILITY",
+            language="pt_BR",
+            components=[
+                {"type": "HEADER", "format": "IMAGE", "example": {"header_handle": []}},
+                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+            ],
+            media_url="https://media.example.com/x.jpg",
+            media_object_key="accounts/x/templates/x.jpg",
+            media_kind="IMAGE",
+        )
+    )
 
     storage.download.assert_awaited_once_with(key="accounts/x/templates/x.jpg")
     meta_client.create_resumable_upload_session.assert_awaited_once()
@@ -87,13 +89,20 @@ async def test_create_template_validation_failure_blocks_meta_call():
     use_case = CreateTemplate(repo=repo, meta_client=meta_client, storage=storage)
 
     with pytest.raises(ValueError, match="VALIDATION_FAILED"):
-        await use_case.execute(CreateTemplateInput(
-            account_id=uuid4(), waba_id="w", app_id="a",
-            name="BadName!",
-            category="UTILITY", language="pt_BR",
-            components=[{"type": "BODY", "text": "ok", "example": {"body_text": [[]]}}],
-            media_url=None, media_object_key=None, media_kind=None,
-        ))
+        await use_case.execute(
+            CreateTemplateInput(
+                account_id=uuid4(),
+                waba_id="w",
+                app_id="a",
+                name="BadName!",
+                category="UTILITY",
+                language="pt_BR",
+                components=[{"type": "BODY", "text": "ok", "example": {"body_text": [[]]}}],
+                media_url=None,
+                media_object_key=None,
+                media_kind=None,
+            )
+        )
     meta_client.create_template.assert_not_awaited()
 
 
@@ -107,17 +116,22 @@ async def test_create_template_meta_failure_cleans_r2():
 
     use_case = CreateTemplate(repo=repo, meta_client=meta_client, storage=storage)
     with pytest.raises(RuntimeError, match="meta down"):
-        await use_case.execute(CreateTemplateInput(
-            account_id=uuid4(), waba_id="w", app_id="a",
-            name="ok_name",
-            category="UTILITY", language="pt_BR",
-            components=[
-                {"type": "HEADER", "format": "IMAGE", "example": {"header_handle": []}},
-                {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
-            ],
-            media_url="https://x/x.jpg",
-            media_object_key="accounts/x/templates/x.jpg",
-            media_kind="IMAGE",
-        ))
+        await use_case.execute(
+            CreateTemplateInput(
+                account_id=uuid4(),
+                waba_id="w",
+                app_id="a",
+                name="ok_name",
+                category="UTILITY",
+                language="pt_BR",
+                components=[
+                    {"type": "HEADER", "format": "IMAGE", "example": {"header_handle": []}},
+                    {"type": "BODY", "text": "ok", "example": {"body_text": [[]]}},
+                ],
+                media_url="https://x/x.jpg",
+                media_object_key="accounts/x/templates/x.jpg",
+                media_kind="IMAGE",
+            )
+        )
 
     storage.delete.assert_awaited_once_with(key="accounts/x/templates/x.jpg")

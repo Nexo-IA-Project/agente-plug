@@ -42,9 +42,7 @@ class ListTemplates:
             except Exception as exc:
                 log.warning("meta_template_sync_failed", error=str(exc))
             else:
-                local_by_name = {
-                    r.name: r for r in await self._repo.list_by_account(account_id)
-                }
+                local_by_name = {r.name: r for r in await self._repo.list_by_account(account_id)}
                 for meta_t in meta_list:
                     local = local_by_name.get(meta_t.name)
                     if local is None:

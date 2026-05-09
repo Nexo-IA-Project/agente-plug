@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -56,7 +56,7 @@ class MetaTemplateRepository:
             return
         model.status = status
         model.rejection_reason = rejection_reason
-        model.last_synced_at = datetime.now(timezone.utc)
+        model.last_synced_at = datetime.now(UTC)
         await self._session.flush()
 
     async def delete(self, template_id: UUID) -> None:

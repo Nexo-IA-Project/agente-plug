@@ -1,12 +1,11 @@
-from __future__ import annotations
-
-"""
-Testa que o DispatchFollowupStep passa corretamente header_link e header_kind
+"""Testa que o DispatchFollowupStep passa corretamente header_link e header_kind
 para chatnexo.send_template quando o template associado ao step tem mídia.
 
 A mídia é lida do MetaTemplateModel via MetaTemplateRepository.get_by_name,
 não do FollowupEnrollmentStep (que não possui esses campos).
 """
+
+from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -48,7 +47,9 @@ def _make_template(
     return tmpl
 
 
-def _make_uc(*, step, template_return_value) -> tuple[DispatchFollowupStep, AsyncMock, AsyncMock, AsyncMock]:
+def _make_uc(
+    *, step, template_return_value
+) -> tuple[DispatchFollowupStep, AsyncMock, AsyncMock, AsyncMock]:
     enrollment_repo = AsyncMock()
     enrollment_repo.find_step_by_id.return_value = step
     enrollment_repo.all_steps_sent.return_value = False
@@ -89,9 +90,7 @@ async def test_dispatch_template_step_with_image_media():
     )
 
     assert result == "SENT"
-    template_repo.get_by_name.assert_called_once_with(
-        name="promo_video", account_id=account_id
-    )
+    template_repo.get_by_name.assert_called_once_with(name="promo_video", account_id=account_id)
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] == "https://media.example.com/image.jpg"
     assert call_kwargs["header_kind"] == "image"  # lowercase
@@ -160,13 +159,9 @@ async def test_dispatch_template_step_template_not_found_still_works():
     )
 
     assert result == "SENT"
-    template_repo.get_by_name.assert_called_once_with(
-        name="promo_video", account_id=account_id
-    )
+    template_repo.get_by_name.assert_called_once_with(name="promo_video", account_id=account_id)
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] is None
     assert call_kwargs["header_kind"] is None
     assert call_kwargs["language"] is None
     assert call_kwargs["template_name"] == "promo_video"
-
-

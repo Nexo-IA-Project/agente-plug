@@ -24,13 +24,15 @@ async def test_upload_returns_metadata():
     )
 
     use_case = UploadTemplateMedia(storage=storage)
-    out = await use_case.execute(UploadTemplateMediaInput(
-        account_id=uuid4(),
-        kind="IMAGE",
-        data=b"x" * 1024,
-        mime="image/jpeg",
-        original_filename="photo.jpg",
-    ))
+    out = await use_case.execute(
+        UploadTemplateMediaInput(
+            account_id=uuid4(),
+            kind="IMAGE",
+            data=b"x" * 1024,
+            mime="image/jpeg",
+            original_filename="photo.jpg",
+        )
+    )
 
     storage.upload.assert_awaited_once()
     call = storage.upload.await_args.kwargs
@@ -48,13 +50,15 @@ async def test_upload_rejects_oversize():
     storage = AsyncMock()
     use_case = UploadTemplateMedia(storage=storage)
     with pytest.raises(ValueError, match="MEDIA_SIZE_EXCEEDED"):
-        await use_case.execute(UploadTemplateMediaInput(
-            account_id=uuid4(),
-            kind="IMAGE",
-            data=b"x" * (10 * 1024 * 1024),
-            mime="image/jpeg",
-            original_filename="huge.jpg",
-        ))
+        await use_case.execute(
+            UploadTemplateMediaInput(
+                account_id=uuid4(),
+                kind="IMAGE",
+                data=b"x" * (10 * 1024 * 1024),
+                mime="image/jpeg",
+                original_filename="huge.jpg",
+            )
+        )
     storage.upload.assert_not_awaited()
 
 
@@ -63,10 +67,12 @@ async def test_upload_rejects_wrong_mime():
     storage = AsyncMock()
     use_case = UploadTemplateMedia(storage=storage)
     with pytest.raises(ValueError, match="MEDIA_TYPE_INVALID"):
-        await use_case.execute(UploadTemplateMediaInput(
-            account_id=uuid4(),
-            kind="IMAGE",
-            data=b"x" * 1024,
-            mime="image/gif",
-            original_filename="anim.gif",
-        ))
+        await use_case.execute(
+            UploadTemplateMediaInput(
+                account_id=uuid4(),
+                kind="IMAGE",
+                data=b"x" * 1024,
+                mime="image/gif",
+                original_filename="anim.gif",
+            )
+        )

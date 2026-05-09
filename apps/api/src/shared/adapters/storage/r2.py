@@ -35,13 +35,15 @@ class R2Storage:
 
     @classmethod
     def from_settings(cls, settings: Any) -> R2Storage:
-        if not all([
-            settings.r2_account_id,
-            settings.r2_access_key_id,
-            settings.r2_secret_access_key,
-            settings.r2_bucket_name,
-            settings.r2_public_base_url,
-        ]):
+        if not all(
+            [
+                settings.r2_account_id,
+                settings.r2_access_key_id,
+                settings.r2_secret_access_key,
+                settings.r2_bucket_name,
+                settings.r2_public_base_url,
+            ]
+        ):
             raise RuntimeError("R2 não configurado: defina R2_* em .env.local")
         return cls(
             account_id=settings.r2_account_id,
@@ -67,9 +69,7 @@ class R2Storage:
         except RuntimeError:
             return NullStorage()
 
-    async def upload(
-        self, *, key: str, data: bytes, content_type: str
-    ) -> StorageObject:
+    async def upload(self, *, key: str, data: bytes, content_type: str) -> StorageObject:
         sha256 = hashlib.sha256(data).hexdigest()
         await asyncio.to_thread(
             self._client.put_object,
@@ -89,16 +89,12 @@ class R2Storage:
         )
 
     async def delete(self, *, key: str) -> None:
-        await asyncio.to_thread(
-            self._client.delete_object, Bucket=self._bucket, Key=key
-        )
+        await asyncio.to_thread(self._client.delete_object, Bucket=self._bucket, Key=key)
         log.info("r2_delete", key=key)
 
     async def head(self, *, key: str) -> StorageObject | None:
         try:
-            resp = await asyncio.to_thread(
-                self._client.head_object, Bucket=self._bucket, Key=key
-            )
+            resp = await asyncio.to_thread(self._client.head_object, Bucket=self._bucket, Key=key)
         except ClientError as exc:
             if exc.response.get("Error", {}).get("Code") in ("404", "NoSuchKey"):
                 return None
@@ -113,9 +109,7 @@ class R2Storage:
 
     async def download(self, *, key: str) -> bytes:
         """Baixa bytes do objeto via S3 API (não via URL pública)."""
-        resp = await asyncio.to_thread(
-            self._client.get_object, Bucket=self._bucket, Key=key
-        )
+        resp = await asyncio.to_thread(self._client.get_object, Bucket=self._bucket, Key=key)
         body = resp["Body"]
         # boto3 stream → bytes
         data = await asyncio.to_thread(body.read)
