@@ -144,13 +144,13 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                 ? "bg-success"
                 : isRejected
                   ? "bg-error"
-                  : "bg-amber-500";
+                  : "bg-warning";
 
               const statusIcon = isApproved
                 ? { name: "verified", color: "text-success" }
                 : isRejected
                   ? { name: "do_not_disturb_on", color: "text-error" }
-                  : { name: "pending", color: "text-amber-500" };
+                  : { name: "pending", color: "text-warning" };
 
               const cardClass = [
                 "group relative flex items-center gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
@@ -158,28 +158,28 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                   ? "border-success/40 hover:border-success/60 hover:shadow-[0_4px_24px_-8px_rgba(34,197,94,0.25)]"
                   : isRejected
                     ? "border-error/40 hover:border-error/60 hover:shadow-[0_4px_24px_-8px_rgba(220,38,38,0.25)]"
-                    : "border-amber-500/30 hover:border-amber-500/50 hover:shadow-[0_4px_24px_-8px_rgba(245,158,11,0.25)]",
+                    : "border-warning/40 hover:border-warning/60 hover:shadow-[0_4px_24px_-8px_rgba(245,158,11,0.25)]",
               ].join(" ");
 
               return (
                 <article key={t.id} className={cardClass}>
-                  {/* Background tint para APPROVED — destaque verde sutil */}
+                  {/* Background tint — mesma intensidade entre os 3 status */}
                   {isApproved && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-success/10 via-success/[0.03] to-transparent"
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-success/15 via-success/5 to-transparent"
                     />
                   )}
                   {isRejected && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-error/10 via-error/[0.03] to-transparent"
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-error/15 via-error/5 to-transparent"
                     />
                   )}
                   {isPending && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/10 via-amber-500/[0.03] to-transparent"
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-warning/15 via-warning/5 to-transparent"
                     />
                   )}
 
@@ -197,7 +197,7 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                         ? "bg-success/10 text-success"
                         : isRejected
                           ? "bg-error/10 text-error"
-                          : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                          : "bg-warning/10 text-warning",
                     ].join(" ")}
                   >
                     <span
@@ -210,7 +210,7 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
                     {isPending && (
                       <span
                         aria-hidden
-                        className="absolute inset-0 rounded-xl ring-2 ring-amber-500/50 animate-pulse"
+                        className="absolute inset-0 rounded-xl ring-2 ring-warning/50 animate-pulse"
                       />
                     )}
                   </div>
