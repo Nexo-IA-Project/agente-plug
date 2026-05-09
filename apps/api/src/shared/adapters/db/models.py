@@ -251,6 +251,31 @@ class MetaTemplateModel(Base):
     )
 
 
+class CourseModel(Base):
+    __tablename__ = "courses"
+    __table_args__ = (
+        UniqueConstraint("account_id", "hubla_id", name="uq_courses_account_hubla"),
+        Index("ix_courses_account_id", "account_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    hubla_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+
 class AccessCaseModel(Base):
     __tablename__ = "access_cases"
 
@@ -309,36 +334,6 @@ class RefundCaseModel(Base):
     )
 
     __table_args__ = (Index("idx_refund_cases_account_contact", "account_id", "contact_id"),)
-
-
-class LojaExpressCaseModel(Base):
-    __tablename__ = "loja_express_cases"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    contact_id: Mapped[str] = mapped_column(String, nullable=False)
-    conversation_id: Mapped[str] = mapped_column(String, nullable=False)
-    purchase_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    product_name: Mapped[str] = mapped_column(String, nullable=False)
-    student_email: Mapped[str] = mapped_column(String, nullable=False)
-    form_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    loja_entregue: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    status: Mapped[str] = mapped_column(String(40), nullable=False, default="aguardando_formulario")
-    scheduled_job_d1_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d3_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d5_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d7_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=sa_text("NOW()"),
-        onupdate=sa_text("NOW()"),
-        nullable=False,
-    )
-
-    __table_args__ = (Index("idx_loja_express_cases_account_contact", "account_id", "contact_id"),)
 
 
 class KnowledgeDocumentModel(Base):
@@ -489,9 +484,13 @@ class FollowupFlowModel(Base):
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    product_tags: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
+    course_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("courses.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    position: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
@@ -533,6 +532,8 @@ class FollowupEnrollmentModel(Base):
     conversation_id: Mapped[str] = mapped_column(String(200), nullable=False)
     contact_phone: Mapped[str] = mapped_column(String(30), nullable=False)
     purchase_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    customer_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    product_name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
