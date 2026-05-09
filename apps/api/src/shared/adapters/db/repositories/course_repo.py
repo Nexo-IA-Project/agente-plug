@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import CourseModel, FollowupFlowModel
@@ -86,6 +86,5 @@ class SqlCourseRepository:
         return True
 
     async def count_flows(self, course_id: UUID) -> int:
-        from sqlalchemy import func
         stmt = select(func.count(FollowupFlowModel.id)).where(FollowupFlowModel.course_id == course_id)
         return int((await self.session.execute(stmt)).scalar_one())

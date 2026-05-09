@@ -17,6 +17,7 @@ async def _make_account(session: AsyncSession) -> AccountModel:
     return account
 
 
+@pytest.mark.integration
 async def test_create_and_find_by_id(db_session: AsyncSession) -> None:
     account = await _make_account(db_session)
     repo = SqlCourseRepository(db_session)
@@ -33,6 +34,7 @@ async def test_create_and_find_by_id(db_session: AsyncSession) -> None:
     assert found.is_active is True
 
 
+@pytest.mark.integration
 async def test_find_active_by_hubla_id(db_session: AsyncSession) -> None:
     account = await _make_account(db_session)
     repo = SqlCourseRepository(db_session)
@@ -46,6 +48,7 @@ async def test_find_active_by_hubla_id(db_session: AsyncSession) -> None:
     assert inactive is None
 
 
+@pytest.mark.integration
 async def test_unique_account_hubla_id(db_session: AsyncSession) -> None:
     account = await _make_account(db_session)
     repo = SqlCourseRepository(db_session)
@@ -54,6 +57,7 @@ async def test_unique_account_hubla_id(db_session: AsyncSession) -> None:
         await repo.create(account_id=account.id, name="B", hubla_id="X")
 
 
+@pytest.mark.integration
 async def test_update_partial(db_session: AsyncSession) -> None:
     account = await _make_account(db_session)
     repo = SqlCourseRepository(db_session)
@@ -62,6 +66,7 @@ async def test_update_partial(db_session: AsyncSession) -> None:
     assert updated is not None and updated.name == "New" and updated.hubla_id == "X"
 
 
+@pytest.mark.integration
 async def test_delete(db_session: AsyncSession) -> None:
     account = await _make_account(db_session)
     repo = SqlCourseRepository(db_session)
