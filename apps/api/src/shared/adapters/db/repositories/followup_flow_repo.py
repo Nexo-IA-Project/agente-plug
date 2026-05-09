@@ -48,6 +48,10 @@ class FollowupFlowRepository:
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_flow_to_entity(m) for m in rows]
 
+    async def find_by_id(self, flow_id: uuid.UUID) -> FollowupFlow | None:
+        model = await self.session.get(FollowupFlowModel, flow_id)
+        return None if model is None else _flow_to_entity(model)
+
     async def get_steps(self, flow_id: uuid.UUID) -> list[FollowupStep]:
         result = await self.session.execute(
             select(FollowupStepModel)
