@@ -42,6 +42,12 @@
   --color-error: #dc2626;
   --color-on-error: #ffffff;
   --color-error-container: #fee2e2;
+  --color-success: #16a34a;
+  --color-on-success: #ffffff;
+  --color-success-container: #dcfce7;
+  --color-warning: #f59e0b;
+  --color-on-warning: #ffffff;
+  --color-warning-container: #fef3c7;
   --color-background: #f8fafc;
   --color-on-background: #0f172a;
   --radius: 0.25rem;
@@ -72,6 +78,12 @@
   --color-error: #ffb4ab;
   --color-on-error: #690005;
   --color-error-container: #93000a;
+  --color-success: #4ade80;
+  --color-on-success: #052e1a;
+  --color-success-container: #14532d;
+  --color-warning: #fbbf24;
+  --color-on-warning: #422006;
+  --color-warning-container: #78350f;
   --color-background: #131315;
   --color-on-background: #e4e2e4;
   --radius: 0.25rem;

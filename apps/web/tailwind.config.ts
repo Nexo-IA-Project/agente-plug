@@ -35,6 +35,12 @@ const config: Config = {
         error: "var(--color-error)",
         "on-error": "var(--color-on-error)",
         "error-container": "var(--color-error-container)",
+        success: "var(--color-success)",
+        "on-success": "var(--color-on-success)",
+        "success-container": "var(--color-success-container)",
+        warning: "var(--color-warning)",
+        "on-warning": "var(--color-on-warning)",
+        "warning-container": "var(--color-warning-container)",
         background: "var(--color-background)",
         "on-background": "var(--color-on-background)",
         // shadcn compat
