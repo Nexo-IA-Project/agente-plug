@@ -28,7 +28,11 @@ class SqlCourseRepository:
     session: AsyncSession
 
     async def list_by_account(self, account_id: UUID) -> list[Course]:
-        stmt = select(CourseModel).where(CourseModel.account_id == account_id).order_by(CourseModel.name)
+        stmt = (
+            select(CourseModel)
+            .where(CourseModel.account_id == account_id)
+            .order_by(CourseModel.name)
+        )
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_entity(m) for m in rows]
 
@@ -45,12 +49,18 @@ class SqlCourseRepository:
         m = (await self.session.execute(stmt)).scalar_one_or_none()
         return _to_entity(m) if m else None
 
-    async def create(self, *, account_id: UUID, name: str, hubla_id: str, is_active: bool = True) -> Course:
+    async def create(
+        self, *, account_id: UUID, name: str, hubla_id: str, is_active: bool = True
+    ) -> Course:
         now = datetime.now(UTC)
         m = CourseModel(
-            id=uuid4(), account_id=account_id, name=name,
-            hubla_id=hubla_id, is_active=is_active,
-            created_at=now, updated_at=now,
+            id=uuid4(),
+            account_id=account_id,
+            name=name,
+            hubla_id=hubla_id,
+            is_active=is_active,
+            created_at=now,
+            updated_at=now,
         )
         self.session.add(m)
         await self.session.flush()
@@ -86,5 +96,7 @@ class SqlCourseRepository:
         return True
 
     async def count_flows(self, course_id: UUID) -> int:
-        stmt = select(func.count(FollowupFlowModel.id)).where(FollowupFlowModel.course_id == course_id)
+        stmt = select(func.count(FollowupFlowModel.id)).where(
+            FollowupFlowModel.course_id == course_id
+        )
         return int((await self.session.execute(stmt)).scalar_one())

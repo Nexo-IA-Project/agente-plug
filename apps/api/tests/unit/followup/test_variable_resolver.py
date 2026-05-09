@@ -35,7 +35,9 @@ def test_resolves_contact_phone():
 
 def test_resolves_contact_email():
     resolver = VariableResolver()
-    assert resolver.resolve(StepVariableBinding(source="contact_email"), ctx()) == "fabio@example.com"
+    assert (
+        resolver.resolve(StepVariableBinding(source="contact_email"), ctx()) == "fabio@example.com"
+    )
 
 
 def test_resolves_static():
@@ -46,7 +48,9 @@ def test_resolves_static():
 
 def test_resolves_email_missing_returns_empty_string():
     resolver = VariableResolver()
-    assert resolver.resolve(StepVariableBinding(source="contact_email"), ctx(contact_email=None)) == ""
+    assert (
+        resolver.resolve(StepVariableBinding(source="contact_email"), ctx(contact_email=None)) == ""
+    )
 
 
 def test_resolve_all_returns_dict_keyed_by_var_name():

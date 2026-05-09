@@ -210,9 +210,7 @@ async def test_dispatch_resolves_dynamic_variables():
 @pytest.mark.asyncio
 async def test_dispatch_resolves_static_binding():
     """Step com binding static usa o `value` literal."""
-    step = _make_step(
-        template_variables={"1": {"source": "static", "value": "Promo Black Friday"}}
-    )
+    step = _make_step(template_variables={"1": {"source": "static", "value": "Promo Black Friday"}})
     enrollment_repo = _make_enrollment_repo_with_step(step)
     chatnexo = AsyncMock()
 

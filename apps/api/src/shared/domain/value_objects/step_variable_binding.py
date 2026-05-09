@@ -16,7 +16,13 @@ class StepVariableBinding:
     @classmethod
     def from_dict(cls, raw: dict) -> StepVariableBinding:
         source = raw.get("source")
-        if source not in ("customer_name", "product_name", "contact_phone", "contact_email", "static"):
+        if source not in (
+            "customer_name",
+            "product_name",
+            "contact_phone",
+            "contact_email",
+            "static",
+        ):
             raise ValueError(f"invalid source: {source!r}")
         value = raw.get("value")
         if source == "static" and not value:

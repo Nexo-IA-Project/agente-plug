@@ -82,9 +82,7 @@ class DispatchFollowupStep:
                         account_id=str(account_id),
                     )
 
-            enrollment = await self._enrollment_repo.find_enrollment_by_id(
-                step.enrollment_id
-            )
+            enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
             contact_email: str | None = None
             customer_name = ""
             product_name = ""
@@ -102,9 +100,7 @@ class DispatchFollowupStep:
                 contact_phone=phone_value,
                 contact_email=contact_email,
             )
-            resolved_vars = VariableResolver().resolve_all(
-                step.template_variables or {}, ctx
-            )
+            resolved_vars = VariableResolver().resolve_all(step.template_variables or {}, ctx)
 
             await self._chatnexo.send_template(
                 account_id=str(account_id),
