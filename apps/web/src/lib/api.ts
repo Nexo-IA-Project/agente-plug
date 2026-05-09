@@ -15,6 +15,11 @@ import type {
   UpdateFlowDto,
   UpdateStepDto,
 } from "@/features/followup/types";
+import type {
+  Course,
+  CreateCourseInput,
+  UpdateCourseInput,
+} from "@/features/courses/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -201,6 +206,34 @@ export async function reorderFollowupFlows(items: ReorderItem[]): Promise<void> 
     method: "PATCH",
     body: JSON.stringify({ flows: items }),
   });
+}
+
+
+// ─── Courses ─────────────────────────────────────────────────────────────────
+
+export async function listCourses(): Promise<Course[]> {
+  return apiFetch<Course[]>("/admin/courses");
+}
+
+export async function createCourse(input: CreateCourseInput): Promise<Course> {
+  return apiFetch<Course>("/admin/courses", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateCourse(
+  id: string,
+  input: UpdateCourseInput,
+): Promise<Course> {
+  return apiFetch<Course>(`/admin/courses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/courses/${id}`, { method: "DELETE" });
 }
 
 
