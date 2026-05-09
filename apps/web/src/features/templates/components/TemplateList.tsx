@@ -127,9 +127,10 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
         ) : (
           <div className="space-y-3">
             {templates.map((t) => {
-              const isApproved = t.status === "APPROVED";
-              const isRejected = t.status === "REJECTED";
-              const isPending = t.status === "PENDING";
+              const status = (t.status ?? "").toString().toUpperCase();
+              const isApproved = status === "APPROVED";
+              const isRejected = status === "REJECTED";
+              const isPending = status === "PENDING";
 
               const body = getBodyComponent(t);
               const preview = body?.text ?? null;
@@ -154,19 +155,31 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
               const cardClass = [
                 "group relative flex items-center gap-5 overflow-hidden rounded-2xl border bg-surface-container-low pl-6 pr-4 py-4 transition-all duration-200",
                 isApproved
-                  ? "border-success/20 hover:border-success/40 hover:shadow-[0_4px_24px_-8px_rgba(34,197,94,0.18)]"
+                  ? "border-success/40 hover:border-success/60 hover:shadow-[0_4px_24px_-8px_rgba(34,197,94,0.25)]"
                   : isRejected
-                    ? "border-error/25 hover:border-error/40 hover:shadow-[0_4px_24px_-8px_rgba(220,38,38,0.18)]"
-                    : "border-outline-variant/60 hover:border-outline-variant hover:shadow-[0_4px_24px_-8px_rgba(245,158,11,0.18)]",
+                    ? "border-error/40 hover:border-error/60 hover:shadow-[0_4px_24px_-8px_rgba(220,38,38,0.25)]"
+                    : "border-amber-500/30 hover:border-amber-500/50 hover:shadow-[0_4px_24px_-8px_rgba(245,158,11,0.25)]",
               ].join(" ");
 
               return (
                 <article key={t.id} className={cardClass}>
-                  {/* Background tint para APPROVED — bem sutil */}
+                  {/* Background tint para APPROVED — destaque verde sutil */}
                   {isApproved && (
                     <div
                       aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-success/[0.06] via-transparent to-transparent"
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-success/10 via-success/[0.03] to-transparent"
+                    />
+                  )}
+                  {isRejected && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-error/10 via-error/[0.03] to-transparent"
+                    />
+                  )}
+                  {isPending && (
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/10 via-amber-500/[0.03] to-transparent"
                     />
                   )}
 
