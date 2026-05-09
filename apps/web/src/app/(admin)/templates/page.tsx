@@ -4,12 +4,56 @@ import { useState } from "react";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { TemplateList } from "@/features/templates/components/TemplateList";
 import { TemplateModal } from "@/features/templates/components/TemplateModal";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { useToast } from "@/shared/hooks/useToast";
+import type { MetaTemplate } from "@/features/templates/types";
+
+interface FlowUsage {
+  id: string;
+  name: string;
+  step_position: number;
+}
 
 export default function TemplatesPage() {
-  const { templates, loading, error, reload, create } = useMetaTemplates();
+  const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
+  const confirm = useConfirm();
   const toast = useToast();
+
+  async function handleDelete(template: MetaTemplate) {
+    const ok = await confirm({
+      title: "Excluir template",
+      description: `Vamos excluir "${template.name}" da Meta, do storage e do banco. Esta ação não pode ser desfeita.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
+
+    try {
+      await remove(template.id);
+      toast.success("Template excluído");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      try {
+        const parsed = JSON.parse(msg);
+        if (parsed?.detail?.code === "META_TEMPLATE_IN_USE") {
+          const flows = (parsed.detail.flows as FlowUsage[]) ?? [];
+          const list = flows
+            .map((f) => `${f.name} (passo ${f.step_position})`)
+            .join(", ");
+          toast.error(
+            `Não é possível excluir: template em uso por ${flows.length} flow${
+              flows.length === 1 ? "" : "s"
+            }: ${list}`,
+          );
+          return;
+        }
+      } catch {
+        // not JSON
+      }
+      toast.error(`Falha ao excluir: ${msg}`);
+    }
+  }
 
   if (loading) {
     return (
@@ -41,6 +85,7 @@ export default function TemplatesPage() {
         templates={templates}
         onRefresh={reload}
         onNew={() => setModalOpen(true)}
+        onDelete={handleDelete}
       />
 
       <TemplateModal

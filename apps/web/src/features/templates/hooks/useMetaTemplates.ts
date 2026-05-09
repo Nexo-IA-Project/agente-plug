@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { createMetaTemplate, listMetaTemplates } from "@/lib/api";
+import { createMetaTemplate, deleteMetaTemplate, listMetaTemplates } from "@/lib/api";
 import type { CreateTemplateDto, MetaTemplate } from "../types";
 
 export function useMetaTemplates() {
@@ -37,5 +37,10 @@ export function useMetaTemplates() {
     return template;
   }, []);
 
-  return { templates, loading, error, reload: load, create };
+  const remove = useCallback(async (id: string): Promise<void> => {
+    await deleteMetaTemplate(id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  return { templates, loading, error, reload: load, create, remove };
 }

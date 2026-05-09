@@ -216,16 +216,39 @@ class IntegrationConfigModel(Base):
 
 class MetaTemplateModel(Base):
     __tablename__ = "meta_templates"
+
     id: Mapped[uuid.UUID] = _pk()
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    meta_template_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    language: Mapped[str] = mapped_column(String(10), nullable=False)
+    name: Mapped[str] = mapped_column(String(512), nullable=False)
+    meta_template_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    category: Mapped[str] = mapped_column(String(32), nullable=False, default="UTILITY")
+    language: Mapped[str] = mapped_column(String(16), nullable=False)
+    components: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
     variables_schema: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    media_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    media_object_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    media_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    media_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    media_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="PENDING")
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("account_id", "name", name="uq_meta_template_account_name"),
+        Index("ix_meta_templates_status", "status"),
+    )
 
 
 class AccessCaseModel(Base):

@@ -218,3 +218,69 @@ export async function createMetaTemplate(dto: CreateTemplateDto): Promise<MetaTe
     body: JSON.stringify(dto),
   });
 }
+
+export async function deleteMetaTemplate(id: string): Promise<void> {
+  await apiFetch<void>(`/admin/meta-templates/${id}`, { method: "DELETE" });
+}
+
+export interface UploadMediaResponse {
+  media_url: string;
+  media_object_key: string;
+  media_kind: "IMAGE" | "VIDEO" | "DOCUMENT";
+  sha256: string;
+  size: number;
+}
+
+export function uploadTemplateMedia(
+  file: File,
+  kind: "IMAGE" | "VIDEO" | "DOCUMENT",
+  onProgress?: (pct: number) => void,
+): Promise<UploadMediaResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("kind", kind);
+
+    const url = `${API_URL}/admin/meta-templates/upload-media`;
+    xhr.open("POST", url);
+
+    // Replicate Bearer token auth used by apiFetch
+    const token = getToken();
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+    xhr.withCredentials = true;
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText) as UploadMediaResponse);
+        } catch {
+          reject(new Error("Invalid JSON response"));
+        }
+      } else {
+        let detail: string = xhr.responseText;
+        try {
+          const parsed = JSON.parse(xhr.responseText) as Record<string, unknown>;
+          detail =
+            (parsed?.detail as { code?: string } | string | undefined) != null
+              ? typeof parsed.detail === "string"
+                ? parsed.detail
+                : ((parsed.detail as { code?: string })?.code ?? JSON.stringify(parsed.detail))
+              : JSON.stringify(parsed);
+        } catch {
+          /* keep raw */
+        }
+        reject(new Error(detail));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Network error"));
+    xhr.send(fd);
+  });
+}

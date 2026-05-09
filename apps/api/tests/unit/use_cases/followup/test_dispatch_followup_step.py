@@ -41,7 +41,10 @@ async def test_dispatch_sends_template_and_saves_to_history():
     thread_id = f"{account_id}:{contact_phone}"
 
     uc = DispatchFollowupStep(
-        enrollment_repo=enrollment_repo, chatnexo=chatnexo, conversation_history=history
+        enrollment_repo=enrollment_repo,
+        chatnexo=chatnexo,
+        conversation_history=history,
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
     )
     result = await uc.execute(
         enrollment_step_id=step.id,
@@ -55,7 +58,10 @@ async def test_dispatch_sends_template_and_saves_to_history():
         account_id=str(account_id),
         conversation_id=str(conversation_id),
         template_name="mv_boas_vindas",
+        language=None,
         variables={"nome": "{{1}}"},
+        header_link=None,
+        header_kind=None,
     )
     history.load.assert_called_once_with(thread_id=thread_id)
     history.save.assert_called_once()
@@ -81,6 +87,7 @@ async def test_dispatch_marks_enrollment_completed_when_all_steps_sent():
         enrollment_repo=enrollment_repo,
         chatnexo=AsyncMock(),
         conversation_history=AsyncMock(load=AsyncMock(return_value=[])),
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
     )
     await uc.execute(
         enrollment_step_id=step.id,
@@ -106,6 +113,7 @@ async def test_dispatch_ignores_already_sent_step():
         enrollment_repo=enrollment_repo,
         chatnexo=AsyncMock(),
         conversation_history=AsyncMock(),
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
     )
     result = await uc.execute(
         enrollment_step_id=step.id,

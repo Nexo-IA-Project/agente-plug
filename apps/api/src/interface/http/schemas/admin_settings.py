@@ -16,6 +16,7 @@ class AccountSettingsResponse(BaseModel):
     openai_api_key: str
     meta_api_key: str
     meta_waba_id: str
+    meta_app_id: str
     # Comportamento
     idle_ping_minutes: int
     idle_close_minutes: int
@@ -41,6 +42,7 @@ class AccountSettingsUpdateRequest(BaseModel):
     openai_api_key: str | None = None
     meta_api_key: str | None = None
     meta_waba_id: str | None = None
+    meta_app_id: str | None = None
     # Comportamento
     idle_ping_minutes: int | None = None
     idle_close_minutes: int | None = None

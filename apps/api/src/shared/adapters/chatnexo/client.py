@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 from tenacity import (
@@ -78,15 +78,23 @@ class ChatNexoClient:
         account_id: str,
         conversation_id: str,
         template_name: str,
-        variables: dict[str, Any],
+        language: str | None = None,
+        variables: dict[str, Any] | None = None,
+        header_link: str | None = None,
+        header_kind: Literal["image", "video", "document"] | None = None,
     ) -> None:
+        body: dict[str, Any] = {
+            "type": "template",
+            "template_name": template_name,
+            "variables": variables or {},
+        }
+        if language:
+            body["language"] = language
+        if header_link and header_kind:
+            body["header"] = {"type": header_kind, "link": header_link}
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
-            json={
-                "type": "template",
-                "template_name": template_name,
-                "variables": variables,
-            },
+            json=body,
         )
 
     async def transfer_to_human(

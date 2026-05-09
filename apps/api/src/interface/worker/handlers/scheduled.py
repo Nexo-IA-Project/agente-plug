@@ -80,6 +80,7 @@ async def handle_scheduled(payload: dict) -> None:
         from shared.adapters.db.repositories.followup_enrollment_repo import (
             FollowupEnrollmentRepository,
         )
+        from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
         from shared.adapters.db.session import session_scope
         from shared.application.use_cases.followup.dispatch_followup_step import (
             DispatchFollowupStep,
@@ -96,6 +97,7 @@ async def handle_scheduled(payload: dict) -> None:
                 enrollment_repo=FollowupEnrollmentRepository(session=session),
                 chatnexo=chatnexo,
                 conversation_history=ConversationHistory(session=session),
+                meta_template_repo=MetaTemplateRepository(session=session),
             )
             await dispatch.execute(
                 enrollment_step_id=_UUID(payload["enrollment_step_id"]),
