@@ -6,6 +6,7 @@ from uuid import UUID
 
 import structlog
 
+from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
 from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
@@ -18,7 +19,7 @@ class DispatchFollowupStep:
         enrollment_repo: Any,
         chatnexo: Any,
         conversation_history: Any,
-        meta_template_repo: Any = None,
+        meta_template_repo: MetaTemplateRepository,
     ) -> None:
         self._enrollment_repo = enrollment_repo
         self._chatnexo = chatnexo
@@ -54,7 +55,7 @@ class DispatchFollowupStep:
             header_kind: str | None = None
             language: str | None = None
 
-            if self._template_repo is not None and step.meta_template_name:
+            if step.meta_template_name:
                 template = await self._template_repo.get_by_name(
                     name=step.meta_template_name,
                     account_id=account_id,

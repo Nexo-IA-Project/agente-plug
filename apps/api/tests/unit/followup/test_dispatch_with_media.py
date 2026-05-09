@@ -170,34 +170,3 @@ async def test_dispatch_template_step_template_not_found_still_works():
     assert call_kwargs["template_name"] == "promo_video"
 
 
-@pytest.mark.asyncio
-async def test_dispatch_template_step_no_template_repo_still_works():
-    """Backward-compat: se meta_template_repo não for injetado, dispatch funciona sem header (comportamento legado)."""
-    step = _make_step()
-    enrollment_repo = AsyncMock()
-    enrollment_repo.find_step_by_id.return_value = step
-    enrollment_repo.all_steps_sent.return_value = False
-
-    chatnexo = AsyncMock()
-    history = AsyncMock()
-    history.load.return_value = []
-
-    # Sem meta_template_repo (= None, valor padrão)
-    uc = DispatchFollowupStep(
-        enrollment_repo=enrollment_repo,
-        chatnexo=chatnexo,
-        conversation_history=history,
-    )
-
-    result = await uc.execute(
-        enrollment_step_id=step.id,
-        account_id=uuid4(),
-        conversation_id=str(uuid4()),
-        contact_phone="5511999990000",
-    )
-
-    assert result == "SENT"
-    call_kwargs = chatnexo.send_template.call_args.kwargs
-    assert call_kwargs["header_link"] is None
-    assert call_kwargs["header_kind"] is None
-    assert call_kwargs["language"] is None

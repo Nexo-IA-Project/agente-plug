@@ -109,7 +109,10 @@ async def upload_media(
             status_code=422, detail={"code": "MEDIA_KIND_INVALID"}
         )
     data = await file.read()
-    storage = R2Storage.from_settings(get_settings())
+    try:
+        storage = R2Storage.from_settings(get_settings())
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     use_case = UploadTemplateMedia(storage=storage)
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
