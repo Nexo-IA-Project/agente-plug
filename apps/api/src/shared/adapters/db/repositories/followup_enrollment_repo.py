@@ -3,10 +3,14 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import FollowupEnrollmentModel, FollowupEnrollmentStepModel
+from shared.adapters.db.models import (
+    ContactModel,
+    FollowupEnrollmentModel,
+    FollowupEnrollmentStepModel,
+)
 from shared.domain.entities.followup import (
     EnrollmentStatus,
     EnrollmentStepStatus,
@@ -122,3 +126,71 @@ class FollowupEnrollmentRepository:
             raise ValueError(f"FollowupEnrollment {enrollment_id} not found")
         model.status = status.value
         await self.session.flush()
+
+    async def find_active_by_flow(self, flow_id: uuid.UUID) -> list[FollowupEnrollment]:
+        """Lista enrollments com status='active' de um flow."""
+        result = await self.session.execute(
+            select(FollowupEnrollmentModel).where(
+                FollowupEnrollmentModel.flow_id == flow_id,
+                FollowupEnrollmentModel.status == EnrollmentStatus.ACTIVE.value,
+            )
+        )
+        rows = result.scalars().all()
+        return [_enrollment_to_entity(row) for row in rows]
+
+    async def list_with_filters(
+        self,
+        *,
+        account_id: uuid.UUID,
+        flow_id: uuid.UUID | None,
+        contact_phone: str | None,
+        status: EnrollmentStatus | None,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[FollowupEnrollment], int]:
+        """Lista enrollments paginados. Retorna (items, total)."""
+        base = select(FollowupEnrollmentModel).where(
+            FollowupEnrollmentModel.account_id == account_id
+        )
+        if flow_id is not None:
+            base = base.where(FollowupEnrollmentModel.flow_id == flow_id)
+        if status is not None:
+            base = base.where(FollowupEnrollmentModel.status == status.value)
+        if contact_phone:
+            base = base.join(
+                ContactModel,
+                ContactModel.id == FollowupEnrollmentModel.contact_id,
+            ).where(ContactModel.phone == contact_phone)
+
+        total_result = await self.session.execute(
+            select(func.count()).select_from(base.subquery())
+        )
+        total = int(total_result.scalar_one())
+
+        paged = (
+            base.order_by(FollowupEnrollmentModel.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        rows = (await self.session.execute(paged)).scalars().all()
+        return [_enrollment_to_entity(r) for r in rows], total
+
+    async def count_steps_by_status(self, enrollment_id: uuid.UUID) -> dict[str, int]:
+        """Conta steps de um enrollment agrupados por status (lowercase)."""
+        result = await self.session.execute(
+            select(
+                FollowupEnrollmentStepModel.status,
+                func.count(FollowupEnrollmentStepModel.id),
+            )
+            .where(FollowupEnrollmentStepModel.enrollment_id == enrollment_id)
+            .group_by(FollowupEnrollmentStepModel.status)
+        )
+        return {row[0]: int(row[1]) for row in result.all()}
+
+    async def cancel_step(self, step_id: uuid.UUID) -> None:
+        """Marca um step como cancelled (idempotente)."""
+        await self.session.execute(
+            update(FollowupEnrollmentStepModel)
+            .where(FollowupEnrollmentStepModel.id == step_id)
+            .values(status=EnrollmentStepStatus.CANCELLED.value)
+        )
