@@ -4,7 +4,7 @@ import type {
   KbDocumentListResponse,
   UploadDocumentResponse,
 } from "@/types/api";
-import { getToken } from "@/lib/auth";
+import { getToken, clearToken } from "@/lib/auth";
 import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
 import type {
   CreateFlowInput,
@@ -45,6 +45,11 @@ async function apiFetch<T>(
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      clearToken();
+      if (typeof window !== "undefined") window.location.href = "/login";
+      throw new Error("Sessão expirada");
+    }
     const body = await res.text();
     throw new Error(`API ${res.status}: ${body}`);
   }

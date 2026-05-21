@@ -74,7 +74,7 @@ class Settings(BaseSettings):
 
     # JWT — deve ser configurado via JWT_SECRET no ambiente (sem valor padrão)
     jwt_secret: str
-    jwt_expire_minutes: int = 60
+    jwt_expire_minutes: int = 480
 
     # Cloudflare R2 (template media storage)
     r2_account_id: str | None = None
