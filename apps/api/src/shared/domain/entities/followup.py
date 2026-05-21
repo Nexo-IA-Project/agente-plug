@@ -16,6 +16,7 @@ class EnrollmentStepStatus(StrEnum):
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass(slots=True)
@@ -68,3 +69,5 @@ class FollowupEnrollmentStep:
     status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING
     sent_at: datetime | None = None
     message_text: str | None = None
+    failure_reason: str | None = None
+    flow_step_id: UUID | None = None
