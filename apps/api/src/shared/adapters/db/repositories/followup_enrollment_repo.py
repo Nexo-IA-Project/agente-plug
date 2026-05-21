@@ -127,13 +127,22 @@ class FollowupEnrollmentRepository:
         model.status = status.value
         await self.session.flush()
 
-    async def find_active_by_flow(self, flow_id: uuid.UUID) -> list[FollowupEnrollment]:
-        """Lista enrollments com status='active' de um flow."""
+    async def find_active_by_flow(
+        self, *, account_id: uuid.UUID, flow_id: uuid.UUID
+    ) -> list[FollowupEnrollment]:
+        """Lista enrollments com status='active' de um flow específico de uma conta.
+
+        Multi-tenant defense-in-depth: filtra também por account_id.
+        Ordenação determinística por created_at ASC.
+        """
         result = await self.session.execute(
-            select(FollowupEnrollmentModel).where(
+            select(FollowupEnrollmentModel)
+            .where(
+                FollowupEnrollmentModel.account_id == account_id,
                 FollowupEnrollmentModel.flow_id == flow_id,
                 FollowupEnrollmentModel.status == EnrollmentStatus.ACTIVE.value,
             )
+            .order_by(FollowupEnrollmentModel.created_at.asc())
         )
         rows = result.scalars().all()
         return [_enrollment_to_entity(row) for row in rows]
@@ -162,9 +171,7 @@ class FollowupEnrollmentRepository:
                 ContactModel.id == FollowupEnrollmentModel.contact_id,
             ).where(ContactModel.phone == contact_phone)
 
-        total_result = await self.session.execute(
-            select(func.count()).select_from(base.subquery())
-        )
+        total_result = await self.session.execute(select(func.count()).select_from(base.subquery()))
         total = int(total_result.scalar_one())
 
         paged = (
@@ -188,9 +195,16 @@ class FollowupEnrollmentRepository:
         return {row[0]: int(row[1]) for row in result.all()}
 
     async def cancel_step(self, step_id: uuid.UUID) -> None:
-        """Marca um step como cancelled (idempotente)."""
+        """Marca o step como cancelado.
+
+        Só atua em steps ainda PENDING — não sobrescreve SENT/FAILED/CANCELLED.
+        Idempotente: chamar várias vezes em um step já não-PENDING é no-op.
+        """
         await self.session.execute(
             update(FollowupEnrollmentStepModel)
-            .where(FollowupEnrollmentStepModel.id == step_id)
+            .where(
+                FollowupEnrollmentStepModel.id == step_id,
+                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+            )
             .values(status=EnrollmentStepStatus.CANCELLED.value)
         )

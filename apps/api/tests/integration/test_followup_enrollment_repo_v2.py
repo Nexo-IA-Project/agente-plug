@@ -15,7 +15,7 @@ import uuid
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import delete
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
@@ -34,7 +34,6 @@ from shared.domain.entities.followup import (
     EnrollmentStatus,
     EnrollmentStepStatus,
 )
-
 
 # ──────────────────────────────────────────────────────────────
 # Migrations no testcontainer (autouse session-scope)
@@ -111,9 +110,7 @@ async def seed_course(db_session: AsyncSession, seed_account: AccountModel) -> C
 
 
 @pytest.fixture
-async def seed_flow(
-    db_session: AsyncSession, seed_course: CourseModel
-) -> FollowupFlowModel:
+async def seed_flow(db_session: AsyncSession, seed_course: CourseModel) -> FollowupFlowModel:
     flow = FollowupFlowModel(
         id=uuid.uuid4(),
         account_id=seed_course.account_id,
@@ -128,9 +125,7 @@ async def seed_flow(
 
 
 @pytest.fixture
-async def seed_contact(
-    db_session: AsyncSession, seed_account: AccountModel
-) -> ContactModel:
+async def seed_contact(db_session: AsyncSession, seed_account: AccountModel) -> ContactModel:
     contact = ContactModel(
         id=uuid.uuid4(),
         account_id=seed_account.id,
@@ -203,7 +198,7 @@ async def test_find_active_by_flow_returns_only_active(
     await db_session.commit()
 
     repo = FollowupEnrollmentRepository(session=db_session)
-    result = await repo.find_active_by_flow(seed_flow.id)
+    result = await repo.find_active_by_flow(account_id=seed_account.id, flow_id=seed_flow.id)
 
     assert len(result) == 2
     assert all(e.status == EnrollmentStatus.ACTIVE for e in result)
@@ -297,3 +292,150 @@ async def test_count_steps_by_status_returns_lowercase_dict(
     counts = await repo.count_steps_by_status(enrollment.id)
 
     assert counts == {"sent": 3, "pending": 2}
+
+
+@pytest.mark.integration
+async def test_cancel_step_marks_pending_as_cancelled(
+    db_session: AsyncSession,
+    seed_account: AccountModel,
+    seed_flow: FollowupFlowModel,
+    seed_contact: ContactModel,
+) -> None:
+    """cancel_step transforma PENDING → CANCELLED."""
+    enrollment = _make_enrollment(
+        account_id=seed_account.id,
+        flow_id=seed_flow.id,
+        contact_id=seed_contact.id,
+        contact_phone=seed_contact.phone,
+        status=EnrollmentStatus.ACTIVE,
+    )
+    db_session.add(enrollment)
+    await db_session.flush()
+
+    step_id = uuid.uuid4()
+    db_session.add(
+        FollowupEnrollmentStepModel(
+            id=step_id,
+            enrollment_id=enrollment.id,
+            position=0,
+            delay_from_purchase_hours=0,
+            meta_template_name=None,
+            template_variables={},
+            message_text="oi",
+            status=EnrollmentStepStatus.PENDING.value,
+        )
+    )
+    await db_session.flush()
+    await db_session.commit()
+
+    repo = FollowupEnrollmentRepository(session=db_session)
+    await repo.cancel_step(step_id)
+    await db_session.commit()
+
+    result = await db_session.execute(
+        text("SELECT status FROM followup_enrollment_steps WHERE id = :id"),
+        {"id": step_id},
+    )
+    assert result.scalar_one() == "cancelled"
+
+
+@pytest.mark.integration
+async def test_cancel_step_is_noop_on_sent(
+    db_session: AsyncSession,
+    seed_account: AccountModel,
+    seed_flow: FollowupFlowModel,
+    seed_contact: ContactModel,
+) -> None:
+    """cancel_step não sobrescreve steps SENT (guard idempotente)."""
+    enrollment = _make_enrollment(
+        account_id=seed_account.id,
+        flow_id=seed_flow.id,
+        contact_id=seed_contact.id,
+        contact_phone=seed_contact.phone,
+        status=EnrollmentStatus.ACTIVE,
+    )
+    db_session.add(enrollment)
+    await db_session.flush()
+
+    step_id = uuid.uuid4()
+    db_session.add(
+        FollowupEnrollmentStepModel(
+            id=step_id,
+            enrollment_id=enrollment.id,
+            position=0,
+            delay_from_purchase_hours=0,
+            meta_template_name=None,
+            template_variables={},
+            message_text="oi",
+            status=EnrollmentStepStatus.SENT.value,
+            sent_at=datetime.now(UTC),
+        )
+    )
+    await db_session.flush()
+    await db_session.commit()
+
+    repo = FollowupEnrollmentRepository(session=db_session)
+    await repo.cancel_step(step_id)
+    await db_session.commit()
+
+    result = await db_session.execute(
+        text("SELECT status FROM followup_enrollment_steps WHERE id = :id"),
+        {"id": step_id},
+    )
+    assert result.scalar_one() == "sent"
+
+
+@pytest.mark.integration
+async def test_list_with_filters_by_contact_phone(
+    db_session: AsyncSession,
+    seed_account: AccountModel,
+    seed_flow: FollowupFlowModel,
+    seed_contact: ContactModel,
+) -> None:
+    """list_with_filters faz JOIN com contacts quando phone é informado."""
+    # 2 enrollments para seed_contact
+    for _ in range(2):
+        db_session.add(
+            _make_enrollment(
+                account_id=seed_account.id,
+                flow_id=seed_flow.id,
+                contact_id=seed_contact.id,
+                contact_phone=seed_contact.phone,
+                status=EnrollmentStatus.ACTIVE,
+            )
+        )
+
+    # 1 enrollment para outro contato (deve ser filtrado fora)
+    other_contact = ContactModel(
+        id=uuid.uuid4(),
+        account_id=seed_account.id,
+        phone="+5511999990002",
+        name="Outro",
+        email="outro@test.com",
+    )
+    db_session.add(other_contact)
+    await db_session.flush()
+    db_session.add(
+        _make_enrollment(
+            account_id=seed_account.id,
+            flow_id=seed_flow.id,
+            contact_id=other_contact.id,
+            contact_phone=other_contact.phone,
+            status=EnrollmentStatus.ACTIVE,
+        )
+    )
+    await db_session.flush()
+    await db_session.commit()
+
+    repo = FollowupEnrollmentRepository(session=db_session)
+    items, total = await repo.list_with_filters(
+        account_id=seed_account.id,
+        flow_id=None,
+        contact_phone=seed_contact.phone,
+        status=None,
+        page=1,
+        page_size=10,
+    )
+    assert total == 2
+    assert len(items) == 2
+    assert all(item.contact_id == seed_contact.id for item in items)
