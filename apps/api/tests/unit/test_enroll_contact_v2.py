@@ -102,6 +102,45 @@ async def test_enroll_dedup_returns_existing_on_integrity_error():
 
 
 @pytest.mark.asyncio
+async def test_enroll_dedup_rolls_back_session_before_lookup():
+    """Após IntegrityError, rollback() deve ser chamado antes de find_by_dedup_key."""
+    flow = SimpleNamespace(id=uuid.uuid4(), is_active=True)
+    flow_repo = AsyncMock()
+    flow_repo.find_by_id.return_value = flow
+    flow_repo.get_steps.return_value = [_flow_step(uuid.uuid4())]
+
+    existing = SimpleNamespace(id=uuid.uuid4())
+    enrollment_repo = AsyncMock()
+    enrollment_repo.create_with_steps.side_effect = IntegrityError("dup", {}, Exception())
+    enrollment_repo.find_by_dedup_key.return_value = existing
+
+    job_repo = AsyncMock()
+    job_repo.schedule.return_value = SimpleNamespace(id=uuid.uuid4())
+
+    use_case = EnrollContact(
+        flow_repo=flow_repo, enrollment_repo=enrollment_repo, job_repo=job_repo,
+    )
+    await use_case.execute(
+        account_id=uuid.uuid4(),
+        contact_id=uuid.uuid4(),
+        conversation_id="c",
+        contact_phone="+5511",
+        purchase_id="dup",
+        flow_id=flow.id,
+        customer_name="X",
+        product_name="P",
+        purchase_time=datetime.now(UTC),
+    )
+
+    enrollment_repo.rollback.assert_awaited_once()
+    # rollback antes do find_by_dedup_key (ordem importa)
+    calls = enrollment_repo.method_calls
+    rollback_idx = next(i for i, c in enumerate(calls) if c[0] == "rollback")
+    lookup_idx = next(i for i, c in enumerate(calls) if c[0] == "find_by_dedup_key")
+    assert rollback_idx < lookup_idx
+
+
+@pytest.mark.asyncio
 async def test_enroll_returns_none_when_flow_not_found():
     """Retorno preserva semântica atual: flow inexistente → None (não dedup)."""
     flow_repo = AsyncMock()

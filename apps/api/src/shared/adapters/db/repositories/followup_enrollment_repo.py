@@ -54,6 +54,10 @@ def _step_to_entity(m: FollowupEnrollmentStepModel) -> FollowupEnrollmentStep:
 class FollowupEnrollmentRepository:
     session: AsyncSession
 
+    async def rollback(self) -> None:
+        """Roll back the underlying session after an aborted transaction."""
+        await self.session.rollback()
+
     async def create_with_steps(
         self,
         enrollment: FollowupEnrollment,

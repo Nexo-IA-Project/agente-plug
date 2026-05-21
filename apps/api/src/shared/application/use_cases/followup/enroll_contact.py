@@ -6,7 +6,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from shared.domain.entities.followup import (
     EnrollmentStepStatus,
@@ -110,6 +110,9 @@ class EnrollContact:
         try:
             await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
         except IntegrityError:
+            # A session entra em estado inativo após IntegrityError — precisamos
+            # liberar com rollback antes de qualquer query subsequente.
+            await self._enrollment_repo.rollback()
             existing = await self._enrollment_repo.find_by_dedup_key(
                 account_id=account_id,
                 contact_id=contact_id,
@@ -121,10 +124,11 @@ class EnrollContact:
                 if es.scheduled_job_id:
                     try:
                         await self._job_repo.cancel(es.scheduled_job_id)
-                    except Exception:
+                    except SQLAlchemyError:
                         log.warning(
                             "orphan_job_cancel_failed",
                             job_id=str(es.scheduled_job_id),
+                            exc_info=True,
                         )
             log.info(
                 "followup_enrollment_deduped",
