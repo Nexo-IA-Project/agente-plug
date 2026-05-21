@@ -232,3 +232,21 @@ class FollowupEnrollmentRepository:
             )
             .values(status=EnrollmentStepStatus.CANCELLED.value)
         )
+
+    async def mark_failed(self, step_id: uuid.UUID, reason: str) -> None:
+        """Marca step como FAILED com a razão (truncada a 500 chars).
+
+        Só atua em steps PENDING — não sobrescreve SENT/CANCELLED.
+        """
+        truncated = (reason or "")[:500]
+        await self.session.execute(
+            update(FollowupEnrollmentStepModel)
+            .where(
+                FollowupEnrollmentStepModel.id == step_id,
+                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+            )
+            .values(
+                status=EnrollmentStepStatus.FAILED.value,
+                failure_reason=truncated,
+            )
+        )

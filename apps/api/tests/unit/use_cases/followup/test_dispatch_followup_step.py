@@ -6,7 +6,10 @@ from uuid import uuid4
 
 import pytest
 
-from shared.application.use_cases.followup.dispatch_followup_step import DispatchFollowupStep
+from shared.application.use_cases.followup.dispatch_followup_step import (
+    DispatchFollowupStep,
+    DispatchResult,
+)
 from shared.domain.entities.followup import EnrollmentStepStatus, FollowupEnrollmentStep
 
 
@@ -85,7 +88,8 @@ async def test_dispatch_sends_template_and_saves_to_history():
         contact_phone=contact_phone,
     )
 
-    assert result == "SENT"
+    assert isinstance(result, DispatchResult)
+    assert result.status == EnrollmentStepStatus.SENT
     chatnexo.send_template.assert_called_once_with(
         account_id=str(account_id),
         conversation_id=str(conversation_id),
@@ -152,7 +156,9 @@ async def test_dispatch_ignores_already_sent_step():
         conversation_id=uuid4(),
         contact_phone="5511999990000",
     )
-    assert result == "IGNORADO"
+    assert isinstance(result, DispatchResult)
+    assert result.label == "IGNORADO"
+    assert result.status == EnrollmentStepStatus.SENT
     enrollment_repo.update_step.assert_not_called()
 
 
