@@ -8,20 +8,65 @@ services:
       interval: 10s
       retries: 5
 
-  api:
+  api-blue:
+    profiles: [blue]
     image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     depends_on:
       redis: { condition: service_healthy }
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8001:8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 15s
+      interval: 10s
       timeout: 5s
-      retries: 4
+      retries: 6
       start_period: 30s
+
+  api-green:
+    profiles: [green]
+    image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /root/.env.prod
+    depends_on:
+      redis: { condition: service_healthy }
+    ports:
+      - "127.0.0.1:8002:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  web-blue:
+    profiles: [blue]
+    image: ghcr.io/nexo-ia-project/agente-plug-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /root/.env.prod
+    ports:
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
+
+  web-green:
+    profiles: [green]
+    image: ghcr.io/nexo-ia-project/agente-plug-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file: /root/.env.prod
+    ports:
+      - "127.0.0.1:3002:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
 
   worker:
     image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
@@ -30,16 +75,5 @@ services:
     depends_on:
       redis: { condition: service_healthy }
     command: ["python", "-m", "worker"]
-
-  web:
-    image: ghcr.io/nexo-ia-project/agente-plug-web:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    env_file: /root/.env.prod
-    ports:
-      - "127.0.0.1:3000:3000"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:3000/"]
-      interval: 15s
-      timeout: 5s
-      retries: 4
-      start_period: 45s
+      disable: true
