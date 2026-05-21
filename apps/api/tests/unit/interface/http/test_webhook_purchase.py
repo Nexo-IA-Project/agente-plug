@@ -32,6 +32,29 @@ def _make_app(deps) -> FastAPI:
     return app
 
 
+def _v2_payload(purchase_id: str = "p-1", product_id: str = "prod-x") -> dict:
+    return {
+        "type": "subscription.activated",
+        "version": "2.0.0",
+        "event": {
+            "product": {"id": product_id, "name": "Curso X"},
+            "products": [{"id": product_id, "name": "Curso X"}],
+            "subscription": {
+                "id": purchase_id,
+                "payer": {
+                    "firstName": "Ana",
+                    "lastName": "Silva",
+                    "document": "00000000000",
+                    "email": "ana@test.com",
+                    "phone": "+5511999887766",
+                },
+                "activatedAt": "2026-04-17T10:00:00Z",
+            },
+            "user": {"id": "u1", "email": "ana@test.com", "phone": "+5511999887766"},
+        },
+    }
+
+
 def test_returns_401_without_token(deps):
     client = TestClient(_make_app(deps))
     r = client.post("/webhook/purchase", json={})
@@ -44,19 +67,12 @@ def test_returns_202_on_first_valid_call(deps):
     deps["queue"].enqueue = AsyncMock(return_value="job-1")
 
     client = TestClient(_make_app(deps))
-    body = {
-        "purchase_id": "p-1",
-        "account_id": 1,
-        "customer_name": "Ana",
-        "email": "ana@test.com",
-        "phone": "11999887766",
-        "product_id": "prod-x",
-        "product_name": "Curso X",
-        "amount_brl": 19700,
-        "occurred_at": "2026-04-17T10:00:00Z",
-    }
-    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"})
-    assert r.status_code == 202
+    r = client.post(
+        "/webhook/purchase",
+        json=_v2_payload(purchase_id="p-1", product_id="prod-x"),
+        headers={"X-Hubla-Token": "secret-token"},
+    )
+    assert r.status_code == 202, r.text
     deps["queue"].enqueue.assert_awaited_once()
 
 
@@ -64,18 +80,23 @@ def test_returns_202_but_skips_enqueue_on_duplicate(deps):
     deps["dedup"].try_mark = AsyncMock(return_value=False)
     deps["queue"].enqueue = AsyncMock()
     client = TestClient(_make_app(deps))
-    body = {
-        "purchase_id": "p-dup",
-        "account_id": 1,
-        "customer_name": "Ana",
-        "email": "x@x",
-        "phone": "11999887766",
-        "product_id": "prod-y",
-        "product_name": "Y",
-        "amount_brl": 100,
-        "occurred_at": "2026-04-17T10:00:00Z",
-    }
-    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "secret-token"})
+    r = client.post(
+        "/webhook/purchase",
+        json=_v2_payload(purchase_id="p-dup", product_id="prod-y"),
+        headers={"X-Hubla-Token": "secret-token"},
+    )
     assert r.status_code == 202
     assert r.json()["duplicate"] is True
     deps["queue"].enqueue.assert_not_awaited()
+
+
+def test_returns_422_on_invalid_payload(deps):
+    """Payload sem 'type' subscription.activated deve retornar 422."""
+    deps["dedup"].try_mark = AsyncMock(return_value=True)
+    client = TestClient(_make_app(deps))
+    r = client.post(
+        "/webhook/purchase",
+        json={"type": "subscription.canceled", "event": {}},
+        headers={"X-Hubla-Token": "secret-token"},
+    )
+    assert r.status_code == 422

@@ -19,7 +19,7 @@ async def test_handle_purchase_calls_purchase_handler():
         yield AsyncMock()
 
     mock_handler_instance = AsyncMock()
-    mock_handler_instance.execute = AsyncMock(return_value=None)
+    mock_handler_instance.handle_one = AsyncMock(return_value=None)
 
     with (
         patch("interface.worker.handlers.purchase.session_scope", _fake_session_scope),
@@ -50,18 +50,31 @@ async def test_handle_purchase_calls_purchase_handler():
 
         await handle_purchase(
             {
-                "purchase_id": "p-1",
-                "account_id": "00000000-0000-0000-0000-000000000001",
-                "customer_name": "João",
-                "contact_email": "joao@test.com",
-                "contact_phone": "5511999990000",
-                "product_id": "prod-mentoria",
-                "product_name": "Mentoria",
-                "amount_brl": 49700,
-                "occurred_at": "2026-04-24T00:00:00+00:00",
+                "type": "subscription.activated",
+                "version": "2.0.0",
+                "event": {
+                    "product": {"id": "prod-mentoria", "name": "Mentoria"},
+                    "products": [{"id": "prod-mentoria", "name": "Mentoria"}],
+                    "subscription": {
+                        "id": "p-1",
+                        "payer": {
+                            "firstName": "João",
+                            "lastName": "",
+                            "document": "00000000000",
+                            "email": "joao@test.com",
+                            "phone": "5511999990000",
+                        },
+                        "activatedAt": "2026-04-24T00:00:00Z",
+                    },
+                    "user": {
+                        "id": "u1",
+                        "email": "joao@test.com",
+                        "phone": "5511999990000",
+                    },
+                },
             }
         )
-    mock_handler_instance.execute.assert_called_once()
+    mock_handler_instance.handle_one.assert_called_once()
 
 
 @pytest.mark.asyncio
