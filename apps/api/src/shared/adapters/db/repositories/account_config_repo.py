@@ -113,18 +113,6 @@ class AccountConfigRepository:
                 ),
                 refund_deadline_days=gi("refund_deadline_days", s.refund_deadline_days),
                 welcome_d1_delay_hours=gi("welcome_d1_delay_hours", s.welcome_d1_delay_hours),
-                loja_express_d1_delay_hours=gi(
-                    "loja_express_d1_delay_hours", s.loja_express_d1_delay_hours
-                ),
-                loja_express_d3_delay_hours=gi(
-                    "loja_express_d3_delay_hours", s.loja_express_d3_delay_hours
-                ),
-                loja_express_d5_delay_hours=gi(
-                    "loja_express_d5_delay_hours", s.loja_express_d5_delay_hours
-                ),
-                loja_express_d7_delay_hours=gi(
-                    "loja_express_d7_delay_hours", s.loja_express_d7_delay_hours
-                ),
             ),
         )
 
@@ -168,10 +156,6 @@ class AccountConfigRepository:
             "message_buffer_wait_seconds",
             "refund_deadline_days",
             "welcome_d1_delay_hours",
-            "loja_express_d1_delay_hours",
-            "loja_express_d3_delay_hours",
-            "loja_express_d5_delay_hours",
-            "loja_express_d7_delay_hours",
         ):
             val_any = getattr(patch, key)
             if val_any is not None:

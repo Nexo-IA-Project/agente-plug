@@ -24,10 +24,6 @@ class AccountSettingsResponse(BaseModel):
     message_buffer_wait_seconds: int
     refund_deadline_days: int
     welcome_d1_delay_hours: int
-    loja_express_d1_delay_hours: int
-    loja_express_d3_delay_hours: int
-    loja_express_d5_delay_hours: int
-    loja_express_d7_delay_hours: int
 
 
 class AccountSettingsUpdateRequest(BaseModel):
@@ -50,7 +46,3 @@ class AccountSettingsUpdateRequest(BaseModel):
     message_buffer_wait_seconds: int | None = None
     refund_deadline_days: int | None = None
     welcome_d1_delay_hours: int | None = None
-    loja_express_d1_delay_hours: int | None = None
-    loja_express_d3_delay_hours: int | None = None
-    loja_express_d5_delay_hours: int | None = None
-    loja_express_d7_delay_hours: int | None = None

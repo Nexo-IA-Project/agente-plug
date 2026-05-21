@@ -37,12 +37,10 @@ async def test_handle_purchase_calls_purchase_handler():
         patch("interface.worker.handlers.purchase.ContactRepository"),
         patch("interface.worker.handlers.purchase.AccessCaseRepository"),
         patch("interface.worker.handlers.purchase.ScheduledJobRepository"),
-        patch("interface.worker.handlers.purchase.LojaExpressCaseRepository"),
+        patch("interface.worker.handlers.purchase.SqlCourseRepository"),
         patch("interface.worker.handlers.purchase.FollowupFlowRepository"),
         patch("interface.worker.handlers.purchase.FollowupEnrollmentRepository"),
-        patch("interface.worker.handlers.purchase.CriarCasoLojaExpress"),
         patch("interface.worker.handlers.purchase.EnrollContact"),
-        patch("interface.worker.handlers.purchase.LojaExpressStubClient"),
         patch("interface.worker.handlers.purchase.Fernet"),
     ):
         MockConfigRepo.return_value.get = AsyncMock(return_value=mock_account_config)
@@ -54,10 +52,11 @@ async def test_handle_purchase_calls_purchase_handler():
             {
                 "purchase_id": "p-1",
                 "account_id": "00000000-0000-0000-0000-000000000001",
-                "contact_name": "João",
+                "customer_name": "João",
                 "contact_email": "joao@test.com",
                 "contact_phone": "5511999990000",
-                "product": "Mentoria",
+                "product_id": "prod-mentoria",
+                "product_name": "Mentoria",
                 "amount_brl": 49700,
                 "occurred_at": "2026-04-24T00:00:00+00:00",
             }

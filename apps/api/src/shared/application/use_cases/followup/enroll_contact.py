@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -30,12 +30,17 @@ class EnrollContact:
         conversation_id: str,
         contact_phone: str,
         purchase_id: str,
-        product: str,
-        purchase_time: Any,
+        flow_id: UUID,
+        customer_name: str,
+        product_name: str,
+        purchase_time: datetime,
     ) -> FollowupEnrollment | None:
-        flow = await self._flow_repo.find_active_by_product(account_id=account_id, product=product)
+        flow = await self._flow_repo.find_by_id(flow_id)
         if flow is None:
-            log.info("followup_no_flow_found", account_id=str(account_id), product=product)
+            log.info("followup_flow_not_found", flow_id=str(flow_id))
+            return None
+        if not flow.is_active:
+            log.info("followup_flow_inactive", flow_id=str(flow_id))
             return None
 
         steps = await self._flow_repo.get_steps(flow.id)
@@ -50,6 +55,8 @@ class EnrollContact:
             conversation_id=conversation_id,
             contact_phone=contact_phone,
             purchase_id=purchase_id,
+            customer_name=customer_name,
+            product_name=product_name,
         )
 
         enrollment_steps: list[FollowupEnrollmentStep] = []
@@ -66,7 +73,7 @@ class EnrollContact:
             )
             job = await self._job_repo.schedule(
                 account_id=account_id,
-                conversation_id=None,  # chatnexo ID está no payload abaixo
+                conversation_id=None,  # chatnexo conversation ID está no payload abaixo
                 job_type=JobType.FOLLOWUP_STEP,
                 payload={
                     "enrollment_step_id": str(enrollment_step.id),
@@ -85,6 +92,8 @@ class EnrollContact:
             "followup_enrolled",
             enrollment_id=str(enrollment.id),
             flow_id=str(flow.id),
+            customer_name=customer_name,
+            product_name=product_name,
             steps=len(enrollment_steps),
         )
         return enrollment

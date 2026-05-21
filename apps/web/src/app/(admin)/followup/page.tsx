@@ -1,64 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import type { DragEndEvent } from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
 import { useFollowupFlows } from "@/features/followup/hooks/useFollowupFlows";
-import { useFollowupSteps } from "@/features/followup/hooks/useFollowupSteps";
 import { FlowCard } from "@/features/followup/components/FlowCard";
 import { FlowDrawer } from "@/features/followup/components/FlowDrawer";
 import { useToast } from "@/shared/hooks/useToast";
-import type { CreateFlowDto, FollowupFlow, UpdateFlowDto } from "@/features/followup/types";
-
-function FlowCardWrapper({
-  flow,
-  position,
-  onEdit,
-  onToggle,
-  onDelete,
-}: {
-  flow: FollowupFlow;
-  position: number;
-  onEdit: () => void;
-  onToggle: () => void;
-  onDelete: () => void;
-}) {
-  const { steps } = useFollowupSteps(flow.id);
-  return (
-    <FlowCard
-      flow={flow}
-      stepCount={steps.length}
-      position={position}
-      onEdit={onEdit}
-      onToggle={onToggle}
-      onDelete={onDelete}
-    />
-  );
-}
+import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "@/features/followup/types";
 
 export default function FollowupPage() {
-  const { flows, loading, error, create, update, remove, reorder } = useFollowupFlows();
+  const { flows, loading, error, create, update, remove } = useFollowupFlows();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingFlow, setEditingFlow] = useState<FollowupFlow | null>(null);
   const toast = useToast();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
 
   function openCreate() {
     setEditingFlow(null);
@@ -72,21 +25,6 @@ export default function FollowupPage() {
 
   function closeDrawer() {
     setDrawerOpen(false);
-  }
-
-  async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIdx = flows.findIndex((f) => f.id === active.id);
-    const newIdx = flows.findIndex((f) => f.id === over.id);
-    const reordered = arrayMove(flows, oldIdx, newIdx);
-    const items = reordered.map((f, i) => ({ id: f.id, position: i + 1 }));
-    try {
-      await reorder(items);
-      toast.success("Ordem atualizada");
-    } catch {
-      toast.error("Erro ao reordenar — tente novamente");
-    }
   }
 
   if (loading)
@@ -115,7 +53,7 @@ export default function FollowupPage() {
           <p className="mt-0.5 text-label-sm text-on-surface-variant">
             {flows.length === 0
               ? "Nenhum flow cadastrado"
-              : `${flows.length} flow${flows.length !== 1 ? "s" : ""} — arraste para reordenar`}
+              : `${flows.length} flow${flows.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <button
@@ -157,43 +95,31 @@ export default function FollowupPage() {
             </button>
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={flows.map((f) => f.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3">
-                {flows.map((flow, index) => (
-                  <FlowCardWrapper
-                    key={flow.id}
-                    flow={flow}
-                    position={index + 1}
-                    onEdit={() => openEdit(flow)}
-                    onToggle={async () => {
-                      try {
-                        await update(flow.id, { is_active: !flow.is_active });
-                        toast.success(flow.is_active ? "Flow pausado" : "Flow ativado");
-                      } catch {
-                        toast.error("Erro ao atualizar flow");
-                      }
-                    }}
-                    onDelete={async () => {
-                      try {
-                        await remove(flow.id);
-                        toast.success("Flow excluído");
-                      } catch {
-                        toast.error("Erro ao excluir flow");
-                      }
-                    }}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <div className="flex flex-col gap-3">
+            {flows.map((flow) => (
+              <FlowCard
+                key={flow.id}
+                flow={flow}
+                onEdit={() => openEdit(flow)}
+                onToggle={async () => {
+                  try {
+                    await update(flow.id, { is_active: !flow.is_active });
+                    toast.success(flow.is_active ? "Flow pausado" : "Flow ativado");
+                  } catch {
+                    toast.error("Erro ao atualizar flow");
+                  }
+                }}
+                onDelete={async () => {
+                  try {
+                    await remove(flow.id);
+                    toast.success("Flow excluído");
+                  } catch {
+                    toast.error("Erro ao excluir flow");
+                  }
+                }}
+              />
+            ))}
+          </div>
         )}
       </div>
 
@@ -201,11 +127,11 @@ export default function FollowupPage() {
         open={drawerOpen}
         flow={editingFlow}
         onClose={closeDrawer}
-        onCreate={async (dto: CreateFlowDto) => {
+        onCreate={async (dto: CreateFlowInput) => {
           const created = await create(dto);
           return created;
         }}
-        onUpdate={async (id: string, dto: UpdateFlowDto) => {
+        onUpdate={async (id: string, dto: UpdateFlowInput) => {
           await update(id, dto);
         }}
       />

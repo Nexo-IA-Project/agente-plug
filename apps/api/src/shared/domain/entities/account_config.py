@@ -27,10 +27,6 @@ class BehaviorConfig:
     message_buffer_wait_seconds: int
     refund_deadline_days: int
     welcome_d1_delay_hours: int
-    loja_express_d1_delay_hours: int
-    loja_express_d3_delay_hours: int
-    loja_express_d5_delay_hours: int
-    loja_express_d7_delay_hours: int
 
 
 @dataclass(frozen=True)
@@ -60,7 +56,3 @@ class AccountConfigPatch:
     message_buffer_wait_seconds: int | None = field(default=None)
     refund_deadline_days: int | None = field(default=None)
     welcome_d1_delay_hours: int | None = field(default=None)
-    loja_express_d1_delay_hours: int | None = field(default=None)
-    loja_express_d3_delay_hours: int | None = field(default=None)
-    loja_express_d5_delay_hours: int | None = field(default=None)
-    loja_express_d7_delay_hours: int | None = field(default=None)

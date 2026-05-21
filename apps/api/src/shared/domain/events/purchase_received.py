@@ -9,9 +9,10 @@ from uuid import UUID
 class PurchaseReceived:
     purchase_id: str
     account_id: UUID
-    contact_name: str
+    customer_name: str
     contact_email: str
     contact_phone: str
-    product: str
+    product_id: str
+    product_name: str
     amount_brl: int
     occurred_at: datetime

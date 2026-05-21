@@ -9,6 +9,7 @@ from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
     ConversationModel,
+    CourseModel,
 )
 
 
@@ -41,3 +42,41 @@ class ConversationFactory(factory.Factory):
     status = "active"
     last_activity_at = factory.LazyFunction(lambda: datetime.now(UTC))
     window_expires_at = factory.LazyFunction(lambda: datetime.now(UTC) + timedelta(hours=24))
+
+
+async def make_account(session, *, name: str = "Tenant Test") -> AccountModel:
+    """Helper async para criar e persistir um Account no DB."""
+    m = AccountModel(id=uuid.uuid4(), name=name)
+    session.add(m)
+    await session.flush()
+    return m
+
+
+async def make_course(
+    session,
+    *,
+    account_id: uuid.UUID | None = None,
+    name: str = "Curso Teste",
+    hubla_id: str = "prod-test",
+    is_active: bool = True,
+) -> CourseModel:
+    """Helper async para criar e persistir um Course no DB.
+
+    Se ``account_id`` não for fornecido, cria um Account novo via ``make_account``.
+    """
+    if account_id is None:
+        account = await make_account(session)
+        account_id = account.id
+    now = datetime.now(UTC)
+    m = CourseModel(
+        id=uuid.uuid4(),
+        account_id=account_id,
+        name=name,
+        hubla_id=hubla_id,
+        is_active=is_active,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(m)
+    await session.flush()
+    return m

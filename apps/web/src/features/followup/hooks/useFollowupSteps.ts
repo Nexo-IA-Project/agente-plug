@@ -8,7 +8,7 @@ import {
   reorderFollowupSteps,
   updateFollowupStep,
 } from "@/lib/api";
-import type { CreateStepDto, FollowupStep, ReorderItem, UpdateStepDto } from "../types";
+import type { CreateStepInput, FollowupStep, ReorderItem, UpdateStepInput } from "../types";
 
 export function useFollowupSteps(flowId: string) {
   const [steps, setSteps] = useState<FollowupStep[]>([]);
@@ -38,7 +38,7 @@ export function useFollowupSteps(flowId: string) {
   }, [load]);
 
   const create = useCallback(
-    async (dto: CreateStepDto): Promise<void> => {
+    async (dto: CreateStepInput): Promise<void> => {
       const step = await createFollowupStep(flowId, dto);
       setSteps((prev) => [...prev, step].sort((a, b) => a.position - b.position));
     },
@@ -46,7 +46,7 @@ export function useFollowupSteps(flowId: string) {
   );
 
   const update = useCallback(
-    async (stepId: string, dto: UpdateStepDto): Promise<void> => {
+    async (stepId: string, dto: UpdateStepInput): Promise<void> => {
       const updated = await updateFollowupStep(flowId, stepId, dto);
       setSteps((prev) =>
         prev

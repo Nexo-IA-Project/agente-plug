@@ -7,14 +7,19 @@ import type {
 import { getToken } from "@/lib/auth";
 import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/types";
 import type {
-  CreateFlowDto,
-  CreateStepDto,
+  CreateFlowInput,
+  CreateStepInput,
   FollowupFlow,
   FollowupStep,
   ReorderItem,
-  UpdateFlowDto,
-  UpdateStepDto,
+  UpdateFlowInput,
+  UpdateStepInput,
 } from "@/features/followup/types";
+import type {
+  Course,
+  CreateCourseInput,
+  UpdateCourseInput,
+} from "@/features/courses/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -139,14 +144,14 @@ export async function listFollowupFlows(): Promise<FollowupFlow[]> {
   return apiFetch<FollowupFlow[]>("/admin/followup/flows");
 }
 
-export async function createFollowupFlow(dto: CreateFlowDto): Promise<FollowupFlow> {
+export async function createFollowupFlow(dto: CreateFlowInput): Promise<FollowupFlow> {
   return apiFetch<FollowupFlow>("/admin/followup/flows", {
     method: "POST",
     body: JSON.stringify(dto),
   });
 }
 
-export async function updateFollowupFlow(id: string, dto: UpdateFlowDto): Promise<FollowupFlow> {
+export async function updateFollowupFlow(id: string, dto: UpdateFlowInput): Promise<FollowupFlow> {
   return apiFetch<FollowupFlow>(`/admin/followup/flows/${id}`, {
     method: "PUT",
     body: JSON.stringify(dto),
@@ -163,7 +168,7 @@ export async function listFollowupSteps(flowId: string): Promise<FollowupStep[]>
 
 export async function createFollowupStep(
   flowId: string,
-  dto: CreateStepDto
+  dto: CreateStepInput
 ): Promise<FollowupStep> {
   return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps`, {
     method: "POST",
@@ -174,7 +179,7 @@ export async function createFollowupStep(
 export async function updateFollowupStep(
   flowId: string,
   stepId: string,
-  dto: UpdateStepDto
+  dto: UpdateStepInput
 ): Promise<FollowupStep> {
   return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps/${stepId}`, {
     method: "PUT",
@@ -196,11 +201,32 @@ export async function reorderFollowupSteps(
   });
 }
 
-export async function reorderFollowupFlows(items: ReorderItem[]): Promise<void> {
-  return apiFetch<void>(`/admin/followup/flows/reorder`, {
-    method: "PATCH",
-    body: JSON.stringify({ flows: items }),
+
+// ─── Courses ─────────────────────────────────────────────────────────────────
+
+export async function listCourses(): Promise<Course[]> {
+  return apiFetch<Course[]>("/admin/courses");
+}
+
+export async function createCourse(input: CreateCourseInput): Promise<Course> {
+  return apiFetch<Course>("/admin/courses", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
+}
+
+export async function updateCourse(
+  id: string,
+  input: UpdateCourseInput,
+): Promise<Course> {
+  return apiFetch<Course>(`/admin/courses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/courses/${id}`, { method: "DELETE" });
 }
 
 

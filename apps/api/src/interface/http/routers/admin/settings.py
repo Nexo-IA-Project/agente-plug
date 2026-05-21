@@ -43,10 +43,6 @@ def _to_response(config: AccountConfig) -> AccountSettingsResponse:
         message_buffer_wait_seconds=b.message_buffer_wait_seconds,
         refund_deadline_days=b.refund_deadline_days,
         welcome_d1_delay_hours=b.welcome_d1_delay_hours,
-        loja_express_d1_delay_hours=b.loja_express_d1_delay_hours,
-        loja_express_d3_delay_hours=b.loja_express_d3_delay_hours,
-        loja_express_d5_delay_hours=b.loja_express_d5_delay_hours,
-        loja_express_d7_delay_hours=b.loja_express_d7_delay_hours,
     )
 
 
@@ -88,10 +84,6 @@ async def update_settings_endpoint(
         message_buffer_wait_seconds=body.message_buffer_wait_seconds,
         refund_deadline_days=body.refund_deadline_days,
         welcome_d1_delay_hours=body.welcome_d1_delay_hours,
-        loja_express_d1_delay_hours=body.loja_express_d1_delay_hours,
-        loja_express_d3_delay_hours=body.loja_express_d3_delay_hours,
-        loja_express_d5_delay_hours=body.loja_express_d5_delay_hours,
-        loja_express_d7_delay_hours=body.loja_express_d7_delay_hours,
     )
     try:
         async with session_scope() as session:

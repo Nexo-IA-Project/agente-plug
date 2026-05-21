@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
@@ -14,12 +15,11 @@ def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
     return FollowupFlow(
         id=m.id,
         account_id=m.account_id,
+        course_id=m.course_id,
         name=m.name,
-        product_tags=list(m.product_tags or []),
         is_active=m.is_active,
         created_at=m.created_at,
         updated_at=m.updated_at,
-        position=m.position,
     )
 
 
@@ -40,21 +40,17 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
 class FollowupFlowRepository:
     session: AsyncSession
 
-    async def find_active_by_product(
-        self, *, account_id: uuid.UUID, product: str
-    ) -> FollowupFlow | None:
-        result = await self.session.execute(
-            select(FollowupFlowModel).where(
-                FollowupFlowModel.account_id == account_id,
-                FollowupFlowModel.is_active.is_(True),
-            )
+    async def list_active_by_course(self, course_id: uuid.UUID) -> list[FollowupFlow]:
+        stmt = select(FollowupFlowModel).where(
+            FollowupFlowModel.course_id == course_id,
+            FollowupFlowModel.is_active.is_(True),
         )
-        product_lower = product.lower()
-        for model in result.scalars().all():
-            tags: list[str] = list(model.product_tags or [])
-            if any(tag.lower() in product_lower for tag in tags):
-                return _flow_to_entity(model)
-        return None
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return [_flow_to_entity(m) for m in rows]
+
+    async def find_by_id(self, flow_id: uuid.UUID) -> FollowupFlow | None:
+        model = await self.session.get(FollowupFlowModel, flow_id)
+        return None if model is None else _flow_to_entity(model)
 
     async def get_steps(self, flow_id: uuid.UUID) -> list[FollowupStep]:
         result = await self.session.execute(
@@ -68,52 +64,38 @@ class FollowupFlowRepository:
         result = await self.session.execute(
             select(FollowupFlowModel)
             .where(FollowupFlowModel.account_id == account_id)
-            .order_by(FollowupFlowModel.position, FollowupFlowModel.created_at)
+            .order_by(FollowupFlowModel.created_at)
         )
         return [_flow_to_entity(m) for m in result.scalars().all()]
 
     async def create_flow(
-        self, *, account_id: uuid.UUID, name: str, product_tags: list[str]
+        self,
+        *,
+        account_id: uuid.UUID,
+        course_id: uuid.UUID,
+        name: str,
+        is_active: bool = True,
     ) -> FollowupFlow:
-        # Próxima posição = max atual + 1 (ou 1 se vazio).
-        max_pos = await self.session.scalar(
-            select(func.coalesce(func.max(FollowupFlowModel.position), 0)).where(
-                FollowupFlowModel.account_id == account_id
-            )
-        )
+        now = datetime.now(UTC)
         model = FollowupFlowModel(
             id=uuid.uuid4(),
             account_id=account_id,
+            course_id=course_id,
             name=name,
-            product_tags=product_tags,
-            is_active=True,
-            position=int(max_pos or 0) + 1,
+            is_active=is_active,
+            created_at=now,
+            updated_at=now,
         )
         self.session.add(model)
         await self.session.flush()
-        await self.session.refresh(model)
         return _flow_to_entity(model)
-
-    async def reorder_flows(
-        self, *, account_id: uuid.UUID, items: list[tuple[uuid.UUID, int]]
-    ) -> None:
-        """Atualiza a position de cada flow listado em items.
-
-        Apenas flows que pertencem à account são afetados (isolamento de tenant).
-        """
-        for flow_id, position in items:
-            model = await self.session.get(FollowupFlowModel, flow_id)
-            if model is None or model.account_id != account_id:
-                continue
-            model.position = position
-        await self.session.flush()
 
     async def update_flow(
         self,
         flow_id: uuid.UUID,
         *,
         name: str | None = None,
-        product_tags: list[str] | None = None,
+        course_id: uuid.UUID | None = None,
         is_active: bool | None = None,
     ) -> FollowupFlow | None:
         model = await self.session.get(FollowupFlowModel, flow_id)
@@ -121,12 +103,12 @@ class FollowupFlowRepository:
             return None
         if name is not None:
             model.name = name
-        if product_tags is not None:
-            model.product_tags = product_tags
+        if course_id is not None:
+            model.course_id = course_id
         if is_active is not None:
             model.is_active = is_active
+        model.updated_at = datetime.now(UTC)
         await self.session.flush()
-        await self.session.refresh(model)
         return _flow_to_entity(model)
 
     async def delete_flow(self, flow_id: uuid.UUID) -> bool:

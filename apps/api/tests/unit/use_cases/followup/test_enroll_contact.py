@@ -15,17 +15,18 @@ from shared.domain.entities.followup import (
 
 _ACCOUNT_ID = UUID("00000000-0000-0000-0000-000000000001")
 _CONTACT_ID = uuid4()
-_CONV_ID = uuid4()
+_CONV_ID = "conv-external-123"
 _FLOW_ID = uuid4()
+_COURSE_ID = uuid4()
 
 
-def _make_flow() -> FollowupFlow:
+def _make_flow(is_active: bool = True) -> FollowupFlow:
     return FollowupFlow(
         id=_FLOW_ID,
         account_id=_ACCOUNT_ID,
+        course_id=_COURSE_ID,
         name="Máquina de Vendas",
-        product_tags=["maquina_de_vendas"],
-        is_active=True,
+        is_active=is_active,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
@@ -44,9 +45,9 @@ def _make_step(position: int, delay: int) -> FollowupStep:
 
 
 @pytest.mark.asyncio
-async def test_enroll_contact_creates_enrollment_and_schedules_jobs():
+async def test_enroll_contact_creates_enrollment_with_snapshots_and_schedules_jobs():
     flow_repo = AsyncMock()
-    flow_repo.find_active_by_product.return_value = _make_flow()
+    flow_repo.find_by_id.return_value = _make_flow()
     flow_repo.get_steps.return_value = [
         _make_step(1, 0),
         _make_step(2, 1),
@@ -70,21 +71,33 @@ async def test_enroll_contact_creates_enrollment_and_schedules_jobs():
         conversation_id=_CONV_ID,
         contact_phone="5511999990000",
         purchase_id="p-001",
-        product="maquina_de_vendas Curso",
+        flow_id=_FLOW_ID,
+        customer_name="Fabio",
+        product_name="Máquina de Vendas",
         purchase_time=purchase_time,
     )
 
     assert result is not None
     assert result.status == EnrollmentStatus.ACTIVE
     assert result.flow_id == _FLOW_ID
+    assert result.customer_name == "Fabio"
+    assert result.product_name == "Máquina de Vendas"
     assert job_repo.schedule.call_count == 3
-    enrollment_repo.create_with_steps.assert_called_once()
+
+    enrollment_repo.create_with_steps.assert_awaited_once()
+    args, _kwargs = enrollment_repo.create_with_steps.call_args
+    enrollment_arg, steps_arg = args
+    assert enrollment_arg.customer_name == "Fabio"
+    assert enrollment_arg.product_name == "Máquina de Vendas"
+    assert len(steps_arg) == 3
+
+    flow_repo.find_by_id.assert_awaited_once_with(_FLOW_ID)
 
 
 @pytest.mark.asyncio
-async def test_enroll_contact_returns_none_when_no_flow_found():
+async def test_enroll_contact_returns_none_when_flow_not_found():
     flow_repo = AsyncMock()
-    flow_repo.find_active_by_product.return_value = None
+    flow_repo.find_by_id.return_value = None
 
     uc = EnrollContact(
         flow_repo=flow_repo,
@@ -98,7 +111,62 @@ async def test_enroll_contact_returns_none_when_no_flow_found():
         conversation_id=_CONV_ID,
         contact_phone="5511999990000",
         purchase_id="p-001",
-        product="produto_desconhecido",
+        flow_id=_FLOW_ID,
+        customer_name="Fabio",
+        product_name="Curso X",
+        purchase_time=datetime.now(UTC),
+    )
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_enroll_contact_returns_none_when_flow_inactive():
+    flow_repo = AsyncMock()
+    flow_repo.find_by_id.return_value = _make_flow(is_active=False)
+
+    uc = EnrollContact(
+        flow_repo=flow_repo,
+        enrollment_repo=AsyncMock(),
+        job_repo=AsyncMock(),
+    )
+
+    result = await uc.execute(
+        account_id=_ACCOUNT_ID,
+        contact_id=_CONTACT_ID,
+        conversation_id=_CONV_ID,
+        contact_phone="5511999990000",
+        purchase_id="p-001",
+        flow_id=_FLOW_ID,
+        customer_name="Fabio",
+        product_name="Curso X",
+        purchase_time=datetime.now(UTC),
+    )
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_enroll_contact_returns_none_when_flow_has_no_steps():
+    flow_repo = AsyncMock()
+    flow_repo.find_by_id.return_value = _make_flow()
+    flow_repo.get_steps.return_value = []
+
+    uc = EnrollContact(
+        flow_repo=flow_repo,
+        enrollment_repo=AsyncMock(),
+        job_repo=AsyncMock(),
+    )
+
+    result = await uc.execute(
+        account_id=_ACCOUNT_ID,
+        contact_id=_CONTACT_ID,
+        conversation_id=_CONV_ID,
+        contact_phone="5511999990000",
+        purchase_id="p-001",
+        flow_id=_FLOW_ID,
+        customer_name="Fabio",
+        product_name="Curso X",
         purchase_time=datetime.now(UTC),
     )
 

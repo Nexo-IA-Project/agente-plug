@@ -18,13 +18,13 @@ import {
 } from "@dnd-kit/sortable";
 import { StepItem } from "./StepItem";
 import { StepInlineForm } from "./StepInlineForm";
-import type { CreateStepDto, FollowupStep, UpdateStepDto } from "../types";
+import type { CreateStepInput, FollowupStep, UpdateStepInput } from "../types";
 
 interface Props {
   steps: FollowupStep[];
   onReorder: (items: { id: string; position: number }[]) => Promise<void>;
-  onCreate: (dto: CreateStepDto) => Promise<void>;
-  onUpdate: (stepId: string, dto: UpdateStepDto) => Promise<void>;
+  onCreate: (dto: CreateStepInput) => Promise<void>;
+  onUpdate: (stepId: string, dto: UpdateStepInput) => Promise<void>;
   onDelete: (stepId: string) => Promise<void>;
 }
 
@@ -71,7 +71,7 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
                 step={step}
                 nextPosition={step.position}
                 onSave={async (dto) => {
-                  await onUpdate(step.id, dto as UpdateStepDto);
+                  await onUpdate(step.id, dto as UpdateStepInput);
                   setEditingStep(null);
                 }}
                 onCancel={() => setEditingStep(null)}
@@ -100,7 +100,7 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
         <StepInlineForm
           nextPosition={steps.length + 1}
           onSave={async (dto) => {
-            await onCreate(dto as CreateStepDto);
+            await onCreate(dto as CreateStepInput);
             setAddingStep(false);
           }}
           onCancel={() => setAddingStep(false)}

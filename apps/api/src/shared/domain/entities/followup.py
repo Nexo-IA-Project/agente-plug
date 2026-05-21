@@ -22,12 +22,11 @@ class EnrollmentStepStatus(StrEnum):
 class FollowupFlow:
     id: UUID
     account_id: UUID
+    course_id: UUID
     name: str
-    product_tags: list[str]
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-    position: int = 0
+    is_active: bool = True
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
 @dataclass(slots=True)
@@ -50,6 +49,8 @@ class FollowupEnrollment:
     conversation_id: str  # chatnexo external conversation ID (string)
     contact_phone: str
     purchase_id: str
+    customer_name: str
+    product_name: str
     id: UUID = field(default_factory=uuid4)
     status: EnrollmentStatus = EnrollmentStatus.ACTIVE
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))

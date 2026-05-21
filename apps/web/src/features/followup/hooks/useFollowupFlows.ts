@@ -5,10 +5,9 @@ import {
   createFollowupFlow,
   deleteFollowupFlow,
   listFollowupFlows,
-  reorderFollowupFlows,
   updateFollowupFlow,
 } from "@/lib/api";
-import type { CreateFlowDto, FollowupFlow, ReorderItem, UpdateFlowDto } from "../types";
+import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "../types";
 
 export function useFollowupFlows() {
   const [flows, setFlows] = useState<FollowupFlow[]>([]);
@@ -33,7 +32,7 @@ export function useFollowupFlows() {
   }, [load]);
 
   const create = useCallback(
-    async (dto: CreateFlowDto): Promise<FollowupFlow> => {
+    async (dto: CreateFlowInput): Promise<FollowupFlow> => {
       const flow = await createFollowupFlow(dto);
       setFlows((prev) => [...prev, flow]);
       return flow;
@@ -41,7 +40,7 @@ export function useFollowupFlows() {
     []
   );
 
-  const update = useCallback(async (id: string, dto: UpdateFlowDto): Promise<void> => {
+  const update = useCallback(async (id: string, dto: UpdateFlowInput): Promise<void> => {
     const updated = await updateFollowupFlow(id, dto);
     setFlows((prev) => prev.map((f) => (f.id === id ? updated : f)));
   }, []);
@@ -51,23 +50,5 @@ export function useFollowupFlows() {
     setFlows((prev) => prev.filter((f) => f.id !== id));
   }, []);
 
-  const reorder = useCallback(async (items: ReorderItem[]): Promise<void> => {
-    const posMap = new Map(items.map((i) => [i.id, i.position]));
-    // Optimistic update: aplica a nova ordem na UI antes do request.
-    let snapshot: FollowupFlow[] = [];
-    setFlows((prev) => {
-      snapshot = prev;
-      return prev
-        .map((f) => ({ ...f, position: posMap.get(f.id) ?? f.position }))
-        .sort((a, b) => a.position - b.position);
-    });
-    try {
-      await reorderFollowupFlows(items);
-    } catch (err) {
-      setFlows(snapshot);
-      throw err;
-    }
-  }, []);
-
-  return { flows, loading, error, reload: load, create, update, remove, reorder };
+  return { flows, loading, error, reload: load, create, update, remove };
 }

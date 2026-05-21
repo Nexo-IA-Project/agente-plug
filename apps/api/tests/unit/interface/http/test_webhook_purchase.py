@@ -47,10 +47,11 @@ def test_returns_202_on_first_valid_call(deps):
     body = {
         "purchase_id": "p-1",
         "account_id": 1,
-        "name": "Ana",
+        "customer_name": "Ana",
         "email": "ana@test.com",
         "phone": "11999887766",
-        "product": "Curso X",
+        "product_id": "prod-x",
+        "product_name": "Curso X",
         "amount_brl": 19700,
         "occurred_at": "2026-04-17T10:00:00Z",
     }
@@ -66,10 +67,11 @@ def test_returns_202_but_skips_enqueue_on_duplicate(deps):
     body = {
         "purchase_id": "p-dup",
         "account_id": 1,
-        "name": "Ana",
+        "customer_name": "Ana",
         "email": "x@x",
         "phone": "11999887766",
-        "product": "Y",
+        "product_id": "prod-y",
+        "product_name": "Y",
         "amount_brl": 100,
         "occurred_at": "2026-04-17T10:00:00Z",
     }
