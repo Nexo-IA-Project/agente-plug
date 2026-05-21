@@ -11,6 +11,17 @@ from shared.application.use_cases.followup.variable_resolver import (
     ResolutionContext,
     VariableResolver,
 )
+from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
+
+log = structlog.get_logger(__name__)
+
+
+class DispatchFollowupStep:
+    def __init__(
+        self,
+        *,
+        enrollment_repo: Any,
+        contact_repo: Any,
         chatnexo: Any,
         conversation_history: Any,
         meta_template_repo: MetaTemplateRepository,
@@ -91,6 +102,12 @@ from shared.application.use_cases.followup.variable_resolver import (
             )
             resolved_vars = VariableResolver().resolve_all(step.template_variables or {}, ctx)
 
+            await self._chatnexo.send_template(
+                account_id=str(account_id),
+                conversation_id=str(conversation_id),
+                template_name=step.meta_template_name,
+                language=language,
+                variables=resolved_vars,
                 header_link=header_link,
                 header_kind=header_kind,
             )

@@ -74,6 +74,24 @@ async def test_dispatch_sends_template_and_saves_to_history():
     uc = DispatchFollowupStep(
         enrollment_repo=enrollment_repo,
         contact_repo=_make_contact_repo(),
+        chatnexo=chatnexo,
+        conversation_history=history,
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
+    )
+    result = await uc.execute(
+        enrollment_step_id=step.id,
+        account_id=account_id,
+        conversation_id=conversation_id,
+        contact_phone=contact_phone,
+    )
+
+    assert result == "SENT"
+    chatnexo.send_template.assert_called_once_with(
+        account_id=str(account_id),
+        conversation_id=str(conversation_id),
+        template_name="mv_boas_vindas",
+        language=None,
+        variables={"1": "Fabio"},
         header_link=None,
         header_kind=None,
     )

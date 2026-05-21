@@ -7,6 +7,7 @@ não do FollowupEnrollmentStep (que não possui esses campos).
 
 from __future__ import annotations
 
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -28,7 +29,7 @@ def _make_step(
         position=1,
         delay_from_purchase_hours=0,
         meta_template_name=meta_template_name,
-        template_variables={"nome": "João"},
+        template_variables={"1": {"source": "static", "value": "João"}},
         status=status,
     )
 
@@ -53,6 +54,16 @@ def _make_uc(
     enrollment_repo = AsyncMock()
     enrollment_repo.find_step_by_id.return_value = step
     enrollment_repo.all_steps_sent.return_value = False
+    enrollment_repo.find_enrollment_by_id.return_value = SimpleNamespace(
+        id=step.enrollment_id,
+        contact_id=uuid4(),
+        customer_name="João",
+        product_name="Promo",
+        contact_phone="+5511999990000",
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.find_by_id.return_value = SimpleNamespace(email="joao@example.com")
 
     chatnexo = AsyncMock()
     history = AsyncMock()
@@ -63,6 +74,7 @@ def _make_uc(
 
     uc = DispatchFollowupStep(
         enrollment_repo=enrollment_repo,
+        contact_repo=contact_repo,
         chatnexo=chatnexo,
         conversation_history=history,
         meta_template_repo=template_repo,
