@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    Text,
     UniqueConstraint,
 )
 from sqlalchemy import (
@@ -103,8 +104,6 @@ class MessageModel(Base):
     direction: Mapped[str] = mapped_column(String(10), nullable=False)
     source: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)
-    media_urls: Mapped[list[str]] = mapped_column(JSONB, default=list, nullable=False)
-    classification_hint: Mapped[str | None] = mapped_column(String(50))
     correlation_id: Mapped[str | None] = mapped_column(String(64), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
@@ -217,16 +216,64 @@ class IntegrationConfigModel(Base):
 
 class MetaTemplateModel(Base):
     __tablename__ = "meta_templates"
+
     id: Mapped[uuid.UUID] = _pk()
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    meta_template_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    language: Mapped[str] = mapped_column(String(10), nullable=False)
+    name: Mapped[str] = mapped_column(String(512), nullable=False)
+    meta_template_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    category: Mapped[str] = mapped_column(String(32), nullable=False, default="UTILITY")
+    language: Mapped[str] = mapped_column(String(16), nullable=False)
+    components: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, default=list, nullable=False)
     variables_schema: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
-    approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    media_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    media_object_key: Mapped[str | None] = mapped_column(Text, nullable=True)
+    media_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    media_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    media_size: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="PENDING")
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint("account_id", "name", name="uq_meta_template_account_name"),
+        Index("ix_meta_templates_status", "status"),
+    )
+
+
+class CourseModel(Base):
+    __tablename__ = "courses"
+    __table_args__ = (
+        UniqueConstraint("account_id", "hubla_id", name="uq_courses_account_hubla"),
+        Index("ix_courses_account_id", "account_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    hubla_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
 
 
 class AccessCaseModel(Base):
@@ -287,36 +334,6 @@ class RefundCaseModel(Base):
     )
 
     __table_args__ = (Index("idx_refund_cases_account_contact", "account_id", "contact_id"),)
-
-
-class LojaExpressCaseModel(Base):
-    __tablename__ = "loja_express_cases"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    contact_id: Mapped[str] = mapped_column(String, nullable=False)
-    conversation_id: Mapped[str] = mapped_column(String, nullable=False)
-    purchase_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
-    product_name: Mapped[str] = mapped_column(String, nullable=False)
-    student_email: Mapped[str] = mapped_column(String, nullable=False)
-    form_submitted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    loja_entregue: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    status: Mapped[str] = mapped_column(String(40), nullable=False, default="aguardando_formulario")
-    scheduled_job_d1_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d3_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d5_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    scheduled_job_d7_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=sa_text("NOW()"),
-        onupdate=sa_text("NOW()"),
-        nullable=False,
-    )
-
-    __table_args__ = (Index("idx_loja_express_cases_account_contact", "account_id", "contact_id"),)
 
 
 class KnowledgeDocumentModel(Base):
@@ -445,3 +462,95 @@ class JobDlqModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
+
+
+class ApiTokenModel(Base):
+    __tablename__ = "api_tokens"
+    id: Mapped[uuid.UUID] = _pk()
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    token_prefix: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+
+class FollowupFlowModel(Base):
+    __tablename__ = "followup_flows"
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    course_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("courses.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+
+class FollowupStepModel(Base):
+    __tablename__ = "followup_steps"
+    id: Mapped[uuid.UUID] = _pk()
+    flow_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("followup_flows.id"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    __table_args__ = (Index("ix_followup_steps_flow_position", "flow_id", "position"),)
+
+
+class FollowupEnrollmentModel(Base):
+    __tablename__ = "followup_enrollments"
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
+    flow_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    contact_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False
+    )
+    conversation_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    contact_phone: Mapped[str] = mapped_column(String(30), nullable=False)
+    purchase_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    customer_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    product_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+
+class FollowupEnrollmentStepModel(Base):
+    __tablename__ = "followup_enrollment_steps"
+    id: Mapped[uuid.UUID] = _pk()
+    enrollment_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("followup_enrollments.id"), nullable=False, index=True
+    )
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False)
+    meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
+    message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scheduled_job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

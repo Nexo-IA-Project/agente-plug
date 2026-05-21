@@ -9,10 +9,14 @@ const NAV_ITEMS = [
   { label: "Painel", href: "/dashboard", icon: "dashboard" },
   { label: "Base de Conhecimento", href: "/kb", icon: "database" },
   { label: "Contas", href: "/accounts", icon: "group" },
+  { label: "Cursos", href: "/courses", icon: "school" },
+  { label: "Follow-up", href: "/followup", icon: "schedule_send" },
+  { label: "Templates", href: "/templates", icon: "sms" },
+  { label: "Configurações", href: "/settings", icon: "settings", exact: true },
 ] as const;
 
 const FOOTER_ITEMS = [
-  { label: "Configurações", href: "/settings", icon: "settings" },
+  { label: "Tokens de API", href: "/settings/tokens", icon: "key" },
   { label: "Suporte", href: "/support", icon: "contact_support" },
 ] as const;
 
@@ -58,7 +62,7 @@ export function Sidebar() {
           <NavItem
             key={item.href}
             {...item}
-            active={pathname === item.href || pathname.startsWith(item.href + "/")}
+            active={"exact" in item && item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/")}
           />
         ))}
       </nav>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select
 
@@ -10,6 +10,8 @@ from shared.adapters.kb.jwt_handler import create_access_token, verify_password
 from shared.config.settings import get_settings
 
 router = APIRouter(tags=["admin-auth"])
+
+_COOKIE_NAME = "nexoia_token"
 
 
 class LoginRequest(BaseModel):
@@ -30,7 +32,7 @@ def get_db():
 
 
 @router.post("/auth/login", response_model=LoginResponse)
-async def login(body: LoginRequest) -> LoginResponse:
+async def login(body: LoginRequest, response: Response) -> LoginResponse:
     settings = get_settings()
 
     async with get_db() as session:
@@ -48,6 +50,7 @@ async def login(body: LoginRequest) -> LoginResponse:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    max_age = settings.jwt_expire_minutes * 60
     token = create_access_token(
         data={
             "sub": user.email,
@@ -58,7 +61,21 @@ async def login(body: LoginRequest) -> LoginResponse:
         secret=settings.jwt_secret,
         expire_minutes=settings.jwt_expire_minutes,
     )
+    # HttpOnly: JS cannot read this cookie — XSS cannot steal the token
+    response.set_cookie(
+        key=_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        max_age=max_age,
+        path="/",
+    )
     return LoginResponse(
         access_token=token,
-        expires_in=settings.jwt_expire_minutes * 60,
+        expires_in=max_age,
     )
+
+
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(response: Response) -> None:
+    response.delete_cookie(key=_COOKIE_NAME, path="/", samesite="lax")

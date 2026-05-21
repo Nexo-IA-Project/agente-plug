@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
-from uuid import UUID
 
 import structlog
+from cryptography.fernet import Fernet
 from openai import AsyncOpenAI
 
 from agent.context import AgentContext
@@ -13,6 +13,7 @@ from agent.skill_loader import Adapters, build_registry
 from shared.adapters.cademi.client import CademiClient
 from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
+from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
 from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
 from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
@@ -20,7 +21,6 @@ from shared.adapters.db.session import session_scope
 from shared.adapters.hubla.client import HublaClient
 from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
 from shared.adapters.redis.client import get_redis
-from shared.adapters.redis.lead_lock import LeadLock, LeadLockError
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
 from shared.config.settings import get_settings
 
@@ -36,10 +36,10 @@ class _NullLegalHistory:
         return False
 
 
-async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None = None) -> None:
-    account_id: str = payload["account_id"]
-    phone: str = payload["phone"]
-    conversation_id: str = payload["conversation_id"]
+async def handle_message(payload: dict[str, Any]) -> None:
+    account_id: int = int(payload["account_id"])
+    phone: str = payload["contact_phone"]
+    conversation_id: int = int(payload["conversation_id"])
     text: str = payload["text"]
 
     log.info(
@@ -49,54 +49,38 @@ async def handle_message(payload: dict[str, Any], *, lead_lock: LeadLock | None 
         conversation_id=conversation_id,
     )
 
-    if lead_lock is not None:
-        try:
-            async with lead_lock.acquire(account_id=account_id, phone=phone):
-                await _process_message(
-                    account_id=account_id,
-                    phone=phone,
-                    conversation_id=conversation_id,
-                    text=text,
-                )
-        except LeadLockError:
-            log.warning(
-                "message_job_lead_locked",
-                account_id=account_id,
-                phone=phone,
-                conversation_id=conversation_id,
-            )
-            raise
-    else:
-        await _process_message(
-            account_id=account_id,
-            phone=phone,
-            conversation_id=conversation_id,
-            text=text,
-        )
+    await _process_message(
+        account_id=account_id,
+        phone=phone,
+        conversation_id=conversation_id,
+        text=text,
+    )
 
     log.info("message_job_done", account_id=account_id, conversation_id=conversation_id)
 
 
 async def _process_message(
     *,
-    account_id: str,
+    account_id: int,
     phone: str,
-    conversation_id: str,
+    conversation_id: int,
     text: str,
 ) -> None:
     settings = get_settings()
     redis = get_redis()
-    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    chatnexo = ChatNexoClient.from_settings()
-    cademi = CademiClient(
-        base_url=settings.cademi_api_url,
-        api_key=settings.cademi_api_key,
-    )
-    hubla = HublaClient()
-    refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
+    fernet = Fernet(settings.integration_credentials_key.encode())
 
     async with session_scope() as session:
+        config_repo = AccountConfigRepository(session=session, fernet=fernet)
+        account_config = await config_repo.get(account_id=account_id)
+
+        openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
+        chatnexo = ChatNexoClient.from_account_config(account_config)
+        cademi = CademiClient.from_account_config(account_config)
+        hubla = HublaClient()
+        refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
+
         knowledge_repo = EmbeddingsKnowledgeAdapter(
             chunk_repo=ChunkRepository(session),
             openai_client=openai_client,
@@ -117,9 +101,9 @@ async def _process_message(
         guard_service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
 
         ctx = AgentContext(
-            account_id=account_id,
+            account_id=str(account_id),
             phone=phone,
-            conversation_id=conversation_id,
+            conversation_id=str(conversation_id),
             thread_id=f"{account_id}:{phone}",
         )
         reply = await run_agent(
@@ -132,8 +116,8 @@ async def _process_message(
         )
 
     await chatnexo.send_message(
-        account_id=UUID(account_id),
-        conversation_id=int(conversation_id),
+        account_id=str(account_id),
+        conversation_id=str(conversation_id),
         text=reply,
     )
     log.info("message_reply_sent", account_id=account_id, conversation_id=conversation_id)

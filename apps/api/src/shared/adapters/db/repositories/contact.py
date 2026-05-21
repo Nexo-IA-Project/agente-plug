@@ -30,6 +30,10 @@ def _to_entity(model: ContactModel) -> Contact:
 class ContactRepository:
     session: AsyncSession
 
+    async def find_by_id(self, contact_id: UUID) -> Contact | None:
+        model = await self.session.get(ContactModel, contact_id)
+        return _to_entity(model) if model else None
+
     async def get_by_phone(self, *, account_id: UUID, phone: Phone) -> Contact | None:
         require_account_id(account_id)
         stmt = select(ContactModel).where(

@@ -12,8 +12,7 @@ async def test_get_admin_deps_raises_401_without_token():
     from interface.http.deps.admin_deps import get_admin_deps
 
     with pytest.raises(HTTPException) as exc_info:
-        # Call as async generator — exhaust it
-        gen = get_admin_deps(authorization=None)
+        gen = get_admin_deps(authorization=None, nexoia_token=None)
         async for _ in gen:
             pass
     assert exc_info.value.status_code == 401
@@ -35,7 +34,7 @@ async def test_get_admin_deps_raises_401_on_bad_token():
         mock_settings.return_value.openai_api_key = "sk-test"
 
         with pytest.raises(HTTPException) as exc_info:
-            gen = get_admin_deps(authorization="Bearer invalidtoken")
+            gen = get_admin_deps(authorization="Bearer invalidtoken", nexoia_token=None)
             async for _ in gen:
                 pass
         assert exc_info.value.status_code == 401

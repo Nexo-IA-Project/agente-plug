@@ -3,6 +3,8 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 env:
   REGISTRY: ghcr.io
@@ -10,9 +12,180 @@ env:
   IMAGE_WEB: ${{ github.repository_owner }}/agente-plug-web
 
 jobs:
-  build-push:
-    name: Build & push images
+  # ============================================================================
+  # CI Gates — rodam em push e pull_request
+  # ============================================================================
+
+  lint:
+    name: CI Gates / Lint & Format
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Ruff format (api)
+        working-directory: apps/api
+        run: uv run ruff format --check src tests
+
+      - name: Ruff lint (api)
+        working-directory: apps/api
+        run: uv run ruff check src tests
+
+  typecheck:
+    name: CI Gates / Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: mypy (api)
+        working-directory: apps/api
+        run: |
+          uv run mypy \
+            src/agent/context.py \
+            src/agent/history.py \
+            src/agent/tool_registry.py \
+            src/agent/skill.py \
+            src/agent/runner.py \
+            src/agent/prompt.py \
+            src/agent/guards/loop_detector.py \
+            src/interface/http/routers/admin/dlq.py \
+            src/shared/adapters/kb/knowledge_adapter.py \
+            src/interface/worker/dispatcher.py \
+            src/interface/worker/handlers/message.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: tsc --noEmit (web)
+        working-directory: apps/web
+        run: npx --no-install tsc --noEmit
+
+  test:
+    name: CI Gates / Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Run unit tests
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost/test
+          REDIS_URL: redis://localhost:6379/0
+          OPENAI_API_KEY: sk-test
+          CHATNEXO_BASE_URL: http://localhost:4000
+          CHATNEXO_API_KEY: test
+          HUBLA_WEBHOOK_SECRET: test
+          ADMIN_API_KEY: test
+          META_API_KEY: test
+          INTEGRATION_CREDENTIALS_KEY: dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0dGVzdA==
+          JWT_SECRET: test-jwt-secret-with-enough-entropy-for-ci
+        run: uv run pytest tests/unit -x -q
+
+  security-audit:
+    name: CI Gates / Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Export API requirements
+        working-directory: apps/api
+        run: uv export --no-dev --no-hashes --no-emit-project -o /tmp/requirements.txt
+
+      - name: pip-audit (api)
+        run: uvx pip-audit -r /tmp/requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: npm audit (web)
+        working-directory: apps/web
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true
+
+  docker-build-check:
+    name: CI Gates / Docker Build Check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: api
+            context: apps/api
+            scope: api
+          - target: worker
+            context: apps/api
+            scope: api
+          - target: web
+            context: apps/web
+            scope: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (no push) — ${{ matrix.target }}
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          load: true
+          tags: agente-plug-${{ matrix.target }}:ci
+          cache-from: type=gha,scope=${{ matrix.scope }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.scope }}
+
+      - name: Smoke test — worker entrypoint
+        if: matrix.target == 'worker'
+        run: |
+          docker run --rm --entrypoint python agente-plug-worker:ci \
+            -c "import worker; print('worker module importable')"
+
+  # ============================================================================
+  # Build & Push — só em push para main, depois dos gates passarem
+  # ============================================================================
+
+  build-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test, security-audit, docker-build-check]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -72,10 +245,15 @@ jobs:
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
+  # ============================================================================
+  # Deploy — só em push para main, depois do build-push
+  # ============================================================================
+
   deploy:
-    name: Deploy to production
+    name: Deploy
     runs-on: self-hosted
     needs: build-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     permissions:
       packages: read

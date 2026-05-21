@@ -1,12 +1,22 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Resolve caminhos absolutos para encontrar .env.local independente do cwd
+_API_DIR = Path(__file__).parent.parent.parent.parent  # apps/api/
+_REPO_ROOT = _API_DIR.parent.parent  # raiz do monorepo
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(".env.local", ".env"),
+        env_file=(
+            str(_API_DIR / ".env.local"),
+            str(_REPO_ROOT / ".env.local"),
+            str(_API_DIR / ".env"),
+            str(_REPO_ROOT / ".env"),
+        ),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -20,7 +30,14 @@ class Settings(BaseSettings):
     hubla_webhook_secret: str
     admin_api_key: str
     meta_api_key: str
+    meta_waba_id: str = ""
     integration_credentials_key: str
+
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+    ]
+    cors_origin_regex: str | None = None
 
     enable_priority_queue: bool = False
     log_level: str = "INFO"
@@ -44,13 +61,6 @@ class Settings(BaseSettings):
     refund_deadline_days: int = 7
     refund_mutex_ttl_seconds: int = 3600
 
-    # Capability Loja Express
-    loja_express_product_tags: list[str] = ["loja_express", "loja-express"]
-    loja_express_d1_delay_hours: int = 24
-    loja_express_d3_delay_hours: int = 72
-    loja_express_d5_delay_hours: int = 120
-    loja_express_d7_delay_hours: int = 168
-
     # KB Admin
     kb_chunk_size: int = 512
     kb_chunk_overlap: int = 50
@@ -65,6 +75,16 @@ class Settings(BaseSettings):
     # JWT — deve ser configurado via JWT_SECRET no ambiente (sem valor padrão)
     jwt_secret: str
     jwt_expire_minutes: int = 60
+
+    # Cloudflare R2 (template media storage)
+    r2_account_id: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket_name: str | None = None
+    r2_public_base_url: str | None = None
+
+    # Meta WhatsApp App ID (resumable upload)
+    meta_app_id: str | None = None
 
 
 @lru_cache(maxsize=1)

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Literal
 
 import httpx
 from tenacity import (
@@ -14,6 +13,9 @@ from tenacity import (
 
 from shared.config.settings import get_settings
 from shared.domain.value_objects.escalation_reason import EscalationReason
+
+if TYPE_CHECKING:
+    from shared.domain.entities.account_config import AccountConfig
 
 
 class ChatNexoError(RuntimeError):
@@ -27,6 +29,8 @@ _retry = retry(
     reraise=True,
 )
 
+_API_PREFIX = "/api/v1"
+
 
 @dataclass
 class ChatNexoClient:
@@ -37,18 +41,32 @@ class ChatNexoClient:
         s = get_settings()
         client = httpx.AsyncClient(
             base_url=s.chatnexo_base_url,
-            headers={"X-Api-Key": s.chatnexo_api_key},
+            headers={"api_access_token": s.chatnexo_api_key},
+            timeout=httpx.Timeout(10.0, connect=3.0),
+        )
+        return cls(http=client)
+
+    @classmethod
+    def from_account_config(cls, config: AccountConfig) -> ChatNexoClient:
+        client = httpx.AsyncClient(
+            base_url=config.integration.chatnexo_base_url,
+            headers={"api_access_token": config.integration.chatnexo_api_key},
             timeout=httpx.Timeout(10.0, connect=3.0),
         )
         return cls(http=client)
 
     @_retry
     async def _post(self, path: str, json: dict[str, Any]) -> httpx.Response:
-        response = await self.http.post(path, json=json)
+        response = await self.http.post(f"{_API_PREFIX}{path}", json=json)
         response.raise_for_status()
         return response
 
-    async def send_message(self, *, account_id: UUID, conversation_id: int, text: str) -> None:
+    async def _get(self, path: str, **kwargs: Any) -> httpx.Response:
+        response = await self.http.get(f"{_API_PREFIX}{path}", **kwargs)
+        response.raise_for_status()
+        return response
+
+    async def send_message(self, *, account_id: str, conversation_id: str, text: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
             json={"type": "text", "content": text},
@@ -57,46 +75,53 @@ class ChatNexoClient:
     async def send_template(
         self,
         *,
-        account_id: UUID,
-        conversation_id: int,
+        account_id: str,
+        conversation_id: str,
         template_name: str,
-        variables: dict[str, Any],
+        language: str | None = None,
+        variables: dict[str, Any] | None = None,
+        header_link: str | None = None,
+        header_kind: Literal["image", "video", "document"] | None = None,
     ) -> None:
+        body: dict[str, Any] = {
+            "type": "template",
+            "template_name": template_name,
+            "variables": variables or {},
+        }
+        if language:
+            body["language"] = language
+        if header_link and header_kind:
+            body["header"] = {"type": header_kind, "link": header_link}
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
-            json={
-                "type": "template",
-                "template_name": template_name,
-                "variables": variables,
-            },
+            json=body,
         )
 
     async def transfer_to_human(
-        self, *, account_id: UUID, conversation_id: int, reason: EscalationReason
+        self, *, account_id: str, conversation_id: str, reason: EscalationReason
     ) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/transfer",
             json={"reason": reason.value},
         )
 
-    async def add_tag(self, *, account_id: UUID, conversation_id: int, tag: str) -> None:
+    async def add_tag(self, *, account_id: str, conversation_id: str, tag: str) -> None:
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/tags",
             json={"tag": tag},
         )
 
-    async def get_open_conversation(self, account_id: int, contact_phone: str) -> str | None:
+    async def get_open_conversation(self, account_id: str, contact_phone: str) -> str | None:
         """Return the open conversation ID for a contact, or None if not found."""
-        response = await self.http.get(
+        response = await self._get(
             f"/accounts/{account_id}/conversations",
             params={"contact_phone": contact_phone, "status": "open"},
         )
-        response.raise_for_status()
         data = response.json()
         items = data.get("data", []) if isinstance(data, dict) else data
         return str(items[0]["id"]) if items else None
 
-    async def create_conversation(self, account_id: int, contact_phone: str) -> str:
+    async def create_conversation(self, account_id: str, contact_phone: str) -> str:
         """Create a new conversation for a contact and return its ID."""
         response = await self._post(
             f"/accounts/{account_id}/conversations",

@@ -42,9 +42,16 @@
   --color-error: #dc2626;
   --color-on-error: #ffffff;
   --color-error-container: #fee2e2;
+  --color-success: #16a34a;
+  --color-on-success: #ffffff;
+  --color-success-container: #dcfce7;
+  --color-warning: #f59e0b;
+  --color-on-warning: #ffffff;
+  --color-warning-container: #fef3c7;
   --color-background: #f8fafc;
   --color-on-background: #0f172a;
   --radius: 0.25rem;
+  --sidebar-width: 240px;
 }
 
 /* ── Dark mode ──────────────────────────────────────────────────────────── */
@@ -72,6 +79,12 @@
   --color-error: #ffb4ab;
   --color-on-error: #690005;
   --color-error-container: #93000a;
+  --color-success: #4ade80;
+  --color-on-success: #052e1a;
+  --color-success-container: #14532d;
+  --color-warning: #fbbf24;
+  --color-on-warning: #422006;
+  --color-warning-container: #78350f;
   --color-background: #131315;
   --color-on-background: #e4e2e4;
   --radius: 0.25rem;
@@ -80,4 +93,121 @@
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground font-sans antialiased; }
+}
+
+/* ── Form fields padronizados ───────────────────────────────────────────── */
+@layer components {
+  .field,
+  .field-input,
+  .field-select,
+  .field-textarea {
+    width: 100%;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--color-outline);
+    background-color: var(--color-surface);
+    padding-left: 14px;
+    padding-right: 14px;
+    color: var(--color-on-surface);
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+    outline: none;
+  }
+  .field-textarea {
+    height: auto;
+    min-height: 96px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  .field::placeholder,
+  .field-input::placeholder,
+  .field-textarea::placeholder {
+    color: color-mix(in srgb, var(--color-on-surface-variant) 50%, transparent);
+  }
+  .field:hover,
+  .field-input:hover,
+  .field-select:hover,
+  .field-textarea:hover {
+    border-color: color-mix(in srgb, var(--color-on-surface-variant) 60%, transparent);
+  }
+  .field:focus,
+  .field-input:focus,
+  .field-select:focus,
+  .field-textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
+  }
+  .field:disabled,
+  .field-input:disabled,
+  .field-select:disabled,
+  .field-textarea:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .field-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--color-on-surface-variant);
+  }
+}
+
+/* ── Toast Sonner — scale do centro (top-center) ────────────────────────── */
+[data-sonner-toaster][data-position="top-center"] {
+  left: 50% !important;
+  transform: translateX(-50%);
+  top: 24px;
+}
+[data-sonner-toast] {
+  transform-origin: center center !important;
+}
+@keyframes nx-toast-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes nx-toast-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+[data-sonner-toaster] [data-sonner-toast][data-mounted="true"]:not([data-removed="true"]) {
+  animation: nx-toast-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  animation: nx-toast-out 260ms cubic-bezier(0.4, 0, 1, 1) both !important;
+}
+
+/* Scroll quase invisível dentro do preview do WhatsApp */
+.wa-chat-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.wa-chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.wa-chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+.wa-chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.24);
+}
+.wa-chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }

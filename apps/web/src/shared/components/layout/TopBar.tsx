@@ -1,7 +1,25 @@
-// apps/web/src/shared/components/layout/TopBar.tsx
+"use client";
+
+import { useRouter } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import { clearToken } from "@/lib/auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export function TopBar() {
+  const router = useRouter();
+
+  async function handleLogout() {
+    // Limpa localStorage + cookie não-HttpOnly
+    clearToken();
+    // Pede ao servidor para deletar o cookie HttpOnly (JS não consegue fazer isso)
+    await fetch(`${API_URL}/admin/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
+    router.push("/login");
+  }
+
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-outline-variant bg-surface/80 backdrop-blur-md px-8">
       <div className="relative flex max-w-sm flex-1 items-center">
@@ -28,6 +46,13 @@ export function TopBar() {
         <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary text-xs font-semibold select-none">
           FD
         </div>
+        <button
+          onClick={handleLogout}
+          aria-label="Sair"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-error/10 hover:text-error transition-colors"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>logout</span>
+        </button>
       </div>
     </header>
   );
