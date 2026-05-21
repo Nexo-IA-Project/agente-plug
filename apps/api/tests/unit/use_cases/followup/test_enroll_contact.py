@@ -78,10 +78,13 @@ async def test_enroll_contact_creates_enrollment_with_snapshots_and_schedules_jo
     )
 
     assert result is not None
-    assert result.status == EnrollmentStatus.ACTIVE
-    assert result.flow_id == _FLOW_ID
-    assert result.customer_name == "Fabio"
-    assert result.product_name == "Máquina de Vendas"
+    assert result.deduped is False
+    enrollment = result.enrollment
+    assert enrollment is not None
+    assert enrollment.status == EnrollmentStatus.ACTIVE
+    assert enrollment.flow_id == _FLOW_ID
+    assert enrollment.customer_name == "Fabio"
+    assert enrollment.product_name == "Máquina de Vendas"
     assert job_repo.schedule.call_count == 3
 
     enrollment_repo.create_with_steps.assert_awaited_once()

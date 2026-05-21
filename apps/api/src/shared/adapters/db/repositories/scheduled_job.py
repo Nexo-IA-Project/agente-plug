@@ -94,6 +94,21 @@ class ScheduledJobRepository:
         result = await self.session.execute(stmt)
         return result.rowcount or 0
 
+    async def cancel(self, job_id: UUID) -> None:
+        """Marca um scheduled_job como cancelled.
+
+        Usado para limpar jobs órfãos quando enrollment dispara IntegrityError de dedup.
+        Idempotente: chamar em job já não-PENDING é no-op.
+        """
+        await self.session.execute(
+            update(ScheduledJobModel)
+            .where(
+                ScheduledJobModel.id == job_id,
+                ScheduledJobModel.status == JobStatus.PENDING.value,
+            )
+            .values(status=JobStatus.CANCELLED.value)
+        )
+
     async def mark_executed(self, *, job_id: UUID, at: datetime) -> None:
         stmt = (
             update(ScheduledJobModel)

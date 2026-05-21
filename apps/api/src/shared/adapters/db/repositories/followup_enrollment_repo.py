@@ -98,6 +98,26 @@ class FollowupEnrollmentRepository:
         model = await self.session.get(FollowupEnrollmentModel, enrollment_id)
         return None if model is None else _enrollment_to_entity(model)
 
+    async def find_by_dedup_key(
+        self,
+        *,
+        account_id: uuid.UUID,
+        contact_id: uuid.UUID,
+        flow_id: uuid.UUID,
+        purchase_id: str,
+    ) -> FollowupEnrollment | None:
+        """Busca enrollment por chave de dedup (account_id, contact_id, flow_id, purchase_id)."""
+        result = await self.session.execute(
+            select(FollowupEnrollmentModel).where(
+                FollowupEnrollmentModel.account_id == account_id,
+                FollowupEnrollmentModel.contact_id == contact_id,
+                FollowupEnrollmentModel.flow_id == flow_id,
+                FollowupEnrollmentModel.purchase_id == purchase_id,
+            )
+        )
+        row = result.scalar_one_or_none()
+        return _enrollment_to_entity(row) if row else None
+
     async def update_step(self, step: FollowupEnrollmentStep) -> None:
         model = await self.session.get(FollowupEnrollmentStepModel, step.id)
         if model is None:

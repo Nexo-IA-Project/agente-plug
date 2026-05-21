@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 import structlog
+from sqlalchemy.exc import IntegrityError
 
 from shared.domain.entities.followup import (
     EnrollmentStepStatus,
@@ -14,6 +16,20 @@ from shared.domain.entities.followup import (
 from shared.domain.entities.scheduled_job import JobType
 
 log = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class EnrollResult:
+    """Resultado de EnrollContact.execute.
+
+    - enrollment: o enrollment criado (ou o existente em caso de dedup)
+    - deduped: True se a tentativa de criar encontrou um enrollment duplicado
+      (mesmo account_id, contact_id, flow_id, purchase_id) e os jobs órfãos
+      recém-criados foram cancelados.
+    """
+
+    enrollment: FollowupEnrollment | None
+    deduped: bool = False
 
 
 class EnrollContact:
@@ -34,7 +50,7 @@ class EnrollContact:
         customer_name: str,
         product_name: str,
         purchase_time: datetime,
-    ) -> FollowupEnrollment | None:
+    ) -> EnrollResult | None:
         flow = await self._flow_repo.find_by_id(flow_id)
         if flow is None:
             log.info("followup_flow_not_found", flow_id=str(flow_id))
@@ -64,6 +80,7 @@ class EnrollContact:
             run_at = purchase_time + timedelta(hours=step.delay_from_purchase_hours)
             enrollment_step = FollowupEnrollmentStep(
                 enrollment_id=enrollment.id,
+                flow_step_id=step.id,
                 position=step.position,
                 delay_from_purchase_hours=step.delay_from_purchase_hours,
                 meta_template_name=step.meta_template_name,
@@ -71,6 +88,10 @@ class EnrollContact:
                 message_text=step.message_text,
                 status=EnrollmentStepStatus.PENDING,
             )
+            # Nota: scheduled jobs criados antes do create_with_steps podem ficar órfãos
+            # se create_with_steps falhar (exceto IntegrityError, que é o caso de dedup —
+            # tratado abaixo cancelando os jobs).
+            # Em uma futura iteração, refatorar para passar `session` aqui e usar begin_nested().
             job = await self._job_repo.schedule(
                 account_id=account_id,
                 conversation_id=None,  # chatnexo conversation ID está no payload abaixo
@@ -86,7 +107,32 @@ class EnrollContact:
             enrollment_step.scheduled_job_id = job.id
             enrollment_steps.append(enrollment_step)
 
-        await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
+        try:
+            await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
+        except IntegrityError:
+            existing = await self._enrollment_repo.find_by_dedup_key(
+                account_id=account_id,
+                contact_id=contact_id,
+                flow_id=flow.id,
+                purchase_id=purchase_id,
+            )
+            # Cancela jobs órfãos criados pelos enrollment_steps que tentaram inserir.
+            for es in enrollment_steps:
+                if es.scheduled_job_id:
+                    try:
+                        await self._job_repo.cancel(es.scheduled_job_id)
+                    except Exception:
+                        log.warning(
+                            "orphan_job_cancel_failed",
+                            job_id=str(es.scheduled_job_id),
+                        )
+            log.info(
+                "followup_enrollment_deduped",
+                account_id=str(account_id),
+                flow_id=str(flow.id),
+                purchase_id=purchase_id,
+            )
+            return EnrollResult(enrollment=existing, deduped=True)
 
         log.info(
             "followup_enrolled",
@@ -96,4 +142,4 @@ class EnrollContact:
             product_name=product_name,
             steps=len(enrollment_steps),
         )
-        return enrollment
+        return EnrollResult(enrollment=enrollment, deduped=False)
