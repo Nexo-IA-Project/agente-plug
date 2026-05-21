@@ -55,6 +55,8 @@ class FollowupEnrollment:
     id: UUID = field(default_factory=uuid4)
     status: EnrollmentStatus = EnrollmentStatus.ACTIVE
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    purchase_time: datetime = field(default_factory=lambda: datetime.now(UTC))
+    steps: list = field(default_factory=list)
 
 
 @dataclass(slots=True)

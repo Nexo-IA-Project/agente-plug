@@ -7,6 +7,7 @@ from interface.worker.dispatcher import WorkerDispatcher
 from interface.worker.handlers.message import handle_message
 from interface.worker.handlers.process_purchase import handle_process_purchase_webhook
 from interface.worker.handlers.purchase import handle_purchase
+from interface.worker.handlers.resync import handle_resync_flow
 from interface.worker.handlers.scheduled import handle_scheduled
 from interface.worker.scheduler import SchedulerLoop
 from shared.adapters.clock.system_clock import SystemClock
@@ -40,6 +41,7 @@ async def main() -> None:
             "message": handle_message,
             "scheduled": handle_scheduled,
             "ProcessPurchaseWebhook": handle_process_purchase_webhook,
+            "resync_flow": handle_resync_flow,
         },
     )
 

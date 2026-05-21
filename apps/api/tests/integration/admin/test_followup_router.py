@@ -180,8 +180,28 @@ async def client(
     seeded_account: AccountModel,
     mock_settings: Any,
     patched_session_scope,
+    db_session: AsyncSession,
 ):
     from main import app
+
+    class _SessionWrapper:
+        def __init__(self, session: AsyncSession) -> None:
+            self._session = session
+
+        async def __aenter__(self) -> AsyncSession:
+            return self._session
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self._session, name)
+
+    class _FakeSessionmaker:
+        def __call__(self):
+            return _SessionWrapper(db_session)
+
+    fake_sessionmaker = _FakeSessionmaker()
 
     with (
         patch(
@@ -191,6 +211,10 @@ async def client(
         patch(
             "interface.http.routers.admin.followup.session_scope",
             new=patched_session_scope,
+        ),
+        patch(
+            "interface.http.routers.admin.followup.get_sessionmaker",
+            return_value=fake_sessionmaker,
         ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

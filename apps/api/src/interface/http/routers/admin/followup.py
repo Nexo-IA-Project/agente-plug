@@ -19,9 +19,10 @@ from interface.http.schemas.followup import (
     UpdateStepRequest,
 )
 from shared.adapters.db.models import AccountModel
+from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.course_repo import SqlCourseRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
-from shared.adapters.db.session import session_scope
+from shared.adapters.db.session import get_sessionmaker, session_scope
 
 router = APIRouter(tags=["admin-followup"])
 
@@ -29,6 +30,24 @@ router = APIRouter(tags=["admin-followup"])
 async def _get_account_uuid(session) -> _uuid_module.UUID:
     result = await session.execute(select(AccountModel.id).limit(1))
     return result.scalar_one()
+
+
+async def _enqueue_resync(flow_id: UUID, account_id: _uuid_module.UUID) -> None:
+    """Enfileira job de resync após mutação de step do flow.
+
+    Usa sessionmaker próprio do PostgresJobQueue (commit independente).
+    Deve ser chamado APÓS o session_scope da mutação ser commitado.
+    """
+    queue = PostgresJobQueue(sessionmaker=get_sessionmaker())
+    await queue.enqueue(
+        {
+            "kind": "resync_flow",
+            "payload": {
+                "flow_id": str(flow_id),
+                "account_id": str(account_id),
+            },
+        }
+    )
 
 
 def _step_to_resp(s) -> FollowupStepResponse:
@@ -192,6 +211,7 @@ async def create_step(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> FollowupStepResponse:
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = FollowupFlowRepository(session=session)
         existing = await repo.get_steps(flow_id)
         position = body.position if body.position is not None else len(existing)
@@ -203,6 +223,7 @@ async def create_step(
             template_variables=_bindings_to_dict(body.template_variables),
             message_text=body.message_text,
         )
+    await _enqueue_resync(flow_id, account_uuid)
     return _step_to_resp(step)
 
 
@@ -214,6 +235,7 @@ async def update_step(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> FollowupStepResponse:
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = FollowupFlowRepository(session=session)
         template_vars = (
             _bindings_to_dict(body.template_variables)
@@ -232,6 +254,7 @@ async def update_step(
         )
     if step is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step não encontrado")
+    await _enqueue_resync(flow_id, account_uuid)
     return _step_to_resp(step)
 
 
@@ -242,10 +265,12 @@ async def delete_step(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = FollowupFlowRepository(session=session)
         deleted = await repo.delete_step(step_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step não encontrado")
+    await _enqueue_resync(flow_id, account_uuid)
 
 
 @router.patch("/followup/flows/{flow_id}/steps/reorder", status_code=status.HTTP_204_NO_CONTENT)
@@ -255,6 +280,8 @@ async def reorder_steps(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
     async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
         repo = FollowupFlowRepository(session=session)
         for item in body.steps:
             await repo.update_step(item.id, position=item.position)
+    await _enqueue_resync(flow_id, account_uuid)

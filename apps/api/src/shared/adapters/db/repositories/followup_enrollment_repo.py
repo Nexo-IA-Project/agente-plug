@@ -32,6 +32,7 @@ def _enrollment_to_entity(m: FollowupEnrollmentModel) -> FollowupEnrollment:
         product_name=m.product_name,
         status=EnrollmentStatus(m.status),
         created_at=m.created_at,
+        purchase_time=m.created_at,
     )
 
 
@@ -47,6 +48,8 @@ def _step_to_entity(m: FollowupEnrollmentStepModel) -> FollowupEnrollmentStep:
         status=EnrollmentStepStatus(m.status),
         sent_at=m.sent_at,
         message_text=m.message_text,
+        failure_reason=m.failure_reason,
+        flow_step_id=m.flow_step_id,
     )
 
 
@@ -232,6 +235,76 @@ class FollowupEnrollmentRepository:
             )
             .values(status=EnrollmentStepStatus.CANCELLED.value)
         )
+
+    async def add_step_with_job(self, step: FollowupEnrollmentStep) -> None:
+        """Persiste um novo enrollment_step (com flow_step_id e scheduled_job_id já setados)."""
+        model = FollowupEnrollmentStepModel(
+            id=step.id,
+            enrollment_id=step.enrollment_id,
+            flow_step_id=step.flow_step_id,
+            position=step.position,
+            delay_from_purchase_hours=step.delay_from_purchase_hours,
+            meta_template_name=step.meta_template_name,
+            message_text=step.message_text,
+            template_variables=step.template_variables,
+            status=step.status.value,
+            scheduled_job_id=step.scheduled_job_id,
+        )
+        self.session.add(model)
+        await self.session.flush()
+
+    async def apply_step_update(
+        self,
+        *,
+        step_id: uuid.UUID,
+        delay_from_purchase_hours: int,
+        meta_template_name: str | None,
+        message_text: str | None,
+        template_variables: dict,
+        scheduled_job_id: uuid.UUID | None,
+    ) -> None:
+        """Atualiza campos de um enrollment_step PENDING in-place.
+
+        Se scheduled_job_id=None, mantém o atual. Caso contrário, sobrescreve.
+        """
+        values: dict = {
+            "delay_from_purchase_hours": delay_from_purchase_hours,
+            "meta_template_name": meta_template_name,
+            "message_text": message_text,
+            "template_variables": template_variables,
+        }
+        if scheduled_job_id is not None:
+            values["scheduled_job_id"] = scheduled_job_id
+        await self.session.execute(
+            update(FollowupEnrollmentStepModel)
+            .where(
+                FollowupEnrollmentStepModel.id == step_id,
+                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+            )
+            .values(**values)
+        )
+
+    async def get_with_steps(
+        self, enrollment_id: uuid.UUID
+    ) -> FollowupEnrollment | None:
+        """Carrega enrollment + todos os seus steps em uma só ida ao DB."""
+        e_result = await self.session.execute(
+            select(FollowupEnrollmentModel).where(
+                FollowupEnrollmentModel.id == enrollment_id
+            )
+        )
+        e_model = e_result.scalar_one_or_none()
+        if e_model is None:
+            return None
+        s_result = await self.session.execute(
+            select(FollowupEnrollmentStepModel)
+            .where(FollowupEnrollmentStepModel.enrollment_id == enrollment_id)
+            .order_by(FollowupEnrollmentStepModel.position)
+        )
+        step_rows = s_result.scalars().all()
+        enrollment = _enrollment_to_entity(e_model)
+        enrollment.steps = [_step_to_entity(r) for r in step_rows]
+        return enrollment
 
     async def mark_failed(self, step_id: uuid.UUID, reason: str) -> None:
         """Marca step como FAILED com a razão (truncada a 500 chars).
