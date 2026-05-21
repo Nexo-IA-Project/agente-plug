@@ -529,7 +529,6 @@ class FollowupEnrollmentModel(Base):
         UUID(as_uuid=True),
         ForeignKey("followup_flows.id", ondelete="SET NULL"),
         nullable=True,
-        index=True,
     )
     contact_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False

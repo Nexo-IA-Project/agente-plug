@@ -60,17 +60,17 @@ def upgrade() -> None:
 
     # 4. Índices de leitura
     op.create_index(
-        "idx_followup_enrollments_flow_status",
+        "ix_followup_enrollments_flow_status",
         "followup_enrollments",
         ["flow_id", "status"],
     )
     op.create_index(
-        "idx_followup_enrollments_account_contact",
+        "ix_followup_enrollments_account_contact",
         "followup_enrollments",
         ["account_id", "contact_id"],
     )
     op.create_index(
-        "idx_followup_enrollment_steps_enr_status",
+        "ix_followup_enrollment_steps_enrollment_status",
         "followup_enrollment_steps",
         ["enrollment_id", "status"],
     )
@@ -90,15 +90,15 @@ def downgrade() -> None:
     op.drop_column("followup_enrollment_steps", "flow_step_id")
     op.drop_column("followup_enrollment_steps", "failure_reason")
     op.drop_index(
-        "idx_followup_enrollment_steps_enr_status",
+        "ix_followup_enrollment_steps_enrollment_status",
         table_name="followup_enrollment_steps",
     )
     op.drop_index(
-        "idx_followup_enrollments_account_contact",
+        "ix_followup_enrollments_account_contact",
         table_name="followup_enrollments",
     )
     op.drop_index(
-        "idx_followup_enrollments_flow_status",
+        "ix_followup_enrollments_flow_status",
         table_name="followup_enrollments",
     )
     op.drop_index("uq_followup_enrollment_dedup", table_name="followup_enrollments")

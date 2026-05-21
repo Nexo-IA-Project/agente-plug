@@ -45,7 +45,7 @@ class FollowupStep:
 @dataclass(slots=True)
 class FollowupEnrollment:
     account_id: UUID
-    flow_id: UUID
+    flow_id: UUID | None
     contact_id: UUID
     conversation_id: str  # chatnexo external conversation ID (string)
     contact_phone: str
