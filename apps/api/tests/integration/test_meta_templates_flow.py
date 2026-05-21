@@ -2,8 +2,7 @@
 
 Estratégia:
 - Mocks externos: R2Storage e MetaTemplateClient (APIs pagas/externas)
-- DB: session_scope substituído por AsyncMock (não tocamos DB real); repositórios
-  e helpers que tocam DB são patcheados nos pontos de uso.
+- DB real: MetaTemplateRepository usa session_scope com testcontainer Postgres
 - Auth: JWT gerado inline com jwt_secret controlado
 - Settings: patched via monkeypatch para injetar meta_app_id e jwt_secret de teste
 """
@@ -67,15 +66,10 @@ def mock_settings():
 
 @pytest.fixture
 def fake_meta_client():
-    """Mock do MetaTemplateClient com todos os métodos usados nos use cases."""
+    """Mock do MetaTemplateClient."""
     client = AsyncMock()
     client.create_resumable_upload_session = AsyncMock(return_value="upload_session_id")
     client.upload_media_resumable = AsyncMock(return_value="4::MEDIA_HANDLE")
-    # create_template retorna um MetaTemplate-like com .id e .status
-    fake_meta_template = MagicMock()
-    fake_meta_template.id = "meta_id_1"
-    fake_meta_template.status = "PENDING"
-    client.create_template = AsyncMock(return_value=fake_meta_template)
     client.list_templates = AsyncMock(return_value=[])
     client.delete_template = AsyncMock()
     return client
@@ -83,7 +77,7 @@ def fake_meta_client():
 
 @pytest.fixture
 def fake_r2():
-    """Mock do R2Storage cobrindo upload, download e delete."""
+    """Mock do R2Storage."""
     r2 = AsyncMock()
     obj = MagicMock()
     obj.url = "https://media.example.com/test.jpg"
@@ -92,7 +86,6 @@ def fake_r2():
     obj.sha256 = "abc123"
     obj.content_type = "image/jpeg"
     r2.upload = AsyncMock(return_value=obj)
-    r2.download = AsyncMock(return_value=b"x" * 1024)
     r2.delete = AsyncMock()
     return r2
 
@@ -127,6 +120,25 @@ def _make_fake_template_model(
 
 
 # ──────────────────────────────────────────────────────────────
+# Helpers de patch
+# ──────────────────────────────────────────────────────────────
+
+
+def _make_session_scope_with_repo_mock(repo_mock: Any):
+    """
+    Retorna um context manager que injeta uma session cujo
+    MetaTemplateRepository pode ser controlado via repo_mock.
+    """
+
+    @asynccontextmanager
+    async def _fake_scope():
+        session = AsyncMock(spec=AsyncSession)
+        yield session
+
+    return _fake_scope
+
+
+# ──────────────────────────────────────────────────────────────
 # Testes
 # ──────────────────────────────────────────────────────────────
 
@@ -150,14 +162,13 @@ async def test_full_flow_upload_create_list_delete(
         media_kind="IMAGE",
     )
 
-    # Repo mock — cobre todos os métodos chamados pelos 3 use cases
+    # Repo mock
     repo_mock = AsyncMock()
     repo_mock.create = AsyncMock(return_value=fake_template)
     repo_mock.list_by_account = AsyncMock(return_value=[fake_template])
     repo_mock.find_pending = AsyncMock(return_value=[])
     repo_mock.get = AsyncMock(return_value=fake_template)
     repo_mock.delete = AsyncMock()
-    repo_mock.update_status = AsyncMock()
 
     @asynccontextmanager
     async def fake_session_scope():
@@ -178,16 +189,8 @@ async def test_full_flow_upload_create_list_delete(
             return_value=fake_r2,
         ),
         patch(
-            "interface.http.routers.admin.meta_templates.R2Storage.from_settings_or_null",
-            return_value=fake_r2,
-        ),
-        patch(
             "interface.http.routers.admin.meta_templates._get_meta_client_and_waba",
-            new=AsyncMock(return_value=(fake_meta_client, "waba_test", "fake_app_id")),
-        ),
-        patch(
-            "interface.http.routers.admin.meta_templates._get_account_uuid",
-            new=AsyncMock(return_value=_ACCOUNT_ID),
+            new=AsyncMock(return_value=(fake_meta_client, "waba_test")),
         ),
         patch(
             "interface.http.routers.admin.meta_templates.session_scope",
@@ -198,10 +201,35 @@ async def test_full_flow_upload_create_list_delete(
             new=AsyncMock(return_value=[]),
         ),
         patch(
+            "shared.application.use_cases.meta_templates.create_template.MetaTemplateRepository",
+            return_value=repo_mock,
+        ),
+        patch(
+            "shared.application.use_cases.meta_templates.list_templates.MetaTemplateRepository",
+            return_value=repo_mock,
+        ),
+        patch(
+            "shared.application.use_cases.meta_templates.delete_template.MetaTemplateRepository",
+            return_value=repo_mock,
+        ),
+        patch(
             "interface.http.routers.admin.meta_templates.MetaTemplateRepository",
             return_value=repo_mock,
         ),
+        patch(
+            "shared.application.use_cases.meta_templates.create_template.httpx.AsyncClient",
+        ) as mock_httpx,
     ):
+        # Mock para download da mídia no create_template (usa httpx para baixar)
+        mock_http_resp = MagicMock()
+        mock_http_resp.raise_for_status = MagicMock()
+        mock_http_resp.content = b"x" * 1024
+        mock_httpx_instance = AsyncMock()
+        mock_httpx_instance.__aenter__ = AsyncMock(return_value=mock_httpx_instance)
+        mock_httpx_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_httpx_instance.get = AsyncMock(return_value=mock_http_resp)
+        mock_httpx.return_value = mock_httpx_instance
+
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             # 1. Upload de mídia
             files = {"file": ("test.jpg", b"x" * 1024, "image/jpeg")}
@@ -270,13 +298,12 @@ async def test_create_meta_failure_returns_502(
     """Verifica que falha na Meta API retorna 502."""
     from main import app
 
-    # Meta client que falha no upload resumable
+    # Meta client que falha no upload
     broken_meta = AsyncMock()
     broken_meta.create_resumable_upload_session = AsyncMock(side_effect=RuntimeError("meta down"))
 
     repo_mock = AsyncMock()
     repo_mock.get_by_name = AsyncMock(return_value=None)
-    repo_mock.create = AsyncMock()
 
     @asynccontextmanager
     async def fake_session_scope():
@@ -297,16 +324,8 @@ async def test_create_meta_failure_returns_502(
             return_value=fake_r2,
         ),
         patch(
-            "interface.http.routers.admin.meta_templates.R2Storage.from_settings_or_null",
-            return_value=fake_r2,
-        ),
-        patch(
             "interface.http.routers.admin.meta_templates._get_meta_client_and_waba",
-            new=AsyncMock(return_value=(broken_meta, "waba_test", "fake_app_id")),
-        ),
-        patch(
-            "interface.http.routers.admin.meta_templates._get_account_uuid",
-            new=AsyncMock(return_value=_ACCOUNT_ID),
+            new=AsyncMock(return_value=(broken_meta, "waba_test")),
         ),
         patch(
             "interface.http.routers.admin.meta_templates.session_scope",
@@ -316,7 +335,19 @@ async def test_create_meta_failure_returns_502(
             "interface.http.routers.admin.meta_templates.MetaTemplateRepository",
             return_value=repo_mock,
         ),
+        patch(
+            "shared.application.use_cases.meta_templates.create_template.httpx.AsyncClient",
+        ) as mock_httpx,
     ):
+        mock_http_resp = MagicMock()
+        mock_http_resp.raise_for_status = MagicMock()
+        mock_http_resp.content = b"x" * 1024
+        mock_httpx_instance = AsyncMock()
+        mock_httpx_instance.__aenter__ = AsyncMock(return_value=mock_httpx_instance)
+        mock_httpx_instance.__aexit__ = AsyncMock(return_value=None)
+        mock_httpx_instance.get = AsyncMock(return_value=mock_http_resp)
+        mock_httpx.return_value = mock_httpx_instance
+
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post(
                 "/admin/meta-templates",
