@@ -23,14 +23,23 @@ class ConversationHistory:
 
     session: AsyncSession
 
-    async def load(self, thread_id: str) -> list[Message]:
-        """Return the stored messages for *thread_id*, or [] if none exist."""
+    async def load(self, thread_id: str, limit: int | None = None) -> list[Message]:
+        """Return stored messages for *thread_id*.
+
+        Se ``limit`` for informado, retorna apenas as últimas ``limit`` mensagens.
+        O storage persiste sempre o histórico completo — ``limit`` não trunca o JSONB.
+        """
         stmt = select(ConversationMessageModel).where(
             ConversationMessageModel.thread_id == thread_id
         )
         result = await self.session.execute(stmt)
         row = result.scalar_one_or_none()
-        return list(row.messages) if row else []
+        if row is None:
+            return []
+        messages = list(row.messages)
+        if limit is not None and len(messages) > limit:
+            return messages[-limit:]
+        return messages
 
     async def save(self, thread_id: str, messages: list[Message]) -> None:
         """Upsert *messages* for *thread_id*."""

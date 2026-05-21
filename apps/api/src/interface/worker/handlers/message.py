@@ -113,6 +113,7 @@ async def _process_message(
             session=session,
             client=openai_client,
             guard_service=guard_service,
+            memory_limit=account_config.behavior.ai_memory_messages,
         )
 
     await chatnexo.send_message(

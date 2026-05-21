@@ -27,6 +27,7 @@ class BehaviorConfig:
     message_buffer_wait_seconds: int
     refund_deadline_days: int
     welcome_d1_delay_hours: int
+    ai_memory_messages: int = 20
 
 
 @dataclass(frozen=True)
@@ -56,3 +57,4 @@ class AccountConfigPatch:
     message_buffer_wait_seconds: int | None = field(default=None)
     refund_deadline_days: int | None = field(default=None)
     welcome_d1_delay_hours: int | None = field(default=None)
+    ai_memory_messages: int | None = field(default=None)
