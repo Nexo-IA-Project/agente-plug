@@ -75,10 +75,10 @@ done
 
 # ── Trocar upstream nginx ─────────────────────────────────────────────────────
 echo "==> Trocando nginx para ${NEW_COLOR}..."
-sed -i "s/server 127.0.0.1:${OLD_API_PORT};/server 127.0.0.1:${NEW_API_PORT};/" "${NGINX_CONF}"
-sed -i "s/server 127.0.0.1:${OLD_WEB_PORT};/server 127.0.0.1:${NEW_WEB_PORT};/" "${NGINX_CONF}"
-nginx -t
-nginx -s reload
+sudo sed -i "s/server 127.0.0.1:${OLD_API_PORT};/server 127.0.0.1:${NEW_API_PORT};/" "${NGINX_CONF}"
+sudo sed -i "s/server 127.0.0.1:${OLD_WEB_PORT};/server 127.0.0.1:${NEW_WEB_PORT};/" "${NGINX_CONF}"
+sudo nginx -t
+sudo nginx -s reload
 echo "    nginx recarregado — tráfego agora em ${NEW_COLOR}"
 
 # ── Parar containers antigos ──────────────────────────────────────────────────
