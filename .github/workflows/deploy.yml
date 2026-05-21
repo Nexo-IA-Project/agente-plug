@@ -269,59 +269,8 @@ jobs:
       - name: Deploy
         env:
           IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
-          IMAGE_API_REF: ghcr.io/${{ env.IMAGE_API }}
         run: |
           set -euo pipefail
           cd /root/agente-plug
-
-          # Sincronizar repo (puxa docker-compose.prod.yml e outros configs atualizados)
           git pull --ff-only
-
-          # GHCR exige lowercase — normaliza o owner que pode ter maiúsculas
-          IMAGE_API_LC=$(echo "${IMAGE_API_REF}" | tr '[:upper:]' '[:lower:]')
-
-          # Pull novas imagens
-          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml pull
-
-          # Aplicar migrations antes de subir nova versão
-          docker run --rm \
-            --env-file /root/.env.prod \
-            --network host \
-            "${IMAGE_API_LC}:${IMAGE_TAG}" \
-            alembic upgrade heads
-
-          # Subir nova versão (recria containers um a um)
-          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml up -d --force-recreate api worker web
-
-          # Aguardar até api ficar healthy (max 90s)
-          echo "Aguardando API ficar healthy..."
-          for i in $(seq 1 18); do
-            STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$(docker compose --env-file /root/.env.prod -f docker-compose.prod.yml ps -q api)" 2>/dev/null || echo "unknown")
-            echo "  [${i}/18] api health: ${STATUS}"
-            if [ "${STATUS}" = "healthy" ]; then
-              echo "API healthy!"
-              break
-            fi
-            if [ "${i}" = "18" ]; then
-              echo "ERRO: API não ficou healthy em 90s"
-              docker compose --env-file /root/.env.prod -f docker-compose.prod.yml logs --tail=50 api
-              exit 1
-            fi
-            sleep 5
-          done
-
-          docker compose --env-file /root/.env.prod -f docker-compose.prod.yml ps
-
-          # Smoke test: verificar health via Cloudflare Tunnel
-          echo "Smoke test..."
-          for i in 1 2 3; do
-            if curl -sf --max-time 10 https://api-iag2.ianexo.com.br/health | grep -q '"ok"'; then
-              echo "Smoke test passou!"
-              break
-            fi
-            echo "  tentativa ${i}/3 falhou, aguardando 10s..."
-            sleep 10
-            if [ "${i}" = "3" ]; then
-              echo "AVISO: smoke test não confirmou /health via túnel (pode ser latência DNS)"
-            fi
-          done
+          IMAGE_TAG="${IMAGE_TAG}" bash scripts/deploy.sh
