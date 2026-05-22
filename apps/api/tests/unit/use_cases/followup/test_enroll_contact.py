@@ -13,6 +13,17 @@ from shared.domain.entities.followup import (
     FollowupStep,
 )
 
+
+def _fake_session() -> MagicMock:
+    """Sessão fake com begin_nested() como async context manager."""
+    session = MagicMock()
+    nested_ctx = MagicMock()
+    nested_ctx.__aenter__ = AsyncMock(return_value=None)
+    nested_ctx.__aexit__ = AsyncMock(return_value=False)
+    session.begin_nested = MagicMock(return_value=nested_ctx)
+    return session
+
+
 _ACCOUNT_ID = UUID("00000000-0000-0000-0000-000000000001")
 _CONTACT_ID = uuid4()
 _CONV_ID = "conv-external-123"
@@ -63,7 +74,12 @@ async def test_enroll_contact_creates_enrollment_with_snapshots_and_schedules_jo
     job_repo.schedule = AsyncMock(return_value=fake_job)
 
     purchase_time = datetime.now(UTC)
-    uc = EnrollContact(flow_repo=flow_repo, enrollment_repo=enrollment_repo, job_repo=job_repo)
+    uc = EnrollContact(
+        session=_fake_session(),
+        flow_repo=flow_repo,
+        enrollment_repo=enrollment_repo,
+        job_repo=job_repo,
+    )
 
     result = await uc.execute(
         account_id=_ACCOUNT_ID,
@@ -103,6 +119,7 @@ async def test_enroll_contact_returns_none_when_flow_not_found():
     flow_repo.find_by_id.return_value = None
 
     uc = EnrollContact(
+        session=_fake_session(),
         flow_repo=flow_repo,
         enrollment_repo=AsyncMock(),
         job_repo=AsyncMock(),
@@ -129,6 +146,7 @@ async def test_enroll_contact_returns_none_when_flow_inactive():
     flow_repo.find_by_id.return_value = _make_flow(is_active=False)
 
     uc = EnrollContact(
+        session=_fake_session(),
         flow_repo=flow_repo,
         enrollment_repo=AsyncMock(),
         job_repo=AsyncMock(),
@@ -156,6 +174,7 @@ async def test_enroll_contact_returns_none_when_flow_has_no_steps():
     flow_repo.get_steps.return_value = []
 
     uc = EnrollContact(
+        session=_fake_session(),
         flow_repo=flow_repo,
         enrollment_repo=AsyncMock(),
         job_repo=AsyncMock(),

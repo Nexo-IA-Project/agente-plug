@@ -6,7 +6,8 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.domain.entities.followup import (
     EnrollmentStepStatus,
@@ -24,8 +25,11 @@ class EnrollResult:
 
     - enrollment: o enrollment criado (ou o existente em caso de dedup)
     - deduped: True se a tentativa de criar encontrou um enrollment duplicado
-      (mesmo account_id, contact_id, flow_id, purchase_id) e os jobs órfãos
-      recém-criados foram cancelados.
+      (mesmo account_id, contact_id, flow_id, purchase_id). Como a criação roda
+      dentro de um SAVEPOINT (``session.begin_nested()``), a falha por
+      IntegrityError dá rollback APENAS da savepoint — a sessão pai segue válida,
+      e os scheduled_jobs criados dentro da savepoint também são revertidos
+      automaticamente (não há jobs órfãos para cancelar manualmente).
     """
 
     enrollment: FollowupEnrollment | None
@@ -33,7 +37,15 @@ class EnrollResult:
 
 
 class EnrollContact:
-    def __init__(self, *, flow_repo: Any, enrollment_repo: Any, job_repo: Any) -> None:
+    def __init__(
+        self,
+        *,
+        session: AsyncSession,
+        flow_repo: Any,
+        enrollment_repo: Any,
+        job_repo: Any,
+    ) -> None:
+        self._session = session
         self._flow_repo = flow_repo
         self._enrollment_repo = enrollment_repo
         self._job_repo = job_repo
@@ -75,61 +87,50 @@ class EnrollContact:
             product_name=product_name,
         )
 
-        enrollment_steps: list[FollowupEnrollmentStep] = []
-        for step in steps:
-            run_at = purchase_time + timedelta(hours=step.delay_from_purchase_hours)
-            enrollment_step = FollowupEnrollmentStep(
-                enrollment_id=enrollment.id,
-                flow_step_id=step.id,
-                position=step.position,
-                delay_from_purchase_hours=step.delay_from_purchase_hours,
-                meta_template_name=step.meta_template_name,
-                template_variables=step.template_variables,
-                message_text=step.message_text,
-                status=EnrollmentStepStatus.PENDING,
-            )
-            # Nota: scheduled jobs criados antes do create_with_steps podem ficar órfãos
-            # se create_with_steps falhar (exceto IntegrityError, que é o caso de dedup —
-            # tratado abaixo cancelando os jobs).
-            # Em uma futura iteração, refatorar para passar `session` aqui e usar begin_nested().
-            job = await self._job_repo.schedule(
-                account_id=account_id,
-                conversation_id=None,  # chatnexo conversation ID está no payload abaixo
-                job_type=JobType.FOLLOWUP_STEP,
-                payload={
-                    "enrollment_step_id": str(enrollment_step.id),
-                    "account_id": str(account_id),
-                    "conversation_id": str(conversation_id),
-                    "contact_phone": contact_phone,
-                },
-                run_at=run_at,
-            )
-            enrollment_step.scheduled_job_id = job.id
-            enrollment_steps.append(enrollment_step)
-
         try:
-            await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
+            # SAVEPOINT isola a tentativa de criação: se UNIQUE constraint disparar,
+            # apenas as inserções desta savepoint (enrollment, enrollment_steps,
+            # scheduled_jobs) são revertidas — a sessão pai (contact upsert, outros
+            # enrollments do mesmo handle_one) permanece intacta.
+            async with self._session.begin_nested():
+                enrollment_steps: list[FollowupEnrollmentStep] = []
+                for step in steps:
+                    run_at = purchase_time + timedelta(hours=step.delay_from_purchase_hours)
+                    enrollment_step = FollowupEnrollmentStep(
+                        enrollment_id=enrollment.id,
+                        flow_step_id=step.id,
+                        position=step.position,
+                        delay_from_purchase_hours=step.delay_from_purchase_hours,
+                        meta_template_name=step.meta_template_name,
+                        template_variables=step.template_variables,
+                        message_text=step.message_text,
+                        status=EnrollmentStepStatus.PENDING,
+                    )
+                    job = await self._job_repo.schedule(
+                        account_id=account_id,
+                        conversation_id=None,
+                        job_type=JobType.FOLLOWUP_STEP,
+                        payload={
+                            "enrollment_step_id": str(enrollment_step.id),
+                            "account_id": str(account_id),
+                            "conversation_id": str(conversation_id),
+                            "contact_phone": contact_phone,
+                        },
+                        run_at=run_at,
+                    )
+                    enrollment_step.scheduled_job_id = job.id
+                    enrollment_steps.append(enrollment_step)
+
+                await self._enrollment_repo.create_with_steps(enrollment, enrollment_steps)
         except IntegrityError:
-            # A session entra em estado inativo após IntegrityError — precisamos
-            # liberar com rollback antes de qualquer query subsequente.
-            await self._enrollment_repo.rollback()
+            # Savepoint já foi rolled back automaticamente — a sessão pai está ok.
+            # Os scheduled_jobs criados aqui foram revertidos junto com a savepoint.
             existing = await self._enrollment_repo.find_by_dedup_key(
                 account_id=account_id,
                 contact_id=contact_id,
                 flow_id=flow.id,
                 purchase_id=purchase_id,
             )
-            # Cancela jobs órfãos criados pelos enrollment_steps que tentaram inserir.
-            for es in enrollment_steps:
-                if es.scheduled_job_id:
-                    try:
-                        await self._job_repo.cancel(es.scheduled_job_id)
-                    except SQLAlchemyError:
-                        log.warning(
-                            "orphan_job_cancel_failed",
-                            job_id=str(es.scheduled_job_id),
-                            exc_info=True,
-                        )
             log.info(
                 "followup_enrollment_deduped",
                 account_id=str(account_id),

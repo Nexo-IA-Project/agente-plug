@@ -1,11 +1,11 @@
-"""Testes para EnrollContact v2 — dedup, flow_step_id, jobs órfãos."""
+"""Testes para EnrollContact v2 — dedup, flow_step_id, savepoint isolado."""
 
 from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -27,6 +27,16 @@ def _flow_step(id_, position=1, delay=0):
     )
 
 
+def _make_session() -> MagicMock:
+    """Sessão fake com begin_nested() funcionando como async context manager."""
+    session = MagicMock()
+    nested_ctx = MagicMock()
+    nested_ctx.__aenter__ = AsyncMock(return_value=None)
+    nested_ctx.__aexit__ = AsyncMock(return_value=False)
+    session.begin_nested = MagicMock(return_value=nested_ctx)
+    return session
+
+
 @pytest.mark.asyncio
 async def test_enroll_persists_flow_step_id_on_each_step():
     """Cada enrollment_step criado deve carregar flow_step_id = id do FollowupStep correspondente."""
@@ -41,6 +51,7 @@ async def test_enroll_persists_flow_step_id_on_each_step():
     job_repo.schedule.return_value = SimpleNamespace(id=uuid.uuid4())
 
     use_case = EnrollContact(
+        session=_make_session(),
         flow_repo=flow_repo,
         enrollment_repo=enrollment_repo,
         job_repo=job_repo,
@@ -84,6 +95,7 @@ async def test_enroll_dedup_returns_existing_on_integrity_error():
     job_repo.schedule.return_value = SimpleNamespace(id=job_id)
 
     use_case = EnrollContact(
+        session=_make_session(),
         flow_repo=flow_repo,
         enrollment_repo=enrollment_repo,
         job_repo=job_repo,
@@ -102,13 +114,15 @@ async def test_enroll_dedup_returns_existing_on_integrity_error():
     assert isinstance(result, EnrollResult)
     assert result.deduped is True
     assert result.enrollment is existing
-    # Jobs órfãos devem ser cancelados
-    job_repo.cancel.assert_awaited_once_with(job_id)
+    # Jobs órfãos NÃO são cancelados manualmente — o rollback da savepoint
+    # já reverte os inserts de scheduled_jobs feitos dentro dela.
+    job_repo.cancel.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_enroll_dedup_rolls_back_session_before_lookup():
-    """Após IntegrityError, rollback() deve ser chamado antes de find_by_dedup_key."""
+async def test_enroll_dedup_uses_savepoint_to_isolate_failure():
+    """A criação roda dentro de session.begin_nested() (SAVEPOINT) — em caso de
+    IntegrityError, a sessão pai permanece utilizável e find_by_dedup_key é chamado."""
     flow = SimpleNamespace(id=uuid.uuid4(), is_active=True)
     flow_repo = AsyncMock()
     flow_repo.find_by_id.return_value = flow
@@ -122,7 +136,9 @@ async def test_enroll_dedup_rolls_back_session_before_lookup():
     job_repo = AsyncMock()
     job_repo.schedule.return_value = SimpleNamespace(id=uuid.uuid4())
 
+    session = _make_session()
     use_case = EnrollContact(
+        session=session,
         flow_repo=flow_repo,
         enrollment_repo=enrollment_repo,
         job_repo=job_repo,
@@ -139,12 +155,10 @@ async def test_enroll_dedup_rolls_back_session_before_lookup():
         purchase_time=datetime.now(UTC),
     )
 
-    enrollment_repo.rollback.assert_awaited_once()
-    # rollback antes do find_by_dedup_key (ordem importa)
-    calls = enrollment_repo.method_calls
-    rollback_idx = next(i for i, c in enumerate(calls) if c[0] == "rollback")
-    lookup_idx = next(i for i, c in enumerate(calls) if c[0] == "find_by_dedup_key")
-    assert rollback_idx < lookup_idx
+    # Verifica que begin_nested foi chamado (savepoint usado)
+    session.begin_nested.assert_called_once()
+    # E que o lookup foi feito após a savepoint reverter
+    enrollment_repo.find_by_dedup_key.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -154,6 +168,7 @@ async def test_enroll_returns_none_when_flow_not_found():
     flow_repo.find_by_id.return_value = None
 
     use_case = EnrollContact(
+        session=_make_session(),
         flow_repo=flow_repo,
         enrollment_repo=AsyncMock(),
         job_repo=AsyncMock(),

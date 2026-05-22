@@ -45,6 +45,7 @@ async def handle_purchase(payload: dict) -> None:
         enrollment_repo = FollowupEnrollmentRepository(session=session)
 
         enroll_uc = EnrollContact(
+            session=session,
             flow_repo=flow_repo,
             enrollment_repo=enrollment_repo,
             job_repo=scheduler,
