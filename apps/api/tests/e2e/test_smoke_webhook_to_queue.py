@@ -72,14 +72,28 @@ def test_purchase_webhook_enqueues_job(
     assert r.status_code == 200
 
     body = {
-        "purchase_id": "e2e-1",
-        "account_id": 1,
-        "name": "Ana",
-        "email": "ana@t.com",
-        "phone": "11987654321",
-        "product": "Curso X",
-        "amount_brl": 19700,
-        "occurred_at": "2026-04-17T10:00:00Z",
+        "type": "subscription.activated",
+        "version": "2.0.0",
+        "event": {
+            "product": {"id": "prod-x", "name": "Curso X"},
+            "products": [{"id": "prod-x", "name": "Curso X"}],
+            "subscription": {
+                "id": "e2e-1",
+                "payer": {
+                    "firstName": "Ana",
+                    "lastName": "",
+                    "document": "00000000000",
+                    "email": "ana@t.com",
+                    "phone": "+5511987654321",
+                },
+                "activatedAt": "2026-04-17T10:00:00Z",
+            },
+            "user": {
+                "id": "u1",
+                "email": "ana@t.com",
+                "phone": "+5511987654321",
+            },
+        },
     }
     r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"})
     assert r.status_code == 202

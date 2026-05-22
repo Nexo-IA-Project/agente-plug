@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -14,6 +15,23 @@ from shared.application.use_cases.followup.variable_resolver import (
 from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class DispatchResult:
+    """Resultado de DispatchFollowupStep.execute().
+
+    Atributos:
+        status: EnrollmentStepStatus correspondente. SENT no caminho feliz, FAILED
+                quando o envio quebra. Para steps já não-PENDING, reflete o status
+                atual do step (e label="IGNORADO").
+        label: rótulo descritivo (útil para logs/observabilidade).
+        failure_reason: motivo (texto humano) quando status=FAILED; None caso contrário.
+    """
+
+    status: EnrollmentStepStatus
+    label: str
+    failure_reason: str | None = None
 
 
 class DispatchFollowupStep:
@@ -39,22 +57,42 @@ class DispatchFollowupStep:
         account_id: UUID,
         conversation_id: str,
         contact_phone: str,
-    ) -> str:
+    ) -> DispatchResult:
         step = await self._enrollment_repo.find_step_by_id(enrollment_step_id)
         if step is None:
             log.warning("followup_step_not_found", step_id=str(enrollment_step_id))
-            return "ERRO: step não encontrado"
+            return DispatchResult(
+                status=EnrollmentStepStatus.FAILED,
+                label="ERRO: step não encontrado",
+                failure_reason="step not found",
+            )
 
         if step.status != EnrollmentStepStatus.PENDING:
             log.info("followup_step_skipped", step_id=str(step.id), status=step.status)
-            return "IGNORADO"
+            return DispatchResult(status=step.status, label="IGNORADO")
 
         if step.message_text:
-            await self._chatnexo.send_message(
-                account_id=str(account_id),
-                conversation_id=str(conversation_id),
-                text=step.message_text,
-            )
+            try:
+                await self._chatnexo.send_message(
+                    account_id=str(account_id),
+                    conversation_id=str(conversation_id),
+                    text=step.message_text,
+                )
+            except Exception as exc:
+                reason = str(exc)[:500]
+                await self._enrollment_repo.mark_failed(step.id, reason)
+                log.warning(
+                    "followup_step_send_failed",
+                    step_id=str(step.id),
+                    kind="message",
+                    reason=reason,
+                    exc_info=True,
+                )
+                return DispatchResult(
+                    status=EnrollmentStepStatus.FAILED,
+                    label="FAILED",
+                    failure_reason=reason,
+                )
             dispatch_label = f"texto_livre: {step.message_text[:40]}"
         else:
             header_link: str | None = None
@@ -102,15 +140,32 @@ class DispatchFollowupStep:
             )
             resolved_vars = VariableResolver().resolve_all(step.template_variables or {}, ctx)
 
-            await self._chatnexo.send_template(
-                account_id=str(account_id),
-                conversation_id=str(conversation_id),
-                template_name=step.meta_template_name,
-                language=language,
-                variables=resolved_vars,
-                header_link=header_link,
-                header_kind=header_kind,
-            )
+            try:
+                await self._chatnexo.send_template(
+                    account_id=str(account_id),
+                    conversation_id=str(conversation_id),
+                    template_name=step.meta_template_name,
+                    language=language,
+                    variables=resolved_vars,
+                    header_link=header_link,
+                    header_kind=header_kind,
+                )
+            except Exception as exc:
+                reason = str(exc)[:500]
+                await self._enrollment_repo.mark_failed(step.id, reason)
+                log.warning(
+                    "followup_step_send_failed",
+                    step_id=str(step.id),
+                    kind="template",
+                    template=step.meta_template_name,
+                    reason=reason,
+                    exc_info=True,
+                )
+                return DispatchResult(
+                    status=EnrollmentStepStatus.FAILED,
+                    label="FAILED",
+                    failure_reason=reason,
+                )
             dispatch_label = f"template={step.meta_template_name}"
 
         thread_id = f"{account_id}:{contact_phone}"
@@ -138,4 +193,4 @@ class DispatchFollowupStep:
             template=step.meta_template_name,
             has_text=bool(step.message_text),
         )
-        return "SENT"
+        return DispatchResult(status=EnrollmentStepStatus.SENT, label=dispatch_label)

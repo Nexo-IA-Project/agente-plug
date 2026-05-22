@@ -42,6 +42,7 @@ def test_list_flows_returns_empty(client):
         ):
             flow_instance = MockFlowRepo.return_value
             flow_instance.list_flows = AsyncMock(return_value=[])
+            flow_instance.stats_by_flows = AsyncMock(return_value={})
             course_instance = MockCourseRepo.return_value
             course_instance.find_by_id = AsyncMock(return_value=None)
             resp = client.get("/admin/followup/flows")

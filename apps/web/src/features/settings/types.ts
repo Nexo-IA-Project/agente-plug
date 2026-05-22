@@ -16,6 +16,7 @@ export interface AccountSettings {
   message_buffer_wait_seconds: number;
   refund_deadline_days: number;
   welcome_d1_delay_hours: number;
+  ai_memory_messages: number;
   loja_express_d1_delay_hours: number;
   loja_express_d3_delay_hours: number;
   loja_express_d5_delay_hours: number;

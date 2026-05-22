@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
-from uuid import UUID
-
 import structlog
 from cryptography.fernet import Fernet
 
@@ -15,10 +12,10 @@ from shared.adapters.db.repositories.followup_enrollment_repo import FollowupEnr
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
+from shared.adapters.hubla.event_parser import HublaEventParser
 from shared.application.purchase_handler import PurchaseHandler
 from shared.application.use_cases.followup.enroll_contact import EnrollContact
 from shared.config.settings import get_settings
-from shared.domain.events.purchase_received import PurchaseReceived
 
 log = structlog.get_logger(__name__)
 
@@ -27,20 +24,16 @@ async def handle_purchase(payload: dict) -> None:
     settings = get_settings()
     fernet = Fernet(settings.integration_credentials_key.encode())
 
-    event = PurchaseReceived(
-        purchase_id=payload["purchase_id"],
-        account_id=UUID(payload["account_id"]),
-        customer_name=payload["customer_name"],
-        contact_email=payload["contact_email"],
-        contact_phone=payload["contact_phone"],
-        product_id=payload["product_id"],
-        product_name=payload["product_name"],
-        amount_brl=int(payload["amount_brl"]),
-        occurred_at=datetime.fromisoformat(payload["occurred_at"]),
+    parsed = HublaEventParser().parse(payload)
+    log.info(
+        "purchase_received",
+        purchase_id=parsed.purchase_id,
+        products_count=len(parsed.products),
     )
 
     async with session_scope() as session:
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
+        # SISTEMA SINGLE-TENANT: account_id=1 hardcoded (mantém comportamento atual)
         account_config = await config_repo.get(account_id=1)
 
         chatnexo = ChatNexoClient.from_account_config(account_config)
@@ -52,6 +45,7 @@ async def handle_purchase(payload: dict) -> None:
         enrollment_repo = FollowupEnrollmentRepository(session=session)
 
         enroll_uc = EnrollContact(
+            session=session,
             flow_repo=flow_repo,
             enrollment_repo=enrollment_repo,
             job_repo=scheduler,
@@ -66,6 +60,17 @@ async def handle_purchase(payload: dict) -> None:
             flow_repo=flow_repo,
             enroll_contact_uc=enroll_uc,
         )
-        await handler.execute(event)
 
-    log.info("purchase_job_done", purchase_id=payload["purchase_id"])
+        for product in parsed.products:
+            await handler.handle_one(
+                hubla_product_id=product.hubla_id,
+                product_name=product.name,
+                purchase_id=parsed.purchase_id,
+                activated_at=parsed.activated_at,
+                payer_phone=parsed.payer_phone,
+                payer_email=parsed.payer_email,
+                payer_full_name=parsed.payer_full_name,
+                payer_document=parsed.payer_document,
+            )
+
+    log.info("purchase_job_done", purchase_id=parsed.purchase_id)

@@ -525,7 +525,11 @@ class FollowupEnrollmentModel(Base):
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
     )
-    flow_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    flow_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("followup_flows.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     contact_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=False
     )
@@ -552,5 +556,7 @@ class FollowupEnrollmentStepModel(Base):
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     scheduled_job_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    flow_step_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

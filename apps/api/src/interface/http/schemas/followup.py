@@ -37,6 +37,11 @@ class CourseSummary(BaseModel):
     hubla_id: str
 
 
+class FollowupFlowStats(BaseModel):
+    enrollments_active: int = 0
+    enrollments_completed: int = 0
+
+
 class FollowupFlowResponse(BaseModel):
     id: UUID
     name: str
@@ -45,6 +50,7 @@ class FollowupFlowResponse(BaseModel):
     steps_count: int
     created_at: datetime
     updated_at: datetime
+    stats: FollowupFlowStats = Field(default_factory=FollowupFlowStats)
 
 
 class CreateFlowRequest(BaseModel):

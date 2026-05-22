@@ -2,7 +2,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -44,17 +46,20 @@ function NavItem({ href, icon, label, active }: { href: string; icon: string; la
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[240px] flex-col border-r border-outline-variant bg-surface-container-lowest">
       <div className="px-6 py-5">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary" style={{ fontSize: "22px", fontVariationSettings: "'FILL' 1" }}>
-            psychology
-          </span>
-          <span className="text-lg font-bold tracking-tight text-on-surface">NexoIA</span>
-        </div>
-        <p className="mt-0.5 text-label-caps text-on-surface-variant">AI Agent Platform</p>
+        <Image
+          src={isDark ? "/logo-dark.png" : "/logo-light.png"}
+          alt="NexoIA"
+          width={120}
+          height={48}
+          priority
+          className="h-auto w-[120px]"
+        />
       </div>
 
       <nav className="flex-1 space-y-1 px-4">

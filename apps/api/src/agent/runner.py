@@ -43,8 +43,13 @@ async def run_agent(
     long_term_facts: list[str] | None = None,
     guard_service: GuardService | None = None,
     model: str = "gpt-4o",
+    memory_limit: int | None = None,
 ) -> str:
-    """Run the agent loop for one user turn. Returns the assistant's final reply."""
+    """Run the agent loop for one user turn. Returns the assistant's final reply.
+
+    ``memory_limit`` define quantas mensagens recentes do histórico são carregadas
+    como contexto. ``None`` carrega tudo (compat).
+    """
     t0 = time.monotonic()
     outcome = "success"
     try:
@@ -57,6 +62,7 @@ async def run_agent(
             long_term_facts=long_term_facts or [],
             guard_service=guard_service,
             model=model,
+            memory_limit=memory_limit,
         )
     except Exception:
         outcome = "error"
@@ -76,9 +82,19 @@ async def _run(
     long_term_facts: list[str],
     guard_service: GuardService | None,
     model: str,
+    memory_limit: int | None = None,
 ) -> str:
     history = ConversationHistory(session=session)
-    raw_messages: list[dict[str, Any]] = await history.load(ctx.thread_id)
+    # Carrega o histórico completo para persistência; usa apenas as últimas
+    # ``memory_limit`` mensagens como contexto para o LLM. ``memory_limit``
+    # vem do AccountConfig.behavior.ai_memory_messages (caller).
+    full_history: list[dict[str, Any]] = await history.load(ctx.thread_id)
+    if memory_limit is not None and len(full_history) > memory_limit:
+        raw_messages: list[dict[str, Any]] = list(full_history[-memory_limit:])
+        history_prefix: list[dict[str, Any]] = list(full_history[:-memory_limit])
+    else:
+        raw_messages = list(full_history)
+        history_prefix = []
     raw_messages.append({"role": "user", "content": user_message})
 
     forced_instruction: str | None = None
@@ -145,7 +161,9 @@ async def _run(
         AGENT_ITERATIONS.labels(outcome="max_iterations").inc()
         raw_messages.append({"role": "assistant", "content": _FALLBACK})
 
-    await history.save(ctx.thread_id, raw_messages)
+    # Reconstroi o histórico completo (prefix antigo + janela trabalhada agora)
+    # para que o JSONB persista todas as mensagens, mesmo as fora do window.
+    await history.save(ctx.thread_id, history_prefix + raw_messages)
 
     for msg in reversed(raw_messages):
         if msg.get("role") == "assistant" and msg.get("content"):

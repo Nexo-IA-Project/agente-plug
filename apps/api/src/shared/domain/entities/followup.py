@@ -16,6 +16,7 @@ class EnrollmentStepStatus(StrEnum):
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass(slots=True)
@@ -44,7 +45,7 @@ class FollowupStep:
 @dataclass(slots=True)
 class FollowupEnrollment:
     account_id: UUID
-    flow_id: UUID
+    flow_id: UUID | None
     contact_id: UUID
     conversation_id: str  # chatnexo external conversation ID (string)
     contact_phone: str
@@ -54,6 +55,8 @@ class FollowupEnrollment:
     id: UUID = field(default_factory=uuid4)
     status: EnrollmentStatus = EnrollmentStatus.ACTIVE
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    purchase_time: datetime = field(default_factory=lambda: datetime.now(UTC))
+    steps: list = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -68,3 +71,5 @@ class FollowupEnrollmentStep:
     status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING
     sent_at: datetime | None = None
     message_text: str | None = None
+    failure_reason: str | None = None
+    flow_step_id: UUID | None = None

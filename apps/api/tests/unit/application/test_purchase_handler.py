@@ -39,8 +39,8 @@ def _make_handler(
     scheduler: AsyncMock | None = None,
 ) -> PurchaseHandler:
     contact_repo = contact_repo or AsyncMock()
-    if not contact_repo.find_or_create.return_value:
-        contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    if not contact_repo.upsert.return_value:
+        contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = chatnexo or AsyncMock()
     if (
         chatnexo.get_open_conversation.return_value is None
@@ -61,7 +61,7 @@ def _make_handler(
 @pytest.mark.asyncio
 async def test_creates_contact_and_access_case():
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = None
     chatnexo.create_conversation.return_value = "conv-1"
@@ -75,14 +75,14 @@ async def test_creates_contact_and_access_case():
         course_repo=course_repo,
     )
     await handler.execute(fake_event())
-    contact_repo.find_or_create.assert_called_once()
+    contact_repo.upsert.assert_called_once()
     access_case_repo.save.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_sends_welcome_template():
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = "existing-conv"
     course_repo = AsyncMock()
@@ -114,7 +114,7 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
 
     contact_id = uuid4()
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id=contact_id, phone="5511999990000")
+    contact_repo.upsert.return_value = MagicMock(id=contact_id, phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = "conv-1"
 
@@ -147,7 +147,7 @@ async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(ca
     course_repo.find_active_by_hubla_id.return_value = None
 
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = "conv-1"
 
@@ -181,7 +181,7 @@ async def test_purchase_with_known_course_but_no_flows_does_not_enroll():
     flow_repo.list_active_by_course.return_value = []
 
     contact_repo = AsyncMock()
-    contact_repo.find_or_create.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = "conv-1"
 

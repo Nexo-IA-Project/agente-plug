@@ -50,6 +50,7 @@ async def handle_scheduled(payload: dict) -> None:
             DispatchFollowupStep,
         )
         from shared.config.settings import get_settings
+        from shared.domain.entities.followup import EnrollmentStepStatus
 
         settings_obj = get_settings()
         fernet = Fernet(settings_obj.integration_credentials_key.encode())
@@ -64,11 +65,21 @@ async def handle_scheduled(payload: dict) -> None:
                 conversation_history=ConversationHistory(session=session),
                 meta_template_repo=MetaTemplateRepository(session=session),
             )
-            await dispatch.execute(
+            result = await dispatch.execute(
                 enrollment_step_id=_UUID(payload["enrollment_step_id"]),
                 account_id=_UUID(payload["account_id"]),
                 conversation_id=payload["conversation_id"],
                 contact_phone=payload.get("contact_phone", ""),
             )
+
+            if result.status == EnrollmentStepStatus.FAILED:
+                # Falha de envio é registrada no próprio step com failure_reason.
+                # Job termina como sucesso (do ponto de vista da fila) — não vai para DLQ.
+                log.warning(
+                    "followup_step_dispatch_failed",
+                    step_id=payload["enrollment_step_id"],
+                    reason=result.failure_reason,
+                )
+                # NÃO re-raise: o estado fica no step
     else:
         log.warning("unknown_job_type", job_type=job_type)

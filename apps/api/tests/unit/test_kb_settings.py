@@ -5,6 +5,7 @@ from shared.config.settings import Settings
 def test_kb_settings_defaults():
     # Settings with minimal required fields (env vars mocked via kwargs)
     s = Settings(
+        _env_file=None,  # isola dos .env locais para verificar defaults reais
         database_url="postgresql+asyncpg://x:x@localhost/x",
         redis_url="redis://localhost",
         openai_api_key="sk-test",
@@ -23,4 +24,4 @@ def test_kb_settings_defaults():
     assert s.kb_embedding_model == "text-embedding-3-small"
     assert s.kb_max_file_size_mb == 20
     assert s.jwt_secret == "test-jwt-secret-with-enough-entropy-xxxxx"
-    assert s.jwt_expire_minutes == 60
+    assert s.jwt_expire_minutes == 480

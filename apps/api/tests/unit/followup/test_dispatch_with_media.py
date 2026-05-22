@@ -101,7 +101,7 @@ async def test_dispatch_template_step_with_image_media():
         contact_phone="5511999990000",
     )
 
-    assert result == "SENT"
+    assert result.status == EnrollmentStepStatus.SENT
     template_repo.get_by_name.assert_called_once_with(name="promo_video", account_id=account_id)
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] == "https://media.example.com/image.jpg"
@@ -128,7 +128,7 @@ async def test_dispatch_template_step_with_video_media():
         contact_phone="5511999990000",
     )
 
-    assert result == "SENT"
+    assert result.status == EnrollmentStepStatus.SENT
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] == "https://media.example.com/video.mp4"
     assert call_kwargs["header_kind"] == "video"
@@ -148,7 +148,7 @@ async def test_dispatch_template_step_without_media_passes_none_header():
         contact_phone="5511999990000",
     )
 
-    assert result == "SENT"
+    assert result.status == EnrollmentStepStatus.SENT
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] is None
     assert call_kwargs["header_kind"] is None
@@ -170,7 +170,7 @@ async def test_dispatch_template_step_template_not_found_still_works():
         contact_phone="5511999990000",
     )
 
-    assert result == "SENT"
+    assert result.status == EnrollmentStepStatus.SENT
     template_repo.get_by_name.assert_called_once_with(name="promo_video", account_id=account_id)
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["header_link"] is None

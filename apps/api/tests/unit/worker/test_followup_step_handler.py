@@ -13,8 +13,13 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
     account_id = str(uuid4())
     conv_id = "42"  # chatnexo external string, não UUID
 
+    from shared.application.use_cases.followup.dispatch_followup_step import DispatchResult
+    from shared.domain.entities.followup import EnrollmentStepStatus
+
     mock_dispatch = AsyncMock()
-    mock_dispatch.execute = AsyncMock(return_value="SENT")
+    mock_dispatch.execute = AsyncMock(
+        return_value=DispatchResult(status=EnrollmentStepStatus.SENT, label="SENT")
+    )
 
     mock_session = AsyncMock()
 

@@ -53,6 +53,18 @@ def _should_skip(value: str | None) -> bool:
     return value is None or value.endswith("****")
 
 
+def _clamp_ai_memory(value: object, default: int = 20) -> int:
+    """Le e clampa o valor de ai_memory_messages no range 5-100."""
+    if value is None:
+        v = default
+    else:
+        try:
+            v = int(value)  # type: ignore[call-overload]
+        except (TypeError, ValueError):
+            v = default
+    return max(5, min(100, v))
+
+
 @dataclass
 class AccountConfigRepository:
     session: AsyncSession
@@ -113,6 +125,7 @@ class AccountConfigRepository:
                 ),
                 refund_deadline_days=gi("refund_deadline_days", s.refund_deadline_days),
                 welcome_d1_delay_hours=gi("welcome_d1_delay_hours", s.welcome_d1_delay_hours),
+                ai_memory_messages=_clamp_ai_memory(b.get("ai_memory_messages")),
             ),
         )
 
@@ -156,6 +169,7 @@ class AccountConfigRepository:
             "message_buffer_wait_seconds",
             "refund_deadline_days",
             "welcome_d1_delay_hours",
+            "ai_memory_messages",
         ):
             val_any = getattr(patch, key)
             if val_any is not None:

@@ -4,10 +4,14 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
+from shared.adapters.db.models import (
+    FollowupEnrollmentModel,
+    FollowupFlowModel,
+    FollowupStepModel,
+)
 from shared.domain.entities.followup import FollowupFlow, FollowupStep
 
 
@@ -187,3 +191,36 @@ class FollowupFlowRepository:
     async def get_step(self, step_id: uuid.UUID) -> FollowupStep | None:
         model = await self.session.get(FollowupStepModel, step_id)
         return None if model is None else _step_to_entity(model)
+
+    async def stats_by_flows(
+        self,
+        *,
+        account_id: uuid.UUID,
+        flow_ids: list[uuid.UUID],
+    ) -> dict[uuid.UUID, dict[str, int]]:
+        """Conta enrollments por status para cada flow_id em uma só query.
+
+        Filtra por ``account_id`` para garantir tenant isolation — mesmo em
+        single-tenant, evita vazamento se outros accounts vierem a existir.
+        """
+        if not flow_ids:
+            return {}
+        result = await self.session.execute(
+            select(
+                FollowupEnrollmentModel.flow_id,
+                FollowupEnrollmentModel.status,
+                func.count(FollowupEnrollmentModel.id),
+            )
+            .where(
+                FollowupEnrollmentModel.account_id == account_id,
+                FollowupEnrollmentModel.flow_id.in_(flow_ids),
+            )
+            .group_by(
+                FollowupEnrollmentModel.flow_id,
+                FollowupEnrollmentModel.status,
+            )
+        )
+        out: dict[uuid.UUID, dict[str, int]] = {}
+        for fid, st, n in result.all():
+            out.setdefault(fid, {})[st] = int(n)
+        return out

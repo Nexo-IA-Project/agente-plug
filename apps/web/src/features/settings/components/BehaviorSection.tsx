@@ -75,6 +75,15 @@ const GROUPS: ParamGroup[] = [
         icon: "policy",
         min: 1,
       },
+      {
+        key: "ai_memory_messages",
+        label: "Memória da IA",
+        description: "Últimas N mensagens usadas como contexto (5–100)",
+        unit: "msgs",
+        icon: "memory",
+        min: 5,
+        max: 100,
+      },
     ],
   },
   {

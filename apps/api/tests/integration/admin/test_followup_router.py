@@ -115,9 +115,11 @@ async def _purge_other_accounts(db_session: AsyncSession, admin_account_id: uuid
         FollowupEnrollmentModel,
         FollowupEnrollmentStepModel,
         FollowupStepModel,
+        ScheduledJobModel,
     )
 
     # Limpar dependentes primeiro (FK)
+    await db_session.execute(delete(ScheduledJobModel))
     await db_session.execute(delete(FollowupEnrollmentStepModel))
     await db_session.execute(delete(FollowupEnrollmentModel))
     await db_session.execute(delete(FollowupStepModel))
@@ -180,9 +182,32 @@ async def client(
     seeded_account: AccountModel,
     mock_settings: Any,
     patched_session_scope,
+    db_session: AsyncSession,
 ):
     from main import app
 
+    class _SessionWrapper:
+        def __init__(self, session: AsyncSession) -> None:
+            self._session = session
+
+        async def __aenter__(self) -> AsyncSession:
+            return self._session
+
+        async def __aexit__(self, *exc: object) -> None:
+            return None
+
+        def __getattr__(self, name: str) -> Any:
+            return getattr(self._session, name)
+
+    class _FakeSessionmaker:
+        def __call__(self):
+            return _SessionWrapper(db_session)
+
+    fake_sessionmaker = _FakeSessionmaker()
+
+    # fake_sessionmaker existe apenas para compatibilidade com PostgresJobQueue legado;
+    # após o outbox pattern, _enqueue_resync_in_session usa a própria session.
+    _ = fake_sessionmaker
     with (
         patch(
             "interface.http.deps.admin_auth.get_settings",

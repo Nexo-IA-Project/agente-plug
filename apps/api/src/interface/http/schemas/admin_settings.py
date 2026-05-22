@@ -1,7 +1,7 @@
 # apps/api/src/interface/http/schemas/admin_settings.py
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class AccountSettingsResponse(BaseModel):
@@ -24,6 +24,7 @@ class AccountSettingsResponse(BaseModel):
     message_buffer_wait_seconds: int
     refund_deadline_days: int
     welcome_d1_delay_hours: int
+    ai_memory_messages: int
 
 
 class AccountSettingsUpdateRequest(BaseModel):
@@ -46,3 +47,4 @@ class AccountSettingsUpdateRequest(BaseModel):
     message_buffer_wait_seconds: int | None = None
     refund_deadline_days: int | None = None
     welcome_d1_delay_hours: int | None = None
+    ai_memory_messages: int | None = Field(default=None, ge=5, le=100)

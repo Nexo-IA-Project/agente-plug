@@ -43,6 +43,7 @@ def _to_response(config: AccountConfig) -> AccountSettingsResponse:
         message_buffer_wait_seconds=b.message_buffer_wait_seconds,
         refund_deadline_days=b.refund_deadline_days,
         welcome_d1_delay_hours=b.welcome_d1_delay_hours,
+        ai_memory_messages=b.ai_memory_messages,
     )
 
 
@@ -84,6 +85,7 @@ async def update_settings_endpoint(
         message_buffer_wait_seconds=body.message_buffer_wait_seconds,
         refund_deadline_days=body.refund_deadline_days,
         welcome_d1_delay_hours=body.welcome_d1_delay_hours,
+        ai_memory_messages=body.ai_memory_messages,
     )
     try:
         async with session_scope() as session:
