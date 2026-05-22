@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
-from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.lead import Lead
 
 router = APIRouter(tags=["admin-leads"])
@@ -93,7 +93,7 @@ async def list_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadListResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         items, total = await repo.paginate(
             account_uuid,
@@ -123,7 +123,7 @@ async def export_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> StreamingResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         items, _ = await repo.paginate(
             account_uuid,
@@ -200,7 +200,7 @@ async def get_lead(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadDetailResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         m = await repo.find_by_id(lead_id, account_uuid)
         if m is None:

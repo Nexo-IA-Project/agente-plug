@@ -18,6 +18,7 @@ from shared.application.hubla_event_handler import HublaEventHandler
 from shared.application.purchase_handler import PurchaseHandler
 from shared.application.use_cases.followup.enroll_contact import EnrollContact
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 
 log = structlog.get_logger(__name__)
 
@@ -59,6 +60,8 @@ async def handle_hubla_event(payload: dict) -> None:
             product_repo=product_repo,
         )
 
+        account_uuid = await get_default_account_uuid(session)
+
         handler = HublaEventHandler(
             product_repo=product_repo,
             flow_repo=flow_repo,
@@ -68,6 +71,7 @@ async def handle_hubla_event(payload: dict) -> None:
             purchase_handler=purchase_handler,
             lead_repo=lead_repo,
             hubla_event_repo=hubla_event_repo,
+            account_id=account_uuid,
         )
 
         await handler.handle(payload)

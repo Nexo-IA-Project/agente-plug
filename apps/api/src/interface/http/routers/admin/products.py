@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
-from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.config.single_tenant import get_default_account_uuid
 
 router = APIRouter(tags=["admin-products"])
 
@@ -42,7 +42,7 @@ async def list_products(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> list[ProductResponse]:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlProductRepository(session=session)
         products = await repo.list_by_account(account_uuid)
         items: list[ProductResponse] = []
@@ -67,7 +67,7 @@ async def create_product(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> ProductResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlProductRepository(session=session)
         try:
             p = await repo.create(
