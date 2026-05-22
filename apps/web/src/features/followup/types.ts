@@ -20,7 +20,7 @@ export interface FollowupStep {
   message_text: string | null;
 }
 
-export interface CourseSummary {
+export interface ProductSummary {
   id: string;
   name: string;
   hubla_id: string;
@@ -30,7 +30,8 @@ export interface FollowupFlow {
   id: string;
   name: string;
   is_active: boolean;
-  course: CourseSummary;
+  trigger_event_type: string;
+  product: ProductSummary;
   steps_count: number;
   created_at: string;
   updated_at: string;
@@ -38,14 +39,16 @@ export interface FollowupFlow {
 
 export interface CreateFlowInput {
   name: string;
-  course_id: string;
+  product_id: string;
   is_active?: boolean;
+  trigger_event_type?: string;
 }
 
 export interface UpdateFlowInput {
   name?: string;
-  course_id?: string;
+  product_id?: string;
   is_active?: boolean;
+  trigger_event_type?: string;
 }
 
 export interface CreateStepInput {

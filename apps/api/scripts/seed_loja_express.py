@@ -1,4 +1,4 @@
-"""Cria (idempotentemente) o curso "Loja Express" e um flow padrao com 5 steps.
+"""Cria (idempotentemente) o produto "Loja Express" e um flow padrao com 5 steps.
 
 Os steps correspondem aos delays historicos (D+0, D+1, D+3, D+5, D+7) da capability
 descontinuada de Loja Express.
@@ -13,8 +13,8 @@ import argparse
 import asyncio
 from uuid import UUID
 
-from shared.adapters.db.repositories.course_repo import SqlCourseRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import get_sessionmaker
 
 DEFAULT_TEMPLATES: list[tuple[str, int]] = [
@@ -31,30 +31,30 @@ DEFAULT_DELAYS: list[int] = [0, 24, 72, 120, 168]
 async def seed(account_id: UUID, templates: list[tuple[str, int]]) -> None:
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
-        course_repo = SqlCourseRepository(session)
+        product_repo = SqlProductRepository(session)
         flow_repo = FollowupFlowRepository(session)
 
-        existing = await course_repo.find_active_by_hubla_id(account_id, "loja-express")
+        existing = await product_repo.find_active_by_hubla_id(account_id, "loja-express")
         if existing is None:
-            course = await course_repo.create(
+            product = await product_repo.create(
                 account_id=account_id,
                 name="Loja Express",
                 hubla_id="loja-express",
             )
-            print(f"Created course {course.id} (Loja Express)")
+            print(f"Created product {product.id} (Loja Express)")
         else:
-            course = existing
-            print(f"Course already exists: {course.id} (Loja Express) - skipping creation")
+            product = existing
+            print(f"Product already exists: {product.id} (Loja Express) - skipping creation")
 
-        flows = await flow_repo.list_active_by_course(course.id)
+        flows = await flow_repo.list_active_by_product(product.id)
         if flows:
-            print("Flow already exists for course; skipping seed of steps")
+            print("Flow already exists for product; skipping seed of steps")
             await session.commit()
             return
 
         flow = await flow_repo.create_flow(
             account_id=account_id,
-            course_id=course.id,
+            product_id=product.id,
             name="Loja Express - sequencia padrao",
             is_active=True,
         )

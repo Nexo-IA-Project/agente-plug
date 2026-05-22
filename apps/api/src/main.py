@@ -11,19 +11,21 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import (
     health,
     metrics,
+    webhook_hubla,
     webhook_message,
     webhook_purchase,
 )
 from interface.http.routers.admin import api_tokens as admin_api_tokens
 from interface.http.routers.admin import auth as admin_auth
-from interface.http.routers.admin import courses as admin_courses
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import followup as admin_followup
 from interface.http.routers.admin import (
     followup_enrollments as admin_followup_enrollments,
 )
+from interface.http.routers.admin import leads as admin_leads
 from interface.http.routers.admin import meta_templates as admin_meta_templates
+from interface.http.routers.admin import products as admin_products
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
 from shared.adapters.db.queue import PostgresJobQueue
@@ -64,6 +66,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         queue=queue,
         expected_token=settings.hubla_webhook_secret,
     )
+    webhook_hubla.configure(
+        dedup=dedup,
+        event_repo_factory=_event_repo_factory,
+        queue=queue,
+        expected_token=settings.hubla_webhook_secret,
+    )
     webhook_message.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
@@ -92,6 +100,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(metrics.router)
     app.include_router(webhook_purchase.router)
+    app.include_router(webhook_hubla.router)
     app.include_router(webhook_message.router)
     app.include_router(admin_api_tokens.router, prefix="/admin")
     app.include_router(admin_auth.router, prefix="/admin")
@@ -102,7 +111,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_followup.router, prefix="/admin")
     app.include_router(admin_followup_enrollments.router, prefix="/admin")
     app.include_router(admin_meta_templates.router, prefix="/admin")
-    app.include_router(admin_courses.router, prefix="/admin")
+    app.include_router(admin_products.router, prefix="/admin")
+    app.include_router(admin_leads.router, prefix="/admin")
     return app
 
 

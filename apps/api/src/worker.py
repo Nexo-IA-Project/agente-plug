@@ -4,6 +4,7 @@ import asyncio
 import signal
 
 from interface.worker.dispatcher import WorkerDispatcher
+from interface.worker.handlers.hubla_event import handle_hubla_event
 from interface.worker.handlers.message import handle_message
 from interface.worker.handlers.process_purchase import handle_process_purchase_webhook
 from interface.worker.handlers.purchase import handle_purchase
@@ -42,6 +43,7 @@ async def main() -> None:
             "scheduled": handle_scheduled,
             "ProcessPurchaseWebhook": handle_process_purchase_webhook,
             "resync_flow": handle_resync_flow,
+            "hubla_event": handle_hubla_event,
         },
     )
 

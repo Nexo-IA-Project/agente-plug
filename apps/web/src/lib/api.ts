@@ -16,10 +16,10 @@ import type {
   UpdateStepInput,
 } from "@/features/followup/types";
 import type {
-  Course,
-  CreateCourseInput,
-  UpdateCourseInput,
-} from "@/features/courses/types";
+  Product,
+  CreateProductInput,
+  UpdateProductInput,
+} from "@/features/products/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -207,37 +207,42 @@ export async function reorderFollowupSteps(
 }
 
 
-// ─── Courses ─────────────────────────────────────────────────────────────────
+// ─── Products ────────────────────────────────────────────────────────────────
 
-export async function listCourses(): Promise<Course[]> {
-  return apiFetch<Course[]>("/admin/courses");
+export async function listProducts(): Promise<Product[]> {
+  return apiFetch<Product[]>("/admin/products");
 }
 
-export async function createCourse(input: CreateCourseInput): Promise<Course> {
-  return apiFetch<Course>("/admin/courses", {
+export async function createProduct(input: CreateProductInput): Promise<Product> {
+  return apiFetch<Product>("/admin/products", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
 
-export async function updateCourse(
+export async function updateProduct(
   id: string,
-  input: UpdateCourseInput,
-): Promise<Course> {
-  return apiFetch<Course>(`/admin/courses/${id}`, {
+  input: UpdateProductInput,
+): Promise<Product> {
+  return apiFetch<Product>(`/admin/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
 }
 
-export async function deleteCourse(id: string): Promise<void> {
-  return apiFetch<void>(`/admin/courses/${id}`, { method: "DELETE" });
+export async function deleteProduct(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/products/${id}`, { method: "DELETE" });
 }
 
 
 // ─── Meta Templates ──────────────────────────────────────────────────────────
 
 import type { CreateTemplateDto, MetaTemplate } from "@/features/templates/types";
+import type {
+  LeadDetail,
+  LeadFilters,
+  LeadListResponse,
+} from "@/features/leads/types";
 
 export async function listMetaTemplates(): Promise<MetaTemplate[]> {
   return apiFetch("/admin/meta-templates");
@@ -261,6 +266,69 @@ export interface UploadMediaResponse {
   sha256: string;
   size: number;
 }
+
+// ─── Leads ───────────────────────────────────────────────────────────────────
+
+export async function listLeads(
+  filters: LeadFilters = {},
+): Promise<LeadListResponse> {
+  const params = new URLSearchParams();
+  if (filters.product_id) params.set("product_id", filters.product_id);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.utm_source) params.set("utm_source", filters.utm_source);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.page_size) params.set("page_size", String(filters.page_size));
+  const qs = params.toString();
+  return apiFetch<LeadListResponse>(`/admin/leads${qs ? "?" + qs : ""}`);
+}
+
+export async function getLead(id: string): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/admin/leads/${id}`);
+}
+
+export async function downloadLeadsCsv(
+  filters: LeadFilters = {},
+): Promise<void> {
+  const params = new URLSearchParams();
+  if (filters.product_id) params.set("product_id", filters.product_id);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.utm_source) params.set("utm_source", filters.utm_source);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  const qs = params.toString();
+  const path = `/admin/leads/export${qs ? "?" + qs : ""}`;
+
+  const token = getToken();
+  const response = await fetch(`${API_URL}${path}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      Accept: "text/csv",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearToken();
+      if (typeof window !== "undefined") window.location.href = "/login";
+      throw new Error("Sessão expirada");
+    }
+    throw new Error(`Falha ao exportar leads (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const downloadUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = downloadUrl;
+  a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(downloadUrl);
+}
+
 
 export function uploadTemplateMedia(
   file: File,

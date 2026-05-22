@@ -1,6 +1,6 @@
-"""Integration test: router /admin/courses (CRUD).
+"""Integration tests for /admin/leads endpoints.
 
-Estratégia:
+Estratégia idêntica ao test_products_router.py:
 - DB real: Postgres via testcontainers + db_session fixture
 - session_scope patcheado para usar a session do teste
 - Auth: JWT gerado inline com jwt_secret de teste
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import uuid
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -18,11 +19,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import (
-    AccountModel,
-    CourseModel,
-    FollowupFlowModel,
-)
+from shared.adapters.db.models import AccountModel, LeadModel
 from shared.adapters.kb.jwt_handler import create_access_token
 
 # ──────────────────────────────────────────────────────────────
@@ -38,13 +35,7 @@ _JWT_SECRET = "test-secret-jwt-do-not-use-in-prod"
 
 @pytest.fixture(scope="session", autouse=True)
 def _apply_migrations(database_url: str) -> None:
-    """Aplica alembic migrations no testcontainer Postgres uma vez por sessão.
-
-    A fixture conftest do projeto não roda migrations automaticamente. O
-    `migrations/env.py` lê a URL via `get_settings().database_url`, então
-    sobrescrevemos `DATABASE_URL` antes de invocar o alembic e limpamos
-    o cache de settings para releitura.
-    """
+    """Aplica alembic migrations no testcontainer Postgres uma vez por sessão."""
     import os
 
     from shared.config.settings import get_settings
@@ -145,7 +136,7 @@ async def client(
             return_value=mock_settings,
         ),
         patch(
-            "interface.http.routers.admin.courses.session_scope",
+            "interface.http.routers.admin.leads.session_scope",
             new=patched_session_scope,
         ),
     ):
@@ -153,36 +144,40 @@ async def client(
             yield ac
 
 
-@pytest.fixture
-async def seed_course_with_flow(
-    db_session: AsyncSession, seeded_account: AccountModel
-) -> tuple[uuid.UUID, uuid.UUID]:
-    """Cria curso + flow vinculado e retorna (course_id, flow_id)."""
-    from datetime import UTC, datetime
-
-    course = CourseModel(
-        id=uuid.uuid4(),
-        account_id=seeded_account.id,
-        name="Curso Com Flow",
-        hubla_id="curso-flow",
-        is_active=True,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
-    )
-    db_session.add(course)
-    await db_session.flush()
-
-    flow = FollowupFlowModel(
-        id=uuid.uuid4(),
-        account_id=seeded_account.id,
-        course_id=course.id,
-        name="Flow X",
-        is_active=True,
-    )
-    db_session.add(flow)
-    await db_session.flush()
-    await db_session.commit()
-    return course.id, flow.id
+def _make_lead(account_id: uuid.UUID, **overrides) -> LeadModel:
+    """Cria um LeadModel com defaults sensatos para testes."""
+    now = datetime.now(UTC)
+    defaults: dict = {
+        "id": uuid.uuid4(),
+        "account_id": account_id,
+        "hubla_subscription_id": f"sub-{uuid.uuid4().hex[:8]}",
+        "payer_phone": "+5511999990000",
+        "payer_name": "Lead Teste",
+        "payer_email": "lead@test.com",
+        "payer_document": None,
+        "hubla_product_id": "prod-test",
+        "product_name": "Produto Teste",
+        "offer_name": None,
+        "amount_total_cents": None,
+        "payment_method": None,
+        "subscription_status": "active",
+        "utm_source": None,
+        "utm_medium": None,
+        "utm_campaign": None,
+        "utm_content": None,
+        "utm_term": None,
+        "session_ip": None,
+        "session_url": None,
+        "fbp": None,
+        "first_seen_at": now,
+        "activated_at": now,
+        "last_event_at": now,
+        "last_event_type": "subscription.activated",
+        "created_at": now,
+        "updated_at": now,
+    }
+    defaults.update(overrides)
+    return LeadModel(**defaults)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -191,112 +186,123 @@ async def seed_course_with_flow(
 
 
 @pytest.mark.integration
-async def test_create_course(client: AsyncClient, admin_headers: dict[str, str]) -> None:
-    resp = await client.post(
-        "/admin/courses",
-        json={"name": "Marketing 360", "hubla_id": "prod-mkt-360"},
-        headers=admin_headers,
-    )
-    assert resp.status_code == 201, resp.text
-    data = resp.json()
-    assert data["name"] == "Marketing 360"
-    assert data["hubla_id"] == "prod-mkt-360"
-    assert data["is_active"] is True
-    assert data["flow_count"] == 0
-
-
-@pytest.mark.integration
-async def test_create_duplicate_returns_409(
+async def test_list_leads_returns_empty_when_no_leads(
     client: AsyncClient, admin_headers: dict[str, str]
 ) -> None:
-    body = {"name": "A", "hubla_id": "dup-1"}
-    r1 = await client.post("/admin/courses", json=body, headers=admin_headers)
-    assert r1.status_code == 201, r1.text
-    r2 = await client.post("/admin/courses", json=body, headers=admin_headers)
-    assert r2.status_code == 409, r2.text
+    r = await client.get("/admin/leads", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "items" in body
+    assert "total" in body
+    assert body["page"] == 1
+    assert body["page_size"] == 25
 
 
 @pytest.mark.integration
-async def test_list_courses(client: AsyncClient, admin_headers: dict[str, str]) -> None:
-    await client.post(
-        "/admin/courses",
-        json={"name": "A", "hubla_id": "list-x1"},
-        headers=admin_headers,
-    )
-    await client.post(
-        "/admin/courses",
-        json={"name": "B", "hubla_id": "list-x2"},
-        headers=admin_headers,
-    )
-    resp = await client.get("/admin/courses", headers=admin_headers)
-    assert resp.status_code == 200, resp.text
-    items = resp.json()
-    assert len(items) >= 2
-    assert all("flow_count" in it for it in items)
-
-
-@pytest.mark.integration
-async def test_update_course(client: AsyncClient, admin_headers: dict[str, str]) -> None:
-    create = await client.post(
-        "/admin/courses",
-        json={"name": "Old", "hubla_id": "upd-x"},
-        headers=admin_headers,
-    )
-    assert create.status_code == 201, create.text
-    cid = create.json()["id"]
-    resp = await client.put(
-        f"/admin/courses/{cid}",
-        json={"name": "New"},
-        headers=admin_headers,
-    )
-    assert resp.status_code == 200, resp.text
-    assert resp.json()["name"] == "New"
-    assert resp.json()["hubla_id"] == "upd-x"
-
-
-@pytest.mark.integration
-async def test_delete_course_with_flow_returns_409(
+async def test_list_leads_returns_seeded_lead(
     client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
     admin_headers: dict[str, str],
-    seed_course_with_flow: tuple[uuid.UUID, uuid.UUID],
 ) -> None:
-    cid, _ = seed_course_with_flow
-    resp = await client.delete(f"/admin/courses/{cid}", headers=admin_headers)
-    assert resp.status_code == 409, resp.text
+    lead = _make_lead(seeded_account.id, payer_name="João Silva")
+    db_session.add(lead)
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert any(item["payer_name"] == "João Silva" for item in items)
 
 
 @pytest.mark.integration
-async def test_delete_course_no_flows_returns_204(
-    client: AsyncClient, admin_headers: dict[str, str]
+async def test_list_leads_filters_by_status(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
 ) -> None:
-    create = await client.post(
-        "/admin/courses",
-        json={"name": "to-del", "hubla_id": "del-x"},
-        headers=admin_headers,
-    )
-    assert create.status_code == 201, create.text
-    cid = create.json()["id"]
-    resp = await client.delete(f"/admin/courses/{cid}", headers=admin_headers)
-    assert resp.status_code == 204, resp.text
+    db_session.add(_make_lead(seeded_account.id, subscription_status="active"))
+    db_session.add(_make_lead(seeded_account.id, subscription_status="refunded"))
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads?status=refunded", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert len(items) >= 1
+    assert all(item["subscription_status"] == "refunded" for item in items)
 
 
 @pytest.mark.integration
-async def test_update_nonexistent_returns_404(
-    client: AsyncClient, admin_headers: dict[str, str]
+async def test_export_csv_returns_attachment(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
 ) -> None:
-    fake_id = uuid.uuid4()
-    resp = await client.put(
-        f"/admin/courses/{fake_id}",
-        json={"name": "X"},
-        headers=admin_headers,
-    )
-    assert resp.status_code == 404, resp.text
+    db_session.add(_make_lead(seeded_account.id, payer_name="Teste CSV", amount_total_cents=9700))
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads/export", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    assert r.headers["content-type"].startswith("text/csv")
+    assert "attachment" in r.headers.get("content-disposition", "").lower()
+    text = r.text
+    # UTF-8 BOM must be present for Excel to read accented chars (João, André) correctly
+    assert text.startswith("﻿"), "CSV must start with UTF-8 BOM for Excel"
+    # Header row present
+    assert "nome" in text
+    assert "Teste CSV" in text
 
 
 @pytest.mark.integration
-async def test_delete_nonexistent_returns_404(
+async def test_get_lead_returns_404_for_unknown(
     client: AsyncClient, admin_headers: dict[str, str]
 ) -> None:
-    fake_id = uuid.uuid4()
-    resp = await client.delete(f"/admin/courses/{fake_id}", headers=admin_headers)
-    assert resp.status_code == 404, resp.text
+    r = await client.get(f"/admin/leads/{uuid.uuid4()}", headers=admin_headers)
+    assert r.status_code == 404, r.text
+
+
+@pytest.mark.integration
+async def test_get_lead_returns_detail_with_events(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    lead = _make_lead(seeded_account.id)
+    db_session.add(lead)
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get(f"/admin/leads/{lead.id}", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["id"] == str(lead.id)
+    assert body["payer_name"] == lead.payer_name
+    assert "events" in body
+    assert isinstance(body["events"], list)
+
+
+@pytest.mark.integration
+async def test_list_leads_pagination(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    for _ in range(5):
+        db_session.add(_make_lead(seeded_account.id))
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads?page=1&page_size=2", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert len(body["items"]) <= 2
+    assert body["page"] == 1
+    assert body["page_size"] == 2
+    assert body["total"] >= 5

@@ -5,6 +5,7 @@ description = "NexoIA agent backend"
 requires-python = ">=3.11"
 dependencies = [
   "fastapi>=0.115",
+  "starlette>=1.0.1",  # CVE PYSEC-2026-161 — força versão patch sobre o pin transitivo do fastapi
   "uvicorn[standard]>=0.32",
   "pydantic>=2.9",
   "pydantic-settings>=2.6",

@@ -6,7 +6,7 @@ from uuid import UUID
 
 
 @dataclass(slots=True)
-class Course:
+class Product:
     id: UUID
     account_id: UUID
     name: str

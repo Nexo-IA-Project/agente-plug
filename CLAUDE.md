@@ -20,18 +20,24 @@ Monorepo com backend Python (FastAPI + OpenAI function calling) e frontend Next.
 - `apps/api/` — Backend Python, porta 8000
 - `apps/web/` — Frontend Next.js 15, porta 3000
 
-**11 subsistemas implementados (todos ✅ Concluídos):**  
-Core · Capability Welcome · Capability Access · Capability Refund · Course Catalog · KB Admin · Capability Knowledge · Account Settings · Follow-up Engine · Follow-up Flow Manager · Meta Template Manager
+**13 subsistemas implementados (todos ✅ Concluídos):**  
+Core · Capability Welcome · Capability Access · Capability Refund · Product Catalog · KB Admin · Capability Knowledge · Account Settings · Follow-up Engine (trigger-based) · Follow-up Flow Manager · Meta Template Manager · Hubla Event Bus · Lead System
 
-**Branch `feat/dynamic-followup-meta-templates`:**
-- Novo subsistema **Course Catalog**: entidade `Course` (com `hubla_id`) é a única forma de vincular flows a produtos — substitui `product_tags`
-- `FollowupFlow` agora referencia `course_id` (FK obrigatória); `product_tags` e `position` foram removidos
+**Branch `feat/favicon-logo-session` (Rename + Trigger + Leads):**
+- **Rename Cursos → Produtos** em toda a stack: tabela `courses` → `products`, FK `course_id` → `product_id` em `followup_flows`, entidade `Course` → `Product`, hooks `useCourses` → `useProducts`, rota `/courses` → `/products` (redirect 301), pasta `features/courses/` → `features/products/`
+- **Trigger-based follow-up**: `FollowupFlow` ganha `trigger_event_type` (Literal de 6 eventos Hubla: `subscription.activated`, `subscription.created`, `lead.abandoned`, `subscription.deactivated`, `subscription.expiring`, `invoice.refunded`); FlowDrawer mostra radio-grid colorido por semântica do funil; FlowCard tem trigger pill
+- **`/webhook/hubla` unificado**: novo endpoint recebe TODOS os tipos de evento Hubla; `/webhook/purchase` mantido como alias (delegando para o mesmo pipeline); `HublaEventHandler` é único dono de enrollment (busca flows por `(product_id, trigger_event_type)`); `PurchaseHandler` reduzido a welcome + access case
+- **Sistema de Leads Hubla**: novas tabelas `hubla_events` (log imutável, payload JSONB) e `leads` (visão materializada com UTMs/Pixel/IP/valor, upsert por `(account_id, hubla_subscription_id)`); página `/leads` no admin com tabela paginada, 5 filtros (produto, status, date range, UTM source), export CSV com BOM UTF-8 e drawer com timeline visual
+- **Domain layer expandido**: novos `Lead` + `HublaEvent` entities + `LeadRepository` + `HublaEventRepository` Protocols
+- **Constante single-tenant**: `shared/config/single_tenant.py::DEFAULT_ACCOUNT_UUID` substitui anti-pattern `select.limit(1)` em routers admin
+
+**Branch anterior `feat/dynamic-followup-meta-templates`:**
 - `FollowupStep` suporta `message_text` (texto livre) como alternativa ao template Meta
 - Variáveis dinâmicas em `FollowupStep`: cada variável usa `StepVariableBinding` com 4 sources dinâmicos (`customer_name`, `product_name`, `contact_phone`, `contact_email`) ou `static` (valor fixo)
-- Capability `Loja Express` foi descontinuada — Loja Express agora é apenas mais um curso no catálogo (sem D+0/D+1/D+3/D+5/D+7 hardcoded); seed migration converte os flows existentes
+- Capability `Loja Express` foi descontinuada — Loja Express agora é apenas mais um produto no catálogo (sem D+0/D+1/D+3/D+5/D+7 hardcoded); seed migration converte os flows existentes
 - `meta_waba_id` editável em Account Settings (não só .env)
 - `/templates`: listagem full-width + modal de criação com efeito scale-from-center
-- `/followup` e `/courses`: usam **Drawer compartilhado** (`shared/components/Drawer`) — substitui o modal anterior
+- `/followup` e `/products`: usam **Drawer compartilhado** (`shared/components/Drawer`) — substitui o modal anterior
 
 ---
 
@@ -77,7 +83,7 @@ apps/api/src/
 │   ├── http/
 │   │   ├── routers/
 │   │   │   ├── admin/           # 9 routers: auth, settings, api_tokens, documents,
-│   │   │   │                    #   search, meta_templates, followup, courses, dlq
+│   │   │   │                    #   search, meta_templates, followup, products, leads, dlq
 │   │   │   ├── webhook_message.py
 │   │   │   ├── webhook_purchase.py
 │   │   │   ├── metrics.py
@@ -179,11 +185,13 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 | `kb_usage_logs` | Log de buscas no KB |
 | `access_cases` | Casos de acesso a produto |
 | `refund_cases` | Casos de reembolso |
-| `courses` | Catálogo de cursos (`name`, `hubla_id`, `is_active`) — vincula flows a produtos |
+| `products` | Catálogo de produtos (`name`, `hubla_id`, `is_active`) — vincula flows a produtos |
+| `hubla_events` | Log imutável de cada evento Hubla recebido (payload JSONB, FK contact_id) |
+| `leads` | Visão materializada de lead — upsert por `(account_id, hubla_subscription_id)`, captura UTMs/Pixel/IP/valor/método |
 | `conversation_messages` | Thread OpenAI por conversa (JSONB) |
 | `api_tokens` | Tokens de API (hash + prefix `nxia_XXXX`) |
 | `meta_templates` | Templates WhatsApp aprovados na Meta |
-| `followup_flows` | Flows de follow-up (name, `course_id` FK, is_active) |
+| `followup_flows` | Flows de follow-up (name, `product_id` FK, `trigger_event_type`, is_active) |
 | `followup_steps` | Steps de um flow (delay_hours, template ou message_text para texto livre, template_variables com `StepVariableBinding`) |
 | `followup_enrollments` | Inscrição de contato em um flow |
 | `followup_enrollment_steps` | Execução de cada step do enrollment |
@@ -196,7 +204,11 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 
 **FollowupStep.message_text:** Campo nullable adicionado na migration `d1e2f3a4b5c6`. Steps com `message_text` enviam texto livre via `send_message`; steps com `meta_template_name` enviam template.
 
-**Course catalog (`b5c6d7e8f9a0_dynamic_followup_by_course`):** Cria tabela `courses`, dropa `loja_express_cases`, remove `product_tags`/`position` de `followup_flows` e adiciona `course_id` (FK NOT NULL com `ON DELETE RESTRICT`). Snapshots de `course_name`/`step_meta_template_name`/`step_message_text` foram adicionados em `followup_enrollments`/`followup_enrollment_steps` para manter histórico mesmo após edições.
+**Product catalog (`b5c6d7e8f9a0_dynamic_followup_by_course` + `42c2b623d919_rename_courses_to_products`):** Cria tabela `products` (originalmente `courses`, renomeada em `42c2b623d919`), dropa `loja_express_cases`, remove `product_tags`/`position` de `followup_flows` e adiciona `product_id` (FK NOT NULL com `ON DELETE RESTRICT`). Snapshots de `product_name`/`step_meta_template_name`/`step_message_text` em `followup_enrollments`/`followup_enrollment_steps` mantêm histórico mesmo após edições.
+
+**Trigger-based follow-up (`2c5504aac687_add_trigger_event_type_to_flows`):** Adiciona `trigger_event_type` (VARCHAR(80), NOT NULL, server_default `'subscription.activated'`) em `followup_flows`. Cada flow declara qual evento Hubla o dispara. Validação via Pydantic `Literal[HublaEventType]` dos 6 eventos suportados.
+
+**Sistema de Leads Hubla (`83ff9745e1a6` + `db857b9fe716` + `4fce596ca642`):** Cria `hubla_events` (log imutável, payload JSONB, FK contact_id) e `leads` (visão materializada, unique key `(account_id, hubla_subscription_id)`). Captura UTMs (source/medium/campaign/content/term), valores (totalCents/subtotalCents), sessão (IP/URL/fbp), payment_method, subscription_status. Upsert preserva UTMs originais; só atualiza status/contact_id/activated_at/last_event_*. Índices: `(account_id, event_type)`, `(account_id, hubla_subscription_id)`, `(contact_id)`, `(account_id, payer_phone)`, `(account_id, subscription_status)`, `(account_id, utm_source)`, `(account_id, activated_at)`.
 
 **StepVariableBinding:** `followup_steps.template_variables` agora é um dict `{nome_variavel: {source, value?}}` onde `source` é um dos 4 dinâmicos (`customer_name`, `product_name`, `contact_phone`, `contact_email`) ou `static` (com `value` obrigatório). Resolvido em runtime pelo `VariableResolver` ao despachar o step.
 
@@ -234,16 +246,16 @@ POST   /admin/search/test                   → busca teste no KB
 
 **Courses (`/admin`)**
 ```
-GET    /admin/courses           → [Course] (com flow_count)
-POST   /admin/courses           → Course (201) | 409 se hubla_id duplicado
-PUT    /admin/courses/{id}      → Course | 404
-DELETE /admin/courses/{id}      → 204 | 409 se houver flows vinculados
+GET    /admin/products          → [Product] (com flow_count)
+POST   /admin/products          → Product (201) | 409 se hubla_id duplicado
+PUT    /admin/products/{id}     → Product | 404
+DELETE /admin/products/{id}     → 204 | 409 se houver flows vinculados
 ```
 
 **Follow-up (`/admin`)**
 ```
-GET    /admin/followup/flows                → [FollowupFlow] (inclui course summary)
-POST   /admin/followup/flows               → FollowupFlow (201) — exige course_id
+GET    /admin/followup/flows                → [FollowupFlow] (inclui product summary + trigger_event_type)
+POST   /admin/followup/flows               → FollowupFlow (201) — exige product_id e trigger_event_type
 PUT    /admin/followup/flows/{id}          → FollowupFlow
 DELETE /admin/followup/flows/{id}          → 204
 GET    /admin/followup/flows/{id}/steps    → [FollowupStep]
@@ -267,10 +279,20 @@ POST   /admin/dlq/{id}/requeue  → move back para job_queue
 POST   /admin/dlq/requeue-all   → requeue em batch
 ```
 
+**Leads (`/admin`)**
+```
+GET    /admin/leads             → LeadListResponse (paginado)
+                                  params: product_id, status, utm_source, date_from, date_to, page, page_size
+GET    /admin/leads/{id}        → LeadDetailResponse (com timeline de hubla_events)
+GET    /admin/leads/export      → CSV download (UTF-8 com BOM, Content-Disposition attachment)
+                                  mesmos filtros da listagem
+```
+
 **Webhooks**
 ```
 POST /webhook/message           → 202 (ChatNexo, Bearer token)
-POST /webhook/purchase          → 202 (Hubla, x-hubla-token)
+POST /webhook/hubla             → 202 (Hubla, x-hubla-token) — endpoint unificado, qualquer event type
+POST /webhook/purchase          → 202 (Hubla, x-hubla-token) — alias legado, delega para handle_hubla_event
 ```
 
 **Infra**
@@ -286,9 +308,11 @@ O worker (`python -m worker`) faz poll na `job_queue` e despacha por `kind`:
 | `kind` | Handler | Descrição |
 |---|---|---|
 | `message` | `handle_message` | Processa mensagem recebida: agent loop + resposta |
-| `purchase` | `handle_purchase` | Processa compra Hubla: cria contact/conversation, faz lookup do `Course` por `hubla_id` e agenda welcome + enrollment em flows do curso |
+| `hubla_event` | `handle_hubla_event` | **Pipeline unificado** de eventos Hubla: grava `hubla_events` (log) + upsert `leads` (UTMs/Pixel/IP/valor) + resolve `Product` por `hubla_id` + enrolla em flows com `trigger_event_type` matching + `mark_processed` em `finally` |
+| `purchase` | `handle_purchase` | **Alias legado** — delega para `handle_hubla_event` sintetizando `type=subscription.activated` quando ausente |
 | `scheduled_welcome` | `handle_scheduled` | Welcome D+1 para novos alunos |
 | `followup_step` | `handle_scheduled` | Despacha step de followup flow (Meta template ou texto livre) com variáveis resolvidas pelo `VariableResolver` |
+| `resync_flow` | `handle_resync_flow` | Re-sincroniza enrollments de um flow após edição de steps |
 
 ### Configuração — Settings
 
@@ -367,8 +391,10 @@ npm run lint     # ESLint
 /(admin)/dashboard               → painel principal
 /(admin)/accounts                → gerenciar contas
 /(admin)/kb                      → Knowledge Base (lista documentos)
-/(admin)/courses                 → catálogo de cursos (CRUD com drawer)
-/(admin)/followup                → lista de followup flows (filtrável por curso)
+/(admin)/products                → catálogo de produtos (CRUD com drawer)
+/(admin)/courses                 → redirect 301 → /products (backward compat)
+/(admin)/leads                   → leads paginados com 5 filtros, CSV export, drawer com timeline visual
+/(admin)/followup                → lista de followup flows (filtrável por produto)
 /(admin)/followup/[id]           → editor de flow + steps inline
 /(admin)/settings                → configurações da conta (OPENAI_API_KEY, ChatNexo, etc)
 /(admin)/settings/tokens         → gerenciar API tokens (criar, listar, revogar)
@@ -382,7 +408,8 @@ Cada feature é autocontida em `src/features/<domínio>/`:
 ```
 features/
   accounts/     → Gerenciar contas da plataforma
-  courses/      → Catálogo de cursos (CRUD via drawer, vincula flows a produtos Hubla)
+  products/     → Catálogo de produtos (CRUD via drawer, vincula flows a produtos Hubla)
+  leads/        → Listagem/detalhe/export de leads + drawer com timeline (consome `getTriggerEventMeta` do followup)
   dashboard/    → Dashboard com estatísticas
   followup/     → Criar/editar flows e steps (drag-and-drop de steps, variáveis dinâmicas)
   kb/           → Upload e busca de documentos KB
@@ -390,7 +417,9 @@ features/
   templates/    → CRUD de Meta WhatsApp templates com preview ao vivo
 ```
 
-Componente compartilhado **`shared/components/Drawer`**: drawer modal único usado pelas features `courses` e `followup` (substitui modais antigos). Cresce do centro com efeito scale-from-center, fecha por ESC ou clique fora.
+Componente compartilhado **`shared/components/Drawer`**: drawer modal único usado pelas features `products`, `followup` e `leads` (substitui modais antigos). Cresce do centro com efeito scale-from-center, fecha por ESC ou clique fora.
+
+**Identidade visual de eventos Hubla:** `features/followup/lib/triggerEvents.ts` é single source of truth — define cor, ícone Material Symbols, label PT-BR e descrição para cada um dos 6 eventos (`subscription.activated`=emerald, `subscription.created`=sky, `lead.abandoned`=amber, `subscription.deactivated`=rose, `subscription.expiring`=orange, `invoice.refunded`=violet). Consumido por `FlowDrawer` (radio-grid 2×3), `FlowCard` (trigger pill) e `LeadDrawer` (timeline com bolinhas coloridas).
 
 Estrutura padrão por feature:
 ```
@@ -421,7 +450,7 @@ Toda comunicação com o backend passa por `apiFetch()` que:
 - Trata 204 (retorna `undefined`)
 - Lança `Error` para status não-ok
 
-Funções exportadas: `listDocuments`, `uploadDocument`, `deleteDocument`, `listApiTokens`, `createApiToken`, `revokeApiToken`, `getAccountSettings`, `updateAccountSettings`, `listFollowupFlows`, `createFollowupFlow`, `updateFollowupFlow`, `deleteFollowupFlow`, `listFollowupSteps`, `createFollowupStep`, `updateFollowupStep`, `deleteFollowupStep`, `reorderFollowupSteps`, `listCourses`, `createCourse`, `updateCourse`, `deleteCourse`, `listMetaTemplates`, `createMetaTemplate`, `deleteMetaTemplate`, `uploadTemplateMedia`
+Funções exportadas: `listDocuments`, `uploadDocument`, `deleteDocument`, `listApiTokens`, `createApiToken`, `revokeApiToken`, `getAccountSettings`, `updateAccountSettings`, `listFollowupFlows`, `createFollowupFlow`, `updateFollowupFlow`, `deleteFollowupFlow`, `listFollowupSteps`, `createFollowupStep`, `updateFollowupStep`, `deleteFollowupStep`, `reorderFollowupSteps`, `listProducts`, `createProduct`, `updateProduct`, `deleteProduct`, `listLeads`, `getLead`, `downloadLeadsCsv`, `listMetaTemplates`, `createMetaTemplate`, `deleteMetaTemplate`, `uploadTemplateMedia`
 
 ---
 

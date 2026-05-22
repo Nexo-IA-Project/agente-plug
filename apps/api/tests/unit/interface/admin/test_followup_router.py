@@ -38,13 +38,13 @@ def test_list_flows_returns_empty(client):
 
         with (
             patch("interface.http.routers.admin.followup.FollowupFlowRepository") as MockFlowRepo,
-            patch("interface.http.routers.admin.followup.SqlCourseRepository") as MockCourseRepo,
+            patch("interface.http.routers.admin.followup.SqlProductRepository") as MockProductRepo,
         ):
             flow_instance = MockFlowRepo.return_value
             flow_instance.list_flows = AsyncMock(return_value=[])
             flow_instance.stats_by_flows = AsyncMock(return_value={})
-            course_instance = MockCourseRepo.return_value
-            course_instance.find_by_id = AsyncMock(return_value=None)
+            product_instance = MockProductRepo.return_value
+            product_instance.find_by_id = AsyncMock(return_value=None)
             resp = client.get("/admin/followup/flows")
 
     assert resp.status_code == 200

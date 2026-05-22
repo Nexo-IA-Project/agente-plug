@@ -19,8 +19,9 @@ def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
     return FollowupFlow(
         id=m.id,
         account_id=m.account_id,
-        course_id=m.course_id,
+        product_id=m.product_id,
         name=m.name,
+        trigger_event_type=m.trigger_event_type,
         is_active=m.is_active,
         created_at=m.created_at,
         updated_at=m.updated_at,
@@ -44,9 +45,20 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
 class FollowupFlowRepository:
     session: AsyncSession
 
-    async def list_active_by_course(self, course_id: uuid.UUID) -> list[FollowupFlow]:
+    async def list_active_by_product(self, product_id: uuid.UUID) -> list[FollowupFlow]:
         stmt = select(FollowupFlowModel).where(
-            FollowupFlowModel.course_id == course_id,
+            FollowupFlowModel.product_id == product_id,
+            FollowupFlowModel.is_active.is_(True),
+        )
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return [_flow_to_entity(m) for m in rows]
+
+    async def list_active_by_product_and_event(
+        self, product_id: uuid.UUID, event_type: str
+    ) -> list[FollowupFlow]:
+        stmt = select(FollowupFlowModel).where(
+            FollowupFlowModel.product_id == product_id,
+            FollowupFlowModel.trigger_event_type == event_type,
             FollowupFlowModel.is_active.is_(True),
         )
         rows = (await self.session.execute(stmt)).scalars().all()
@@ -76,16 +88,18 @@ class FollowupFlowRepository:
         self,
         *,
         account_id: uuid.UUID,
-        course_id: uuid.UUID,
+        product_id: uuid.UUID,
         name: str,
+        trigger_event_type: str = "subscription.activated",
         is_active: bool = True,
     ) -> FollowupFlow:
         now = datetime.now(UTC)
         model = FollowupFlowModel(
             id=uuid.uuid4(),
             account_id=account_id,
-            course_id=course_id,
+            product_id=product_id,
             name=name,
+            trigger_event_type=trigger_event_type,
             is_active=is_active,
             created_at=now,
             updated_at=now,
@@ -99,7 +113,8 @@ class FollowupFlowRepository:
         flow_id: uuid.UUID,
         *,
         name: str | None = None,
-        course_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
+        trigger_event_type: str | None = None,
         is_active: bool | None = None,
     ) -> FollowupFlow | None:
         model = await self.session.get(FollowupFlowModel, flow_id)
@@ -107,8 +122,10 @@ class FollowupFlowRepository:
             return None
         if name is not None:
             model.name = name
-        if course_id is not None:
-            model.course_id = course_id
+        if product_id is not None:
+            model.product_id = product_id
+        if trigger_event_type is not None:
+            model.trigger_event_type = trigger_event_type
         if is_active is not None:
             model.is_active = is_active
         model.updated_at = datetime.now(UTC)

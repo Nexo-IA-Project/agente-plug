@@ -104,6 +104,7 @@ jobs:
           OPENAI_API_KEY: sk-test
           CHATNEXO_BASE_URL: http://localhost:4000
           CHATNEXO_API_KEY: test
+          CHATNEXO_INBOX_ID: 113
           HUBLA_WEBHOOK_SECRET: test
           ADMIN_API_KEY: test
           META_API_KEY: test

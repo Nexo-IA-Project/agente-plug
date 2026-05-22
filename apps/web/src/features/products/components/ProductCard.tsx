@@ -1,29 +1,29 @@
 "use client";
 
-import type { Course } from "../types";
+import type { Product } from "../types";
 
 interface Props {
-  course: Course;
+  product: Product;
   onEdit: () => void;
   onDelete: () => void;
 }
 
-export function CourseCard({ course, onEdit, onDelete }: Props) {
+export function ProductCard({ product, onEdit, onDelete }: Props) {
   return (
     <article className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-4">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold text-on-surface">{course.name}</h3>
-          {!course.is_active && (
+          <h3 className="text-base font-semibold text-on-surface">{product.name}</h3>
+          {!product.is_active && (
             <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-xs text-on-surface-variant">
               Inativo
             </span>
           )}
         </div>
-        <code className="text-xs text-on-surface-variant">{course.hubla_id}</code>
+        <code className="text-xs text-on-surface-variant">{product.hubla_id}</code>
         <span className="text-xs text-on-surface-variant">
-          {course.flow_count} follow-up{course.flow_count === 1 ? "" : "s"} vinculado
-          {course.flow_count === 1 ? "" : "s"}
+          {product.flow_count} follow-up{product.flow_count === 1 ? "" : "s"} vinculado
+          {product.flow_count === 1 ? "" : "s"}
         </span>
       </div>
       <div className="flex gap-2">

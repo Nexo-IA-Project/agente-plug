@@ -7,12 +7,12 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import CourseModel, FollowupFlowModel
-from shared.domain.entities.course import Course
+from shared.adapters.db.models import FollowupFlowModel, ProductModel
+from shared.domain.entities.product import Product
 
 
-def _to_entity(m: CourseModel) -> Course:
-    return Course(
+def _to_entity(m: ProductModel) -> Product:
+    return Product(
         id=m.id,
         account_id=m.account_id,
         name=m.name,
@@ -24,36 +24,36 @@ def _to_entity(m: CourseModel) -> Course:
 
 
 @dataclass
-class SqlCourseRepository:
+class SqlProductRepository:
     session: AsyncSession
 
-    async def list_by_account(self, account_id: UUID) -> list[Course]:
+    async def list_by_account(self, account_id: UUID) -> list[Product]:
         stmt = (
-            select(CourseModel)
-            .where(CourseModel.account_id == account_id)
-            .order_by(CourseModel.name)
+            select(ProductModel)
+            .where(ProductModel.account_id == account_id)
+            .order_by(ProductModel.name)
         )
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_entity(m) for m in rows]
 
-    async def find_by_id(self, course_id: UUID) -> Course | None:
-        m = await self.session.get(CourseModel, course_id)
+    async def find_by_id(self, product_id: UUID) -> Product | None:
+        m = await self.session.get(ProductModel, product_id)
         return _to_entity(m) if m else None
 
-    async def find_active_by_hubla_id(self, account_id: UUID, hubla_id: str) -> Course | None:
-        stmt = select(CourseModel).where(
-            CourseModel.account_id == account_id,
-            CourseModel.hubla_id == hubla_id,
-            CourseModel.is_active.is_(True),
+    async def find_active_by_hubla_id(self, account_id: UUID, hubla_id: str) -> Product | None:
+        stmt = select(ProductModel).where(
+            ProductModel.account_id == account_id,
+            ProductModel.hubla_id == hubla_id,
+            ProductModel.is_active.is_(True),
         )
         m = (await self.session.execute(stmt)).scalar_one_or_none()
         return _to_entity(m) if m else None
 
     async def create(
         self, *, account_id: UUID, name: str, hubla_id: str, is_active: bool = True
-    ) -> Course:
+    ) -> Product:
         now = datetime.now(UTC)
-        m = CourseModel(
+        m = ProductModel(
             id=uuid4(),
             account_id=account_id,
             name=name,
@@ -68,13 +68,13 @@ class SqlCourseRepository:
 
     async def update(
         self,
-        course_id: UUID,
+        product_id: UUID,
         *,
         name: str | None = None,
         hubla_id: str | None = None,
         is_active: bool | None = None,
-    ) -> Course | None:
-        m = await self.session.get(CourseModel, course_id)
+    ) -> Product | None:
+        m = await self.session.get(ProductModel, product_id)
         if m is None:
             return None
         if name is not None:
@@ -87,16 +87,16 @@ class SqlCourseRepository:
         await self.session.flush()
         return _to_entity(m)
 
-    async def delete(self, course_id: UUID) -> bool:
-        m = await self.session.get(CourseModel, course_id)
+    async def delete(self, product_id: UUID) -> bool:
+        m = await self.session.get(ProductModel, product_id)
         if m is None:
             return False
         await self.session.delete(m)
         await self.session.flush()
         return True
 
-    async def count_flows(self, course_id: UUID) -> int:
+    async def count_flows(self, product_id: UUID) -> int:
         stmt = select(func.count(FollowupFlowModel.id)).where(
-            FollowupFlowModel.course_id == course_id
+            FollowupFlowModel.product_id == product_id
         )
         return int((await self.session.execute(stmt)).scalar_one())

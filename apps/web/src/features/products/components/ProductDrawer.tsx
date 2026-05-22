@@ -2,32 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
-import type { Course, CreateCourseInput } from "../types";
+import type { Product, CreateProductInput } from "../types";
 
 interface Props {
   open: boolean;
-  course: Course | null;
+  product: Product | null;
   onClose: () => void;
-  onSubmit: (input: CreateCourseInput) => Promise<void>;
+  onSubmit: (input: CreateProductInput) => Promise<void>;
 }
 
-export function CourseDrawer({ open, course, onClose, onSubmit }: Props) {
+export function ProductDrawer({ open, product, onClose, onSubmit }: Props) {
   const [name, setName] = useState("");
   const [hublaId, setHublaId] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (course) {
-      setName(course.name);
-      setHublaId(course.hubla_id);
-      setIsActive(course.is_active);
+    if (product) {
+      setName(product.name);
+      setHublaId(product.hubla_id);
+      setIsActive(product.is_active);
     } else {
       setName("");
       setHublaId("");
       setIsActive(true);
     }
-  }, [course, open]);
+  }, [product, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +44,7 @@ export function CourseDrawer({ open, course, onClose, onSubmit }: Props) {
     <Drawer
       open={open}
       onClose={onClose}
-      title={course ? `Editar curso — ${course.name}` : "Novo curso"}
+      title={product ? `Editar produto — ${product.name}` : "Novo produto"}
       footer={
         <div className="flex justify-end gap-3">
           <button
@@ -56,7 +56,7 @@ export function CourseDrawer({ open, course, onClose, onSubmit }: Props) {
           </button>
           <button
             type="submit"
-            form="course-form"
+            form="product-form"
             disabled={submitting || !name || !hublaId}
             className="rounded-md bg-primary px-4 py-2 text-on-primary disabled:opacity-50"
           >
@@ -65,7 +65,7 @@ export function CourseDrawer({ open, course, onClose, onSubmit }: Props) {
         </div>
       }
     >
-      <form id="course-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
+      <form id="product-form" onSubmit={handleSubmit} className="flex flex-col gap-6">
         <label className="flex flex-col gap-2">
           <span className="text-sm font-medium text-on-surface">Nome</span>
           <input
@@ -98,7 +98,7 @@ export function CourseDrawer({ open, course, onClose, onSubmit }: Props) {
             onChange={(e) => setIsActive(e.target.checked)}
             className="h-4 w-4"
           />
-          <span className="text-sm text-on-surface">Curso ativo</span>
+          <span className="text-sm text-on-surface">Produto ativo</span>
         </label>
       </form>
     </Drawer>

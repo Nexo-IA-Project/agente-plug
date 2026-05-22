@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 import structlog
 
+from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 from shared.domain.events.purchase_received import PurchaseReceived
 from shared.domain.ports.chatnexo import ChatNexoPort
@@ -13,18 +14,12 @@ from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
 
-# Sistema single-tenant: account_id fixo.
-_DEFAULT_ACCOUNT_UUID = UUID("00000000-0000-0000-0000-000000000001")
-
 
 class PurchaseHandler:
-    """
-    Processa eventos de compra:
-      1. Cria/encontra contato e abre conversa.
-      2. Tenta resolver o produto via course_repo.find_active_by_hubla_id (hubla_product_id).
-         - Curso encontrado: enrolla contato em todos os flows ativos do curso.
-         - Curso não encontrado: loga warning e segue sem enrollment.
-      3. Sempre cria AccessCase e dispara welcome_purchase template (Access capability).
+    """Processa a parte de Access (welcome message + access case) de uma compra Hubla.
+
+    Enrollment em flows é responsabilidade do HublaEventHandler — este handler
+    NÃO toca em FollowupFlow nem FollowupEnrollment.
     """
 
     def __init__(
@@ -33,17 +28,13 @@ class PurchaseHandler:
         chatnexo: ChatNexoPort,
         access_case_repo: Any,
         scheduler: Any,
-        course_repo: Any,
-        flow_repo: Any,
-        enroll_contact_uc: Any,
+        product_repo: Any,
     ) -> None:
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
         self._access_case_repo = access_case_repo
         self._scheduler = scheduler
-        self._course_repo = course_repo
-        self._flow_repo = flow_repo
-        self._enroll_contact_uc = enroll_contact_uc
+        self._product_repo = product_repo
 
     async def handle_one(
         self,
@@ -58,8 +49,12 @@ class PurchaseHandler:
         payer_document: str,
         account_id: UUID | None = None,
     ) -> None:
-        """Processa um único produto de uma compra Hubla v2."""
-        account_uuid = account_id or _DEFAULT_ACCOUNT_UUID
+        """Processa a parte de Access (welcome + access case) de um produto de compra Hubla.
+
+        Enrollment em flows é responsabilidade do HublaEventHandler — este handler
+        NÃO toca em FollowupFlow nem FollowupEnrollment.
+        """
+        account_uuid = account_id or DEFAULT_ACCOUNT_UUID
         account_id_str = str(account_uuid)
 
         contact = await self._contact_repo.upsert(
@@ -75,35 +70,6 @@ class PurchaseHandler:
         if conversation_id is None:
             conversation_id = await self._chatnexo.create_conversation(
                 account_id=account_id_str, contact_phone=contact.phone
-            )
-
-        # Resolve curso via hubla_id.
-        course = await self._course_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
-        if course is None:
-            log.warning(
-                "course_not_found",
-                product_id=hubla_product_id,
-                account_id=account_id_str,
-            )
-        else:
-            flows = await self._flow_repo.list_active_by_course(course.id)
-            for flow in flows:
-                await self._enroll_contact_uc.execute(
-                    account_id=account_uuid,
-                    contact_id=UUID(str(contact.id)),
-                    conversation_id=str(conversation_id),
-                    contact_phone=payer_phone,
-                    purchase_id=purchase_id,
-                    flow_id=flow.id,
-                    customer_name=payer_full_name,
-                    product_name=product_name,
-                    purchase_time=activated_at,
-                )
-            log.info(
-                "followup_enrollments_dispatched",
-                course_id=str(course.id),
-                flows=len(flows),
-                purchase_id=purchase_id,
             )
 
         # Access capability — sempre executa.

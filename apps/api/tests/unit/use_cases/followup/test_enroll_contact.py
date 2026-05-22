@@ -35,7 +35,7 @@ def _make_flow(is_active: bool = True) -> FollowupFlow:
     return FollowupFlow(
         id=_FLOW_ID,
         account_id=_ACCOUNT_ID,
-        course_id=_COURSE_ID,
+        product_id=_COURSE_ID,
         name="Máquina de Vendas",
         is_active=is_active,
         created_at=datetime.now(UTC),

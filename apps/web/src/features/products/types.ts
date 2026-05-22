@@ -1,4 +1,4 @@
-export interface Course {
+export interface Product {
   id: string;
   name: string;
   hubla_id: string;
@@ -8,13 +8,13 @@ export interface Course {
   updated_at: string;
 }
 
-export interface CreateCourseInput {
+export interface CreateProductInput {
   name: string;
   hubla_id: string;
   is_active?: boolean;
 }
 
-export interface UpdateCourseInput {
+export interface UpdateProductInput {
   name?: string;
   hubla_id?: string;
   is_active?: boolean;

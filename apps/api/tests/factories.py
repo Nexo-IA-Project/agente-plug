@@ -9,7 +9,7 @@ from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
     ConversationModel,
-    CourseModel,
+    ProductModel,
 )
 
 
@@ -52,15 +52,15 @@ async def make_account(session, *, name: str = "Tenant Test") -> AccountModel:
     return m
 
 
-async def make_course(
+async def make_product(
     session,
     *,
     account_id: uuid.UUID | None = None,
-    name: str = "Curso Teste",
+    name: str = "Produto Teste",
     hubla_id: str = "prod-test",
     is_active: bool = True,
-) -> CourseModel:
-    """Helper async para criar e persistir um Course no DB.
+) -> ProductModel:
+    """Helper async para criar e persistir um Product no DB.
 
     Se ``account_id`` não for fornecido, cria um Account novo via ``make_account``.
     """
@@ -68,7 +68,7 @@ async def make_course(
         account = await make_account(session)
         account_id = account.id
     now = datetime.now(UTC)
-    m = CourseModel(
+    m = ProductModel(
         id=uuid.uuid4(),
         account_id=account_id,
         name=name,

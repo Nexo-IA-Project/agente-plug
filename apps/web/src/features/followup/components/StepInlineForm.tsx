@@ -199,11 +199,11 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
         {/* Template mode */}
         {mode === "template" && (
-          <div className="space-y-4">
+          <div key="template-mode" className="animate-fade-in space-y-4">
             <div>
               <label className={labelCls}>Template</label>
               {loadingTemplates ? (
-                <div className="flex items-center gap-2 rounded-xl border border-outline bg-surface px-3 py-2.5 text-sm text-on-surface-variant">
+                <div className="flex items-center gap-2 rounded-lg border border-outline bg-surface px-3 py-3 text-sm text-on-surface-variant">
                   <span
                     className="material-symbols-outlined animate-spin"
                     style={{ fontSize: "16px" }}
@@ -231,14 +231,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
             </div>
 
             {currentTemplate && templateBody && (
-              <div className="rounded-xl border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap">
+              <div className="animate-fade-in rounded-lg border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
                 {templateBody}
               </div>
             )}
 
             {currentTemplate && (
-              <div className="space-y-2">
-                <label className="block text-label-sm font-medium text-on-surface">
+              <div className="animate-fade-in space-y-2">
+                <label className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                   Variáveis do template
                 </label>
                 <StepVariableEditor
@@ -253,7 +253,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
         {/* Text mode */}
         {mode === "text" && (
-          <div>
+          <div key="text-mode" className="animate-fade-in">
             <label className={labelCls}>Mensagem</label>
             <textarea
               value={messageText}

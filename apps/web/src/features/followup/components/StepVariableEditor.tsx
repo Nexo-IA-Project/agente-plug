@@ -10,7 +10,7 @@ interface Props {
 
 const SOURCE_OPTIONS: Array<{ value: StepVariableSource; label: string }> = [
   { value: "customer_name", label: "Nome do aluno" },
-  { value: "product_name", label: "Nome do curso" },
+  { value: "product_name", label: "Nome do produto" },
   { value: "contact_phone", label: "Telefone do aluno" },
   { value: "contact_email", label: "Email do aluno" },
   { value: "static", label: "Texto fixo..." },
@@ -18,10 +18,11 @@ const SOURCE_OPTIONS: Array<{ value: StepVariableSource; label: string }> = [
 
 function detectVariables(body: string | null): string[] {
   if (!body) return [];
-  const matches = body.matchAll(/\{\{(\d+)\}\}/g);
+  // Detecta {{nome}} e {{0}} — qualquer nome dentro das chaves duplas
+  const matches = body.matchAll(/\{\{([^}]+)\}\}/g);
   const set = new Set<string>();
-  for (const m of matches) set.add(m[1]);
-  return Array.from(set).sort((a, b) => Number(a) - Number(b));
+  for (const m of matches) set.add(m[1].trim());
+  return Array.from(set).sort();
 }
 
 export function StepVariableEditor({ templateBody, bindings, onChange }: Props) {
@@ -47,13 +48,13 @@ export function StepVariableEditor({ templateBody, bindings, onChange }: Props) 
       {vars.map((key) => {
         const binding = bindings[key] ?? { source: "customer_name" as StepVariableSource };
         return (
-          <div key={key} className="grid grid-cols-[80px_1fr] items-start gap-3">
-            <label className="pt-2 text-sm font-medium text-on-surface">{`{{${key}}}`}</label>
+          <div key={key} className="grid grid-cols-[90px_1fr] items-start gap-3">
+            <label className="pt-3 font-mono text-xs font-semibold text-primary">{`{{${key}}}`}</label>
             <div className="flex flex-col gap-2">
               <select
                 value={binding.source}
                 onChange={(e) => updateBinding(key, { source: e.target.value as StepVariableSource })}
-                className="rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface"
+                className="field-select"
               >
                 {SOURCE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -61,11 +62,12 @@ export function StepVariableEditor({ templateBody, bindings, onChange }: Props) 
               </select>
               {binding.source === "static" && (
                 <input
+                  key="static-input"
                   type="text"
                   value={binding.value ?? ""}
                   onChange={(e) => updateBinding(key, { value: e.target.value })}
                   placeholder="Texto fixo"
-                  className="rounded-md border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface"
+                  className="field-input animate-fade-in"
                 />
               )}
             </div>
