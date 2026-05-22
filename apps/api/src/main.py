@@ -11,6 +11,7 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import (
     health,
     metrics,
+    webhook_hubla,
     webhook_message,
     webhook_purchase,
 )
@@ -64,6 +65,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         queue=queue,
         expected_token=settings.hubla_webhook_secret,
     )
+    webhook_hubla.configure(
+        dedup=dedup,
+        event_repo_factory=_event_repo_factory,
+        queue=queue,
+        expected_token=settings.hubla_webhook_secret,
+    )
     webhook_message.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
@@ -92,6 +99,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(metrics.router)
     app.include_router(webhook_purchase.router)
+    app.include_router(webhook_hubla.router)
     app.include_router(webhook_message.router)
     app.include_router(admin_api_tokens.router, prefix="/admin")
     app.include_router(admin_auth.router, prefix="/admin")
