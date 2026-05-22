@@ -566,3 +566,100 @@ class FollowupEnrollmentStepModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class HublaEventModel(Base):
+    __tablename__ = "hubla_events"
+    __table_args__ = (
+        Index("ix_hubla_events_account_type", "account_id", "event_type"),
+        Index("ix_hubla_events_subscription", "account_id", "hubla_subscription_id"),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    hubla_subscription_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    hubla_product_id: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="", server_default=""
+    )
+    product_name: Mapped[str] = mapped_column(
+        String(300), nullable=False, default="", server_default=""
+    )
+    payer_phone: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="", server_default=""
+    )
+    payer_email: Mapped[str] = mapped_column(
+        String(200), nullable=False, default="", server_default=""
+    )
+    payer_name: Mapped[str] = mapped_column(
+        String(200), nullable=False, default="", server_default=""
+    )
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True
+    )
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LeadModel(Base):
+    __tablename__ = "leads"
+    __table_args__ = (
+        UniqueConstraint(
+            "account_id", "hubla_subscription_id", name="uq_leads_account_subscription"
+        ),
+        Index("ix_leads_account_phone", "account_id", "payer_phone"),
+        Index("ix_leads_account_status", "account_id", "subscription_status"),
+        Index("ix_leads_account_activated", "account_id", "activated_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    hubla_subscription_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("contacts.id", ondelete="SET NULL"), nullable=True
+    )
+    payer_phone: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="", server_default=""
+    )
+    payer_name: Mapped[str] = mapped_column(
+        String(200), nullable=False, default="", server_default=""
+    )
+    payer_email: Mapped[str] = mapped_column(
+        String(200), nullable=False, default="", server_default=""
+    )
+    payer_document: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    hubla_product_id: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="", server_default=""
+    )
+    product_name: Mapped[str] = mapped_column(
+        String(300), nullable=False, default="", server_default=""
+    )
+    offer_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    offer_name: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    amount_total_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    amount_subtotal_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    subscription_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="unknown", server_default="unknown"
+    )
+    utm_source: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    utm_medium: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    utm_campaign: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    utm_content: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    utm_term: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    session_ip: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    session_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    fbp: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_event_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_event_type: Mapped[str] = mapped_column(
+        String(80), nullable=False, default="", server_default=""
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
