@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 
 import structlog
 
+from shared.config.settings import get_settings
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 from shared.domain.events.purchase_received import PurchaseReceived
@@ -56,6 +57,9 @@ class PurchaseHandler:
         """
         account_uuid = account_id or DEFAULT_ACCOUNT_UUID
         account_id_str = str(account_uuid)
+        # ChatNexo (Chatwoot fork) usa account_id como integer; o UUID local não bate.
+        chatnexo_account_id_int = get_settings().chatnexo_account_id
+        chatnexo_account_id = str(chatnexo_account_id_int)
 
         contact = await self._contact_repo.upsert(
             account_id=account_uuid,
@@ -65,31 +69,41 @@ class PurchaseHandler:
         )
 
         conversation_id = await self._chatnexo.get_open_conversation(
-            account_id=account_id_str, contact_phone=contact.phone
+            account_id=chatnexo_account_id, contact_phone=str(contact.phone)
         )
         if conversation_id is None:
             conversation_id = await self._chatnexo.create_conversation(
-                account_id=account_id_str, contact_phone=contact.phone
+                account_id=chatnexo_account_id, contact_phone=str(contact.phone)
             )
 
         # Access capability — sempre executa.
+        # NOTE: AccessCaseModel.account_id é INTEGER (schema legado pré multi-tenant).
+        # Reaproveitamos o chatnexo_account_id (int) até o refactor multi-tenant.
         case = AccessCase(
             id=str(uuid4()),
-            account_id=account_id_str,
-            contact_id=contact.id,
-            conversation_id=conversation_id,
+            account_id=chatnexo_account_id_int,
+            contact_id=str(contact.id),
+            conversation_id=str(conversation_id),
             purchase_id=purchase_id,
             product_name=product_name,
             status=AccessCaseStatus.LINK_SENT,
         )
         await self._access_case_repo.save(case)
 
-        await self._chatnexo.send_template(
-            account_id=account_id_str,
-            conversation_id=conversation_id,
-            template_name="welcome_purchase",
-            variables={"nome": payer_full_name, "produto": product_name},
-        )
+        # Welcome template é opcional — config string vazia ou flow já cuida via step.
+        welcome_template = get_settings().welcome_purchase_template
+        if welcome_template:
+            await self._chatnexo.send_template(
+                account_id=chatnexo_account_id,
+                conversation_id=conversation_id,
+                template_name=welcome_template,
+                variables={"nome": payer_full_name, "produto": product_name},
+            )
+        else:
+            log.info(
+                "welcome_template_skipped",
+                reason="welcome_purchase_template não configurado — flow assume",
+            )
 
         log.info(
             "purchase_handled",
