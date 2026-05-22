@@ -1,0 +1,274 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { downloadLeadsCsv, listLeads } from "@/lib/api";
+import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
+import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
+import { useToast } from "@/shared/hooks/useToast";
+import type { Lead, LeadFilters } from "@/features/leads/types";
+
+const STATUS_OPTIONS = [
+  { value: "", label: "Todos os status" },
+  { value: "active", label: "Ativado" },
+  { value: "inactive", label: "Inativo" },
+  { value: "abandoned", label: "Abandonado" },
+  { value: "refunded", label: "Reembolsado" },
+  { value: "cancelled", label: "Cancelado" },
+];
+
+function formatCents(c: number | null): string {
+  if (c == null) return "—";
+  return `R$ ${(c / 100).toFixed(2).replace(".", ",")}`;
+}
+
+function formatDate(d: string): string {
+  return new Date(d).toLocaleDateString("pt-BR");
+}
+
+export default function LeadsPage() {
+  const toast = useToast();
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<LeadFilters>({ page: 1, page_size: 25 });
+  const [utmInput, setUtmInput] = useState("");
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const load = useCallback(
+    async (f: LeadFilters) => {
+      setLoading(true);
+      try {
+        const res = await listLeads(f);
+        setLeads(res.items);
+        setTotal(res.total);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Erro ao carregar leads");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [toast],
+  );
+
+  useEffect(() => {
+    void load(filters);
+  }, [filters, load]);
+
+  const updateFilter = (patch: Partial<LeadFilters>) => {
+    setFilters((prev) => ({ ...prev, ...patch, page: 1 }));
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await downloadLeadsCsv(filters);
+      toast.success("CSV baixado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao exportar CSV");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil(total / (filters.page_size ?? 25)));
+  const currentPage = filters.page ?? 1;
+  const hasActiveFilters = !!(filters.status || filters.utm_source);
+
+  return (
+    <div className="space-y-5 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-h2 font-semibold text-on-surface">Leads</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            {total > 0
+              ? `${total.toLocaleString("pt-BR")} lead${total === 1 ? "" : "s"} registrado${total === 1 ? "" : "s"}`
+              : "Nenhum lead ainda"}
+          </p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting || total === 0}
+          className="flex items-center gap-2 rounded-lg border border-outline-variant px-4 py-2.5 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span
+            className={`material-symbols-outlined ${exporting ? "animate-spin" : ""}`}
+            style={{ fontSize: "18px" }}
+          >
+            {exporting ? "progress_activity" : "download"}
+          </span>
+          {exporting ? "Exportando..." : "Exportar CSV"}
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={filters.status ?? ""}
+          onChange={(e) => updateFilter({ status: e.target.value || undefined })}
+          className="field-select !w-auto min-w-[180px]"
+        >
+          {STATUS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <input
+          type="text"
+          placeholder="Filtrar por UTM source..."
+          value={utmInput}
+          onChange={(e) => setUtmInput(e.target.value)}
+          onBlur={() => updateFilter({ utm_source: utmInput || undefined })}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              updateFilter({ utm_source: utmInput || undefined });
+            }
+          }}
+          className="field-input !w-56"
+        />
+        {hasActiveFilters && (
+          <button
+            onClick={() => {
+              setUtmInput("");
+              setFilters({ page: 1, page_size: 25 });
+            }}
+            className="text-xs text-primary hover:underline"
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
+
+      {/* Tabela */}
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-surface-container-low">
+        <table className="w-full text-sm">
+          <thead className="bg-surface-container">
+            <tr>
+              {[
+                "Nome",
+                "Telefone",
+                "Produto",
+                "Valor",
+                "Status",
+                "UTM",
+                "Último evento",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-on-surface-variant"
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-10 text-center">
+                  <div className="inline-flex items-center gap-2 text-sm text-on-surface-variant">
+                    <span
+                      className="material-symbols-outlined animate-spin"
+                      style={{ fontSize: "18px" }}
+                    >
+                      progress_activity
+                    </span>
+                    Carregando...
+                  </div>
+                </td>
+              </tr>
+            ) : leads.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-4 py-10 text-center text-sm text-on-surface-variant"
+                >
+                  Nenhum lead encontrado com esses filtros.
+                </td>
+              </tr>
+            ) : (
+              leads.map((lead) => {
+                const badge = getLeadStatusBadge(lead.subscription_status);
+                return (
+                  <tr
+                    key={lead.id}
+                    onClick={() => {
+                      setSelectedLead(lead);
+                      setDrawerOpen(true);
+                    }}
+                    className="cursor-pointer border-t border-outline-variant/50 transition-colors hover:bg-surface-container"
+                  >
+                    <td className="px-4 py-3 font-medium text-on-surface">
+                      {lead.payer_name || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-on-surface-variant">
+                      {lead.payer_phone}
+                    </td>
+                    <td className="max-w-[180px] truncate px-4 py-3 text-on-surface-variant">
+                      {lead.product_name}
+                    </td>
+                    <td className="px-4 py-3 text-on-surface">
+                      {formatCents(lead.amount_total_cents)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
+                      >
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">
+                      {lead.utm_source ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-on-surface-variant">
+                      {formatDate(lead.last_event_at)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Paginação */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-on-surface-variant">
+            Página {currentPage} de {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              disabled={currentPage <= 1}
+              onClick={() =>
+                setFilters((p) => ({ ...p, page: Math.max(1, (p.page ?? 1) - 1) }))
+              }
+              className="rounded-lg border border-outline-variant px-3 py-1.5 text-xs disabled:opacity-40"
+            >
+              Anterior
+            </button>
+            <button
+              disabled={currentPage >= totalPages}
+              onClick={() =>
+                setFilters((p) => ({ ...p, page: (p.page ?? 1) + 1 }))
+              }
+              className="rounded-lg border border-outline-variant px-3 py-1.5 text-xs disabled:opacity-40"
+            >
+              Próxima
+            </button>
+          </div>
+        </div>
+      )}
+
+      <LeadDrawer
+        lead={selectedLead}
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </div>
+  );
+}
