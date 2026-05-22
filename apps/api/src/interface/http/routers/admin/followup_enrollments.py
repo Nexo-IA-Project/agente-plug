@@ -69,7 +69,15 @@ class EnrollmentStepItem(BaseModel):
 # ──────────────────────────────────────────────────────────────
 
 
-async def _get_account_uuid(session) -> _uuid_module.UUID:
+async def _get_account_uuid(session, auth: AdminAuth) -> _uuid_module.UUID:
+    """Resolve ``auth.account_id`` para o UUID do registro em ``accounts``.
+
+    Sistema single-tenant: ``AdminAuth.account_id`` é um ``int`` (atualmente 1)
+    e a tabela ``accounts`` usa UUID como PK sem coluna inteira correspondente.
+    O lookup retorna o primeiro account encontrado. Quando multi-tenant chegar,
+    esta função deve passar a mapear ``auth.account_id`` para o UUID correto.
+    """
+    _ = auth  # explicitar intenção single-tenant
     result = await session.execute(select(AccountModel.id).limit(1))
     return result.scalar_one()
 
@@ -99,7 +107,7 @@ async def list_enrollments(
             ) from exc
 
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = await _get_account_uuid(session, auth)
         repo = FollowupEnrollmentRepository(session=session)
         rows, total = await repo.list_for_report(
             account_id=account_uuid,
@@ -143,7 +151,7 @@ async def list_enrollment_steps(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> list[EnrollmentStepItem]:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = await _get_account_uuid(session, auth)
         repo = FollowupEnrollmentRepository(session=session)
         steps = await repo.list_steps_for_report(
             enrollment_id,

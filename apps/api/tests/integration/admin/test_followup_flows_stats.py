@@ -213,6 +213,7 @@ async def client(
 
     fake_sessionmaker = _FakeSessionmaker()
 
+    _ = fake_sessionmaker  # mantido para preservar shape do fixture
     with (
         patch(
             "interface.http.deps.admin_auth.get_settings",
@@ -221,10 +222,6 @@ async def client(
         patch(
             "interface.http.routers.admin.followup.session_scope",
             new=patched_session_scope,
-        ),
-        patch(
-            "interface.http.routers.admin.followup.get_sessionmaker",
-            return_value=fake_sessionmaker,
         ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:

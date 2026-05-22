@@ -205,6 +205,9 @@ async def client(
 
     fake_sessionmaker = _FakeSessionmaker()
 
+    # fake_sessionmaker existe apenas para compatibilidade com PostgresJobQueue legado;
+    # após o outbox pattern, _enqueue_resync_in_session usa a própria session.
+    _ = fake_sessionmaker
     with (
         patch(
             "interface.http.deps.admin_auth.get_settings",
@@ -213,10 +216,6 @@ async def client(
         patch(
             "interface.http.routers.admin.followup.session_scope",
             new=patched_session_scope,
-        ),
-        patch(
-            "interface.http.routers.admin.followup.get_sessionmaker",
-            return_value=fake_sessionmaker,
         ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
