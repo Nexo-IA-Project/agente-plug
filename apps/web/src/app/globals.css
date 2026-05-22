@@ -250,6 +250,20 @@
   touch-action: none !important;
 }
 
+/* Anula transições internas dos sub-elementos — todos compartilham a opacity
+   do toast pai (que faz cascade visual). Sem isso, ícone/título/descrição
+   tinham animações próprias que somiam ANTES do background no fade-out,
+   ou apareciam DEPOIS no fade-in (toast empilhado ficava 'em branco'). */
+[data-sonner-toaster] [data-sonner-toast] [data-content],
+[data-sonner-toaster] [data-sonner-toast] [data-title],
+[data-sonner-toaster] [data-sonner-toast] [data-description],
+[data-sonner-toaster] [data-sonner-toast] [data-icon],
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
 /* Scroll quase invisível dentro do preview do WhatsApp */
 .wa-chat-scroll::-webkit-scrollbar {
   width: 4px;
