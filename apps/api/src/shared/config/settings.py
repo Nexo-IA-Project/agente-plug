@@ -27,6 +27,12 @@ class Settings(BaseSettings):
     openai_api_key: str
     chatnexo_base_url: str
     chatnexo_api_key: str
+    # ChatNexo — message splitting e delay humanizado
+    chatnexo_split_max_chars: int = Field(default=400, ge=50)
+    chatnexo_split_min_chars: int = Field(default=80, ge=10)
+    chatnexo_delay_ms_per_char: int = Field(default=30, ge=0)
+    chatnexo_min_delay_ms: int = Field(default=800, ge=0)
+    chatnexo_max_delay_ms: int = Field(default=4000, ge=0)
     hubla_webhook_secret: str
     admin_api_key: str
     meta_api_key: str
@@ -89,4 +95,4 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]
+    return Settings()
