@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listMetaTemplates } from "@/lib/api";
+import { Collapse } from "@/shared/components/Collapse";
 import type { MetaTemplate } from "@/features/templates/types";
 import type {
   CreateStepInput,
@@ -138,15 +139,8 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
   const isOpen = visible && !exiting;
 
   return (
-    <div
-      className="border border-primary/20 bg-surface-container p-5 shadow-sm"
-      style={{
-        opacity: isOpen ? 1 : 0,
-        transform: isOpen ? "translateY(0)" : "translateY(-4px)",
-        transition:
-          "opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), transform 480ms cubic-bezier(0.22, 1, 0.36, 1)",
-      }}
-    >
+    <Collapse open={isOpen} durationMs={480}>
+      <div className="border border-primary/20 bg-surface-container p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-label-sm font-semibold text-on-surface">
           {step ? "Editar step" : "Novo step"}
@@ -217,8 +211,8 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         </div>
 
         {/* Template mode */}
-        {mode === "template" && (
-          <div key="template-mode" className="animate-soft-fade-in space-y-4">
+        <Collapse open={mode === "template"} durationMs={420}>
+          <div className="space-y-4">
             <div>
               <label className={labelCls}>Template</label>
               {loadingTemplates ? (
@@ -249,14 +243,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
               )}
             </div>
 
-            {currentTemplate && templateBody && (
-              <div className="animate-soft-fade-in border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
+            <Collapse open={!!currentTemplate && !!templateBody} durationMs={380}>
+              <div className="mt-1 border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
                 {templateBody}
               </div>
-            )}
+            </Collapse>
 
-            {currentTemplate && (
-              <div className="animate-soft-fade-in space-y-2">
+            <Collapse open={!!currentTemplate} durationMs={380}>
+              <div className="mt-3 space-y-2">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                   Variáveis do template
                 </label>
@@ -266,13 +260,13 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
                   onChange={setTemplateVariables}
                 />
               </div>
-            )}
+            </Collapse>
           </div>
-        )}
+        </Collapse>
 
         {/* Text mode */}
-        {mode === "text" && (
-          <div key="text-mode" className="animate-soft-fade-in">
+        <Collapse open={mode === "text"} durationMs={420}>
+          <div>
             <label className={labelCls}>Mensagem</label>
             <textarea
               value={messageText}
@@ -283,7 +277,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
               className="field-textarea"
             />
           </div>
-        )}
+        </Collapse>
 
         {/* Ações */}
         <div className="flex gap-2 pt-1">
@@ -311,6 +305,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </Collapse>
   );
 }
