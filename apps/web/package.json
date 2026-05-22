@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "dev:turbo": "next dev --turbo --port 3001",
+    "dev:clean": "rm -rf .next node_modules/.cache && next dev --port 3001",
+    "clean": "rm -rf .next node_modules/.cache",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
