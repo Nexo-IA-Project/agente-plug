@@ -7,19 +7,32 @@ from shared.domain.entities.followup import EnrollmentStepStatus
 
 def _flow_step(id_, position=1, delay=24, template="t", text=None, vars=None):
     return SimpleNamespace(
-        id=id_, position=position, delay_from_purchase_hours=delay,
-        meta_template_name=template, message_text=text,
+        id=id_,
+        position=position,
+        delay_from_purchase_hours=delay,
+        meta_template_name=template,
+        message_text=text,
         template_variables=vars or {},
     )
 
 
-def _enr_step(flow_step_id, position=1, delay=24,
-              status=EnrollmentStepStatus.PENDING,
-              template="t", text=None, vars=None):
+def _enr_step(
+    flow_step_id,
+    position=1,
+    delay=24,
+    status=EnrollmentStepStatus.PENDING,
+    template="t",
+    text=None,
+    vars=None,
+):
     return SimpleNamespace(
-        id=uuid.uuid4(), flow_step_id=flow_step_id, position=position,
-        delay_from_purchase_hours=delay, status=status,
-        meta_template_name=template, message_text=text,
+        id=uuid.uuid4(),
+        flow_step_id=flow_step_id,
+        position=position,
+        delay_from_purchase_hours=delay,
+        status=status,
+        meta_template_name=template,
+        message_text=text,
         template_variables=vars or {},
         scheduled_job_id=uuid.uuid4(),
     )

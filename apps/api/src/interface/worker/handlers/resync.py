@@ -28,7 +28,8 @@ async def handle_resync_flow(payload: dict) -> None:
         scheduled_job_repo = ScheduledJobRepository(session=session)
 
         enrollments = await enrollment_repo.find_active_by_flow(
-            account_id=account_id, flow_id=flow_id,
+            account_id=account_id,
+            flow_id=flow_id,
         )
         totals = {
             "enrollments_affected": 0,

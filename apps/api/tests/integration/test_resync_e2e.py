@@ -241,9 +241,9 @@ async def test_step_creation_enqueues_resync_job(
     assert response.status_code == 201, response.text
 
     jobs = (
-        await db_session.execute(
-            select(JobQueueModel).where(JobQueueModel.kind == "resync_flow")
-        )
-    ).scalars().all()
+        (await db_session.execute(select(JobQueueModel).where(JobQueueModel.kind == "resync_flow")))
+        .scalars()
+        .all()
+    )
     assert len(jobs) >= 1
     assert any(j.payload["flow_id"] == str(seeded_flow.id) for j in jobs)

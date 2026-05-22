@@ -107,10 +107,7 @@ async def test_migration_added_dedup_unique_index(db_session: AsyncSession) -> N
 async def test_migration_added_flow_fk_with_set_null(db_session: AsyncSession) -> None:
     """FK followup_enrollments.flow_id -> followup_flows.id com ON DELETE SET NULL."""
     result = await db_session.execute(
-        text(
-            "SELECT confdeltype FROM pg_constraint "
-            "WHERE conname = 'fk_followup_enrollments_flow'"
-        )
+        text("SELECT confdeltype FROM pg_constraint WHERE conname = 'fk_followup_enrollments_flow'")
     )
     # confdeltype: 'n' = SET NULL, 'a' = NO ACTION, 'c' = CASCADE, 'r' = RESTRICT
     # asyncpg retorna como bytes para tipo "char" do Postgres

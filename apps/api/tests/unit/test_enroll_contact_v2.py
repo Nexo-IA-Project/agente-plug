@@ -1,4 +1,5 @@
 """Testes para EnrollContact v2 — dedup, flow_step_id, jobs órfãos."""
+
 from __future__ import annotations
 
 import uuid
@@ -40,7 +41,9 @@ async def test_enroll_persists_flow_step_id_on_each_step():
     job_repo.schedule.return_value = SimpleNamespace(id=uuid.uuid4())
 
     use_case = EnrollContact(
-        flow_repo=flow_repo, enrollment_repo=enrollment_repo, job_repo=job_repo,
+        flow_repo=flow_repo,
+        enrollment_repo=enrollment_repo,
+        job_repo=job_repo,
     )
     result = await use_case.execute(
         account_id=uuid.uuid4(),
@@ -81,7 +84,9 @@ async def test_enroll_dedup_returns_existing_on_integrity_error():
     job_repo.schedule.return_value = SimpleNamespace(id=job_id)
 
     use_case = EnrollContact(
-        flow_repo=flow_repo, enrollment_repo=enrollment_repo, job_repo=job_repo,
+        flow_repo=flow_repo,
+        enrollment_repo=enrollment_repo,
+        job_repo=job_repo,
     )
     result = await use_case.execute(
         account_id=uuid.uuid4(),
@@ -118,7 +123,9 @@ async def test_enroll_dedup_rolls_back_session_before_lookup():
     job_repo.schedule.return_value = SimpleNamespace(id=uuid.uuid4())
 
     use_case = EnrollContact(
-        flow_repo=flow_repo, enrollment_repo=enrollment_repo, job_repo=job_repo,
+        flow_repo=flow_repo,
+        enrollment_repo=enrollment_repo,
+        job_repo=job_repo,
     )
     await use_case.execute(
         account_id=uuid.uuid4(),
@@ -147,7 +154,9 @@ async def test_enroll_returns_none_when_flow_not_found():
     flow_repo.find_by_id.return_value = None
 
     use_case = EnrollContact(
-        flow_repo=flow_repo, enrollment_repo=AsyncMock(), job_repo=AsyncMock(),
+        flow_repo=flow_repo,
+        enrollment_repo=AsyncMock(),
+        job_repo=AsyncMock(),
     )
     result = await use_case.execute(
         account_id=uuid.uuid4(),
