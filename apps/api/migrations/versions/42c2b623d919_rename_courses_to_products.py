@@ -42,19 +42,24 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Drop FK atual (referencia products.id via product_id)
     op.execute("""
         ALTER TABLE followup_flows
         DROP CONSTRAINT IF EXISTS fk_followup_flows_product_id
     """)
+    # Reverte index e coluna em followup_flows
+    op.execute("ALTER INDEX ix_followup_flows_product_id RENAME TO ix_followup_flows_course_id")
+    op.execute("ALTER TABLE followup_flows RENAME COLUMN product_id TO course_id")
+    # Reverte tabela
+    op.rename_table("products", "courses")
+    # Reverte index e constraint que agora estão na tabela courses
+    op.execute("ALTER INDEX ix_products_account_id RENAME TO ix_courses_account_id")
+    op.execute(
+        "ALTER TABLE courses RENAME CONSTRAINT uq_products_account_hubla TO uq_courses_account_hubla"
+    )
+    # Recria FK com nomes antigos
     op.execute("""
         ALTER TABLE followup_flows
         ADD CONSTRAINT fk_followup_flows_course_id
         FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE RESTRICT
     """)
-    op.execute("ALTER INDEX ix_followup_flows_product_id RENAME TO ix_followup_flows_course_id")
-    op.execute("ALTER TABLE followup_flows RENAME COLUMN product_id TO course_id")
-    op.rename_table("products", "courses")
-    op.execute("ALTER INDEX ix_products_account_id RENAME TO ix_courses_account_id")
-    op.execute(
-        "ALTER TABLE courses RENAME CONSTRAINT uq_products_account_hubla TO uq_courses_account_hubla"
-    )
