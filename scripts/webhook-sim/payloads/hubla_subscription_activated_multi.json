@@ -1,0 +1,41 @@
+{
+  "type": "subscription.activated",
+  "version": "2.0.0",
+  "event": {
+    "product": {
+      "id": "{{HUBLA_PRODUCT_ID}}",
+      "name": "Produto Teste A"
+    },
+    "products": [
+      {
+        "id": "{{HUBLA_PRODUCT_ID}}",
+        "name": "Produto Teste A",
+        "offers": []
+      },
+      {
+        "id": "{{HUBLA_PRODUCT_ID_2}}",
+        "name": "Produto Teste B",
+        "offers": []
+      }
+    ],
+    "subscription": {
+      "id": "{{SUBSCRIPTION_ID}}",
+      "payer": {
+        "firstName": "Teste",
+        "lastName": "Multi",
+        "document": "00000000000",
+        "email": "teste@nexoia.com.br",
+        "phone": "{{PHONE}}"
+      },
+      "activatedAt": "{{TIMESTAMP_ISO}}",
+      "paymentMethod": "credit_card",
+      "type": "one_time",
+      "status": "active"
+    },
+    "user": {
+      "id": "test-user-id",
+      "email": "teste@nexoia.com.br",
+      "phone": "{{PHONE}}"
+    }
+  }
+}
