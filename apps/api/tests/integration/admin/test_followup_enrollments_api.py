@@ -341,7 +341,7 @@ async def test_list_enrollments_paginates(
         "customer_name",
         "flow_id",
         "flow_name",
-        "course_name",
+        "product_name",
         "status",
         "created_at",
         "steps_sent",
@@ -349,7 +349,7 @@ async def test_list_enrollments_paginates(
     ]:
         assert key in item
     assert item["flow_name"] == "Flow Y"
-    assert item["course_name"] == "Curso X"
+    assert item["product_name"] == "Curso X"
 
 
 @pytest.mark.integration

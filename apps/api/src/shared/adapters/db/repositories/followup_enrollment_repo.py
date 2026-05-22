@@ -32,7 +32,7 @@ class EnrollmentListRow:
     customer_name: str | None
     flow_id: uuid.UUID | None
     flow_name: str | None
-    course_name: str | None
+    product_name: str | None
     status: EnrollmentStatus
     created_at: datetime
 
@@ -359,9 +359,9 @@ class FollowupEnrollmentRepository:
         page: int,
         page_size: int,
     ) -> tuple[list[EnrollmentListRow], int]:
-        """Listagem paginada para o painel admin, com flow_name e course_name.
+        """Listagem paginada para o painel admin, com flow_name e product_name.
 
-        Faz JOIN com flow + course + contact para devolver tudo o que o painel
+        Faz JOIN com flow + product + contact para devolver tudo o que o painel
         precisa em uma só query (mais count). `contact_phone` no retorno
         prioriza o snapshot do enrollment, com fallback para o do contato.
         """
@@ -374,7 +374,7 @@ class FollowupEnrollmentRepository:
                 ContactModel.name.label("c_name"),
                 FollowupEnrollmentModel.flow_id,
                 FollowupFlowModel.name.label("flow_name"),
-                ProductModel.name.label("course_name"),
+                ProductModel.name.label("product_name"),
                 FollowupEnrollmentModel.status,
                 FollowupEnrollmentModel.created_at,
             )
@@ -410,7 +410,7 @@ class FollowupEnrollmentRepository:
                 customer_name=r.e_customer_name or r.c_name,
                 flow_id=r.flow_id,
                 flow_name=r.flow_name,
-                course_name=r.course_name,
+                product_name=r.product_name,
                 status=EnrollmentStatus(r.status),
                 created_at=r.created_at,
             )

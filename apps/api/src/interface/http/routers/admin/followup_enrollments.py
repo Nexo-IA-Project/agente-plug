@@ -38,7 +38,7 @@ class EnrollmentListItem(BaseModel):
     customer_name: str | None
     flow_id: str | None
     flow_name: str | None
-    course_name: str | None
+    product_name: str | None
     status: str
     created_at: str
     steps_sent: int
@@ -126,7 +126,7 @@ async def list_enrollments(
             customer_name=r.customer_name,
             flow_id=str(r.flow_id) if r.flow_id else None,
             flow_name=r.flow_name,
-            course_name=r.course_name,
+            product_name=r.product_name,
             status=r.status.value,
             created_at=r.created_at.isoformat(),
             steps_sent=counts.get(r.id, {}).get("sent", 0),
