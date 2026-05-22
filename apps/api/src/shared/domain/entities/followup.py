@@ -36,7 +36,7 @@ class FollowupStep:
     id: UUID
     flow_id: UUID
     position: int
-    delay_from_purchase_hours: int
+    delay_from_purchase_minutes: int
     meta_template_name: str | None
     template_variables: dict
     created_at: datetime
@@ -64,7 +64,7 @@ class FollowupEnrollment:
 class FollowupEnrollmentStep:
     enrollment_id: UUID
     position: int
-    delay_from_purchase_hours: int
+    delay_from_purchase_minutes: int
     meta_template_name: str | None
     template_variables: dict
     id: UUID = field(default_factory=uuid4)

@@ -75,7 +75,7 @@ def _step_to_resp(s) -> FollowupStepResponse:
         id=s.id,
         flow_id=s.flow_id,
         position=s.position,
-        delay_from_purchase_hours=s.delay_from_purchase_hours,
+        delay_from_purchase_minutes=s.delay_from_purchase_minutes,
         meta_template_name=s.meta_template_name,
         template_variables=s.template_variables,
         message_text=s.message_text,
@@ -254,7 +254,7 @@ async def create_step(
         step = await repo.create_step(
             flow_id=flow_id,
             position=position,
-            delay_from_purchase_hours=body.delay_from_purchase_hours,
+            delay_from_purchase_minutes=body.delay_from_purchase_minutes,
             meta_template_name=body.meta_template_name,
             template_variables=_bindings_to_dict(body.template_variables),
             message_text=body.message_text,
@@ -281,7 +281,7 @@ async def update_step(
         step = await repo.update_step(
             step_id,
             position=body.position,
-            delay_from_purchase_hours=body.delay_from_purchase_hours,
+            delay_from_purchase_minutes=body.delay_from_purchase_minutes,
             meta_template_name=body.meta_template_name,
             template_variables=template_vars,
             message_text=body.message_text,

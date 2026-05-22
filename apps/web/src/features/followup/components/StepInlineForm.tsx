@@ -22,17 +22,17 @@ interface Props {
   onCancel: () => void;
 }
 
-function hoursToDisplay(hours: number): { value: number; unit: DelayUnit } {
-  if (hours === 0) return { value: 0, unit: "horas" };
-  if (hours % 24 === 0) return { value: hours / 24, unit: "dias" };
-  if (hours < 1) return { value: Math.round(hours * 60), unit: "minutos" };
-  return { value: hours, unit: "horas" };
+function minutesToDisplay(minutes: number): { value: number; unit: DelayUnit } {
+  if (minutes === 0) return { value: 0, unit: "minutos" };
+  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "dias" };
+  if (minutes % 60 === 0) return { value: minutes / 60, unit: "horas" };
+  return { value: minutes, unit: "minutos" };
 }
 
-function toHours(value: number, unit: DelayUnit): number {
-  if (unit === "minutos") return value / 60;
-  if (unit === "horas") return value;
-  return value * 24;
+function toMinutes(value: number, unit: DelayUnit): number {
+  if (unit === "minutos") return value;
+  if (unit === "horas") return value * 60;
+  return value * 1440;
 }
 
 function getTemplateBody(template: MetaTemplate | undefined): string | null {
@@ -51,7 +51,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const initialDisplay = hoursToDisplay(step?.delay_from_purchase_hours ?? 0);
+  const initialDisplay = minutesToDisplay(step?.delay_from_purchase_minutes ?? 0);
   const [mode, setMode] = useState<StepMode>(
     step ? (step.message_text ? "text" : "template") : "template"
   );
@@ -95,11 +95,11 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const hours = toHours(delayValue, delayUnit);
+    const minutes = toMinutes(delayValue, delayUnit);
     try {
       if (mode === "template") {
         const dto: UpdateStepInput = {
-          delay_from_purchase_hours: hours,
+          delay_from_purchase_minutes: minutes,
           meta_template_name: selectedTemplate || null,
           template_variables: templateVariables,
           message_text: null,
@@ -107,7 +107,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         await onSave(dto);
       } else {
         const dto: UpdateStepInput = {
-          delay_from_purchase_hours: hours,
+          delay_from_purchase_minutes: minutes,
           meta_template_name: null,
           template_variables: {},
           message_text: messageText,
@@ -191,9 +191,9 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
             </select>
           </div>
           <p className="mt-1 text-xs text-on-surface-variant">
-            {delayValue === 0 && delayUnit === "horas"
+            {delayValue === 0
               ? "Imediato — dispara assim que a compra é registrada"
-              : `${toHours(delayValue, delayUnit)} hora(s) após a compra`}
+              : `${toMinutes(delayValue, delayUnit)} minuto(s) após a compra`}
           </p>
         </div>
 

@@ -515,7 +515,7 @@ class FollowupStepModel(Base):
         UUID(as_uuid=True), ForeignKey("followup_flows.id"), nullable=False, index=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -557,7 +557,7 @@ class FollowupEnrollmentStepModel(Base):
         UUID(as_uuid=True), ForeignKey("followup_enrollments.id"), nullable=False, index=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    delay_from_purchase_hours: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     message_text: Mapped[str | None] = mapped_column(Text, nullable=True)

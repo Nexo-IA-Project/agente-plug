@@ -82,7 +82,7 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
       </div>
 
       {/* Delay badge */}
-      <DelayBadge hours={step.delay_from_purchase_hours} />
+      <DelayBadge minutes={step.delay_from_purchase_minutes} />
 
       {/* Reordenar — setas + drag */}
       <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">

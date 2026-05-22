@@ -20,7 +20,7 @@ def _flow_step(id_, position=1, delay=0):
     return SimpleNamespace(
         id=id_,
         position=position,
-        delay_from_purchase_hours=delay,
+        delay_from_purchase_minutes=delay,
         meta_template_name="t",
         message_text=None,
         template_variables={},

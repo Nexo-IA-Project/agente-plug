@@ -21,7 +21,7 @@ def _make_step(
         id=uuid4(),
         enrollment_id=uuid4(),
         position=1,
-        delay_from_purchase_hours=0,
+        delay_from_purchase_minutes=0,
         meta_template_name="mv_boas_vindas",
         template_variables=(
             template_variables
@@ -171,7 +171,7 @@ async def test_dispatch_resolves_dynamic_variables():
         id=uuid4(),
         enrollment_id=enrollment_id,
         position=0,
-        delay_from_purchase_hours=0,
+        delay_from_purchase_minutes=0,
         meta_template_name="welcome",
         template_variables={
             "1": {"source": "customer_name"},

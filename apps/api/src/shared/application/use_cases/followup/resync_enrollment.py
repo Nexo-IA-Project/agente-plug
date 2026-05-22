@@ -56,13 +56,13 @@ class ResyncEnrollmentUseCase:
                 enrollment_id=enrollment.id,
                 flow_step_id=fs.id,
                 position=fs.position,
-                delay_from_purchase_hours=fs.delay_from_purchase_hours,
+                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,
                 status=EnrollmentStepStatus.PENDING,
             )
-            run_at = enrollment.purchase_time + timedelta(hours=fs.delay_from_purchase_hours)
+            run_at = enrollment.purchase_time + timedelta(minutes=fs.delay_from_purchase_minutes)
             job = await self._scheduled_job_repo.schedule(
                 account_id=account_id,
                 conversation_id=None,
@@ -82,7 +82,7 @@ class ResyncEnrollmentUseCase:
         for enr_step, fs in diff.to_reschedule:
             if enr_step.scheduled_job_id is not None:
                 await self._scheduled_job_repo.cancel(enr_step.scheduled_job_id)
-            run_at = enrollment.purchase_time + timedelta(hours=fs.delay_from_purchase_hours)
+            run_at = enrollment.purchase_time + timedelta(minutes=fs.delay_from_purchase_minutes)
             new_job = await self._scheduled_job_repo.schedule(
                 account_id=account_id,
                 conversation_id=None,
@@ -97,7 +97,7 @@ class ResyncEnrollmentUseCase:
             )
             await self._enrollment_repo.apply_step_update(
                 step_id=enr_step.id,
-                delay_from_purchase_hours=fs.delay_from_purchase_hours,
+                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,
@@ -108,7 +108,7 @@ class ResyncEnrollmentUseCase:
         for enr_step, fs in diff.to_update_content:
             await self._enrollment_repo.apply_step_update(
                 step_id=enr_step.id,
-                delay_from_purchase_hours=fs.delay_from_purchase_hours,
+                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,
