@@ -78,15 +78,15 @@ class PurchaseHandler:
             )
 
         # Resolve produto via hubla_id.
-        course = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
-        if course is None:
+        product = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
+        if product is None:
             log.warning(
                 "product_not_found",
                 product_id=hubla_product_id,
                 account_id=account_id_str,
             )
         else:
-            flows = await self._flow_repo.list_active_by_product(course.id)
+            flows = await self._flow_repo.list_active_by_product(product.id)
             for flow in flows:
                 await self._enroll_contact_uc.execute(
                     account_id=account_uuid,
@@ -101,7 +101,7 @@ class PurchaseHandler:
                 )
             log.info(
                 "followup_enrollments_dispatched",
-                product_id=str(course.id),
+                product_id=str(product.id),
                 flows=len(flows),
                 purchase_id=purchase_id,
             )

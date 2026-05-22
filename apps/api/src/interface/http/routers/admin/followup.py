@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from interface.http.schemas.followup import (
-    CourseSummary,
     CreateFlowRequest,
     CreateStepRequest,
     FollowupFlowResponse,
     FollowupFlowStats,
     FollowupStepResponse,
+    ProductSummary,
     ReorderStepsRequest,
     StepVariableBindingDto,
     UpdateFlowRequest,
@@ -106,9 +106,9 @@ async def list_flows(
         )
         out: list[FollowupFlowResponse] = []
         for f in flows:
-            course = await product_repo.find_by_id(f.product_id)
+            product = await product_repo.find_by_id(f.product_id)
             steps = await flow_repo.get_steps(f.id)
-            if course is None:
+            if product is None:
                 # FK garante que existe; defensivo
                 continue
             s = stats.get(f.id, {})
@@ -117,7 +117,9 @@ async def list_flows(
                     id=f.id,
                     name=f.name,
                     is_active=f.is_active,
-                    course=CourseSummary(id=course.id, name=course.name, hubla_id=course.hubla_id),
+                    product=ProductSummary(
+                        id=product.id, name=product.name, hubla_id=product.hubla_id
+                    ),
                     steps_count=len(steps),
                     created_at=f.created_at,
                     updated_at=f.updated_at,
@@ -142,11 +144,11 @@ async def create_flow(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
-        course = await product_repo.find_by_id(body.product_id)
-        if course is None or course.account_id != account_uuid:
+        product = await product_repo.find_by_id(body.product_id)
+        if product is None or product.account_id != account_uuid:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="course not found",
+                detail="product not found",
             )
         flow_repo = FollowupFlowRepository(session=session)
         flow = await flow_repo.create_flow(
@@ -159,7 +161,7 @@ async def create_flow(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
-        course=CourseSummary(id=course.id, name=course.name, hubla_id=course.hubla_id),
+        product=ProductSummary(id=product.id, name=product.name, hubla_id=product.hubla_id),
         steps_count=0,
         created_at=flow.created_at,
         updated_at=flow.updated_at,
@@ -176,11 +178,11 @@ async def update_flow(
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
         if body.product_id is not None:
-            target_course = await product_repo.find_by_id(body.product_id)
-            if target_course is None or target_course.account_id != account_uuid:
+            target_product = await product_repo.find_by_id(body.product_id)
+            if target_product is None or target_product.account_id != account_uuid:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="course not found",
+                    detail="product not found",
                 )
         flow_repo = FollowupFlowRepository(session=session)
         flow = await flow_repo.update_flow(
@@ -191,15 +193,15 @@ async def update_flow(
         )
         if flow is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flow não encontrado")
-        course = await product_repo.find_by_id(flow.product_id)
+        product = await product_repo.find_by_id(flow.product_id)
         steps = await flow_repo.get_steps(flow.id)
-        if course is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="course not found")
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="product not found")
     return FollowupFlowResponse(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
-        course=CourseSummary(id=course.id, name=course.name, hubla_id=course.hubla_id),
+        product=ProductSummary(id=product.id, name=product.name, hubla_id=product.hubla_id),
         steps_count=len(steps),
         created_at=flow.created_at,
         updated_at=flow.updated_at,

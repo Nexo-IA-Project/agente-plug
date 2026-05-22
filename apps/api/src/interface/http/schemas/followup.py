@@ -31,7 +31,7 @@ class FollowupStepResponse(BaseModel):
     created_at: datetime
 
 
-class CourseSummary(BaseModel):
+class ProductSummary(BaseModel):
     id: UUID
     name: str
     hubla_id: str
@@ -46,7 +46,7 @@ class FollowupFlowResponse(BaseModel):
     id: UUID
     name: str
     is_active: bool
-    course: CourseSummary
+    product: ProductSummary
     steps_count: int
     created_at: datetime
     updated_at: datetime
