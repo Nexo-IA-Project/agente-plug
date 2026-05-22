@@ -27,8 +27,34 @@ export interface LeadEvent {
   product_name: string;
 }
 
+export type FollowupStepStatus = "sent" | "pending" | "failed" | "cancelled";
+
+export interface FollowupStepDetail {
+  id: string;
+  position: number;
+  template_name: string | null;
+  message_text: string | null;
+  status: FollowupStepStatus;
+  delay_from_purchase_minutes: number;
+  scheduled_for: string | null;   // ISO datetime, quando vai disparar
+  sent_at: string | null;          // ISO datetime, quando foi enviado
+  failure_reason: string | null;
+  rendered_preview: string | null; // primeiros ~80 chars do conteúdo renderizado
+}
+
+export interface FollowupEnrollmentDetail {
+  id: string;
+  flow_id: string;
+  flow_name: string;
+  product_name: string;
+  trigger_event_type: string;       // ex: subscription.activated
+  enrolled_at: string;               // ISO datetime
+  steps: FollowupStepDetail[];
+}
+
 export interface LeadDetail extends Lead {
   events: LeadEvent[];
+  enrollments: FollowupEnrollmentDetail[];
 }
 
 export interface LeadListResponse {

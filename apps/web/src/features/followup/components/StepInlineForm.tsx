@@ -43,13 +43,24 @@ function getTemplateBody(template: MetaTemplate | undefined): string | null {
 const inputCls = "field-input";
 const labelCls = "field-label";
 
+const EXIT_DURATION_MS = 320;
+
 export function StepInlineForm({ step, onSave, onCancel }: Props) {
-  // Fade in ao montar
+  // Fade in/out controlado: visible começa false, vira true no mount.
+  // Ao cancelar/salvar, exiting vira true e esperamos EXIT_DURATION_MS antes
+  // de chamar o callback do pai (que vai unmontar o componente).
   const [visible, setVisible] = useState(false);
+  const [exiting, setExiting] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  const handleCancelClick = () => {
+    if (exiting) return;
+    setExiting(true);
+    setTimeout(onCancel, EXIT_DURATION_MS);
+  };
 
   const initialDisplay = minutesToDisplay(step?.delay_from_purchase_minutes ?? 0);
   const [mode, setMode] = useState<StepMode>(
@@ -114,18 +125,25 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         };
         await onSave(dto);
       }
+      // Sucesso — dispara fade-out antes do pai unmontar (esperamos via Promise)
+      setExiting(true);
+      await new Promise<void>((resolve) => setTimeout(resolve, EXIT_DURATION_MS));
+    } catch {
+      setExiting(false);
     } finally {
       setSaving(false);
     }
   }
 
+  const isOpen = visible && !exiting;
+
   return (
     <div
       className="rounded-2xl border border-primary/20 bg-surface-container p-5 shadow-sm"
       style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(10px)",
-        transition: "opacity 320ms ease, transform 320ms ease",
+        opacity: isOpen ? 1 : 0,
+        transform: isOpen ? "translateY(0)" : "translateY(-6px)",
+        transition: "opacity 360ms cubic-bezier(0.22, 1, 0.36, 1), transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
       <div className="mb-4 flex items-center justify-between">
@@ -134,7 +152,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         </p>
         <button
           type="button"
-          onClick={onCancel}
+          onClick={handleCancelClick}
           className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high"
         >
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
@@ -270,7 +288,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         <div className="flex gap-2 pt-1">
           <button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancelClick}
             className="flex-1 rounded-xl py-2.5 text-label-sm text-on-surface-variant hover:bg-surface-container-high"
           >
             Cancelar

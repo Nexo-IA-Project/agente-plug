@@ -60,7 +60,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               "group-data-[type=info]/toast:!text-white",
             ].join(" "),
             closeButton: [
-              "!rounded-none !border-white/30 !bg-white/15 !text-white hover:!bg-white/25",
+              // Estilo do botão — posicionamento controlado via globals.css
+              "!rounded-none !border-0 !bg-transparent !text-white/80 hover:!text-white hover:!bg-white/15",
             ].join(" "),
           },
         }}
