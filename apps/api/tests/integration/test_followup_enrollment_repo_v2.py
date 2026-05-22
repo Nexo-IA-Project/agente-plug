@@ -21,11 +21,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
-    CourseModel,
     FollowupEnrollmentModel,
     FollowupEnrollmentStepModel,
     FollowupFlowModel,
     FollowupStepModel,
+    ProductModel,
 )
 from shared.adapters.db.repositories.followup_enrollment_repo import (
     FollowupEnrollmentRepository,
@@ -77,7 +77,7 @@ async def _clean_db(db_session: AsyncSession) -> None:
     await db_session.execute(delete(FollowupEnrollmentModel))
     await db_session.execute(delete(FollowupStepModel))
     await db_session.execute(delete(FollowupFlowModel))
-    await db_session.execute(delete(CourseModel))
+    await db_session.execute(delete(ProductModel))
     await db_session.execute(delete(ContactModel))
     await db_session.execute(delete(AccountModel))
     await db_session.commit()
@@ -93,8 +93,8 @@ async def seed_account(db_session: AsyncSession) -> AccountModel:
 
 
 @pytest.fixture
-async def seed_course(db_session: AsyncSession, seed_account: AccountModel) -> CourseModel:
-    course = CourseModel(
+async def seed_product(db_session: AsyncSession, seed_account: AccountModel) -> ProductModel:
+    product = ProductModel(
         id=uuid.uuid4(),
         account_id=seed_account.id,
         name="Curso X",
@@ -103,18 +103,18 @@ async def seed_course(db_session: AsyncSession, seed_account: AccountModel) -> C
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db_session.add(course)
+    db_session.add(product)
     await db_session.flush()
     await db_session.commit()
-    return course
+    return product
 
 
 @pytest.fixture
-async def seed_flow(db_session: AsyncSession, seed_course: CourseModel) -> FollowupFlowModel:
+async def seed_flow(db_session: AsyncSession, seed_product: ProductModel) -> FollowupFlowModel:
     flow = FollowupFlowModel(
         id=uuid.uuid4(),
-        account_id=seed_course.account_id,
-        course_id=seed_course.id,
+        account_id=seed_product.account_id,
+        product_id=seed_product.id,
         name="Flow A",
         is_active=True,
     )

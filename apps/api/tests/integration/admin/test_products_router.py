@@ -1,4 +1,4 @@
-"""Integration test: router /admin/courses (CRUD).
+"""Integration test: router /admin/products (CRUD).
 
 Estratégia:
 - DB real: Postgres via testcontainers + db_session fixture
@@ -20,8 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
     AccountModel,
-    CourseModel,
     FollowupFlowModel,
+    ProductModel,
 )
 from shared.adapters.kb.jwt_handler import create_access_token
 
@@ -145,7 +145,7 @@ async def client(
             return_value=mock_settings,
         ),
         patch(
-            "interface.http.routers.admin.courses.session_scope",
+            "interface.http.routers.admin.products.session_scope",
             new=patched_session_scope,
         ),
     ):
@@ -154,35 +154,35 @@ async def client(
 
 
 @pytest.fixture
-async def seed_course_with_flow(
+async def seed_product_with_flow(
     db_session: AsyncSession, seeded_account: AccountModel
 ) -> tuple[uuid.UUID, uuid.UUID]:
-    """Cria curso + flow vinculado e retorna (course_id, flow_id)."""
+    """Cria produto + flow vinculado e retorna (product_id, flow_id)."""
     from datetime import UTC, datetime
 
-    course = CourseModel(
+    product = ProductModel(
         id=uuid.uuid4(),
         account_id=seeded_account.id,
-        name="Curso Com Flow",
-        hubla_id="curso-flow",
+        name="Produto Com Flow",
+        hubla_id="produto-flow",
         is_active=True,
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db_session.add(course)
+    db_session.add(product)
     await db_session.flush()
 
     flow = FollowupFlowModel(
         id=uuid.uuid4(),
         account_id=seeded_account.id,
-        course_id=course.id,
+        product_id=product.id,
         name="Flow X",
         is_active=True,
     )
     db_session.add(flow)
     await db_session.flush()
     await db_session.commit()
-    return course.id, flow.id
+    return product.id, flow.id
 
 
 # ──────────────────────────────────────────────────────────────
@@ -191,9 +191,9 @@ async def seed_course_with_flow(
 
 
 @pytest.mark.integration
-async def test_create_course(client: AsyncClient, admin_headers: dict[str, str]) -> None:
+async def test_create_product(client: AsyncClient, admin_headers: dict[str, str]) -> None:
     resp = await client.post(
-        "/admin/courses",
+        "/admin/products",
         json={"name": "Marketing 360", "hubla_id": "prod-mkt-360"},
         headers=admin_headers,
     )
@@ -210,25 +210,25 @@ async def test_create_duplicate_returns_409(
     client: AsyncClient, admin_headers: dict[str, str]
 ) -> None:
     body = {"name": "A", "hubla_id": "dup-1"}
-    r1 = await client.post("/admin/courses", json=body, headers=admin_headers)
+    r1 = await client.post("/admin/products", json=body, headers=admin_headers)
     assert r1.status_code == 201, r1.text
-    r2 = await client.post("/admin/courses", json=body, headers=admin_headers)
+    r2 = await client.post("/admin/products", json=body, headers=admin_headers)
     assert r2.status_code == 409, r2.text
 
 
 @pytest.mark.integration
-async def test_list_courses(client: AsyncClient, admin_headers: dict[str, str]) -> None:
+async def test_list_products(client: AsyncClient, admin_headers: dict[str, str]) -> None:
     await client.post(
-        "/admin/courses",
+        "/admin/products",
         json={"name": "A", "hubla_id": "list-x1"},
         headers=admin_headers,
     )
     await client.post(
-        "/admin/courses",
+        "/admin/products",
         json={"name": "B", "hubla_id": "list-x2"},
         headers=admin_headers,
     )
-    resp = await client.get("/admin/courses", headers=admin_headers)
+    resp = await client.get("/admin/products", headers=admin_headers)
     assert resp.status_code == 200, resp.text
     items = resp.json()
     assert len(items) >= 2
@@ -236,16 +236,16 @@ async def test_list_courses(client: AsyncClient, admin_headers: dict[str, str]) 
 
 
 @pytest.mark.integration
-async def test_update_course(client: AsyncClient, admin_headers: dict[str, str]) -> None:
+async def test_update_product(client: AsyncClient, admin_headers: dict[str, str]) -> None:
     create = await client.post(
-        "/admin/courses",
+        "/admin/products",
         json={"name": "Old", "hubla_id": "upd-x"},
         headers=admin_headers,
     )
     assert create.status_code == 201, create.text
-    cid = create.json()["id"]
+    pid = create.json()["id"]
     resp = await client.put(
-        f"/admin/courses/{cid}",
+        f"/admin/products/{pid}",
         json={"name": "New"},
         headers=admin_headers,
     )
@@ -255,28 +255,28 @@ async def test_update_course(client: AsyncClient, admin_headers: dict[str, str])
 
 
 @pytest.mark.integration
-async def test_delete_course_with_flow_returns_409(
+async def test_delete_product_with_flow_returns_409(
     client: AsyncClient,
     admin_headers: dict[str, str],
-    seed_course_with_flow: tuple[uuid.UUID, uuid.UUID],
+    seed_product_with_flow: tuple[uuid.UUID, uuid.UUID],
 ) -> None:
-    cid, _ = seed_course_with_flow
-    resp = await client.delete(f"/admin/courses/{cid}", headers=admin_headers)
+    pid, _ = seed_product_with_flow
+    resp = await client.delete(f"/admin/products/{pid}", headers=admin_headers)
     assert resp.status_code == 409, resp.text
 
 
 @pytest.mark.integration
-async def test_delete_course_no_flows_returns_204(
+async def test_delete_product_no_flows_returns_204(
     client: AsyncClient, admin_headers: dict[str, str]
 ) -> None:
     create = await client.post(
-        "/admin/courses",
+        "/admin/products",
         json={"name": "to-del", "hubla_id": "del-x"},
         headers=admin_headers,
     )
     assert create.status_code == 201, create.text
-    cid = create.json()["id"]
-    resp = await client.delete(f"/admin/courses/{cid}", headers=admin_headers)
+    pid = create.json()["id"]
+    resp = await client.delete(f"/admin/products/{pid}", headers=admin_headers)
     assert resp.status_code == 204, resp.text
 
 
@@ -286,7 +286,7 @@ async def test_update_nonexistent_returns_404(
 ) -> None:
     fake_id = uuid.uuid4()
     resp = await client.put(
-        f"/admin/courses/{fake_id}",
+        f"/admin/products/{fake_id}",
         json={"name": "X"},
         headers=admin_headers,
     )
@@ -298,5 +298,5 @@ async def test_delete_nonexistent_returns_404(
     client: AsyncClient, admin_headers: dict[str, str]
 ) -> None:
     fake_id = uuid.uuid4()
-    resp = await client.delete(f"/admin/courses/{fake_id}", headers=admin_headers)
+    resp = await client.delete(f"/admin/products/{fake_id}", headers=admin_headers)
     assert resp.status_code == 404, resp.text

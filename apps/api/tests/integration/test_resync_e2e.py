@@ -19,10 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.adapters.db.models import (
     AccountModel,
     AuditEventModel,
-    CourseModel,
     FollowupFlowModel,
     FollowupStepModel,
     JobQueueModel,
+    ProductModel,
 )
 from shared.adapters.kb.jwt_handler import create_access_token
 
@@ -99,7 +99,7 @@ async def _purge_other_accounts(db_session: AsyncSession, admin_account_id: uuid
     await db_session.execute(delete(FollowupEnrollmentModel))
     await db_session.execute(delete(FollowupStepModel))
     await db_session.execute(delete(FollowupFlowModel))
-    await db_session.execute(delete(CourseModel))
+    await db_session.execute(delete(ProductModel))
     await db_session.execute(delete(ContactModel))
     await db_session.execute(delete(JobQueueModel))
     await db_session.execute(delete(AccountModel).where(AccountModel.id != admin_account_id))
@@ -119,10 +119,10 @@ async def seeded_account(db_session: AsyncSession, admin_account_id: uuid.UUID) 
 
 
 @pytest.fixture
-async def seeded_course(db_session: AsyncSession, seeded_account: AccountModel) -> CourseModel:
+async def seeded_product(db_session: AsyncSession, seeded_account: AccountModel) -> ProductModel:
     from datetime import UTC, datetime
 
-    course = CourseModel(
+    product = ProductModel(
         id=uuid.uuid4(),
         account_id=seeded_account.id,
         name="Curso Padrão",
@@ -131,21 +131,21 @@ async def seeded_course(db_session: AsyncSession, seeded_account: AccountModel) 
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db_session.add(course)
+    db_session.add(product)
     await db_session.flush()
     await db_session.commit()
-    return course
+    return product
 
 
 @pytest.fixture
 async def seeded_flow(
     db_session: AsyncSession,
-    seeded_course: CourseModel,
+    seeded_product: ProductModel,
 ) -> FollowupFlowModel:
     flow = FollowupFlowModel(
         id=uuid.uuid4(),
-        account_id=seeded_course.account_id,
-        course_id=seeded_course.id,
+        account_id=seeded_product.account_id,
+        product_id=seeded_product.id,
         name="Flow X",
         is_active=True,
     )

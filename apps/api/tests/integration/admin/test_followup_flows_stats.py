@@ -20,11 +20,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.adapters.db.models import (
     AccountModel,
     ContactModel,
-    CourseModel,
     FollowupEnrollmentModel,
     FollowupEnrollmentStepModel,
     FollowupFlowModel,
     FollowupStepModel,
+    ProductModel,
     ScheduledJobModel,
 )
 from shared.adapters.kb.jwt_handler import create_access_token
@@ -97,7 +97,7 @@ async def _purge_other_accounts(db_session: AsyncSession, admin_account_id: uuid
     await db_session.execute(delete(FollowupEnrollmentModel))
     await db_session.execute(delete(FollowupStepModel))
     await db_session.execute(delete(FollowupFlowModel))
-    await db_session.execute(delete(CourseModel))
+    await db_session.execute(delete(ProductModel))
     await db_session.execute(delete(ContactModel))
     await db_session.execute(delete(AccountModel).where(AccountModel.id != admin_account_id))
     await db_session.commit()
@@ -119,7 +119,7 @@ async def seeded_account(db_session: AsyncSession, admin_account_id: uuid.UUID) 
 async def seeded_flow_with_enrollments(
     db_session: AsyncSession, seeded_account: AccountModel
 ) -> FollowupFlowModel:
-    course = CourseModel(
+    product = ProductModel(
         id=uuid.uuid4(),
         account_id=seeded_account.id,
         name="Curso Stats",
@@ -128,12 +128,12 @@ async def seeded_flow_with_enrollments(
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC),
     )
-    db_session.add(course)
+    db_session.add(product)
 
     flow = FollowupFlowModel(
         id=uuid.uuid4(),
         account_id=seeded_account.id,
-        course_id=course.id,
+        product_id=product.id,
         name="Flow Stats",
         is_active=True,
     )
