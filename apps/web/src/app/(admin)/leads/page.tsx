@@ -5,6 +5,7 @@ import { downloadLeadsCsv, listLeads } from "@/lib/api";
 import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
 import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
 import { useToast } from "@/shared/hooks/useToast";
+import { useProducts } from "@/features/products/hooks/useProducts";
 import type { Lead, LeadFilters } from "@/features/leads/types";
 
 const STATUS_OPTIONS = [
@@ -25,6 +26,16 @@ function formatDate(d: string): string {
   return new Date(d).toLocaleDateString("pt-BR");
 }
 
+function toIsoStartOfDay(dateStr: string): string | undefined {
+  if (!dateStr) return undefined;
+  return new Date(dateStr + "T00:00:00").toISOString();
+}
+
+function toIsoEndOfDay(dateStr: string): string | undefined {
+  if (!dateStr) return undefined;
+  return new Date(dateStr + "T23:59:59.999").toISOString();
+}
+
 export default function LeadsPage() {
   const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -32,9 +43,13 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<LeadFilters>({ page: 1, page_size: 25 });
   const [utmInput, setUtmInput] = useState("");
+  const [dateFromInput, setDateFromInput] = useState("");
+  const [dateToInput, setDateToInput] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  const { products, loading: productsLoading } = useProducts();
 
   const load = useCallback(
     async (f: LeadFilters) => {
@@ -74,7 +89,20 @@ export default function LeadsPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / (filters.page_size ?? 25)));
   const currentPage = filters.page ?? 1;
-  const hasActiveFilters = !!(filters.status || filters.utm_source);
+  const hasActiveFilters = !!(
+    filters.product_id ||
+    filters.status ||
+    filters.utm_source ||
+    filters.date_from ||
+    filters.date_to
+  );
+
+  const clearFilters = () => {
+    setUtmInput("");
+    setDateFromInput("");
+    setDateToInput("");
+    setFilters({ page: 1, page_size: 25 });
+  };
 
   return (
     <div className="space-y-5 p-6">
@@ -104,7 +132,27 @@ export default function LeadsPage() {
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
+        <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+          Filtros
+        </span>
+
+        {/* Produto */}
+        <select
+          value={filters.product_id ?? ""}
+          onChange={(e) => updateFilter({ product_id: e.target.value || undefined })}
+          disabled={productsLoading || products.length === 0}
+          className="field-select !w-auto min-w-[180px] disabled:opacity-60"
+        >
+          <option value="">Todos os produtos</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.hubla_id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Status */}
         <select
           value={filters.status ?? ""}
           onChange={(e) => updateFilter({ status: e.target.value || undefined })}
@@ -116,6 +164,33 @@ export default function LeadsPage() {
             </option>
           ))}
         </select>
+
+        {/* Date range */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={dateFromInput}
+            onChange={(e) => {
+              setDateFromInput(e.target.value);
+              updateFilter({ date_from: toIsoStartOfDay(e.target.value) });
+            }}
+            className="field-input !w-auto"
+            title="Data de início"
+          />
+          <span className="text-on-surface-variant">—</span>
+          <input
+            type="date"
+            value={dateToInput}
+            onChange={(e) => {
+              setDateToInput(e.target.value);
+              updateFilter({ date_to: toIsoEndOfDay(e.target.value) });
+            }}
+            className="field-input !w-auto"
+            title="Data de fim"
+          />
+        </div>
+
+        {/* UTM source */}
         <input
           type="text"
           placeholder="Filtrar por UTM source..."
@@ -130,13 +205,11 @@ export default function LeadsPage() {
           }}
           className="field-input !w-56"
         />
+
         {hasActiveFilters && (
           <button
-            onClick={() => {
-              setUtmInput("");
-              setFilters({ page: 1, page_size: 25 });
-            }}
-            className="text-xs text-primary hover:underline"
+            onClick={clearFilters}
+            className="ml-auto text-xs text-primary hover:underline"
           >
             Limpar filtros
           </button>

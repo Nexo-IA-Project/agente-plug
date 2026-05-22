@@ -11,7 +11,7 @@ export const LEAD_STATUS_BADGES: Record<string, LeadStatusBadge> = {
   },
   inactive: {
     label: "Inativo",
-    className: "bg-sky-500/10 text-sky-500 border-sky-500/30",
+    className: "bg-amber-500/10 text-amber-500 border-amber-500/30",
   },
   abandoned: {
     label: "Abandonado",
@@ -19,7 +19,7 @@ export const LEAD_STATUS_BADGES: Record<string, LeadStatusBadge> = {
   },
   refunded: {
     label: "Reembolsado",
-    className: "bg-violet-500/10 text-violet-500 border-violet-500/30",
+    className: "bg-orange-500/10 text-orange-500 border-orange-500/30",
   },
   cancelled: {
     label: "Cancelado",
