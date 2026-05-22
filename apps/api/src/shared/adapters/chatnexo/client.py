@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -67,10 +68,24 @@ class ChatNexoClient:
         return response
 
     async def send_message(self, *, account_id: str, conversation_id: str, text: str) -> None:
-        await self._post(
-            f"/accounts/{account_id}/conversations/{conversation_id}/messages",
-            json={"type": "text", "content": text},
+        from shared.adapters.chatnexo.message_splitter import split_message
+
+        s = get_settings()
+        parts = split_message(
+            text,
+            max_chars=s.chatnexo_split_max_chars,
+            min_chars=s.chatnexo_split_min_chars,
         )
+
+        for i, part in enumerate(parts):
+            await self._post(
+                f"/accounts/{account_id}/conversations/{conversation_id}/messages",
+                json={"type": "text", "content": part},
+            )
+            if i < len(parts) - 1:
+                delay_ms = len(part) * s.chatnexo_delay_ms_per_char
+                delay_ms = max(s.chatnexo_min_delay_ms, min(delay_ms, s.chatnexo_max_delay_ms))
+                await asyncio.sleep(delay_ms / 1000)
 
     async def send_template(
         self,
