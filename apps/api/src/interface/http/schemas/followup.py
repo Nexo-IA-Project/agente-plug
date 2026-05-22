@@ -6,6 +6,24 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
+HUBLA_EVENT_TYPES: tuple[str, ...] = (
+    "subscription.activated",
+    "subscription.created",
+    "lead.abandoned",
+    "subscription.deactivated",
+    "subscription.expiring",
+    "invoice.refunded",
+)
+
+HublaEventType = Literal[
+    "subscription.activated",
+    "subscription.created",
+    "lead.abandoned",
+    "subscription.deactivated",
+    "subscription.expiring",
+    "invoice.refunded",
+]
+
 
 class StepVariableBindingDto(BaseModel):
     source: Literal["customer_name", "product_name", "contact_phone", "contact_email", "static"]
@@ -46,7 +64,7 @@ class FollowupFlowResponse(BaseModel):
     id: UUID
     name: str
     is_active: bool
-    trigger_event_type: str
+    trigger_event_type: HublaEventType
     product: ProductSummary
     steps_count: int
     created_at: datetime
@@ -57,14 +75,14 @@ class FollowupFlowResponse(BaseModel):
 class CreateFlowRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     product_id: UUID
-    trigger_event_type: str = "subscription.activated"
+    trigger_event_type: HublaEventType = "subscription.activated"
     is_active: bool = True
 
 
 class UpdateFlowRequest(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     product_id: UUID | None = None
-    trigger_event_type: str | None = None
+    trigger_event_type: HublaEventType | None = None
     is_active: bool | None = None
 
 
