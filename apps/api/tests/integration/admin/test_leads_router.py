@@ -6,6 +6,7 @@ Estratégia idêntica ao test_products_router.py:
 - Auth: JWT gerado inline com jwt_secret de teste
 - Settings: patcheado para injetar jwt_secret consistente
 """
+
 from __future__ import annotations
 
 import uuid

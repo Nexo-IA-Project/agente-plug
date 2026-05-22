@@ -52,14 +52,10 @@ async def _verify_token(request: Request) -> None:
 )
 async def receive(payload: dict = Body(...)) -> dict:  # noqa: B008
     if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
-        raise RuntimeError(
-            "webhook_hubla router not configured; call configure() before serving"
-        )
+        raise RuntimeError("webhook_hubla router not configured; call configure() before serving")
 
     event_type: str = payload.get("type", "unknown")
-    subscription_id: str = (
-        payload.get("event", {}).get("subscription", {}).get("id", "")
-    )
+    subscription_id: str = payload.get("event", {}).get("subscription", {}).get("id", "")
     external_id = f"{event_type}:{subscription_id}" if subscription_id else event_type
 
     first = await _cfg.dedup.try_mark(key=f"hubla:{external_id}", ttl_seconds=24 * 3600)

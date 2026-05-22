@@ -212,9 +212,7 @@ async def get_lead(
         repo = SqlLeadRepository(session=session)
         m = await repo.find_by_id(lead_id, account_uuid)
         if m is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="lead not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="lead not found")
         events = await repo.get_events(account_uuid, m.hubla_subscription_id)
 
     return LeadDetailResponse(

@@ -2,6 +2,7 @@
 
 Full upsert behavior requires postgres and lives in integration tests.
 """
+
 from unittest.mock import AsyncMock
 
 import pytest

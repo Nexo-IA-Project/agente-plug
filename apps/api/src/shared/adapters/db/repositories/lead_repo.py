@@ -207,9 +207,7 @@ class SqlLeadRepository:
             return None
         return _to_lead_entity(m)
 
-    async def get_events(
-        self, account_id: UUID, hubla_subscription_id: str
-    ) -> list[HublaEvent]:
+    async def get_events(self, account_id: UUID, hubla_subscription_id: str) -> list[HublaEvent]:
         stmt = (
             select(HublaEventModel)
             .where(

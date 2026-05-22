@@ -382,7 +382,12 @@ async def test_handler_works_without_lead_repos_backward_compat():
             "product": {"id": "prod", "name": "P"},
             "subscription": {
                 "id": "s1",
-                "payer": {"firstName": "A", "lastName": "B", "phone": "+5511000000000", "email": "a@b.c"},
+                "payer": {
+                    "firstName": "A",
+                    "lastName": "B",
+                    "phone": "+5511000000000",
+                    "email": "a@b.c",
+                },
                 "activatedAt": "2026-05-22T12:00:00Z",
             },
         },
