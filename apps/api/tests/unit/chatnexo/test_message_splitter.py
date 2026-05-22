@@ -60,3 +60,14 @@ def test_three_paragraphs():
     text = f"{p1}\n\n{p2}\n\n{p3}"
     result = split_message(text)
     assert result == [p1, p2, p3]
+
+
+def test_short_affirmative_paragraph_not_discarded():
+    """Parágrafos curtos (>=20 chars) não devem ser silenciados com o novo min_chars=20."""
+    short = "Entendido, vou processar!"  # 25 chars >= min_chars=20
+    long = "a" * 90
+    text = f"{short}\n\n{long}"
+    result = split_message(text)  # usa defaults: min_chars=20
+    assert len(result) == 2
+    assert result[0] == short
+    assert result[1] == long

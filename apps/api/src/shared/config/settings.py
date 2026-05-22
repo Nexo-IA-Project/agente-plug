@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     chatnexo_api_key: str
     # ChatNexo — message splitting e delay humanizado
     chatnexo_split_max_chars: int = Field(default=400, ge=50)
-    chatnexo_split_min_chars: int = Field(default=80, ge=10)
+    chatnexo_split_min_chars: int = Field(default=20, ge=10)
     chatnexo_delay_ms_per_char: int = Field(default=30, ge=0)
     chatnexo_min_delay_ms: int = Field(default=800, ge=0)
     chatnexo_max_delay_ms: int = Field(default=4000, ge=0)

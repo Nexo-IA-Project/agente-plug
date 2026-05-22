@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 
-def split_message(text: str, max_chars: int = 400, min_chars: int = 80) -> list[str]:
+def split_message(text: str, max_chars: int = 400, min_chars: int = 20) -> list[str]:
     """Quebra texto em partes menores para envio humanizado via WhatsApp.
 
     Estratégia:
