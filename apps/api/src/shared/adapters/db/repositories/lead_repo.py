@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
@@ -83,7 +84,7 @@ class SqlLeadRepository:
         stmt = pg_insert(LeadModel).values(**values)
         # Em conflito (mesmo (account_id, hubla_subscription_id)):
         # atualiza apenas status, last_event_*, updated_at — preserva UTMs originais.
-        update_set: dict = {
+        update_set: dict[str, Any] = {
             "subscription_status": stmt.excluded.subscription_status,
             "last_event_at": stmt.excluded.last_event_at,
             "last_event_type": stmt.excluded.last_event_type,
@@ -109,7 +110,7 @@ class SqlLeadRepository:
         )
         return (await self.session.execute(q)).scalar_one()
 
-    async def list(
+    async def paginate(
         self,
         account_id: UUID,
         *,

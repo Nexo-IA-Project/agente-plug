@@ -100,7 +100,7 @@ async def list_leads(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = SqlLeadRepository(session=session)
-        items, total = await repo.list(
+        items, total = await repo.paginate(
             account_uuid,
             product_id=product_id,
             status=status_filter,
@@ -126,7 +126,7 @@ async def export_leads(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = SqlLeadRepository(session=session)
-        items, _ = await repo.list(
+        items, _ = await repo.paginate(
             account_uuid,
             product_id=product_id,
             status=status_filter,

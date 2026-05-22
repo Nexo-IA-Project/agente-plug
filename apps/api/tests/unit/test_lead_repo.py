@@ -16,9 +16,9 @@ def test_repo_dataclass_initialization():
 
 
 @pytest.mark.asyncio
-async def test_list_with_no_filters_uses_account_filter_only():
+async def test_paginate_with_no_filters_uses_account_filter_only():
     session = AsyncMock()
-    # Mock both execute calls (count + list)
+    # Mock both execute calls (count + paginate)
     count_result = AsyncMock()
     count_result.scalar_one = lambda: 0
     list_result = AsyncMock()
@@ -29,7 +29,7 @@ async def test_list_with_no_filters_uses_account_filter_only():
     from uuid import uuid4
 
     repo = SqlLeadRepository(session=session)
-    items, total = await repo.list(uuid4())
+    items, total = await repo.paginate(uuid4())
 
     assert items == []
     assert total == 0

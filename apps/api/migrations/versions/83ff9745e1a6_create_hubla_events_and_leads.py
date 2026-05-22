@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
 revision = "83ff9745e1a6"
 down_revision = "2c5504aac687"
@@ -28,7 +29,7 @@ def upgrade() -> None:
         sa.Column("payer_email", sa.String(200), nullable=False, server_default=""),
         sa.Column("payer_name", sa.String(200), nullable=False, server_default=""),
         sa.Column("contact_id", sa.UUID(), nullable=True),
-        sa.Column("payload", sa.JSON(), nullable=False),
+        sa.Column("payload", JSONB(), nullable=False),
         sa.Column("received_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("processed_at", sa.DateTime(timezone=True), nullable=True),
         sa.ForeignKeyConstraint(["account_id"], ["accounts.id"], ondelete="CASCADE"),

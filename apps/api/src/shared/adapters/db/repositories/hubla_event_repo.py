@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +20,7 @@ class SqlHublaEventRepository:
         account_id: UUID,
         event_type: str,
         hubla_subscription_id: str,
-        payload: dict,
+        payload: dict[str, Any],
         hubla_product_id: str = "",
         product_name: str = "",
         payer_phone: str = "",
