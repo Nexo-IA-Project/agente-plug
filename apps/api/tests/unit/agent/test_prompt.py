@@ -10,9 +10,10 @@ def test_prompt_contains_identity():
     assert "Nia" in prompt or "G2 Educação" in prompt
 
 
-def test_prompt_contains_no_markdown_rule():
+def test_prompt_contains_formatting_rules():
     prompt = build_system_prompt([])
-    assert "markdown" in prompt.lower()
+    # Prompt Mestre usa "300 caracteres" como regra de tamanho
+    assert "300 caracteres" in prompt
 
 
 def test_prompt_contains_skills_section():
