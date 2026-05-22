@@ -32,14 +32,17 @@ interface StatusVisual {
   label: string;
 }
 
+// Pills e textos com 2 tons: claro pra light mode (text-X-700), escuro pra dark
+// (text-X-300). Backgrounds em /15 ficam invisíveis em light → uso /20 ou solid.
 const STATUS_VISUAL: Record<FollowupStepStatus, StatusVisual> = {
   sent: {
     nodeBg: "bg-emerald-500",
     nodeRing: "ring-emerald-500/40",
     connector: "bg-emerald-500/50",
     connectorStyle: "solid",
-    hintText: "text-emerald-400",
-    pillBg: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+    hintText: "text-emerald-700 dark:text-emerald-400",
+    pillBg:
+      "bg-emerald-500/20 text-emerald-800 border border-emerald-600/40 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
     icon: "check_circle",
     label: "enviada",
   },
@@ -48,8 +51,9 @@ const STATUS_VISUAL: Record<FollowupStepStatus, StatusVisual> = {
     nodeRing: "ring-amber-500/50",
     connector: "bg-outline-variant/60",
     connectorStyle: "dashed",
-    hintText: "text-amber-400",
-    pillBg: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+    hintText: "text-amber-700 dark:text-amber-400",
+    pillBg:
+      "bg-amber-500/20 text-amber-800 border border-amber-600/40 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30",
     icon: "schedule",
     label: "agendada",
   },
@@ -58,8 +62,9 @@ const STATUS_VISUAL: Record<FollowupStepStatus, StatusVisual> = {
     nodeRing: "ring-rose-500/40",
     connector: "bg-rose-500/40",
     connectorStyle: "solid",
-    hintText: "text-rose-400",
-    pillBg: "bg-rose-500/15 text-rose-300 border border-rose-500/30",
+    hintText: "text-rose-700 dark:text-rose-400",
+    pillBg:
+      "bg-rose-500/20 text-rose-800 border border-rose-600/40 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30",
     icon: "error",
     label: "falhou",
   },
@@ -249,10 +254,10 @@ function StepNode({ step, isLast, onDispatch }: StepNodeProps) {
             onClick={() => void handleClick()}
             disabled={busy}
             className={[
-              "mt-2 inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider transition-all",
+              "mt-2 inline-flex items-center gap-1.5 rounded-sm border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-all",
               step.status === "failed"
-                ? "border-rose-500/40 text-rose-300 hover:bg-rose-500/10 hover:border-rose-500/60"
-                : "border-amber-500/40 text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/60",
+                ? "border-rose-600 bg-rose-500/10 text-rose-700 hover:bg-rose-500/20 hover:border-rose-700 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                : "border-amber-600 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20 hover:border-amber-700 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/10",
               "disabled:cursor-wait disabled:opacity-60",
             ].join(" ")}
           >
@@ -383,8 +388,8 @@ export function FollowupTimeline({ enrollments, onDispatchStep }: Props) {
           Follow-ups
         </p>
         {activeCount > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-sm border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-amber-300">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+          <span className="inline-flex items-center gap-1 rounded-sm border border-amber-600/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500 dark:bg-amber-400" />
             {activeCount} {activeCount === 1 ? "ativo" : "ativos"}
           </span>
         )}
