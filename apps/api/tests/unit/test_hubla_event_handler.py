@@ -300,6 +300,52 @@ async def test_subscription_created_persists_lead_with_utms_and_invoice():
 
 
 @pytest.mark.asyncio
+async def test_no_phone_still_persists_hubla_event_and_lead():
+    """PR 4 review fix: payer_phone vazio NÃO deve descartar o evento.
+    HublaEvent (audit log) e Lead (subscription-id keyed) ainda devem ser gravados.
+    """
+    lead_repo = AsyncMock()
+    hubla_event_repo = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=AsyncMock(),
+        flow_repo=AsyncMock(),
+        contact_repo=AsyncMock(),
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        lead_repo=lead_repo,
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    payload = {
+        "type": "lead.abandoned",
+        "version": "2.0.0",
+        "event": {
+            "product": {"id": "prod-99", "name": "Produto 99"},
+            "products": [{"id": "prod-99", "name": "Produto 99"}],
+            "subscription": {
+                "id": "sub-no-phone",
+                "payer": {
+                    "firstName": "Ana",
+                    "lastName": "Silva",
+                    "email": "ana@email.com",
+                    "phone": "",  # ← VAZIO
+                },
+                "firstPaymentSession": {"utm": {"source": "Google Ads"}},
+            },
+        },
+    }
+
+    await handler.handle(payload)
+
+    # AMBOS devem ter sido gravados, mesmo sem phone
+    hubla_event_repo.insert.assert_called_once()
+    lead_repo.upsert.assert_called_once()
+    assert lead_repo.upsert.call_args.kwargs["utm_source"] == "Google Ads"
+
+
+@pytest.mark.asyncio
 async def test_handler_works_without_lead_repos_backward_compat():
     """Existing call sites that don't pass lead_repo/hubla_event_repo must still work."""
     product_repo = AsyncMock()

@@ -573,6 +573,7 @@ class HublaEventModel(Base):
     __table_args__ = (
         Index("ix_hubla_events_account_type", "account_id", "event_type"),
         Index("ix_hubla_events_subscription", "account_id", "hubla_subscription_id"),
+        Index("ix_hubla_events_contact", "contact_id"),  # PR4 review fix
     )
 
     id: Mapped[uuid.UUID] = _pk()
@@ -613,6 +614,7 @@ class LeadModel(Base):
         Index("ix_leads_account_phone", "account_id", "payer_phone"),
         Index("ix_leads_account_status", "account_id", "subscription_status"),
         Index("ix_leads_account_activated", "account_id", "activated_at"),
+        Index("ix_leads_account_utm_source", "account_id", "utm_source"),  # PR4 review fix
     )
 
     id: Mapped[uuid.UUID] = _pk()

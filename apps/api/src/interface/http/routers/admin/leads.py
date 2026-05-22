@@ -93,6 +93,8 @@ async def list_leads(
     product_id: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     utm_source: str | None = Query(default=None),
+    date_from: datetime | None = Query(default=None),  # noqa: B008
+    date_to: datetime | None = Query(default=None),  # noqa: B008
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=200),
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
@@ -105,6 +107,8 @@ async def list_leads(
             product_id=product_id,
             status=status_filter,
             utm_source=utm_source,
+            date_from=date_from,
+            date_to=date_to,
             page=page,
             page_size=page_size,
         )
@@ -121,6 +125,8 @@ async def export_leads(
     product_id: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     utm_source: str | None = Query(default=None),
+    date_from: datetime | None = Query(default=None),  # noqa: B008
+    date_to: datetime | None = Query(default=None),  # noqa: B008
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> StreamingResponse:
     async with session_scope() as session:
@@ -131,6 +137,8 @@ async def export_leads(
             product_id=product_id,
             status=status_filter,
             utm_source=utm_source,
+            date_from=date_from,
+            date_to=date_to,
             page=1,
             page_size=10_000,
         )

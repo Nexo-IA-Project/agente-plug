@@ -276,6 +276,8 @@ export async function listLeads(
   if (filters.product_id) params.set("product_id", filters.product_id);
   if (filters.status) params.set("status", filters.status);
   if (filters.utm_source) params.set("utm_source", filters.utm_source);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.page_size) params.set("page_size", String(filters.page_size));
   const qs = params.toString();
@@ -293,6 +295,8 @@ export async function downloadLeadsCsv(
   if (filters.product_id) params.set("product_id", filters.product_id);
   if (filters.status) params.set("status", filters.status);
   if (filters.utm_source) params.set("utm_source", filters.utm_source);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
   const qs = params.toString();
   const path = `/admin/leads/export${qs ? "?" + qs : ""}`;
 

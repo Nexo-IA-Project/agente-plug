@@ -117,6 +117,8 @@ class SqlLeadRepository:
         product_id: str | None = None,
         status: str | None = None,
         utm_source: str | None = None,
+        date_from: datetime | None = None,
+        date_to: datetime | None = None,
         page: int = 1,
         page_size: int = 25,
     ) -> tuple[list[LeadModel], int]:
@@ -127,6 +129,10 @@ class SqlLeadRepository:
             stmt = stmt.where(LeadModel.subscription_status == status)
         if utm_source:
             stmt = stmt.where(LeadModel.utm_source == utm_source)
+        if date_from is not None:
+            stmt = stmt.where(LeadModel.last_event_at >= date_from)
+        if date_to is not None:
+            stmt = stmt.where(LeadModel.last_event_at <= date_to)
 
         total_stmt = select(func.count()).select_from(stmt.subquery())
         total: int = (await self.session.execute(total_stmt)).scalar_one()

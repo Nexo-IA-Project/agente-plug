@@ -42,6 +42,8 @@ export interface LeadFilters {
   product_id?: string;
   status?: string;
   utm_source?: string;
+  date_from?: string; // ISO datetime string
+  date_to?: string;   // ISO datetime string
   page?: number;
   page_size?: number;
 }

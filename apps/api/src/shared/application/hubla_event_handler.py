@@ -75,11 +75,7 @@ class HublaEventHandler:
         account_uuid = self._account_id
         account_id_str = str(account_uuid)
 
-        if not payer_phone:
-            log.warning("hubla_event_no_phone", event_type=event_type, purchase_id=purchase_id)
-            return
-
-        # === PR 4: lead/event persistence ===
+        # === PR 4: persist event/lead FIRST — captura tudo, mesmo sem phone ===
 
         # Extra fields from variable-shape payloads
         first_session = subscription.get("firstPaymentSession") or {}
@@ -106,6 +102,7 @@ class HublaEventHandler:
             )
 
         # Upsert Lead (visão materializada com UTMs, valor, sessão).
+        # Chave natural é (account_id, hubla_subscription_id) — não depende de phone.
         if self._lead_repo is not None and purchase_id:
             await self._lead_repo.upsert(
                 account_id=account_uuid,
@@ -134,7 +131,11 @@ class HublaEventHandler:
                 event_at=activated_at,
             )
 
-        # === End PR 4 ===
+        # === End PR 4 early persistence ===
+
+        if not payer_phone:
+            log.warning("hubla_event_no_phone", event_type=event_type, purchase_id=purchase_id)
+            return
 
         product = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
 
