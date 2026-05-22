@@ -177,40 +177,42 @@
   }
 }
 
-/* ── Toast Sonner — scale do centro (top-center) ────────────────────────── */
+/* ── Toast Sonner — fade-in/fade-out puro (sem swipe, sem scale) ─────────── */
 [data-sonner-toaster][data-position="top-center"] {
   left: 50% !important;
   transform: translateX(-50%);
   top: 24px;
 }
-[data-sonner-toast] {
-  transform-origin: center center !important;
+
+/* Anula transforms internos do sonner (swipe, slide) — só usamos opacity */
+[data-sonner-toaster] [data-sonner-toast] {
+  transform: none !important;
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
-@keyframes nx-toast-in {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+
+/* Entrada — fade-in suave */
+@keyframes nx-toast-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
-@keyframes nx-toast-out {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.6);
-  }
+
+/* Saída — fade-out suave */
+@keyframes nx-toast-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
+
 [data-sonner-toaster] [data-sonner-toast][data-mounted="true"]:not([data-removed="true"]) {
-  animation: nx-toast-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  animation: nx-toast-fade-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
 }
+
 [data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
-  animation: nx-toast-out 260ms cubic-bezier(0.4, 0, 1, 1) both !important;
+  animation: nx-toast-fade-out 240ms cubic-bezier(0.4, 0, 1, 1) both !important;
+}
+
+/* Desabilita swipe-to-dismiss do sonner (queremos só fade) */
+[data-sonner-toaster] [data-sonner-toast][data-swipe-direction] {
+  touch-action: none !important;
 }
 
 /* Scroll quase invisível dentro do preview do WhatsApp */
