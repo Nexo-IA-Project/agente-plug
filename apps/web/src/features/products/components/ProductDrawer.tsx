@@ -11,7 +11,7 @@ interface Props {
   onSubmit: (input: CreateProductInput) => Promise<void>;
 }
 
-export function CourseDrawer({ open, product, onClose, onSubmit }: Props) {
+export function ProductDrawer({ open, product, onClose, onSubmit }: Props) {
   const [name, setName] = useState("");
   const [hublaId, setHublaId] = useState("");
   const [isActive, setIsActive] = useState(true);

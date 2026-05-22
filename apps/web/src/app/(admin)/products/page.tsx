@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useProducts } from "@/features/courses/hooks/useCourses";
-import { CourseCard } from "@/features/courses/components/CourseCard";
-import { CourseDrawer } from "@/features/courses/components/CourseDrawer";
+import { useProducts } from "@/features/products/hooks/useProducts";
+import { ProductCard } from "@/features/products/components/ProductCard";
+import { ProductDrawer } from "@/features/products/components/ProductDrawer";
 import { useToast } from "@/shared/hooks/useToast";
-import type { Product, CreateProductInput } from "@/features/courses/types";
+import type { Product, CreateProductInput } from "@/features/products/types";
 
 export default function ProductsPage() {
   const { products, loading, error, create, update, remove } = useProducts();
@@ -85,7 +85,7 @@ export default function ProductsPage() {
 
       <div className="flex flex-col gap-3">
         {products.map((p) => (
-          <CourseCard
+          <ProductCard
             key={p.id}
             product={p}
             onEdit={() => openEdit(p)}
@@ -94,7 +94,7 @@ export default function ProductsPage() {
         ))}
       </div>
 
-      <CourseDrawer
+      <ProductDrawer
         open={drawerOpen}
         product={editing}
         onClose={() => setDrawerOpen(false)}

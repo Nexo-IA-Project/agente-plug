@@ -19,7 +19,7 @@ import type {
   Product,
   CreateProductInput,
   UpdateProductInput,
-} from "@/features/courses/types";
+} from "@/features/products/types";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
-import { useProducts } from "@/features/courses/hooks/useCourses";
+import { useProducts } from "@/features/products/hooks/useProducts";
 import { useFollowupSteps } from "../hooks/useFollowupSteps";
 import { StepList } from "./StepList";
 import { useToast } from "@/shared/hooks/useToast";
@@ -19,16 +19,16 @@ interface Props {
 
 export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
   const toast = useToast();
-  const { products: courses, loading: coursesLoading } = useProducts();
+  const { products, loading: productsLoading } = useProducts();
 
   const [name, setName] = useState("");
-  const [courseId, setCourseId] = useState("");
+  const [productId, setProductId] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeFlow, setActiveFlow] = useState<FollowupFlow | null>(null);
 
   const isEditing = activeFlow !== null;
-  const selectedCourse = courses.find((c) => c.id === courseId);
+  const selectedProduct = products.find((p) => p.id === productId);
 
   const {
     steps,
@@ -43,12 +43,12 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     if (open) {
       if (flow) {
         setName(flow.name);
-        setCourseId(flow.product.id);
+        setProductId(flow.product.id);
         setIsActive(flow.is_active);
         setActiveFlow(flow);
       } else {
         setName("");
-        setCourseId("");
+        setProductId("");
         setIsActive(true);
         setActiveFlow(null);
       }
@@ -62,14 +62,14 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
 
   // Ao criar: preenche o nome automaticamente ao escolher o produto
   useEffect(() => {
-    if (!isEditing && selectedCourse) {
-      setName(`Produto: ${selectedCourse.name}`);
+    if (!isEditing && selectedProduct) {
+      setName(`Produto: ${selectedProduct.name}`);
     }
-  }, [courseId, isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [productId, isEditing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!courseId) {
+    if (!productId) {
       toast.error("Selecione um produto");
       return;
     }
@@ -78,7 +78,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
       if (activeFlow) {
         await onUpdate(activeFlow.id, {
           name,
-          product_id: courseId,
+          product_id: productId,
           is_active: isActive,
         });
         setActiveFlow((prev) =>
@@ -87,7 +87,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
                 ...prev,
                 name,
                 is_active: isActive,
-                product: courses.find((c) => c.id === courseId) ?? prev.product,
+                product: products.find((p) => p.id === productId) ?? prev.product,
               }
             : prev
         );
@@ -95,7 +95,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
       } else {
         const created = await onCreate({
           name,
-          product_id: courseId,
+          product_id: productId,
           is_active: isActive,
         });
         setActiveFlow(created);
@@ -108,9 +108,9 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     }
   }
 
-  const noCourses = !coursesLoading && courses.length === 0;
+  const noProducts = !productsLoading && products.length === 0;
   // No modo criar, só mostra o restante do form após escolher o produto
-  const showFormFields = isEditing || !!courseId;
+  const showFormFields = isEditing || !!productId;
 
   return (
     <Drawer
@@ -130,7 +130,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
             <button
               type="submit"
               form="flow-form"
-              disabled={saving || !name.trim() || !courseId || noCourses}
+              disabled={saving || !name.trim() || !productId || noProducts}
               className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary disabled:opacity-50 transition-colors"
             >
               {saving && (
@@ -153,7 +153,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
           <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wide">
             Produto
           </span>
-          {coursesLoading ? (
+          {productsLoading ? (
             <div className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface px-3 py-3 text-sm text-on-surface-variant">
               <span className="material-symbols-outlined animate-spin" style={{ fontSize: "16px" }}>
                 progress_activity
@@ -162,23 +162,23 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
             </div>
           ) : (
             <select
-              value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
               required
-              disabled={noCourses || isEditing}
+              disabled={noProducts || isEditing}
               className="field-select disabled:opacity-60"
             >
               <option value="" disabled>
                 Selecione um produto
               </option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>
           )}
-          {noCourses && (
+          {noProducts && (
             <p className="text-xs text-on-surface-variant">
               Nenhum produto cadastrado.{" "}
               <Link
@@ -190,7 +190,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
               .
             </p>
           )}
-          {!noCourses && courseId && (
+          {!noProducts && productId && (
             <span className="animate-fade-in text-xs text-on-surface-variant">
               O flow será disparado quando uma compra desse produto for registrada.
             </span>
@@ -199,7 +199,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
 
         {/* Campos revelados após escolher o produto */}
         {showFormFields && (
-          <div key={courseId} className="animate-fade-in flex flex-col gap-5">
+          <div key={productId} className="animate-fade-in flex flex-col gap-5">
             {/* Nome do flow — pré-preenchido e bloqueado no modo criar */}
             <div className="flex flex-col gap-2">
               <span className="text-xs font-medium text-on-surface-variant uppercase tracking-wide">

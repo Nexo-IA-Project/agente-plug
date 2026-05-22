@@ -8,7 +8,7 @@ interface Props {
   onDelete: () => void;
 }
 
-export function CourseCard({ product, onEdit, onDelete }: Props) {
+export function ProductCard({ product, onEdit, onDelete }: Props) {
   return (
     <article className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container p-4">
       <div className="flex flex-col gap-1">
