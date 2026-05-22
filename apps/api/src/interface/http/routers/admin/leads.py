@@ -54,8 +54,32 @@ class HublaEventResponse(BaseModel):
     product_name: str
 
 
+class FollowupStepDetailResponse(BaseModel):
+    id: UUID
+    position: int
+    template_name: str | None
+    message_text: str | None
+    status: str  # "sent" | "pending" | "failed" | "cancelled"
+    delay_from_purchase_minutes: int
+    scheduled_for: datetime | None
+    sent_at: datetime | None
+    failure_reason: str | None
+    rendered_preview: str | None
+
+
+class FollowupEnrollmentDetailResponse(BaseModel):
+    id: UUID
+    flow_id: UUID | None
+    flow_name: str
+    product_name: str
+    trigger_event_type: str
+    enrolled_at: datetime
+    steps: list[FollowupStepDetailResponse]
+
+
 class LeadDetailResponse(LeadResponse):
     events: list[HublaEventResponse]
+    enrollments: list[FollowupEnrollmentDetailResponse]
 
 
 def _to_response(m: Lead) -> LeadResponse:
@@ -206,6 +230,7 @@ async def get_lead(
         if m is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="lead not found")
         events = await repo.get_events(account_uuid, m.hubla_subscription_id)
+        enrollments = await repo.get_enrollments(account_uuid, m.hubla_subscription_id)
 
     return LeadDetailResponse(
         **_to_response(m).model_dump(),
@@ -218,5 +243,17 @@ async def get_lead(
                 product_name=e.product_name,
             )
             for e in events
+        ],
+        enrollments=[
+            FollowupEnrollmentDetailResponse(
+                id=e["id"],
+                flow_id=e["flow_id"],
+                flow_name=e["flow_name"],
+                product_name=e["product_name"],
+                trigger_event_type=e["trigger_event_type"],
+                enrolled_at=e["enrolled_at"],
+                steps=[FollowupStepDetailResponse(**s) for s in e["steps"]],
+            )
+            for e in enrollments
         ],
     )

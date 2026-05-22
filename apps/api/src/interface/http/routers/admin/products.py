@@ -45,20 +45,20 @@ async def list_products(
         account_uuid = await get_default_account_uuid(session)
         repo = SqlProductRepository(session=session)
         products = await repo.list_by_account(account_uuid)
-        items: list[ProductResponse] = []
-        for p in products:
-            items.append(
-                ProductResponse(
-                    id=p.id,
-                    name=p.name,
-                    hubla_id=p.hubla_id,
-                    is_active=p.is_active,
-                    flow_count=await repo.count_flows(p.id),
-                    created_at=p.created_at,
-                    updated_at=p.updated_at,
-                )
-            )
-    return items
+        # Bulk count em UMA query (evita N+1 que causava 524 timeout em produção)
+        flow_counts = await repo.count_flows_bulk([p.id for p in products])
+    return [
+        ProductResponse(
+            id=p.id,
+            name=p.name,
+            hubla_id=p.hubla_id,
+            is_active=p.is_active,
+            flow_count=flow_counts.get(p.id, 0),
+            created_at=p.created_at,
+            updated_at=p.updated_at,
+        )
+        for p in products
+    ]
 
 
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)

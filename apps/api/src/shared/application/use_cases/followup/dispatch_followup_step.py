@@ -114,7 +114,7 @@ class DispatchFollowupStep:
                     language = template.language or None
                     # Extrai o BODY do template para renderização local — dentro da
                     # janela 24h o ChatNexo envia o `content` como texto livre direto.
-                    components = template.components or []
+                    components = getattr(template, "components", None) or []
                     body_text = next(
                         (c.get("text") for c in components if c.get("type") == "BODY"),
                         None,
@@ -149,7 +149,28 @@ class DispatchFollowupStep:
                 contact_phone=phone_value,
                 contact_email=contact_email,
             )
-            resolved_vars = VariableResolver().resolve_all(step.template_variables or {}, ctx)
+            # Vars do body + vars configuradas no step (união preservando ordem).
+            # Cobre 3 casos:
+            #   a) Body conhecido (template syncado): pega TODAS as vars do body,
+            #      mesmo as não mapeadas (ConventionStrategy resolve via nome).
+            #   b) Body desconhecido (template ainda não syncado): usa apenas o
+            #      que o user configurou explicitamente.
+            #   c) Var configurada que NÃO aparece no body: ainda é enviada
+            #      (caller manda no template_params; ChatNexo decide o uso).
+            var_names_in_body: list[str] = (
+                _re.findall(r"\{\{(\w+)\}\}", body_text) if body_text else []
+            )
+            configured_vars: dict[str, object] = step.template_variables or {}
+            all_var_names: list[str] = list(var_names_in_body)
+            for k in configured_vars:
+                if k not in all_var_names:
+                    all_var_names.append(k)
+
+            resolved_vars = VariableResolver().resolve_template_vars(
+                var_names=all_var_names,
+                configured=configured_vars,
+                ctx=ctx,
+            )
 
             # Renderiza {{var}} no body usando os valores resolvidos. Caracteres
             # `{{` e `}}` que não bater com nenhum binding ficam como estão.

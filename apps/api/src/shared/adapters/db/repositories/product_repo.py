@@ -100,3 +100,22 @@ class SqlProductRepository:
             FollowupFlowModel.product_id == product_id
         )
         return int((await self.session.execute(stmt)).scalar_one())
+
+    async def count_flows_bulk(self, product_ids: list[UUID]) -> dict[UUID, int]:
+        """Conta flows por produto em UMA query única (evita N+1).
+
+        Retorna dict {product_id: count}. Produtos sem flows não aparecem no dict
+        (caller deve usar `.get(pid, 0)` para resolver defaults).
+        """
+        if not product_ids:
+            return {}
+        stmt = (
+            select(
+                FollowupFlowModel.product_id,
+                func.count(FollowupFlowModel.id),
+            )
+            .where(FollowupFlowModel.product_id.in_(product_ids))
+            .group_by(FollowupFlowModel.product_id)
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return {row[0]: int(row[1]) for row in rows}
