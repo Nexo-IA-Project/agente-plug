@@ -13,8 +13,8 @@ import argparse
 import asyncio
 from uuid import UUID
 
-from shared.adapters.db.repositories.course_repo import SqlCourseRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import get_sessionmaker
 
 DEFAULT_TEMPLATES: list[tuple[str, int]] = [
@@ -31,12 +31,12 @@ DEFAULT_DELAYS: list[int] = [0, 24, 72, 120, 168]
 async def seed(account_id: UUID, templates: list[tuple[str, int]]) -> None:
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
-        course_repo = SqlCourseRepository(session)
+        product_repo = SqlProductRepository(session)
         flow_repo = FollowupFlowRepository(session)
 
-        existing = await course_repo.find_active_by_hubla_id(account_id, "loja-express")
+        existing = await product_repo.find_active_by_hubla_id(account_id, "loja-express")
         if existing is None:
-            course = await course_repo.create(
+            course = await product_repo.create(
                 account_id=account_id,
                 name="Loja Express",
                 hubla_id="loja-express",
@@ -44,9 +44,9 @@ async def seed(account_id: UUID, templates: list[tuple[str, int]]) -> None:
             print(f"Created course {course.id} (Loja Express)")
         else:
             course = existing
-            print(f"Course already exists: {course.id} (Loja Express) - skipping creation")
+            print(f"Product already exists: {course.id} (Loja Express) - skipping creation")
 
-        flows = await flow_repo.list_active_by_course(course.id)
+        flows = await flow_repo.list_active_by_product(course.id)
         if flows:
             print("Flow already exists for course; skipping seed of steps")
             await session.commit()
@@ -54,7 +54,7 @@ async def seed(account_id: UUID, templates: list[tuple[str, int]]) -> None:
 
         flow = await flow_repo.create_flow(
             account_id=account_id,
-            course_id=course.id,
+            product_id=course.id,
             name="Loja Express - sequencia padrao",
             is_active=True,
         )
