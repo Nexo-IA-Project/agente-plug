@@ -182,7 +182,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
             <p className="text-xs text-on-surface-variant">
               Nenhum produto cadastrado.{" "}
               <Link
-                href="/courses"
+                href="/products"
                 className="text-primary underline-offset-2 hover:underline"
               >
                 Cadastre primeiro
