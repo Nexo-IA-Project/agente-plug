@@ -138,9 +138,10 @@ class ChatNexoClient:
 
     async def create_conversation(self, account_id: str, contact_phone: str) -> str:
         """Create a new conversation for a contact and return its ID."""
+        s = get_settings()
         response = await self._post(
             f"/accounts/{account_id}/conversations",
-            json={"contact_phone": contact_phone},
+            json={"contact_phone": contact_phone, "inbox_id": s.chatnexo_inbox_id},
         )
         data = response.json()
         return str(data["id"])

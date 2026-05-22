@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     chatnexo_base_url: str
     chatnexo_api_key: str
+    chatnexo_inbox_id: int  # ID da caixa de entrada no ChatNexo (ex: 113)
     # ChatNexo — message splitting e delay humanizado
     chatnexo_split_max_chars: int = Field(default=400, ge=50)
     chatnexo_split_min_chars: int = Field(default=20, ge=10)
