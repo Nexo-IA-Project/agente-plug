@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
     AccountModel,
+    AuditEventModel,
     CourseModel,
     FollowupFlowModel,
     FollowupStepModel,
@@ -201,8 +202,7 @@ async def client(
         def __getattr__(self, name: str) -> Any:
             return getattr(self._session, name)
 
-    fake_sessionmaker = _FakeSessionmaker()
-
+    _ = _FakeSessionmaker()  # mantido para preservar shape do fixture
     with (
         patch(
             "interface.http.deps.admin_auth.get_settings",
@@ -211,10 +211,6 @@ async def client(
         patch(
             "interface.http.routers.admin.followup.session_scope",
             new=patched_session_scope,
-        ),
-        patch(
-            "interface.http.routers.admin.followup.get_sessionmaker",
-            return_value=fake_sessionmaker,
         ),
     ):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
@@ -247,3 +243,42 @@ async def test_step_creation_enqueues_resync_job(
     )
     assert len(jobs) >= 1
     assert any(j.payload["flow_id"] == str(seeded_flow.id) for j in jobs)
+
+
+@pytest.mark.integration
+async def test_handle_resync_flow_persists_audit_event(
+    seeded_flow: FollowupFlowModel,
+    seeded_account: AccountModel,
+    db_session: AsyncSession,
+    patched_session_scope,
+) -> None:
+    """Processar um job de resync deve gravar uma linha em audit_events
+    com action='flow_resynced' e o flow_id no resource_id."""
+    from interface.worker.handlers import resync as resync_module
+
+    with patch(
+        "interface.worker.handlers.resync.session_scope",
+        new=patched_session_scope,
+    ):
+        await resync_module.handle_resync_flow(
+            {
+                "flow_id": str(seeded_flow.id),
+                "account_id": str(seeded_account.id),
+            }
+        )
+
+    events = (
+        (
+            await db_session.execute(
+                select(AuditEventModel).where(AuditEventModel.action == "flow_resynced")
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(events) >= 1
+    matched = [e for e in events if e.resource_id == str(seeded_flow.id)]
+    assert matched, "expected audit_event for the seeded flow"
+    payload = matched[-1].metadata_json
+    assert "enrollments_affected" in payload
+    assert "steps_added" in payload

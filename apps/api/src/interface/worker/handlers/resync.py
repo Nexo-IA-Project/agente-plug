@@ -4,6 +4,7 @@ import uuid
 
 import structlog
 
+from shared.adapters.db.models import AuditEventModel
 from shared.adapters.db.repositories.followup_enrollment_repo import (
     FollowupEnrollmentRepository,
 )
@@ -67,4 +68,17 @@ async def handle_resync_flow(payload: dict) -> None:
                     flow_id=str(flow_id),
                 )
 
+        # Persistir audit event no mesmo session_scope — atomicidade com os updates
+        # feitos pelos savepoints de cada ResyncEnrollmentUseCase.
+        session.add(
+            AuditEventModel(
+                id=uuid.uuid4(),
+                account_id=account_id,
+                actor="system",
+                action="flow_resynced",
+                resource_type="followup_flow",
+                resource_id=str(flow_id),
+                metadata_json=dict(totals),
+            )
+        )
         log.info("resync_flow_completed", flow_id=str(flow_id), **totals)
