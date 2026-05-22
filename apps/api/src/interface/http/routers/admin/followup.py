@@ -142,7 +142,7 @@ async def create_flow(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
-        course = await product_repo.find_by_id(body.course_id)
+        course = await product_repo.find_by_id(body.product_id)
         if course is None or course.account_id != account_uuid:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -151,7 +151,7 @@ async def create_flow(
         flow_repo = FollowupFlowRepository(session=session)
         flow = await flow_repo.create_flow(
             account_id=account_uuid,
-            product_id=body.course_id,
+            product_id=body.product_id,
             name=body.name,
             is_active=body.is_active,
         )
@@ -175,8 +175,8 @@ async def update_flow(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
-        if body.course_id is not None:
-            target_course = await product_repo.find_by_id(body.course_id)
+        if body.product_id is not None:
+            target_course = await product_repo.find_by_id(body.product_id)
             if target_course is None or target_course.account_id != account_uuid:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -186,7 +186,7 @@ async def update_flow(
         flow = await flow_repo.update_flow(
             flow_id,
             name=body.name,
-            product_id=body.course_id,
+            product_id=body.product_id,
             is_active=body.is_active,
         )
         if flow is None:

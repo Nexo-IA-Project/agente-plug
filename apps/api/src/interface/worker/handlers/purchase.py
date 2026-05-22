@@ -7,9 +7,9 @@ from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.contact import ContactRepository
-from shared.adapters.db.repositories.course_repo import SqlCourseRepository
 from shared.adapters.db.repositories.followup_enrollment_repo import FollowupEnrollmentRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.hubla.event_parser import HublaEventParser
@@ -40,7 +40,7 @@ async def handle_purchase(payload: dict) -> None:
         contact_repo = ContactRepository(session=session)
         access_case_repo = AccessCaseRepository(session=session)
         scheduler = ScheduledJobRepository(session=session)
-        course_repo = SqlCourseRepository(session=session)
+        product_repo = SqlProductRepository(session=session)
         flow_repo = FollowupFlowRepository(session=session)
         enrollment_repo = FollowupEnrollmentRepository(session=session)
 
@@ -56,7 +56,7 @@ async def handle_purchase(payload: dict) -> None:
             chatnexo=chatnexo,
             access_case_repo=access_case_repo,
             scheduler=scheduler,
-            course_repo=course_repo,
+            product_repo=product_repo,
             flow_repo=flow_repo,
             enroll_contact_uc=enroll_uc,
         )

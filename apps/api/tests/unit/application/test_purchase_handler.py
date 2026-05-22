@@ -30,7 +30,7 @@ def fake_event(
 
 def _make_handler(
     *,
-    course_repo: AsyncMock | None = None,
+    product_repo: AsyncMock | None = None,
     flow_repo: AsyncMock | None = None,
     enroll_uc: AsyncMock | None = None,
     contact_repo: AsyncMock | None = None,
@@ -52,7 +52,7 @@ def _make_handler(
         chatnexo=chatnexo,
         access_case_repo=access_case_repo or AsyncMock(),
         scheduler=scheduler or AsyncMock(),
-        course_repo=course_repo or AsyncMock(),
+        product_repo=product_repo or AsyncMock(),
         flow_repo=flow_repo or AsyncMock(),
         enroll_contact_uc=enroll_uc or AsyncMock(),
     )
@@ -66,13 +66,13 @@ async def test_creates_contact_and_access_case():
     chatnexo.get_open_conversation.return_value = None
     chatnexo.create_conversation.return_value = "conv-1"
     access_case_repo = AsyncMock()
-    course_repo = AsyncMock()
-    course_repo.find_active_by_hubla_id.return_value = None
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id.return_value = None
     handler = _make_handler(
         contact_repo=contact_repo,
         chatnexo=chatnexo,
         access_case_repo=access_case_repo,
-        course_repo=course_repo,
+        product_repo=product_repo,
     )
     await handler.execute(fake_event())
     contact_repo.upsert.assert_called_once()
@@ -85,12 +85,12 @@ async def test_sends_welcome_template():
     contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
     chatnexo.get_open_conversation.return_value = "existing-conv"
-    course_repo = AsyncMock()
-    course_repo.find_active_by_hubla_id.return_value = None
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id.return_value = None
     handler = _make_handler(
         contact_repo=contact_repo,
         chatnexo=chatnexo,
-        course_repo=course_repo,
+        product_repo=product_repo,
     )
     await handler.execute(fake_event())
     chatnexo.send_template.assert_called_once()
@@ -103,10 +103,10 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
     course_id = uuid4()
     flow_id_1 = uuid4()
     flow_id_2 = uuid4()
-    course_repo = AsyncMock()
+    product_repo = AsyncMock()
     flow_repo = AsyncMock()
     enroll_uc = AsyncMock()
-    course_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=course_id, name="Mkt 360")
+    product_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=course_id, name="Mkt 360")
     flow_repo.list_active_by_product.return_value = [
         SimpleNamespace(id=flow_id_1),
         SimpleNamespace(id=flow_id_2),
@@ -123,7 +123,7 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
         chatnexo=chatnexo,
         access_case_repo=AsyncMock(),
         scheduler=AsyncMock(),
-        course_repo=course_repo,
+        product_repo=product_repo,
         flow_repo=flow_repo,
         enroll_contact_uc=enroll_uc,
     )
@@ -141,10 +141,10 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
 
 @pytest.mark.asyncio
 async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(capsys):
-    course_repo = AsyncMock()
+    product_repo = AsyncMock()
     flow_repo = AsyncMock()
     enroll_uc = AsyncMock()
-    course_repo.find_active_by_hubla_id.return_value = None
+    product_repo.find_active_by_hubla_id.return_value = None
 
     contact_repo = AsyncMock()
     contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
@@ -156,7 +156,7 @@ async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(ca
         chatnexo=chatnexo,
         access_case_repo=AsyncMock(),
         scheduler=AsyncMock(),
-        course_repo=course_repo,
+        product_repo=product_repo,
         flow_repo=flow_repo,
         enroll_contact_uc=enroll_uc,
     )
@@ -168,16 +168,16 @@ async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(ca
     # Course not found deve logar warning (structlog renderiza no stdout via ConsoleRenderer).
     captured = capsys.readouterr()
     output = captured.out + captured.err
-    assert "course_not_found" in output
+    assert "product_not_found" in output
     assert "warning" in output.lower()
 
 
 @pytest.mark.asyncio
 async def test_purchase_with_known_course_but_no_flows_does_not_enroll():
-    course_repo = AsyncMock()
+    product_repo = AsyncMock()
     flow_repo = AsyncMock()
     enroll_uc = AsyncMock()
-    course_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=uuid4(), name="Mkt 360")
+    product_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=uuid4(), name="Mkt 360")
     flow_repo.list_active_by_product.return_value = []
 
     contact_repo = AsyncMock()
@@ -190,7 +190,7 @@ async def test_purchase_with_known_course_but_no_flows_does_not_enroll():
         chatnexo=chatnexo,
         access_case_repo=AsyncMock(),
         scheduler=AsyncMock(),
-        course_repo=course_repo,
+        product_repo=product_repo,
         flow_repo=flow_repo,
         enroll_contact_uc=enroll_uc,
     )

@@ -21,9 +21,9 @@ class PurchaseHandler:
     """
     Processa eventos de compra:
       1. Cria/encontra contato e abre conversa.
-      2. Tenta resolver o produto via course_repo.find_active_by_hubla_id (hubla_product_id).
-         - Curso encontrado: enrolla contato em todos os flows ativos do curso.
-         - Curso não encontrado: loga warning e segue sem enrollment.
+      2. Tenta resolver o produto via product_repo.find_active_by_hubla_id (hubla_product_id).
+         - Produto encontrado: enrolla contato em todos os flows ativos do produto.
+         - Produto não encontrado: loga warning e segue sem enrollment.
       3. Sempre cria AccessCase e dispara welcome_purchase template (Access capability).
     """
 
@@ -33,7 +33,7 @@ class PurchaseHandler:
         chatnexo: ChatNexoPort,
         access_case_repo: Any,
         scheduler: Any,
-        course_repo: Any,
+        product_repo: Any,
         flow_repo: Any,
         enroll_contact_uc: Any,
     ) -> None:
@@ -41,7 +41,7 @@ class PurchaseHandler:
         self._chatnexo = chatnexo
         self._access_case_repo = access_case_repo
         self._scheduler = scheduler
-        self._course_repo = course_repo
+        self._product_repo = product_repo
         self._flow_repo = flow_repo
         self._enroll_contact_uc = enroll_contact_uc
 
@@ -77,11 +77,11 @@ class PurchaseHandler:
                 account_id=account_id_str, contact_phone=contact.phone
             )
 
-        # Resolve curso via hubla_id.
-        course = await self._course_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
+        # Resolve produto via hubla_id.
+        course = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
         if course is None:
             log.warning(
-                "course_not_found",
+                "product_not_found",
                 product_id=hubla_product_id,
                 account_id=account_id_str,
             )
@@ -101,7 +101,7 @@ class PurchaseHandler:
                 )
             log.info(
                 "followup_enrollments_dispatched",
-                course_id=str(course.id),
+                product_id=str(course.id),
                 flows=len(flows),
                 purchase_id=purchase_id,
             )

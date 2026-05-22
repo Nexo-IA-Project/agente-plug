@@ -24,6 +24,7 @@ from interface.http.routers.admin import (
     followup_enrollments as admin_followup_enrollments,
 )
 from interface.http.routers.admin import meta_templates as admin_meta_templates
+from interface.http.routers.admin import products as admin_products
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
 from shared.adapters.db.queue import PostgresJobQueue
@@ -103,6 +104,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_followup_enrollments.router, prefix="/admin")
     app.include_router(admin_meta_templates.router, prefix="/admin")
     app.include_router(admin_courses.router, prefix="/admin")
+    app.include_router(admin_products.router, prefix="/admin")
     return app
 
 

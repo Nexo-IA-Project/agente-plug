@@ -55,13 +55,13 @@ class FollowupFlowResponse(BaseModel):
 
 class CreateFlowRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
-    course_id: UUID
+    product_id: UUID
     is_active: bool = True
 
 
 class UpdateFlowRequest(BaseModel):
     name: str | None = Field(default=None, max_length=200)
-    course_id: UUID | None = None
+    product_id: UUID | None = None
     is_active: bool | None = None
 
 
