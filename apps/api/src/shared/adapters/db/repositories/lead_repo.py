@@ -10,6 +10,61 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import HublaEventModel, LeadModel
+from shared.domain.entities.hubla_event import HublaEvent
+from shared.domain.entities.lead import Lead
+
+
+def _to_lead_entity(m: LeadModel) -> Lead:
+    return Lead(
+        id=m.id,
+        account_id=m.account_id,
+        hubla_subscription_id=m.hubla_subscription_id,
+        contact_id=m.contact_id,
+        payer_phone=m.payer_phone,
+        payer_name=m.payer_name,
+        payer_email=m.payer_email,
+        payer_document=m.payer_document,
+        hubla_product_id=m.hubla_product_id,
+        product_name=m.product_name,
+        offer_id=m.offer_id,
+        offer_name=m.offer_name,
+        amount_total_cents=m.amount_total_cents,
+        amount_subtotal_cents=m.amount_subtotal_cents,
+        payment_method=m.payment_method,
+        subscription_status=m.subscription_status,
+        utm_source=m.utm_source,
+        utm_medium=m.utm_medium,
+        utm_campaign=m.utm_campaign,
+        utm_content=m.utm_content,
+        utm_term=m.utm_term,
+        session_ip=m.session_ip,
+        session_url=m.session_url,
+        fbp=m.fbp,
+        first_seen_at=m.first_seen_at,
+        activated_at=m.activated_at,
+        last_event_at=m.last_event_at,
+        last_event_type=m.last_event_type,
+        created_at=m.created_at,
+        updated_at=m.updated_at,
+    )
+
+
+def _to_event_entity(m: HublaEventModel) -> HublaEvent:
+    return HublaEvent(
+        id=m.id,
+        account_id=m.account_id,
+        event_type=m.event_type,
+        hubla_subscription_id=m.hubla_subscription_id,
+        hubla_product_id=m.hubla_product_id,
+        product_name=m.product_name,
+        payer_phone=m.payer_phone,
+        payer_email=m.payer_email,
+        payer_name=m.payer_name,
+        contact_id=m.contact_id,
+        payload=m.payload,
+        received_at=m.received_at,
+        processed_at=m.processed_at,
+    )
 
 
 @dataclass
@@ -44,7 +99,7 @@ class SqlLeadRepository:
         session_url: str | None = None,
         fbp: str | None = None,
         event_at: datetime | None = None,
-    ) -> LeadModel:
+    ) -> Lead:
         now = datetime.now(UTC)
         event_time = event_at or now
 
@@ -108,7 +163,8 @@ class SqlLeadRepository:
             LeadModel.account_id == account_id,
             LeadModel.hubla_subscription_id == hubla_subscription_id,
         )
-        return (await self.session.execute(q)).scalar_one()
+        m = (await self.session.execute(q)).scalar_one()
+        return _to_lead_entity(m)
 
     async def paginate(
         self,
@@ -121,7 +177,7 @@ class SqlLeadRepository:
         date_to: datetime | None = None,
         page: int = 1,
         page_size: int = 25,
-    ) -> tuple[list[LeadModel], int]:
+    ) -> tuple[list[Lead], int]:
         stmt = select(LeadModel).where(LeadModel.account_id == account_id)
         if product_id:
             stmt = stmt.where(LeadModel.hubla_product_id == product_id)
@@ -143,11 +199,17 @@ class SqlLeadRepository:
             .limit(page_size)
         )
         rows = (await self.session.execute(stmt)).scalars().all()
-        return list(rows), total
+        return [_to_lead_entity(m) for m in rows], total
+
+    async def find_by_id(self, lead_id: UUID, account_id: UUID) -> Lead | None:
+        m = await self.session.get(LeadModel, lead_id)
+        if m is None or m.account_id != account_id:
+            return None
+        return _to_lead_entity(m)
 
     async def get_events(
         self, account_id: UUID, hubla_subscription_id: str
-    ) -> list[HublaEventModel]:
+    ) -> list[HublaEvent]:
         stmt = (
             select(HublaEventModel)
             .where(
@@ -156,4 +218,5 @@ class SqlLeadRepository:
             )
             .order_by(HublaEventModel.received_at.asc())
         )
-        return list((await self.session.execute(stmt)).scalars().all())
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return [_to_event_entity(m) for m in rows]

@@ -8,6 +8,25 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import HublaEventModel
+from shared.domain.entities.hubla_event import HublaEvent
+
+
+def _to_entity(m: HublaEventModel) -> HublaEvent:
+    return HublaEvent(
+        id=m.id,
+        account_id=m.account_id,
+        event_type=m.event_type,
+        hubla_subscription_id=m.hubla_subscription_id,
+        hubla_product_id=m.hubla_product_id,
+        product_name=m.product_name,
+        payer_phone=m.payer_phone,
+        payer_email=m.payer_email,
+        payer_name=m.payer_name,
+        contact_id=m.contact_id,
+        payload=m.payload,
+        received_at=m.received_at,
+        processed_at=m.processed_at,
+    )
 
 
 @dataclass
@@ -27,7 +46,7 @@ class SqlHublaEventRepository:
         payer_email: str = "",
         payer_name: str = "",
         contact_id: UUID | None = None,
-    ) -> HublaEventModel:
+    ) -> HublaEvent:
         m = HublaEventModel(
             id=uuid4(),
             account_id=account_id,
@@ -45,7 +64,7 @@ class SqlHublaEventRepository:
         )
         self.session.add(m)
         await self.session.flush()
-        return m
+        return _to_entity(m)
 
     async def mark_processed(
         self, event_id: UUID, *, when: datetime | None = None

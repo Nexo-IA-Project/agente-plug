@@ -250,6 +250,8 @@ async def test_export_csv_returns_attachment(
     assert r.headers["content-type"].startswith("text/csv")
     assert "attachment" in r.headers.get("content-disposition", "").lower()
     text = r.text
+    # UTF-8 BOM must be present for Excel to read accented chars (João, André) correctly
+    assert text.startswith("﻿"), "CSV must start with UTF-8 BOM for Excel"
     # Header row present
     assert "nome" in text
     assert "Teste CSV" in text

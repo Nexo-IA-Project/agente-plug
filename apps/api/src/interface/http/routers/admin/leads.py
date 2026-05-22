@@ -12,9 +12,10 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
-from shared.adapters.db.models import AccountModel, LeadModel
+from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
+from shared.domain.entities.lead import Lead
 
 router = APIRouter(tags=["admin-leads"])
 
@@ -65,7 +66,7 @@ async def _get_account_uuid(session: object) -> _uuid_module.UUID:
     return value
 
 
-def _to_response(m: LeadModel) -> LeadResponse:
+def _to_response(m: Lead) -> LeadResponse:
     return LeadResponse(
         id=m.id,
         hubla_subscription_id=m.hubla_subscription_id,
@@ -192,7 +193,7 @@ async def export_leads(
             ]
         )
 
-    csv_data = output.getvalue()
+    csv_data = "﻿" + output.getvalue()
     date_str = datetime.now().strftime("%Y%m%d")
     return StreamingResponse(
         iter([csv_data]),
@@ -209,8 +210,8 @@ async def get_lead(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = SqlLeadRepository(session=session)
-        m = await session.get(LeadModel, lead_id)
-        if m is None or m.account_id != account_uuid:
+        m = await repo.find_by_id(lead_id, account_uuid)
+        if m is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="lead not found"
             )
