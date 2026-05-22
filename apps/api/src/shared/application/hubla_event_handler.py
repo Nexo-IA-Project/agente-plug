@@ -6,11 +6,11 @@ from uuid import UUID
 
 import structlog
 
+from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
 
-_DEFAULT_ACCOUNT_UUID = UUID("00000000-0000-0000-0000-000000000001")
 _PURCHASE_EVENT_TYPES = frozenset({"subscription.activated"})
 
 
@@ -43,7 +43,7 @@ class HublaEventHandler:
         self._chatnexo = chatnexo
         self._enroll_contact_uc = enroll_contact_uc
         self._purchase_handler = purchase_handler
-        self._account_id = account_id or _DEFAULT_ACCOUNT_UUID
+        self._account_id = account_id or DEFAULT_ACCOUNT_UUID
 
     async def handle(self, payload: dict[str, Any]) -> None:
         event_type: str = payload.get("type", "")
@@ -83,7 +83,8 @@ class HublaEventHandler:
                 event_type=event_type,
                 hubla_product_id=hubla_product_id,
             )
-            # For subscription.activated, still run PurchaseHandler (legacy behaviour: welcome + access case)
+            # Para subscription.activated, mantém comportamento legado (welcome + access case)
+            # mesmo sem curso cadastrado no catálogo — garante que nenhuma compra seja ignorada.
             if event_type in _PURCHASE_EVENT_TYPES:
                 await self._purchase_handler.handle_one(
                     hubla_product_id=hubla_product_id,
@@ -96,6 +97,9 @@ class HublaEventHandler:
                     payer_document=payer_document,
                     account_id=account_uuid,
                 )
+            # TODO(PR4): para outros event types com produto desconhecido (lead.abandoned, etc),
+            # ainda salvamos em hubla_events + leads para análise posterior.
+            # Por enquanto: drop silencioso (apenas o log.warning acima).
             return
 
         contact = await self._contact_repo.upsert(

@@ -6,15 +6,13 @@ from uuid import UUID, uuid4
 
 import structlog
 
+from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 from shared.domain.events.purchase_received import PurchaseReceived
 from shared.domain.ports.chatnexo import ChatNexoPort
 from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
-
-# Sistema single-tenant: account_id fixo.
-_DEFAULT_ACCOUNT_UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 class PurchaseHandler:
@@ -56,7 +54,7 @@ class PurchaseHandler:
         Enrollment em flows é responsabilidade do HublaEventHandler — este handler
         NÃO toca em FollowupFlow nem FollowupEnrollment.
         """
-        account_uuid = account_id or _DEFAULT_ACCOUNT_UUID
+        account_uuid = account_id or DEFAULT_ACCOUNT_UUID
         account_id_str = str(account_uuid)
 
         contact = await self._contact_repo.upsert(
