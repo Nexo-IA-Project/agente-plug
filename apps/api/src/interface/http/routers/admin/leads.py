@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import csv
 import io
-import uuid as _uuid_module
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
-from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
+from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.lead import Lead
 
 router = APIRouter(tags=["admin-leads"])
@@ -60,12 +58,6 @@ class LeadDetailResponse(LeadResponse):
     events: list[HublaEventResponse]
 
 
-async def _get_account_uuid(session: object) -> _uuid_module.UUID:
-    result = await session.execute(select(AccountModel.id).limit(1))  # type: ignore[attr-defined]
-    value: _uuid_module.UUID = result.scalar_one()
-    return value
-
-
 def _to_response(m: Lead) -> LeadResponse:
     return LeadResponse(
         id=m.id,
@@ -101,7 +93,7 @@ async def list_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadListResponse:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = DEFAULT_ACCOUNT_UUID
         repo = SqlLeadRepository(session=session)
         items, total = await repo.paginate(
             account_uuid,
@@ -131,7 +123,7 @@ async def export_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> StreamingResponse:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = DEFAULT_ACCOUNT_UUID
         repo = SqlLeadRepository(session=session)
         items, _ = await repo.paginate(
             account_uuid,
@@ -208,7 +200,7 @@ async def get_lead(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadDetailResponse:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = DEFAULT_ACCOUNT_UUID
         repo = SqlLeadRepository(session=session)
         m = await repo.find_by_id(lead_id, account_uuid)
         if m is None:

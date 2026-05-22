@@ -1,18 +1,16 @@
 from __future__ import annotations
 
-import uuid as _uuid_module
 from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
-from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
+from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 
 router = APIRouter(tags=["admin-products"])
 
@@ -39,19 +37,12 @@ class ProductResponse(BaseModel):
     updated_at: datetime
 
 
-async def _get_account_uuid(session: object) -> _uuid_module.UUID:
-    """Retorna o ID da primeira account (single-tenant na prática)."""
-    result = await session.execute(select(AccountModel.id).limit(1))  # type: ignore[attr-defined]
-    value: _uuid_module.UUID = result.scalar_one()
-    return value
-
-
 @router.get("/products", response_model=list[ProductResponse])
 async def list_products(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> list[ProductResponse]:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = DEFAULT_ACCOUNT_UUID
         repo = SqlProductRepository(session=session)
         products = await repo.list_by_account(account_uuid)
         items: list[ProductResponse] = []
@@ -76,7 +67,7 @@ async def create_product(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> ProductResponse:
     async with session_scope() as session:
-        account_uuid = await _get_account_uuid(session)
+        account_uuid = DEFAULT_ACCOUNT_UUID
         repo = SqlProductRepository(session=session)
         try:
             p = await repo.create(
