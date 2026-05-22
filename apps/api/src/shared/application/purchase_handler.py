@@ -9,6 +9,7 @@ import structlog
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 from shared.domain.events.purchase_received import PurchaseReceived
 from shared.domain.ports.chatnexo import ChatNexoPort
+from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
 
@@ -61,9 +62,9 @@ class PurchaseHandler:
         account_uuid = account_id or _DEFAULT_ACCOUNT_UUID
         account_id_str = str(account_uuid)
 
-        contact = await self._contact_repo.find_or_create(
-            account_id=account_id_str,
-            phone=payer_phone,
+        contact = await self._contact_repo.upsert(
+            account_id=account_uuid,
+            phone=Phone.parse(payer_phone),
             name=payer_full_name,
             email=payer_email,
         )
