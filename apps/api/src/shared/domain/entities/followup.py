@@ -25,6 +25,7 @@ class FollowupFlow:
     account_id: UUID
     product_id: UUID
     name: str
+    trigger_event_type: str = "subscription.activated"
     is_active: bool = True
     created_at: datetime | None = None
     updated_at: datetime | None = None

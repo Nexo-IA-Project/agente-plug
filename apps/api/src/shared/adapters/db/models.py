@@ -490,6 +490,12 @@ class FollowupFlowModel(Base):
         nullable=False,
         index=True,
     )
+    trigger_event_type: Mapped[str] = mapped_column(
+        String(80),
+        nullable=False,
+        default="subscription.activated",
+        server_default="subscription.activated",
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
