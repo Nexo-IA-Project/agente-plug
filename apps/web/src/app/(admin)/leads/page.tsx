@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { downloadLeadsCsv, listLeads } from "@/lib/api";
 import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
 import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
@@ -51,25 +51,29 @@ export default function LeadsPage() {
 
   const { products, loading: productsLoading } = useProducts();
 
-  const load = useCallback(
-    async (f: LeadFilters) => {
-      setLoading(true);
-      try {
-        const res = await listLeads(f);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    listLeads(filters)
+      .then((res) => {
+        if (cancelled) return;
         setLeads(res.items);
         setTotal(res.total);
-      } catch (e) {
+      })
+      .catch((e) => {
+        if (cancelled) return;
         toast.error(e instanceof Error ? e.message : "Erro ao carregar leads");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [toast],
-  );
-
-  useEffect(() => {
-    void load(filters);
-  }, [filters, load]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `toast` é intencionalmente omitido: useToast() retorna objeto novo a cada
+    // render (sonner wrapper), incluí-lo causa loop infinito de useEffect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   const updateFilter = (patch: Partial<LeadFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch, page: 1 }));
