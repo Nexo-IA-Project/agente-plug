@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
     ContactModel,
-    CourseModel,
     FollowupEnrollmentModel,
     FollowupEnrollmentStepModel,
     FollowupFlowModel,
+    ProductModel,
     ScheduledJobModel,
 )
 from shared.domain.entities.followup import (
@@ -374,7 +374,7 @@ class FollowupEnrollmentRepository:
                 ContactModel.name.label("c_name"),
                 FollowupEnrollmentModel.flow_id,
                 FollowupFlowModel.name.label("flow_name"),
-                CourseModel.name.label("course_name"),
+                ProductModel.name.label("course_name"),
                 FollowupEnrollmentModel.status,
                 FollowupEnrollmentModel.created_at,
             )
@@ -383,7 +383,7 @@ class FollowupEnrollmentRepository:
                 FollowupFlowModel,
                 FollowupFlowModel.id == FollowupEnrollmentModel.flow_id,
             )
-            .outerjoin(CourseModel, CourseModel.id == FollowupFlowModel.course_id)
+            .outerjoin(ProductModel, ProductModel.id == FollowupFlowModel.product_id)
             .where(FollowupEnrollmentModel.account_id == account_id)
         )
         if flow_id is not None:

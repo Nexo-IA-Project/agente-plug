@@ -107,7 +107,7 @@ async def test_purchase_with_known_course_enrolls_in_all_active_flows():
     flow_repo = AsyncMock()
     enroll_uc = AsyncMock()
     course_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=course_id, name="Mkt 360")
-    flow_repo.list_active_by_course.return_value = [
+    flow_repo.list_active_by_product.return_value = [
         SimpleNamespace(id=flow_id_1),
         SimpleNamespace(id=flow_id_2),
     ]
@@ -164,7 +164,7 @@ async def test_purchase_with_unknown_course_logs_warning_and_skips_enrollment(ca
     await handler.execute(fake_event(product_id="prod-unknown", product_name="Unknown"))
 
     enroll_uc.execute.assert_not_awaited()
-    flow_repo.list_active_by_course.assert_not_called()
+    flow_repo.list_active_by_product.assert_not_called()
     # Course not found deve logar warning (structlog renderiza no stdout via ConsoleRenderer).
     captured = capsys.readouterr()
     output = captured.out + captured.err
@@ -178,7 +178,7 @@ async def test_purchase_with_known_course_but_no_flows_does_not_enroll():
     flow_repo = AsyncMock()
     enroll_uc = AsyncMock()
     course_repo.find_active_by_hubla_id.return_value = SimpleNamespace(id=uuid4(), name="Mkt 360")
-    flow_repo.list_active_by_course.return_value = []
+    flow_repo.list_active_by_product.return_value = []
 
     contact_repo = AsyncMock()
     contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")

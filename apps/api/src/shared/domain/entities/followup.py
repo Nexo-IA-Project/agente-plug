@@ -23,7 +23,7 @@ class EnrollmentStepStatus(StrEnum):
 class FollowupFlow:
     id: UUID
     account_id: UUID
-    course_id: UUID
+    product_id: UUID
     name: str
     is_active: bool = True
     created_at: datetime | None = None

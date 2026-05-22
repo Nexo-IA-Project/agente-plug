@@ -21,8 +21,8 @@ from interface.http.schemas.followup import (
     UpdateStepRequest,
 )
 from shared.adapters.db.models import AccountModel, JobQueueModel
-from shared.adapters.db.repositories.course_repo import SqlCourseRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
 from shared.domain.value_objects.priority import Priority
 
@@ -98,7 +98,7 @@ async def list_flows(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         flow_repo = FollowupFlowRepository(session=session)
-        course_repo = SqlCourseRepository(session=session)
+        product_repo = SqlProductRepository(session=session)
         flows = await flow_repo.list_flows(account_id=account_uuid)
         stats = await flow_repo.stats_by_flows(
             account_id=account_uuid,
@@ -106,7 +106,7 @@ async def list_flows(
         )
         out: list[FollowupFlowResponse] = []
         for f in flows:
-            course = await course_repo.find_by_id(f.course_id)
+            course = await product_repo.find_by_id(f.product_id)
             steps = await flow_repo.get_steps(f.id)
             if course is None:
                 # FK garante que existe; defensivo
@@ -141,8 +141,8 @@ async def create_flow(
 ) -> FollowupFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        course_repo = SqlCourseRepository(session=session)
-        course = await course_repo.find_by_id(body.course_id)
+        product_repo = SqlProductRepository(session=session)
+        course = await product_repo.find_by_id(body.course_id)
         if course is None or course.account_id != account_uuid:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -151,7 +151,7 @@ async def create_flow(
         flow_repo = FollowupFlowRepository(session=session)
         flow = await flow_repo.create_flow(
             account_id=account_uuid,
-            course_id=body.course_id,
+            product_id=body.course_id,
             name=body.name,
             is_active=body.is_active,
         )
@@ -174,9 +174,9 @@ async def update_flow(
 ) -> FollowupFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        course_repo = SqlCourseRepository(session=session)
+        product_repo = SqlProductRepository(session=session)
         if body.course_id is not None:
-            target_course = await course_repo.find_by_id(body.course_id)
+            target_course = await product_repo.find_by_id(body.course_id)
             if target_course is None or target_course.account_id != account_uuid:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -186,12 +186,12 @@ async def update_flow(
         flow = await flow_repo.update_flow(
             flow_id,
             name=body.name,
-            course_id=body.course_id,
+            product_id=body.course_id,
             is_active=body.is_active,
         )
         if flow is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flow não encontrado")
-        course = await course_repo.find_by_id(flow.course_id)
+        course = await product_repo.find_by_id(flow.product_id)
         steps = await flow_repo.get_steps(flow.id)
         if course is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="course not found")

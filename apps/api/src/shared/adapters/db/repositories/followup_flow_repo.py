@@ -19,7 +19,7 @@ def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
     return FollowupFlow(
         id=m.id,
         account_id=m.account_id,
-        course_id=m.course_id,
+        product_id=m.product_id,
         name=m.name,
         is_active=m.is_active,
         created_at=m.created_at,
@@ -44,9 +44,9 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
 class FollowupFlowRepository:
     session: AsyncSession
 
-    async def list_active_by_course(self, course_id: uuid.UUID) -> list[FollowupFlow]:
+    async def list_active_by_product(self, product_id: uuid.UUID) -> list[FollowupFlow]:
         stmt = select(FollowupFlowModel).where(
-            FollowupFlowModel.course_id == course_id,
+            FollowupFlowModel.product_id == product_id,
             FollowupFlowModel.is_active.is_(True),
         )
         rows = (await self.session.execute(stmt)).scalars().all()
@@ -76,7 +76,7 @@ class FollowupFlowRepository:
         self,
         *,
         account_id: uuid.UUID,
-        course_id: uuid.UUID,
+        product_id: uuid.UUID,
         name: str,
         is_active: bool = True,
     ) -> FollowupFlow:
@@ -84,7 +84,7 @@ class FollowupFlowRepository:
         model = FollowupFlowModel(
             id=uuid.uuid4(),
             account_id=account_id,
-            course_id=course_id,
+            product_id=product_id,
             name=name,
             is_active=is_active,
             created_at=now,
@@ -99,7 +99,7 @@ class FollowupFlowRepository:
         flow_id: uuid.UUID,
         *,
         name: str | None = None,
-        course_id: uuid.UUID | None = None,
+        product_id: uuid.UUID | None = None,
         is_active: bool | None = None,
     ) -> FollowupFlow | None:
         model = await self.session.get(FollowupFlowModel, flow_id)
@@ -107,8 +107,8 @@ class FollowupFlowRepository:
             return None
         if name is not None:
             model.name = name
-        if course_id is not None:
-            model.course_id = course_id
+        if product_id is not None:
+            model.product_id = product_id
         if is_active is not None:
             model.is_active = is_active
         model.updated_at = datetime.now(UTC)

@@ -86,7 +86,7 @@ class PurchaseHandler:
                 account_id=account_id_str,
             )
         else:
-            flows = await self._flow_repo.list_active_by_course(course.id)
+            flows = await self._flow_repo.list_active_by_product(course.id)
             for flow in flows:
                 await self._enroll_contact_uc.execute(
                     account_id=account_uuid,

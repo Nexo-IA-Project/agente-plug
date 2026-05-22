@@ -251,11 +251,11 @@ class MetaTemplateModel(Base):
     )
 
 
-class CourseModel(Base):
-    __tablename__ = "courses"
+class ProductModel(Base):
+    __tablename__ = "products"
     __table_args__ = (
-        UniqueConstraint("account_id", "hubla_id", name="uq_courses_account_hubla"),
-        Index("ix_courses_account_id", "account_id"),
+        UniqueConstraint("account_id", "hubla_id", name="uq_products_account_hubla"),
+        Index("ix_products_account_id", "account_id"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -484,9 +484,9 @@ class FollowupFlowModel(Base):
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    course_id: Mapped[uuid.UUID] = mapped_column(
+    product_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("courses.id", ondelete="RESTRICT"),
+        ForeignKey("products.id", ondelete="RESTRICT"),
         nullable=False,
         index=True,
     )
