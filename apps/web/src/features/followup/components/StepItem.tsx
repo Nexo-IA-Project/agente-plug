@@ -43,7 +43,7 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
     <div
       ref={setNodeRef}
       style={style}
-      className="group flex items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 transition-shadow hover:shadow-sm"
+      className="group flex items-center gap-5 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 transition-shadow hover:shadow-sm"
     >
       {/* Número do step — círculo com destaque */}
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-1 ring-primary/20">

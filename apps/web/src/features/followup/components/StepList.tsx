@@ -116,7 +116,7 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
             add
           </span>
-          Adicionar Step
+          Adicionar mensagem
         </button>
       )}
     </div>
