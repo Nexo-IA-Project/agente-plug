@@ -35,8 +35,10 @@ def _make_client() -> tuple[ChatNexoClient, MagicMock]:
 async def test_send_message_single_part_one_post_no_sleep():
     """Mensagem curta (sem \\n\\n) → 1 POST, sem sleep."""
     client, http = _make_client()
-    with patch("shared.adapters.chatnexo.client.get_settings", return_value=_mock_settings()), \
-         patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    with (
+        patch("shared.adapters.chatnexo.client.get_settings", return_value=_mock_settings()),
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         await client.send_message(account_id="a", conversation_id="c", text="Olá!")
     http.post.assert_called_once()
     mock_sleep.assert_not_called()
@@ -46,11 +48,13 @@ async def test_send_message_single_part_one_post_no_sleep():
 async def test_send_message_two_paragraphs_two_posts_one_sleep():
     """Dois parágrafos → 2 POSTs, 1 sleep (entre partes, não após a última)."""
     client, http = _make_client()
-    first = "a" * 85   # 85 chars > min_chars=80
+    first = "a" * 85  # 85 chars > min_chars=80
     second = "b" * 85
     text = f"{first}\n\n{second}"
-    with patch("shared.adapters.chatnexo.client.get_settings", return_value=_mock_settings()), \
-         patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    with (
+        patch("shared.adapters.chatnexo.client.get_settings", return_value=_mock_settings()),
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         await client.send_message(account_id="a", conversation_id="c", text=text)
     assert http.post.call_count == 2
     assert mock_sleep.call_count == 1
@@ -64,9 +68,13 @@ async def test_send_message_delay_capped_at_max():
     long_para = "x" * 600
     short_para = "y" * 90
     text = f"{long_para}\n\n{short_para}"
-    settings = _mock_settings(split_max=700, split_min=80, delay_per_char=30, min_delay=800, max_delay=4000)
-    with patch("shared.adapters.chatnexo.client.get_settings", return_value=settings), \
-         patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    settings = _mock_settings(
+        split_max=700, split_min=80, delay_per_char=30, min_delay=800, max_delay=4000
+    )
+    with (
+        patch("shared.adapters.chatnexo.client.get_settings", return_value=settings),
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         await client.send_message(account_id="a", conversation_id="c", text=text)
     sleep_seconds = mock_sleep.call_args[0][0]
     assert sleep_seconds == pytest.approx(4.0)
@@ -80,9 +88,13 @@ async def test_send_message_delay_floored_at_min():
     first = "a" * 85
     second = "b" * 85
     text = f"{first}\n\n{second}"
-    settings = _mock_settings(split_max=400, split_min=80, delay_per_char=1, min_delay=800, max_delay=4000)
-    with patch("shared.adapters.chatnexo.client.get_settings", return_value=settings), \
-         patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+    settings = _mock_settings(
+        split_max=400, split_min=80, delay_per_char=1, min_delay=800, max_delay=4000
+    )
+    with (
+        patch("shared.adapters.chatnexo.client.get_settings", return_value=settings),
+        patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+    ):
         await client.send_message(account_id="a", conversation_id="c", text=text)
     sleep_seconds = mock_sleep.call_args[0][0]
     assert sleep_seconds == pytest.approx(0.8)

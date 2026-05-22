@@ -34,6 +34,7 @@ def test_fill_placeholders_subscription_id_is_unique():
 
 def test_fill_placeholders_timestamp_iso_is_valid():
     from datetime import datetime
+
     payload = {"activatedAt": "{{TIMESTAMP_ISO}}"}
     result = _fill_placeholders(payload, phone="+55", product_id="x")
     dt = datetime.fromisoformat(result["activatedAt"].replace("Z", "+00:00"))
