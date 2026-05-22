@@ -9,6 +9,8 @@ from shared.adapters.db.repositories.account_config_repo import AccountConfigRep
 from shared.adapters.db.repositories.contact import ContactRepository
 from shared.adapters.db.repositories.followup_enrollment_repo import FollowupEnrollmentRepository
 from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.hubla_event_repo import SqlHublaEventRepository
+from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
@@ -39,6 +41,8 @@ async def handle_hubla_event(payload: dict) -> None:
         product_repo = SqlProductRepository(session=session)
         flow_repo = FollowupFlowRepository(session=session)
         enrollment_repo = FollowupEnrollmentRepository(session=session)
+        hubla_event_repo = SqlHublaEventRepository(session=session)
+        lead_repo = SqlLeadRepository(session=session)
 
         enroll_uc = EnrollContact(
             session=session,
@@ -62,6 +66,8 @@ async def handle_hubla_event(payload: dict) -> None:
             chatnexo=chatnexo,
             enroll_contact_uc=enroll_uc,
             purchase_handler=purchase_handler,
+            lead_repo=lead_repo,
+            hubla_event_repo=hubla_event_repo,
         )
 
         await handler.handle(payload)

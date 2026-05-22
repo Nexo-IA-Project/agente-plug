@@ -35,6 +35,8 @@ class HublaEventHandler:
         chatnexo: Any,
         enroll_contact_uc: Any,
         purchase_handler: Any,
+        lead_repo: Any | None = None,
+        hubla_event_repo: Any | None = None,
         account_id: UUID | None = None,
     ) -> None:
         self._product_repo = product_repo
@@ -43,6 +45,8 @@ class HublaEventHandler:
         self._chatnexo = chatnexo
         self._enroll_contact_uc = enroll_contact_uc
         self._purchase_handler = purchase_handler
+        self._lead_repo = lead_repo
+        self._hubla_event_repo = hubla_event_repo
         self._account_id = account_id or DEFAULT_ACCOUNT_UUID
 
     async def handle(self, payload: dict[str, Any]) -> None:
@@ -74,6 +78,63 @@ class HublaEventHandler:
         if not payer_phone:
             log.warning("hubla_event_no_phone", event_type=event_type, purchase_id=purchase_id)
             return
+
+        # === PR 4: lead/event persistence ===
+
+        # Extra fields from variable-shape payloads
+        first_session = subscription.get("firstPaymentSession") or {}
+        utm = first_session.get("utm") or {}
+        last_invoice = subscription.get("lastInvoice") or {}
+        amount = last_invoice.get("amount") or {}
+        offers = product_data.get("offers") or []
+        first_offer = offers[0] if offers else {}
+        cookies = first_session.get("cookies") or {}
+        sub_status = subscription.get("status", "unknown")
+
+        # Persist HublaEvent (log imutável). Best-effort: if repo not injected, skip.
+        if self._hubla_event_repo is not None:
+            await self._hubla_event_repo.insert(
+                account_id=account_uuid,
+                event_type=event_type,
+                hubla_subscription_id=purchase_id,
+                hubla_product_id=hubla_product_id,
+                product_name=product_name,
+                payer_phone=payer_phone,
+                payer_email=payer_email,
+                payer_name=payer_full_name,
+                payload=payload,
+            )
+
+        # Upsert Lead (visão materializada com UTMs, valor, sessão).
+        if self._lead_repo is not None and purchase_id:
+            await self._lead_repo.upsert(
+                account_id=account_uuid,
+                hubla_subscription_id=purchase_id,
+                event_type=event_type,
+                payer_phone=payer_phone,
+                payer_name=payer_full_name,
+                payer_email=payer_email,
+                payer_document=payer.get("document") or None,
+                hubla_product_id=hubla_product_id,
+                product_name=product_name,
+                offer_id=first_offer.get("id") or None,
+                offer_name=first_offer.get("name") or None,
+                amount_total_cents=amount.get("totalCents"),
+                amount_subtotal_cents=amount.get("subtotalCents"),
+                payment_method=subscription.get("paymentMethod"),
+                subscription_status=sub_status,
+                utm_source=utm.get("source") or None,
+                utm_medium=utm.get("medium") or None,
+                utm_campaign=utm.get("campaign") or None,
+                utm_content=utm.get("content") or None,
+                utm_term=utm.get("term") or None,
+                session_ip=first_session.get("ip") or None,
+                session_url=first_session.get("url") or None,
+                fbp=cookies.get("fbp") or None,
+                event_at=activated_at,
+            )
+
+        # === End PR 4 ===
 
         product = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
 

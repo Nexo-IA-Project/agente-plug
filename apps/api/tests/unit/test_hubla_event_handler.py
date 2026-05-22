@@ -203,3 +203,129 @@ async def test_no_payer_phone_skips_processing():
 
     product_repo.find_active_by_hubla_id.assert_not_called()
     purchase_handler.handle_one.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_subscription_created_persists_lead_with_utms_and_invoice():
+    """PR 4: HublaEventHandler grava HublaEvent + faz upsert do Lead com UTMs/valor."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)  # produto não cadastrado
+
+    lead_repo = AsyncMock()
+    hubla_event_repo = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=AsyncMock(),
+        contact_repo=AsyncMock(),
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=purchase_handler,
+        lead_repo=lead_repo,
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    payload = {
+        "type": "subscription.created",
+        "version": "2.0.0",
+        "event": {
+            "product": {"id": "prod-123", "name": "Produto X"},
+            "products": [
+                {
+                    "id": "prod-123",
+                    "name": "Produto X",
+                    "offers": [{"id": "offer-1", "name": "Oferta A"}],
+                }
+            ],
+            "subscription": {
+                "id": "sub-abc",
+                "payer": {
+                    "firstName": "Maria",
+                    "lastName": "Souza",
+                    "document": "99988877766",
+                    "email": "maria@email.com",
+                    "phone": "+5521988887777",
+                },
+                "paymentMethod": "pix",
+                "status": "inactive",
+                "firstPaymentSession": {
+                    "ip": "200.0.0.1",
+                    "url": "https://pay.hub.la/offer-1?utm_source=Meta+Ads",
+                    "utm": {
+                        "source": "Meta Ads",
+                        "medium": "cpc",
+                        "campaign": "Campanha 1",
+                        "content": "Ad 1",
+                        "term": "keyword1",
+                    },
+                    "cookies": {"fbp": "fb.1.123.456789"},
+                },
+                "lastInvoice": {
+                    "amount": {"totalCents": 9700, "subtotalCents": 9700},
+                    "paymentMethod": "pix",
+                },
+            },
+        },
+    }
+
+    await handler.handle(payload)
+
+    # HublaEvent log was written
+    hubla_event_repo.insert.assert_called_once()
+    event_kwargs = hubla_event_repo.insert.call_args.kwargs
+    assert event_kwargs["event_type"] == "subscription.created"
+    assert event_kwargs["hubla_subscription_id"] == "sub-abc"
+    assert event_kwargs["payload"] == payload
+
+    # Lead upsert called with UTMs and invoice fields
+    lead_repo.upsert.assert_called_once()
+    lead_kwargs = lead_repo.upsert.call_args.kwargs
+    assert lead_kwargs["hubla_subscription_id"] == "sub-abc"
+    assert lead_kwargs["event_type"] == "subscription.created"
+    assert lead_kwargs["utm_source"] == "Meta Ads"
+    assert lead_kwargs["utm_campaign"] == "Campanha 1"
+    assert lead_kwargs["fbp"] == "fb.1.123.456789"
+    assert lead_kwargs["amount_total_cents"] == 9700
+    assert lead_kwargs["amount_subtotal_cents"] == 9700
+    assert lead_kwargs["subscription_status"] == "inactive"
+    assert lead_kwargs["payment_method"] == "pix"
+    assert lead_kwargs["payer_document"] == "99988877766"
+    assert lead_kwargs["offer_id"] == "offer-1"
+    assert lead_kwargs["offer_name"] == "Oferta A"
+    assert lead_kwargs["session_ip"] == "200.0.0.1"
+
+    # Para subscription.created (não activated), PurchaseHandler NÃO é chamado
+    purchase_handler.handle_one.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_handler_works_without_lead_repos_backward_compat():
+    """Existing call sites that don't pass lead_repo/hubla_event_repo must still work."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=AsyncMock(),
+        contact_repo=AsyncMock(),
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        # lead_repo and hubla_event_repo omitted on purpose
+    )
+
+    payload = {
+        "type": "subscription.activated",
+        "event": {
+            "product": {"id": "prod", "name": "P"},
+            "subscription": {
+                "id": "s1",
+                "payer": {"firstName": "A", "lastName": "B", "phone": "+5511000000000", "email": "a@b.c"},
+                "activatedAt": "2026-05-22T12:00:00Z",
+            },
+        },
+    }
+
+    # Should not raise
+    await handler.handle(payload)
