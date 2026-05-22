@@ -25,7 +25,6 @@ def split_message(text: str, max_chars: int = 400, min_chars: int = 80) -> list[
     paragraphs = [p.strip() for p in stripped.split("\n\n") if p.strip()]
 
     parts: list[str] = []
-    has_been_split = False
 
     for para in paragraphs:
         if len(para) <= max_chars:
@@ -33,7 +32,7 @@ def split_message(text: str, max_chars: int = 400, min_chars: int = 80) -> list[
             parts.append(para)
         else:
             # Parágrafo grande, subdivide por sentença
-            has_been_split = True
+            # max_chars is a soft limit: sentences longer than max_chars are kept whole
             sub_parts = _split_by_sentence(para, max_chars)
             filtered_sub = [p for p in sub_parts if len(p) >= min_chars]
             if filtered_sub:

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from shared.adapters.chatnexo.message_splitter import split_message
 
 
