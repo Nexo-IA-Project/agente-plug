@@ -8,15 +8,7 @@ import { useFollowupSteps } from "../hooks/useFollowupSteps";
 import { StepList } from "./StepList";
 import { useToast } from "@/shared/hooks/useToast";
 import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "../types";
-
-const HUBLA_EVENT_OPTIONS = [
-  { value: "subscription.activated", label: "Venda ativada (subscription.activated)" },
-  { value: "subscription.created",   label: "Venda criada / pendente (subscription.created)" },
-  { value: "lead.abandoned",         label: "Carrinho abandonado (lead.abandoned)" },
-  { value: "subscription.deactivated", label: "Assinatura desativada (subscription.deactivated)" },
-  { value: "subscription.expiring",  label: "Assinatura expirando (subscription.expiring)" },
-  { value: "invoice.refunded",       label: "Fatura reembolsada (invoice.refunded)" },
-];
+import { TRIGGER_EVENTS } from "../lib/triggerEvents";
 
 interface Props {
   open: boolean;
@@ -242,26 +234,77 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
               )}
             </div>
 
-            {/* Evento disparador */}
-            <div className="animate-fade-in flex flex-col gap-2">
-              <span className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+            {/* Evento disparador — radio-grid colorido por semântica do funil */}
+            <fieldset className="animate-fade-in flex flex-col gap-3">
+              <legend className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
+                  bolt
+                </span>
                 Evento disparador
-              </span>
-              <select
-                value={triggerEventType}
-                onChange={(e) => setTriggerEventType(e.target.value)}
-                className="field-select"
-              >
-                {HUBLA_EVENT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <span className="text-xs text-on-surface-variant">
-                O flow será disparado quando este evento for recebido da Hubla.
-              </span>
-            </div>
+              </legend>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {TRIGGER_EVENTS.map((event) => {
+                  const selected = triggerEventType === event.value;
+                  return (
+                    <label
+                      key={event.value}
+                      className={[
+                        "group relative flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all duration-200",
+                        selected
+                          ? `${event.tone.bgActive} ${event.tone.border} ring-2 ${event.tone.ring}`
+                          : "border-outline-variant bg-surface-container-low hover:border-outline hover:bg-surface-container",
+                      ].join(" ")}
+                    >
+                      <input
+                        type="radio"
+                        name="trigger_event_type"
+                        value={event.value}
+                        checked={selected}
+                        onChange={() => setTriggerEventType(event.value)}
+                        className="sr-only"
+                      />
+                      <div
+                        className={[
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                          event.tone.bg,
+                        ].join(" ")}
+                      >
+                        <span
+                          className={["material-symbols-outlined", event.tone.text].join(" ")}
+                          style={{ fontSize: "20px" }}
+                        >
+                          {event.icon}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-semibold text-on-surface">
+                            {event.label}
+                          </span>
+                          {selected && (
+                            <span
+                              className={["material-symbols-outlined", event.tone.text].join(" ")}
+                              style={{
+                                fontSize: "15px",
+                                fontVariationSettings: "'FILL' 1",
+                              }}
+                            >
+                              check_circle
+                            </span>
+                          )}
+                        </div>
+                        <code className="mt-0.5 block font-mono text-[10px] tracking-tight text-on-surface-variant/70">
+                          {event.technical}
+                        </code>
+                        <p className="mt-1 text-xs leading-snug text-on-surface-variant">
+                          {event.description}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
 
             {/* Checkbox ativo */}
             <label className="flex cursor-pointer items-center gap-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
+import { getTriggerEventMeta } from "../lib/triggerEvents";
 import type { FollowupFlow } from "../types";
 
 interface Props {
@@ -24,6 +25,7 @@ export function FlowCard({ flow, onEdit, onToggle, onDelete }: Props) {
   }
 
   const stepsCount = flow.steps_count;
+  const triggerMeta = getTriggerEventMeta(flow.trigger_event_type);
 
   return (
     <article
@@ -53,6 +55,25 @@ export function FlowCard({ flow, onEdit, onToggle, onDelete }: Props) {
           >
             {flow.is_active ? "Ativo" : "Pausado"}
           </span>
+          {triggerMeta && (
+            <span
+              className={[
+                "ml-auto inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-label-xs font-medium",
+                triggerMeta.tone.bg,
+                triggerMeta.tone.border,
+                triggerMeta.tone.text,
+              ].join(" ")}
+              title={triggerMeta.technical}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "14px" }}
+              >
+                {triggerMeta.icon}
+              </span>
+              {triggerMeta.pillLabel}
+            </span>
+          )}
         </div>
         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-label-sm text-on-surface-variant">
           <span
@@ -60,7 +81,7 @@ export function FlowCard({ flow, onEdit, onToggle, onDelete }: Props) {
             title={flow.product.hubla_id}
           >
             <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
-              school
+              inventory_2
             </span>
             {flow.product.name}
           </span>
