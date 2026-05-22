@@ -9,6 +9,15 @@ import { StepList } from "./StepList";
 import { useToast } from "@/shared/hooks/useToast";
 import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "../types";
 
+const HUBLA_EVENT_OPTIONS = [
+  { value: "subscription.activated", label: "Venda ativada (subscription.activated)" },
+  { value: "subscription.created",   label: "Venda criada / pendente (subscription.created)" },
+  { value: "lead.abandoned",         label: "Carrinho abandonado (lead.abandoned)" },
+  { value: "subscription.deactivated", label: "Assinatura desativada (subscription.deactivated)" },
+  { value: "subscription.expiring",  label: "Assinatura expirando (subscription.expiring)" },
+  { value: "invoice.refunded",       label: "Fatura reembolsada (invoice.refunded)" },
+];
+
 interface Props {
   open: boolean;
   flow: FollowupFlow | null;
@@ -24,6 +33,9 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
   const [name, setName] = useState("");
   const [productId, setProductId] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [triggerEventType, setTriggerEventType] = useState(
+    flow?.trigger_event_type ?? "subscription.activated"
+  );
   const [saving, setSaving] = useState(false);
   const [activeFlow, setActiveFlow] = useState<FollowupFlow | null>(null);
 
@@ -45,11 +57,13 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
         setName(flow.name);
         setProductId(flow.product.id);
         setIsActive(flow.is_active);
+        setTriggerEventType(flow.trigger_event_type ?? "subscription.activated");
         setActiveFlow(flow);
       } else {
         setName("");
         setProductId("");
         setIsActive(true);
+        setTriggerEventType("subscription.activated");
         setActiveFlow(null);
       }
     } else {
@@ -80,6 +94,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
           name,
           product_id: productId,
           is_active: isActive,
+          trigger_event_type: triggerEventType,
         });
         setActiveFlow((prev) =>
           prev
@@ -97,6 +112,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
           name,
           product_id: productId,
           is_active: isActive,
+          trigger_event_type: triggerEventType,
         });
         setActiveFlow(created);
         toast.success("Flow criado");
@@ -224,6 +240,27 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
                   Nome gerado automaticamente a partir do produto selecionado.
                 </span>
               )}
+            </div>
+
+            {/* Evento disparador */}
+            <div className="animate-fade-in flex flex-col gap-2">
+              <span className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+                Evento disparador
+              </span>
+              <select
+                value={triggerEventType}
+                onChange={(e) => setTriggerEventType(e.target.value)}
+                className="field-select"
+              >
+                {HUBLA_EVENT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-on-surface-variant">
+                O flow será disparado quando este evento for recebido da Hubla.
+              </span>
             </div>
 
             {/* Checkbox ativo */}

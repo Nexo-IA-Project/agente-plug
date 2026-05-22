@@ -30,6 +30,7 @@ export interface FollowupFlow {
   id: string;
   name: string;
   is_active: boolean;
+  trigger_event_type: string;
   product: ProductSummary;
   steps_count: number;
   created_at: string;
@@ -40,12 +41,14 @@ export interface CreateFlowInput {
   name: string;
   product_id: string;
   is_active?: boolean;
+  trigger_event_type?: string;
 }
 
 export interface UpdateFlowInput {
   name?: string;
   product_id?: string;
   is_active?: boolean;
+  trigger_event_type?: string;
 }
 
 export interface CreateStepInput {
