@@ -1,80 +1,67 @@
 # tests/unit/worker/test_purchase_handler_wire.py
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_handle_purchase_calls_purchase_handler():
-    """Verifica que handle_purchase constrói PurchaseHandler e chama execute."""
-    mock_account_config = MagicMock()
-    mock_account_config.integration.chatnexo_base_url = "http://fake"
-    mock_account_config.integration.chatnexo_api_key = "fake-key"
+async def test_handle_purchase_delegates_to_hubla_event_handler():
+    """Verifica que handle_purchase delega para handle_hubla_event (pipeline unificado)."""
+    mock_handle_hubla_event = AsyncMock(return_value=None)
 
-    @asynccontextmanager
-    async def _fake_session_scope():
-        yield AsyncMock()
+    payload = {
+        "type": "subscription.activated",
+        "version": "2.0.0",
+        "event": {
+            "product": {"id": "prod-mentoria", "name": "Mentoria"},
+            "products": [{"id": "prod-mentoria", "name": "Mentoria"}],
+            "subscription": {
+                "id": "p-1",
+                "payer": {
+                    "firstName": "João",
+                    "lastName": "",
+                    "document": "00000000000",
+                    "email": "joao@test.com",
+                    "phone": "5511999990000",
+                },
+                "activatedAt": "2026-04-24T00:00:00Z",
+            },
+        },
+    }
 
-    mock_handler_instance = AsyncMock()
-    mock_handler_instance.handle_one = AsyncMock(return_value=None)
-
-    with (
-        patch("interface.worker.handlers.purchase.session_scope", _fake_session_scope),
-        patch(
-            "interface.worker.handlers.purchase.get_settings",
-            return_value=MagicMock(
-                integration_credentials_key="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            ),
-        ),
-        patch("interface.worker.handlers.purchase.AccountConfigRepository") as MockConfigRepo,
-        patch(
-            "interface.worker.handlers.purchase.PurchaseHandler", return_value=mock_handler_instance
-        ),
-        patch("interface.worker.handlers.purchase.ChatNexoClient") as MockChatNexo,
-        patch("interface.worker.handlers.purchase.ContactRepository"),
-        patch("interface.worker.handlers.purchase.AccessCaseRepository"),
-        patch("interface.worker.handlers.purchase.ScheduledJobRepository"),
-        patch("interface.worker.handlers.purchase.SqlProductRepository"),
-        patch("interface.worker.handlers.purchase.FollowupFlowRepository"),
-        patch("interface.worker.handlers.purchase.FollowupEnrollmentRepository"),
-        patch("interface.worker.handlers.purchase.EnrollContact"),
-        patch("interface.worker.handlers.purchase.Fernet"),
+    with patch(
+        "interface.worker.handlers.purchase.handle_hubla_event",
+        mock_handle_hubla_event,
     ):
-        MockConfigRepo.return_value.get = AsyncMock(return_value=mock_account_config)
-        MockChatNexo.from_account_config.return_value = AsyncMock()
-
         from interface.worker.handlers.purchase import handle_purchase
 
-        await handle_purchase(
-            {
-                "type": "subscription.activated",
-                "version": "2.0.0",
-                "event": {
-                    "product": {"id": "prod-mentoria", "name": "Mentoria"},
-                    "products": [{"id": "prod-mentoria", "name": "Mentoria"}],
-                    "subscription": {
-                        "id": "p-1",
-                        "payer": {
-                            "firstName": "João",
-                            "lastName": "",
-                            "document": "00000000000",
-                            "email": "joao@test.com",
-                            "phone": "5511999990000",
-                        },
-                        "activatedAt": "2026-04-24T00:00:00Z",
-                    },
-                    "user": {
-                        "id": "u1",
-                        "email": "joao@test.com",
-                        "phone": "5511999990000",
-                    },
-                },
-            }
-        )
-    mock_handler_instance.handle_one.assert_called_once()
+        await handle_purchase(payload)
+
+    mock_handle_hubla_event.assert_called_once_with(payload)
+
+
+@pytest.mark.asyncio
+async def test_handle_purchase_synthesizes_type_when_missing():
+    """Se o payload legado não tiver 'type', sintetiza 'subscription.activated'."""
+    mock_handle_hubla_event = AsyncMock(return_value=None)
+
+    payload_without_type = {
+        "version": "2.0.0",
+        "event": {"product": {"id": "prod-1", "name": "Prod"}, "subscription": {"id": "s-1"}},
+    }
+
+    with patch(
+        "interface.worker.handlers.purchase.handle_hubla_event",
+        mock_handle_hubla_event,
+    ):
+        from interface.worker.handlers.purchase import handle_purchase
+
+        await handle_purchase(payload_without_type)
+
+    called_payload = mock_handle_hubla_event.call_args[0][0]
+    assert called_payload["type"] == "subscription.activated"
 
 
 @pytest.mark.asyncio

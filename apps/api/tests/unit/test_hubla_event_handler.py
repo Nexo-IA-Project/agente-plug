@@ -144,6 +144,46 @@ async def test_unknown_product_for_subscription_activated_still_runs_purchase_ha
 
 
 @pytest.mark.asyncio
+async def test_flow_with_mismatched_trigger_is_not_enrolled():
+    """Regressão C1: subscription.activated NÃO deve enrollar flows configurados para lead.abandoned."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    # O repo filtra por event_type; retorna lista vazia pois nenhum flow corresponde ao evento.
+    flow_repo.list_active_by_product_and_event = AsyncMock(return_value=[])
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value="conv-1")
+
+    enroll_uc = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=purchase_handler,
+    )
+
+    await handler.handle(_make_event("subscription.activated"))
+
+    # Verifica que o repo foi chamado com o filtro correto de event_type
+    flow_repo.list_active_by_product_and_event.assert_called_once()
+    call_kwargs = flow_repo.list_active_by_product_and_event.call_args.kwargs
+    assert call_kwargs["event_type"] == "subscription.activated"
+
+    # Nenhum flow correspondeu → sem enrollment, mas purchase_handler executa (access case)
+    enroll_uc.execute.assert_not_called()
+    purchase_handler.handle_one.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_no_payer_phone_skips_processing():
     product_repo = AsyncMock()
     purchase_handler = AsyncMock()

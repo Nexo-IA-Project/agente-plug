@@ -53,8 +53,6 @@ async def handle_hubla_event(payload: dict) -> None:
             access_case_repo=access_case_repo,
             scheduler=scheduler,
             product_repo=product_repo,
-            flow_repo=flow_repo,
-            enroll_contact_uc=enroll_uc,
         )
 
         handler = HublaEventHandler(
