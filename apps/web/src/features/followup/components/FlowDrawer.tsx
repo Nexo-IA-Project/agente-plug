@@ -135,7 +135,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="border border-outline-variant bg-surface px-4 py-2.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
             >
               {activeFlow ? "Fechar" : "Cancelar"}
             </button>
@@ -143,7 +143,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
               type="submit"
               form="flow-form"
               disabled={saving || !name.trim() || !productId || noProducts}
-              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {saving && (
                 <span

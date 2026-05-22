@@ -139,11 +139,12 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
   return (
     <div
-      className="rounded-2xl border border-primary/20 bg-surface-container p-5 shadow-sm"
+      className="border border-primary/20 bg-surface-container p-5 shadow-sm"
       style={{
         opacity: isOpen ? 1 : 0,
-        transform: isOpen ? "translateY(0)" : "translateY(-6px)",
-        transition: "opacity 360ms cubic-bezier(0.22, 1, 0.36, 1), transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
+        transform: isOpen ? "translateY(0)" : "translateY(-4px)",
+        transition:
+          "opacity 480ms cubic-bezier(0.22, 1, 0.36, 1), transform 480ms cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
       <div className="mb-4 flex items-center justify-between">
@@ -153,7 +154,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         <button
           type="button"
           onClick={handleCancelClick}
-          className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high"
+          className="p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high"
         >
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
             close
@@ -165,14 +166,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         {/* Tipo de mensagem */}
         <div>
           <label className={labelCls}>Tipo de mensagem</label>
-          <div className="flex overflow-hidden rounded-xl border border-outline-variant">
+          <div className="flex border border-outline-variant">
             {(["template", "text"] as StepMode[]).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
                 className={[
-                  "flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                  "flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
                   mode === m
                     ? "bg-primary text-on-primary"
                     : "bg-surface text-on-surface-variant hover:bg-surface-container",
@@ -217,7 +218,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
         {/* Template mode */}
         {mode === "template" && (
-          <div key="template-mode" className="animate-fade-in space-y-4">
+          <div key="template-mode" className="animate-soft-fade-in space-y-4">
             <div>
               <label className={labelCls}>Template</label>
               {loadingTemplates ? (
@@ -249,13 +250,13 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
             </div>
 
             {currentTemplate && templateBody && (
-              <div className="animate-fade-in rounded-lg border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
+              <div className="animate-soft-fade-in border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
                 {templateBody}
               </div>
             )}
 
             {currentTemplate && (
-              <div className="animate-fade-in space-y-2">
+              <div className="animate-soft-fade-in space-y-2">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                   Variáveis do template
                 </label>
@@ -271,7 +272,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
         {/* Text mode */}
         {mode === "text" && (
-          <div key="text-mode" className="animate-fade-in">
+          <div key="text-mode" className="animate-soft-fade-in">
             <label className={labelCls}>Mensagem</label>
             <textarea
               value={messageText}
@@ -289,14 +290,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
           <button
             type="button"
             onClick={handleCancelClick}
-            className="flex-1 rounded-xl py-2.5 text-label-sm text-on-surface-variant hover:bg-surface-container-high"
+            className="flex-1 border border-outline-variant bg-surface py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-label-sm font-semibold text-on-primary disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-2 bg-primary py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {saving && (
               <span
