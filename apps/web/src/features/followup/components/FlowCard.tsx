@@ -57,12 +57,12 @@ export function FlowCard({ flow, onEdit, onToggle, onDelete }: Props) {
         <div className="mt-1.5 flex flex-wrap items-center gap-2 text-label-sm text-on-surface-variant">
           <span
             className="inline-flex items-center gap-1 rounded-full bg-primary-container px-2 py-0.5 text-label-xs font-medium text-on-primary-container"
-            title={flow.course.hubla_id}
+            title={flow.product.hubla_id}
           >
             <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
               school
             </span>
-            {flow.course.name}
+            {flow.product.name}
           </span>
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>

@@ -2,23 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createCourse,
-  deleteCourse,
-  listCourses,
-  updateCourse,
+  createProduct,
+  deleteProduct,
+  listProducts,
+  updateProduct,
 } from "@/lib/api";
-import type { Course, CreateCourseInput, UpdateCourseInput } from "../types";
+import type { Product, CreateProductInput, UpdateProductInput } from "../types";
 
-export function useCourses() {
-  const [courses, setCourses] = useState<Course[]>([]);
+export function useProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await listCourses();
-      setCourses(data);
+      const data = await listProducts();
+      setProducts(data);
       setError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -32,30 +32,30 @@ export function useCourses() {
   }, [refresh]);
 
   const create = useCallback(
-    async (input: CreateCourseInput): Promise<Course> => {
-      const c = await createCourse(input);
+    async (input: CreateProductInput): Promise<Product> => {
+      const p = await createProduct(input);
       await refresh();
-      return c;
+      return p;
     },
     [refresh]
   );
 
   const update = useCallback(
-    async (id: string, input: UpdateCourseInput): Promise<Course> => {
-      const c = await updateCourse(id, input);
+    async (id: string, input: UpdateProductInput): Promise<Product> => {
+      const p = await updateProduct(id, input);
       await refresh();
-      return c;
+      return p;
     },
     [refresh]
   );
 
   const remove = useCallback(
     async (id: string): Promise<void> => {
-      await deleteCourse(id);
+      await deleteProduct(id);
       await refresh();
     },
     [refresh]
   );
 
-  return { courses, loading, error, refresh, create, update, remove };
+  return { products, loading, error, refresh, create, update, remove };
 }

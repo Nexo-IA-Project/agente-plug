@@ -16,9 +16,9 @@ import type {
   UpdateStepInput,
 } from "@/features/followup/types";
 import type {
-  Course,
-  CreateCourseInput,
-  UpdateCourseInput,
+  Product,
+  CreateProductInput,
+  UpdateProductInput,
 } from "@/features/courses/types";
 
 const API_URL =
@@ -207,31 +207,31 @@ export async function reorderFollowupSteps(
 }
 
 
-// ─── Courses ─────────────────────────────────────────────────────────────────
+// ─── Products ────────────────────────────────────────────────────────────────
 
-export async function listCourses(): Promise<Course[]> {
-  return apiFetch<Course[]>("/admin/courses");
+export async function listProducts(): Promise<Product[]> {
+  return apiFetch<Product[]>("/admin/products");
 }
 
-export async function createCourse(input: CreateCourseInput): Promise<Course> {
-  return apiFetch<Course>("/admin/courses", {
+export async function createProduct(input: CreateProductInput): Promise<Product> {
+  return apiFetch<Product>("/admin/products", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
 
-export async function updateCourse(
+export async function updateProduct(
   id: string,
-  input: UpdateCourseInput,
-): Promise<Course> {
-  return apiFetch<Course>(`/admin/courses/${id}`, {
+  input: UpdateProductInput,
+): Promise<Product> {
+  return apiFetch<Product>(`/admin/products/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
 }
 
-export async function deleteCourse(id: string): Promise<void> {
-  return apiFetch<void>(`/admin/courses/${id}`, { method: "DELETE" });
+export async function deleteProduct(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/products/${id}`, { method: "DELETE" });
 }
 
 

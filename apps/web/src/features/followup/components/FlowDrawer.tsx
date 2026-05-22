@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
-import { useCourses } from "@/features/courses/hooks/useCourses";
+import { useProducts } from "@/features/courses/hooks/useCourses";
 import { useFollowupSteps } from "../hooks/useFollowupSteps";
 import { StepList } from "./StepList";
 import { useToast } from "@/shared/hooks/useToast";
@@ -19,7 +19,7 @@ interface Props {
 
 export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
   const toast = useToast();
-  const { courses, loading: coursesLoading } = useCourses();
+  const { products: courses, loading: coursesLoading } = useProducts();
 
   const [name, setName] = useState("");
   const [courseId, setCourseId] = useState("");
@@ -43,7 +43,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     if (open) {
       if (flow) {
         setName(flow.name);
-        setCourseId(flow.course.id);
+        setCourseId(flow.product.id);
         setIsActive(flow.is_active);
         setActiveFlow(flow);
       } else {
@@ -78,7 +78,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
       if (activeFlow) {
         await onUpdate(activeFlow.id, {
           name,
-          course_id: courseId,
+          product_id: courseId,
           is_active: isActive,
         });
         setActiveFlow((prev) =>
@@ -87,7 +87,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
                 ...prev,
                 name,
                 is_active: isActive,
-                course: courses.find((c) => c.id === courseId) ?? prev.course,
+                product: courses.find((c) => c.id === courseId) ?? prev.product,
               }
             : prev
         );
@@ -95,7 +95,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
       } else {
         const created = await onCreate({
           name,
-          course_id: courseId,
+          product_id: courseId,
           is_active: isActive,
         });
         setActiveFlow(created);
