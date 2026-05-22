@@ -46,3 +46,13 @@ class SqlHublaEventRepository:
         self.session.add(m)
         await self.session.flush()
         return m
+
+    async def mark_processed(
+        self, event_id: UUID, *, when: datetime | None = None
+    ) -> None:
+        """Marca hubla_events.processed_at após o worker terminar de rotear o evento."""
+        m = await self.session.get(HublaEventModel, event_id)
+        if m is None:
+            return
+        m.processed_at = when or datetime.now(UTC)
+        await self.session.flush()

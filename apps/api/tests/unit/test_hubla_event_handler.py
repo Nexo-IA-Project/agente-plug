@@ -1,5 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -125,13 +125,16 @@ async def test_unknown_product_for_subscription_activated_still_runs_purchase_ha
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
 
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
     enroll_uc = AsyncMock()
     purchase_handler = AsyncMock()
 
     handler = HublaEventHandler(
         product_repo=product_repo,
         flow_repo=AsyncMock(),
-        contact_repo=AsyncMock(),
+        contact_repo=contact_repo,
         chatnexo=AsyncMock(),
         enroll_contact_uc=enroll_uc,
         purchase_handler=purchase_handler,
@@ -211,14 +214,19 @@ async def test_subscription_created_persists_lead_with_utms_and_invoice():
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)  # produto não cadastrado
 
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
     lead_repo = AsyncMock()
     hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=MagicMock(id=uuid4()))
+    hubla_event_repo.mark_processed = AsyncMock()
     purchase_handler = AsyncMock()
 
     handler = HublaEventHandler(
         product_repo=product_repo,
         flow_repo=AsyncMock(),
-        contact_repo=AsyncMock(),
+        contact_repo=contact_repo,
         chatnexo=AsyncMock(),
         enroll_contact_uc=AsyncMock(),
         purchase_handler=purchase_handler,
@@ -344,6 +352,10 @@ async def test_no_phone_still_persists_hubla_event_and_lead():
     lead_repo.upsert.assert_called_once()
     assert lead_repo.upsert.call_args.kwargs["utm_source"] == "Google Ads"
 
+    # PR 4 review fix #6: sem phone → contact não resolvido → contact_id deve ser None
+    assert hubla_event_repo.insert.call_args.kwargs["contact_id"] is None
+    assert lead_repo.upsert.call_args.kwargs["contact_id"] is None
+
 
 @pytest.mark.asyncio
 async def test_handler_works_without_lead_repos_backward_compat():
@@ -351,10 +363,13 @@ async def test_handler_works_without_lead_repos_backward_compat():
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
 
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
     handler = HublaEventHandler(
         product_repo=product_repo,
         flow_repo=AsyncMock(),
-        contact_repo=AsyncMock(),
+        contact_repo=contact_repo,
         chatnexo=AsyncMock(),
         enroll_contact_uc=AsyncMock(),
         purchase_handler=AsyncMock(),
@@ -375,3 +390,76 @@ async def test_handler_works_without_lead_repos_backward_compat():
 
     # Should not raise
     await handler.handle(payload)
+
+
+@pytest.mark.asyncio
+async def test_contact_id_propagated_to_hubla_event_and_lead():
+    """PR 4 review fix #6: o contact_id resolvido deve ser passado aos repos de
+    persistência, para que os registros de hubla_events e leads referenciem
+    o contato (FK) quando o telefone bater com um contato existente.
+    """
+    contact = _make_contact()
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=contact)
+
+    lead_repo = AsyncMock()
+    hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=MagicMock(id=uuid4()))
+    hubla_event_repo.mark_processed = AsyncMock()
+
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=AsyncMock(),
+        contact_repo=contact_repo,
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=purchase_handler,
+        lead_repo=lead_repo,
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    await handler.handle(_make_event("subscription.activated"))
+
+    # Both persistence calls must receive the resolved contact.id
+    event_kwargs = hubla_event_repo.insert.call_args.kwargs
+    assert event_kwargs["contact_id"] == UUID(str(contact.id))
+
+    lead_kwargs = lead_repo.upsert.call_args.kwargs
+    assert lead_kwargs["contact_id"] == UUID(str(contact.id))
+
+
+@pytest.mark.asyncio
+async def test_processed_at_marked_after_handling():
+    """PR 4 review fix #12: processed_at deve ser setado em todos os caminhos de saída."""
+    event_model = MagicMock()
+    event_model.id = uuid4()
+
+    hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=event_model)
+    hubla_event_repo.mark_processed = AsyncMock()
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    handler = HublaEventHandler(
+        product_repo=AsyncMock(),
+        flow_repo=AsyncMock(),
+        contact_repo=contact_repo,
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        lead_repo=AsyncMock(),
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    # Force the early-return path (no phone) so processed_at is tested on a short path
+    payload = _make_event("subscription.activated")
+    payload["event"]["subscription"]["payer"]["phone"] = ""
+
+    await handler.handle(payload)
+
+    hubla_event_repo.mark_processed.assert_called_once_with(event_model.id)

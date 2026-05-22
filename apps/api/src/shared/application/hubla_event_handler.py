@@ -75,6 +75,22 @@ class HublaEventHandler:
         account_uuid = self._account_id
         account_id_str = str(account_uuid)
 
+        # === PR 4 review fix #6: resolve Contact FIRST so contact_id is available
+        # when persisting hubla_events and leads (FK must be populated for known contacts).
+        contact: Any | None = None
+        if payer_phone:
+            contact = await self._contact_repo.upsert(
+                account_id=account_uuid,
+                phone=Phone.parse(payer_phone),
+                name=payer_full_name,
+                email=payer_email,
+            )
+
+        contact_id_uuid: UUID | None = None
+        if contact is not None:
+            cid = contact.id
+            contact_id_uuid = cid if isinstance(cid, UUID) else UUID(str(cid))
+
         # === PR 4: persist event/lead FIRST — captura tudo, mesmo sem phone ===
 
         # Extra fields from variable-shape payloads
@@ -88,8 +104,11 @@ class HublaEventHandler:
         sub_status = subscription.get("status", "unknown")
 
         # Persist HublaEvent (log imutável). Best-effort: if repo not injected, skip.
+        # PR 4 review fix #6: contact_id populated when contact was resolved above.
+        # PR 4 review fix #12: processed_at will be set via mark_processed in try/finally below.
+        event_model = None
         if self._hubla_event_repo is not None:
-            await self._hubla_event_repo.insert(
+            event_model = await self._hubla_event_repo.insert(
                 account_id=account_uuid,
                 event_type=event_type,
                 hubla_subscription_id=purchase_id,
@@ -98,16 +117,19 @@ class HublaEventHandler:
                 payer_phone=payer_phone,
                 payer_email=payer_email,
                 payer_name=payer_full_name,
+                contact_id=contact_id_uuid,
                 payload=payload,
             )
 
         # Upsert Lead (visão materializada com UTMs, valor, sessão).
         # Chave natural é (account_id, hubla_subscription_id) — não depende de phone.
+        # PR 4 review fix #6: contact_id populated when contact was resolved above.
         if self._lead_repo is not None and purchase_id:
             await self._lead_repo.upsert(
                 account_id=account_uuid,
                 hubla_subscription_id=purchase_id,
                 event_type=event_type,
+                contact_id=contact_id_uuid,
                 payer_phone=payer_phone,
                 payer_name=payer_full_name,
                 payer_email=payer_email,
@@ -133,7 +155,44 @@ class HublaEventHandler:
 
         # === End PR 4 early persistence ===
 
-        if not payer_phone:
+        # PR 4 review fix #12: mark processed_at at every exit point (try/finally).
+        try:
+            await self._route(
+                event_type=event_type,
+                account_uuid=account_uuid,
+                account_id_str=account_id_str,
+                contact=contact,
+                payer_phone=payer_phone,
+                payer_email=payer_email,
+                payer_full_name=payer_full_name,
+                payer_document=payer_document,
+                hubla_product_id=hubla_product_id,
+                product_name=product_name,
+                purchase_id=purchase_id,
+                activated_at=activated_at,
+            )
+        finally:
+            if event_model is not None and self._hubla_event_repo is not None:
+                await self._hubla_event_repo.mark_processed(event_model.id)
+
+    async def _route(
+        self,
+        *,
+        event_type: str,
+        account_uuid: UUID,
+        account_id_str: str,
+        contact: Any | None,
+        payer_phone: str,
+        payer_email: str,
+        payer_full_name: str,
+        payer_document: str,
+        hubla_product_id: str,
+        product_name: str,
+        purchase_id: str,
+        activated_at: datetime,
+    ) -> None:
+        """Roteamento interno: enrollment de flows + PurchaseHandler legado."""
+        if not payer_phone or contact is None:
             log.warning("hubla_event_no_phone", event_type=event_type, purchase_id=purchase_id)
             return
 
@@ -164,13 +223,7 @@ class HublaEventHandler:
             # Por enquanto: drop silencioso (apenas o log.warning acima).
             return
 
-        contact = await self._contact_repo.upsert(
-            account_id=account_uuid,
-            phone=Phone.parse(payer_phone),
-            name=payer_full_name,
-            email=payer_email,
-        )
-
+        # contact is guaranteed non-None here (checked at top of _route)
         flows = await self._flow_repo.list_active_by_product_and_event(
             product_id=product.id, event_type=event_type
         )
