@@ -46,6 +46,7 @@ class FollowupFlowResponse(BaseModel):
     id: UUID
     name: str
     is_active: bool
+    trigger_event_type: str
     product: ProductSummary
     steps_count: int
     created_at: datetime
@@ -56,12 +57,14 @@ class FollowupFlowResponse(BaseModel):
 class CreateFlowRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     product_id: UUID
+    trigger_event_type: str = "subscription.activated"
     is_active: bool = True
 
 
 class UpdateFlowRequest(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     product_id: UUID | None = None
+    trigger_event_type: str | None = None
     is_active: bool | None = None
 
 

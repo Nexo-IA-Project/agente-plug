@@ -117,6 +117,7 @@ async def list_flows(
                     id=f.id,
                     name=f.name,
                     is_active=f.is_active,
+                    trigger_event_type=f.trigger_event_type,
                     product=ProductSummary(
                         id=product.id, name=product.name, hubla_id=product.hubla_id
                     ),
@@ -156,11 +157,13 @@ async def create_flow(
             product_id=body.product_id,
             name=body.name,
             is_active=body.is_active,
+            trigger_event_type=body.trigger_event_type,
         )
     return FollowupFlowResponse(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
+        trigger_event_type=flow.trigger_event_type,
         product=ProductSummary(id=product.id, name=product.name, hubla_id=product.hubla_id),
         steps_count=0,
         created_at=flow.created_at,
@@ -190,6 +193,7 @@ async def update_flow(
             name=body.name,
             product_id=body.product_id,
             is_active=body.is_active,
+            trigger_event_type=body.trigger_event_type,
         )
         if flow is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flow não encontrado")
@@ -201,6 +205,7 @@ async def update_flow(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
+        trigger_event_type=flow.trigger_event_type,
         product=ProductSummary(id=product.id, name=product.name, hubla_id=product.hubla_id),
         steps_count=len(steps),
         created_at=flow.created_at,
