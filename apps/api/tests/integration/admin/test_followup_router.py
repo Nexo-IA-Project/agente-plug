@@ -115,9 +115,11 @@ async def _purge_other_accounts(db_session: AsyncSession, admin_account_id: uuid
         FollowupEnrollmentModel,
         FollowupEnrollmentStepModel,
         FollowupStepModel,
+        ScheduledJobModel,
     )
 
     # Limpar dependentes primeiro (FK)
+    await db_session.execute(delete(ScheduledJobModel))
     await db_session.execute(delete(FollowupEnrollmentStepModel))
     await db_session.execute(delete(FollowupEnrollmentModel))
     await db_session.execute(delete(FollowupStepModel))

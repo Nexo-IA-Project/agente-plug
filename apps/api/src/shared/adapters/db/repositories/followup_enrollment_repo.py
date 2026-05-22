@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
     ContactModel,
+    CourseModel,
     FollowupEnrollmentModel,
     FollowupEnrollmentStepModel,
+    FollowupFlowModel,
+    ScheduledJobModel,
 )
 from shared.domain.entities.followup import (
     EnrollmentStatus,
@@ -17,6 +21,35 @@ from shared.domain.entities.followup import (
     FollowupEnrollment,
     FollowupEnrollmentStep,
 )
+
+
+@dataclass(frozen=True)
+class EnrollmentListRow:
+    """Read-model row para listagem de enrollments no painel admin."""
+
+    id: uuid.UUID
+    contact_phone: str
+    customer_name: str | None
+    flow_id: uuid.UUID | None
+    flow_name: str | None
+    course_name: str | None
+    status: EnrollmentStatus
+    created_at: datetime
+
+
+@dataclass(frozen=True)
+class EnrollmentStepRow:
+    """Read-model row para listagem de steps de um enrollment."""
+
+    id: uuid.UUID
+    position: int
+    delay_from_purchase_hours: int
+    meta_template_name: str | None
+    message_text: str | None
+    status: str
+    sent_at: datetime | None
+    scheduled_for: datetime | None
+    failure_reason: str | None
 
 
 def _enrollment_to_entity(m: FollowupEnrollmentModel) -> FollowupEnrollment:
@@ -284,14 +317,10 @@ class FollowupEnrollmentRepository:
             .values(**values)
         )
 
-    async def get_with_steps(
-        self, enrollment_id: uuid.UUID
-    ) -> FollowupEnrollment | None:
+    async def get_with_steps(self, enrollment_id: uuid.UUID) -> FollowupEnrollment | None:
         """Carrega enrollment + todos os seus steps em uma só ida ao DB."""
         e_result = await self.session.execute(
-            select(FollowupEnrollmentModel).where(
-                FollowupEnrollmentModel.id == enrollment_id
-            )
+            select(FollowupEnrollmentModel).where(FollowupEnrollmentModel.id == enrollment_id)
         )
         e_model = e_result.scalar_one_or_none()
         if e_model is None:
@@ -323,3 +352,147 @@ class FollowupEnrollmentRepository:
                 failure_reason=truncated,
             )
         )
+
+    async def list_for_report(
+        self,
+        *,
+        account_id: uuid.UUID,
+        flow_id: uuid.UUID | None,
+        contact_phone: str | None,
+        status: EnrollmentStatus | None,
+        page: int,
+        page_size: int,
+    ) -> tuple[list[EnrollmentListRow], int]:
+        """Listagem paginada para o painel admin, com flow_name e course_name.
+
+        Faz JOIN com flow + course + contact para devolver tudo o que o painel
+        precisa em uma só query (mais count). `contact_phone` no retorno
+        prioriza o snapshot do enrollment, com fallback para o do contato.
+        """
+        base = (
+            select(
+                FollowupEnrollmentModel.id,
+                FollowupEnrollmentModel.contact_phone.label("e_phone"),
+                FollowupEnrollmentModel.customer_name.label("e_customer_name"),
+                ContactModel.phone.label("c_phone"),
+                ContactModel.name.label("c_name"),
+                FollowupEnrollmentModel.flow_id,
+                FollowupFlowModel.name.label("flow_name"),
+                CourseModel.name.label("course_name"),
+                FollowupEnrollmentModel.status,
+                FollowupEnrollmentModel.created_at,
+            )
+            .join(ContactModel, ContactModel.id == FollowupEnrollmentModel.contact_id)
+            .outerjoin(
+                FollowupFlowModel,
+                FollowupFlowModel.id == FollowupEnrollmentModel.flow_id,
+            )
+            .outerjoin(CourseModel, CourseModel.id == FollowupFlowModel.course_id)
+            .where(FollowupEnrollmentModel.account_id == account_id)
+        )
+        if flow_id is not None:
+            base = base.where(FollowupEnrollmentModel.flow_id == flow_id)
+        if status is not None:
+            base = base.where(FollowupEnrollmentModel.status == status.value)
+        if contact_phone:
+            base = base.where(ContactModel.phone == contact_phone)
+
+        total_result = await self.session.execute(select(func.count()).select_from(base.subquery()))
+        total = int(total_result.scalar_one())
+
+        paged = (
+            base.order_by(FollowupEnrollmentModel.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+        rows = (await self.session.execute(paged)).all()
+
+        items = [
+            EnrollmentListRow(
+                id=r.id,
+                contact_phone=r.e_phone or r.c_phone or "",
+                customer_name=r.e_customer_name or r.c_name,
+                flow_id=r.flow_id,
+                flow_name=r.flow_name,
+                course_name=r.course_name,
+                status=EnrollmentStatus(r.status),
+                created_at=r.created_at,
+            )
+            for r in rows
+        ]
+        return items, total
+
+    async def bulk_count_steps(
+        self, enrollment_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, dict[str, int]]:
+        """Conta steps por status para vários enrollments em uma só query."""
+        if not enrollment_ids:
+            return {}
+        result = await self.session.execute(
+            select(
+                FollowupEnrollmentStepModel.enrollment_id,
+                FollowupEnrollmentStepModel.status,
+                func.count(FollowupEnrollmentStepModel.id),
+            )
+            .where(FollowupEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
+            .group_by(
+                FollowupEnrollmentStepModel.enrollment_id,
+                FollowupEnrollmentStepModel.status,
+            )
+        )
+        out: dict[uuid.UUID, dict[str, int]] = {}
+        for enr_id, st, n in result.all():
+            out.setdefault(enr_id, {})[st] = int(n)
+        return out
+
+    async def list_steps_for_report(
+        self,
+        enrollment_id: uuid.UUID,
+        *,
+        account_id: uuid.UUID,
+    ) -> list[EnrollmentStepRow]:
+        """Lista steps de um enrollment para o painel admin.
+
+        JOIN com ``scheduled_jobs`` traz ``run_at`` como ``scheduled_for``.
+        Multi-tenant: só retorna se o enrollment pertencer à `account_id`.
+        """
+        result = await self.session.execute(
+            select(
+                FollowupEnrollmentStepModel.id,
+                FollowupEnrollmentStepModel.position,
+                FollowupEnrollmentStepModel.delay_from_purchase_hours,
+                FollowupEnrollmentStepModel.meta_template_name,
+                FollowupEnrollmentStepModel.message_text,
+                FollowupEnrollmentStepModel.status,
+                FollowupEnrollmentStepModel.sent_at,
+                ScheduledJobModel.run_at.label("scheduled_for"),
+                FollowupEnrollmentStepModel.failure_reason,
+            )
+            .join(
+                FollowupEnrollmentModel,
+                FollowupEnrollmentModel.id == FollowupEnrollmentStepModel.enrollment_id,
+            )
+            .outerjoin(
+                ScheduledJobModel,
+                ScheduledJobModel.id == FollowupEnrollmentStepModel.scheduled_job_id,
+            )
+            .where(
+                FollowupEnrollmentStepModel.enrollment_id == enrollment_id,
+                FollowupEnrollmentModel.account_id == account_id,
+            )
+            .order_by(FollowupEnrollmentStepModel.position)
+        )
+        return [
+            EnrollmentStepRow(
+                id=r.id,
+                position=r.position,
+                delay_from_purchase_hours=r.delay_from_purchase_hours,
+                meta_template_name=r.meta_template_name,
+                message_text=r.message_text,
+                status=r.status,
+                sent_at=r.sent_at,
+                scheduled_for=r.scheduled_for,
+                failure_reason=r.failure_reason,
+            )
+            for r in result.all()
+        ]

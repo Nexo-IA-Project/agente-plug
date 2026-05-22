@@ -12,6 +12,7 @@ from interface.http.schemas.followup import (
     CreateFlowRequest,
     CreateStepRequest,
     FollowupFlowResponse,
+    FollowupFlowStats,
     FollowupStepResponse,
     ReorderStepsRequest,
     StepVariableBindingDto,
@@ -80,6 +81,7 @@ async def list_flows(
         flow_repo = FollowupFlowRepository(session=session)
         course_repo = SqlCourseRepository(session=session)
         flows = await flow_repo.list_flows(account_id=account_uuid)
+        stats = await flow_repo.stats_by_flows([f.id for f in flows])
         out: list[FollowupFlowResponse] = []
         for f in flows:
             course = await course_repo.find_by_id(f.course_id)
@@ -87,6 +89,7 @@ async def list_flows(
             if course is None:
                 # FK garante que existe; defensivo
                 continue
+            s = stats.get(f.id, {})
             out.append(
                 FollowupFlowResponse(
                     id=f.id,
@@ -96,6 +99,10 @@ async def list_flows(
                     steps_count=len(steps),
                     created_at=f.created_at,
                     updated_at=f.updated_at,
+                    stats=FollowupFlowStats(
+                        enrollments_active=s.get("active", 0),
+                        enrollments_completed=s.get("completed", 0),
+                    ),
                 )
             )
     return out

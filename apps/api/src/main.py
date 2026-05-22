@@ -20,6 +20,9 @@ from interface.http.routers.admin import courses as admin_courses
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import followup as admin_followup
+from interface.http.routers.admin import (
+    followup_enrollments as admin_followup_enrollments,
+)
 from interface.http.routers.admin import meta_templates as admin_meta_templates
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
@@ -97,6 +100,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_dlq.router, prefix="/admin")
     app.include_router(admin_settings.router, prefix="/admin")
     app.include_router(admin_followup.router, prefix="/admin")
+    app.include_router(admin_followup_enrollments.router, prefix="/admin")
     app.include_router(admin_meta_templates.router, prefix="/admin")
     app.include_router(admin_courses.router, prefix="/admin")
     return app
