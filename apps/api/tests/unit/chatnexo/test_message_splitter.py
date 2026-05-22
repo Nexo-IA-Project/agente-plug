@@ -13,15 +13,19 @@ def test_short_message_no_double_newline_returns_single_part():
 
 def test_two_paragraphs_returns_two_parts():
     text = "Primeiro parágrafo de teste.\n\nSegundo parágrafo de teste."
-    result = split_message(text)
+    result = split_message(text, min_chars=1)
     assert result == ["Primeiro parágrafo de teste.", "Segundo parágrafo de teste."]
 
 
 def test_long_paragraph_split_by_sentence_respects_max_chars():
-    # 12 sentenças de ~36 chars cada → ~432 chars, excede max_chars=200
+    # Parágrafo longo (>200 chars) com \n\n separa de outro
+    # O parágrafo longo deve ser dividido por sentença
     sentence = "Esta é uma sentença longa. "
-    text = (sentence * 12).strip()
-    result = split_message(text, max_chars=200)
+    long_para = (sentence * 6).strip()  # ~216 chars, excede max_chars=200
+    short_para = "Segundo parágrafo."
+    text = f"{long_para}\n\n{short_para}"
+    result = split_message(text, max_chars=200, min_chars=1)
+    # long_para foi dividido em múltiplas partes + short_para
     assert len(result) > 1
     for part in result:
         assert len(part) <= 200
@@ -51,5 +55,5 @@ def test_all_parts_too_short_returns_original_as_fallback():
 
 def test_three_paragraphs():
     text = "Parte um.\n\nParte dois.\n\nParte três."
-    result = split_message(text)
+    result = split_message(text, min_chars=1)
     assert result == ["Parte um.", "Parte dois.", "Parte três."]

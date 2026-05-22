@@ -3,13 +3,13 @@ from __future__ import annotations
 import re
 
 
-def split_message(text: str, max_chars: int = 400, min_chars: int = 1) -> list[str]:
+def split_message(text: str, max_chars: int = 400, min_chars: int = 80) -> list[str]:
     """Quebra texto em partes menores para envio humanizado via WhatsApp.
 
     Estratégia:
     1. Se tem \\n\\n → quebra por parágrafo
     2. Cada parágrafo > max_chars → subdivide por sentença
-    3. Se não tem \\n\\n mas texto > max_chars → subdivide por sentença
+    3. Se não tem \\n\\n → retorna [text] inteiro, qualquer tamanho
     4. Partes de subdivisão por sentença < min_chars → descartadas
     5. Se todos descartados → retorna [text] original (fallback)
     """
@@ -18,13 +18,8 @@ def split_message(text: str, max_chars: int = 400, min_chars: int = 1) -> list[s
         return []
 
     if "\n\n" not in stripped:
-        # Sem parágrafos, mas pode ser grande demais
-        if len(stripped) <= max_chars:
-            return [stripped]
-        # Texto grande sem parágrafo, divide por sentença
-        parts = _split_by_sentence(stripped, max_chars)
-        filtered = [p for p in parts if len(p) >= min_chars]
-        return filtered if filtered else [stripped]
+        # Sem parágrafos: retorna inteiro, qualquer tamanho
+        return [stripped]
 
     # Com parágrafos
     paragraphs = [p.strip() for p in stripped.split("\n\n") if p.strip()]
@@ -47,20 +42,12 @@ def split_message(text: str, max_chars: int = 400, min_chars: int = 1) -> list[s
                 # Se nenhuma sub-parte passou no filtro, mantém o parágrafo original
                 parts.append(para)
 
-    # Se houve divisão por sentença, aplica min_chars filter a parágrafos também
-    if has_been_split:
-        filtered = [p for p in parts if len(p) >= min_chars]
-        return filtered if filtered else [stripped]
-
-    # Sem divisão por sentença: se há mix de partes >= min_chars e < min_chars,
-    # descarta as pequenas. Se ALL são < min_chars, retorna original.
-    any_passes_min = any(len(p) >= min_chars for p in parts)
-    if any_passes_min:
-        # Há pelo menos uma parte que passa, descarta as que não passam
-        filtered = [p for p in parts if len(p) >= min_chars]
+    # Aplica min_chars filter
+    filtered = [p for p in parts if len(p) >= min_chars]
+    if filtered:
         return filtered
 
-    # Nenhuma parte passa no min_chars, retorna original
+    # Se nenhuma parte passa no min_chars, retorna original
     return [stripped]
 
 
