@@ -276,11 +276,7 @@ async def dispatch_step_now(
 
         # 6. Recarrega step pra pegar sent_at atualizado
         refreshed = await repo.find_step_by_id(step_id)
-        sent_at_iso = (
-            refreshed.sent_at.isoformat()
-            if refreshed and refreshed.sent_at
-            else None
-        )
+        sent_at_iso = refreshed.sent_at.isoformat() if refreshed and refreshed.sent_at else None
 
     return DispatchNowResponse(
         status="sent" if result.status == EnrollmentStepStatus.SENT else "failed",

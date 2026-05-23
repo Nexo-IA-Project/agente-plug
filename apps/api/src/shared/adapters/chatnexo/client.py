@@ -148,6 +148,7 @@ class ChatNexoClient:
         - `[...]`
         """
         import logging
+
         log = logging.getLogger(__name__)
 
         try:
@@ -161,7 +162,10 @@ class ChatNexoClient:
             raise
 
         data = response.json()
-        log.warning("chatnexo_get_open_conversation_response", extra={"shape": str(type(data).__name__), "preview": str(data)[:300]})
+        log.warning(
+            "chatnexo_get_open_conversation_response",
+            extra={"shape": str(type(data).__name__), "preview": str(data)[:300]},
+        )
 
         # Normalize: extract list of conversations from variable response shape
         if isinstance(data, dict):
