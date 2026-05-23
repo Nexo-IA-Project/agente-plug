@@ -42,7 +42,7 @@ class FollowupStepResponse(BaseModel):
     id: UUID
     flow_id: UUID
     position: int
-    delay_from_purchase_hours: int
+    delay_from_purchase_minutes: int
     meta_template_name: str | None
     template_variables: dict
     message_text: str | None
@@ -87,7 +87,7 @@ class UpdateFlowRequest(BaseModel):
 
 
 class CreateStepRequest(BaseModel):
-    delay_from_purchase_hours: int = Field(ge=0)
+    delay_from_purchase_minutes: int = Field(ge=0)
     meta_template_name: str | None = None
     template_variables: dict[str, StepVariableBindingDto] = Field(default_factory=dict)
     message_text: str | None = None
@@ -104,7 +104,7 @@ class CreateStepRequest(BaseModel):
 
 class UpdateStepRequest(BaseModel):
     position: int | None = None
-    delay_from_purchase_hours: int | None = Field(default=None, ge=0)
+    delay_from_purchase_minutes: int | None = Field(default=None, ge=0)
     meta_template_name: str | None = None
     template_variables: dict[str, StepVariableBindingDto] | None = None
     message_text: str | None = None

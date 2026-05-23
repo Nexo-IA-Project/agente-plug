@@ -95,12 +95,12 @@ class EnrollContact:
             async with self._session.begin_nested():
                 enrollment_steps: list[FollowupEnrollmentStep] = []
                 for step in steps:
-                    run_at = purchase_time + timedelta(hours=step.delay_from_purchase_hours)
+                    run_at = purchase_time + timedelta(minutes=step.delay_from_purchase_minutes)
                     enrollment_step = FollowupEnrollmentStep(
                         enrollment_id=enrollment.id,
                         flow_step_id=step.id,
                         position=step.position,
-                        delay_from_purchase_hours=step.delay_from_purchase_hours,
+                        delay_from_purchase_minutes=step.delay_from_purchase_minutes,
                         meta_template_name=step.meta_template_name,
                         template_variables=step.template_variables,
                         message_text=step.message_text,

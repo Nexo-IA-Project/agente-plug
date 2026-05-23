@@ -12,6 +12,7 @@ from shared.application.use_cases.followup.variable_resolver import (
     ResolutionContext,
     VariableResolver,
 )
+from shared.config.settings import get_settings
 from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
@@ -74,7 +75,7 @@ class DispatchFollowupStep:
         if step.message_text:
             try:
                 await self._chatnexo.send_message(
-                    account_id=str(account_id),
+                    account_id=str(get_settings().chatnexo_account_id),
                     conversation_id=str(conversation_id),
                     text=step.message_text,
                 )
@@ -95,9 +96,12 @@ class DispatchFollowupStep:
                 )
             dispatch_label = f"texto_livre: {step.message_text[:40]}"
         else:
+            import re as _re
+
             header_link: str | None = None
             header_kind: str | None = None
             language: str | None = None
+            body_text: str | None = None
 
             if step.meta_template_name:
                 template = await self._template_repo.get_by_name(
@@ -108,6 +112,13 @@ class DispatchFollowupStep:
                     header_link = template.media_url or None
                     header_kind = template.media_kind.lower() if template.media_kind else None
                     language = template.language or None
+                    # Extrai o BODY do template para renderização local — dentro da
+                    # janela 24h o ChatNexo envia o `content` como texto livre direto.
+                    components = getattr(template, "components", None) or []
+                    body_text = next(
+                        (c.get("text") for c in components if c.get("type") == "BODY"),
+                        None,
+                    )
                     log.debug(
                         "followup_step_template_loaded",
                         template_name=step.meta_template_name,
@@ -117,7 +128,7 @@ class DispatchFollowupStep:
                     log.warning(
                         "followup_step_template_not_found",
                         template_name=step.meta_template_name,
-                        account_id=str(account_id),
+                        account_id=str(get_settings().chatnexo_account_id),
                     )
 
             enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
@@ -138,17 +149,49 @@ class DispatchFollowupStep:
                 contact_phone=phone_value,
                 contact_email=contact_email,
             )
-            resolved_vars = VariableResolver().resolve_all(step.template_variables or {}, ctx)
+            # Vars do body + vars configuradas no step (união preservando ordem).
+            # Cobre 3 casos:
+            #   a) Body conhecido (template syncado): pega TODAS as vars do body,
+            #      mesmo as não mapeadas (ConventionStrategy resolve via nome).
+            #   b) Body desconhecido (template ainda não syncado): usa apenas o
+            #      que o user configurou explicitamente.
+            #   c) Var configurada que NÃO aparece no body: ainda é enviada
+            #      (caller manda no template_params; ChatNexo decide o uso).
+            var_names_in_body: list[str] = (
+                _re.findall(r"\{\{(\w+)\}\}", body_text) if body_text else []
+            )
+            configured_vars: dict[str, object] = step.template_variables or {}
+            all_var_names: list[str] = list(var_names_in_body)
+            for k in configured_vars:
+                if k not in all_var_names:
+                    all_var_names.append(k)
+
+            resolved_vars = VariableResolver().resolve_template_vars(
+                var_names=all_var_names,
+                configured=configured_vars,
+                ctx=ctx,
+            )
+
+            # Renderiza {{var}} no body usando os valores resolvidos. Caracteres
+            # `{{` e `}}` que não bater com nenhum binding ficam como estão.
+            rendered_body: str | None = None
+            if body_text:
+                rendered_body = _re.sub(
+                    r"\{\{(\w+)\}\}",
+                    lambda m: resolved_vars.get(m.group(1), m.group(0)),
+                    body_text,
+                )
 
             try:
                 await self._chatnexo.send_template(
-                    account_id=str(account_id),
+                    account_id=str(get_settings().chatnexo_account_id),
                     conversation_id=str(conversation_id),
                     template_name=step.meta_template_name,
                     language=language,
                     variables=resolved_vars,
                     header_link=header_link,
                     header_kind=header_kind,
+                    rendered_body=rendered_body,
                 )
             except Exception as exc:
                 reason = str(exc)[:500]

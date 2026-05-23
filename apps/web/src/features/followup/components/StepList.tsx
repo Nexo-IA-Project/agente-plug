@@ -16,6 +16,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
+import { useToast } from "@/shared/hooks/useToast";
 import { StepItem } from "./StepItem";
 import { StepInlineForm } from "./StepInlineForm";
 import type { CreateStepInput, FollowupStep, UpdateStepInput } from "../types";
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Props) {
+  const toast = useToast();
   const [editingStep, setEditingStep] = useState<FollowupStep | null>(null);
   const [addingStep, setAddingStep] = useState(false);
 
@@ -37,27 +39,35 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  async function reorderAndToast(reordered: FollowupStep[]) {
+    try {
+      await onReorder(reordered.map((s, i) => ({ id: s.id, position: i + 1 })));
+      toast.success("Ordem das mensagens atualizada");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao reordenar");
+    }
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = steps.findIndex((s) => s.id === active.id);
     const newIndex = steps.findIndex((s) => s.id === over.id);
-    const reordered = arrayMove(steps, oldIndex, newIndex);
-    await onReorder(reordered.map((s, i) => ({ id: s.id, position: i + 1 })));
+    await reorderAndToast(arrayMove(steps, oldIndex, newIndex));
   }
 
   async function handleMoveUp(index: number) {
     if (index === 0) return;
     const reordered = [...steps];
     [reordered[index - 1], reordered[index]] = [reordered[index], reordered[index - 1]];
-    await onReorder(reordered.map((s, i) => ({ id: s.id, position: i + 1 })));
+    await reorderAndToast(reordered);
   }
 
   async function handleMoveDown(index: number) {
     if (index === steps.length - 1) return;
     const reordered = [...steps];
     [reordered[index], reordered[index + 1]] = [reordered[index + 1], reordered[index]];
-    await onReorder(reordered.map((s, i) => ({ id: s.id, position: i + 1 })));
+    await reorderAndToast(reordered);
   }
 
   return (
@@ -116,7 +126,7 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
             add
           </span>
-          Adicionar Step
+          Adicionar mensagem
         </button>
       )}
     </div>

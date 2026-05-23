@@ -288,6 +288,20 @@ export async function getLead(id: string): Promise<LeadDetail> {
   return apiFetch<LeadDetail>(`/admin/leads/${id}`);
 }
 
+/**
+ * Força o disparo imediato de um step (pending ou failed) de um enrollment.
+ * Backend cancela o job agendado (se houver) e dispara síncrono.
+ */
+export async function dispatchEnrollmentStep(
+  enrollmentId: string,
+  stepId: string,
+): Promise<void> {
+  return apiFetch<void>(
+    `/admin/followup/enrollments/${enrollmentId}/steps/${stepId}/dispatch-now`,
+    { method: "POST" },
+  );
+}
+
 export async function downloadLeadsCsv(
   filters: LeadFilters = {},
 ): Promise<void> {

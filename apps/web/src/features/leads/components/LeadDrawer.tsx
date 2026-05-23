@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
-import { getLead } from "@/lib/api";
+import { dispatchEnrollmentStep, getLead } from "@/lib/api";
 import { getTriggerEventMeta } from "@/features/followup/lib/triggerEvents";
 import { getLeadStatusBadge } from "../lib/statusBadges";
 import type { Lead, LeadDetail } from "../types";
+import { FollowupTimeline } from "./FollowupTimeline";
 
 interface Props {
   lead: Lead | null;
@@ -202,6 +203,19 @@ export function LeadDrawer({ lead, open, onClose }: Props) {
             </ol>
           )}
         </div>
+
+        {/* Follow-ups timeline */}
+        {!loading && (
+          <FollowupTimeline
+            enrollments={detail?.enrollments ?? []}
+            onDispatchStep={async (enrollmentId, stepId) => {
+              await dispatchEnrollmentStep(enrollmentId, stepId);
+              // Re-fetch detail pra mostrar novo status
+              const fresh = await getLead(lead.id);
+              setDetail(fresh);
+            }}
+          />
+        )}
       </div>
     </Drawer>
   );

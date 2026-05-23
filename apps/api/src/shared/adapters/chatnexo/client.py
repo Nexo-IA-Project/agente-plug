@@ -97,16 +97,26 @@ class ChatNexoClient:
         variables: dict[str, Any] | None = None,
         header_link: str | None = None,
         header_kind: Literal["image", "video", "document"] | None = None,
+        rendered_body: str | None = None,
     ) -> None:
-        body: dict[str, Any] = {
-            "type": "template",
-            "template_name": template_name,
-            "variables": variables or {},
+        """Envia template via ChatNexo.
+
+        Estratégia: o ChatNexo (fork Chatwoot) só envia template real para a Meta
+        FORA da janela de 24h. Dentro da janela, ele envia o `content` como texto
+        livre. Por isso passamos o body renderizado localmente como `content` e
+        anexamos `template_params` como metadata (usado para reenvio fora da
+        janela quando o ChatNexo dispara via Meta).
+        """
+        body: dict[str, Any] = {}
+        if rendered_body:
+            body["content"] = rendered_body
+        body["template_params"] = {
+            "name": template_name,
+            "language": language,
+            "processed_params": variables or {},
         }
-        if language:
-            body["language"] = language
         if header_link and header_kind:
-            body["header"] = {"type": header_kind, "link": header_link}
+            body["template_params"]["header"] = {"type": header_kind, "link": header_link}
         await self._post(
             f"/accounts/{account_id}/conversations/{conversation_id}/messages",
             json=body,
@@ -127,21 +137,63 @@ class ChatNexoClient:
         )
 
     async def get_open_conversation(self, account_id: str, contact_phone: str) -> str | None:
-        """Return the open conversation ID for a contact, or None if not found."""
-        response = await self._get(
-            f"/accounts/{account_id}/conversations",
-            params={"contact_phone": contact_phone, "status": "open"},
-        )
+        """Return the open conversation ID for a contact, or None if not found.
+
+        ChatNexo retorna 404 quando não há conversa aberta para o contato — esse é
+        o caso normal de primeira compra, não erro. Tratamos como None.
+
+        ChatNexo response shapes possíveis:
+        - `{"data": {"meta": ..., "payload": [...]}}` (Chatwoot v3 contact_conversations)
+        - `{"data": [...]}`
+        - `[...]`
+        """
+        import logging
+
+        log = logging.getLogger(__name__)
+
+        try:
+            response = await self._get(
+                f"/accounts/{account_id}/conversations",
+                params={"contact_phone": contact_phone, "status": "open"},
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return None
+            raise
+
         data = response.json()
-        items = data.get("data", []) if isinstance(data, dict) else data
-        return str(items[0]["id"]) if items else None
+        log.warning(
+            "chatnexo_get_open_conversation_response",
+            extra={"shape": str(type(data).__name__), "preview": str(data)[:300]},
+        )
+
+        # Normalize: extract list of conversations from variable response shape
+        if isinstance(data, dict):
+            inner = data.get("data", data)
+            if isinstance(inner, dict):
+                items = inner.get("payload", inner.get("conversations", []))
+            else:
+                items = inner
+        else:
+            items = data
+
+        if not isinstance(items, list) or not items:
+            return None
+
+        first = items[0]
+        if not isinstance(first, dict):
+            return None
+
+        conv_id = first.get("id") or first.get("conversation_id")
+        return str(conv_id) if conv_id is not None else None
 
     async def create_conversation(self, account_id: str, contact_phone: str) -> str:
         """Create a new conversation for a contact and return its ID."""
         s = get_settings()
+        # str() para garantir serialização caso receba value object Phone
         response = await self._post(
             f"/accounts/{account_id}/conversations",
-            json={"contact_phone": contact_phone, "inbox_id": s.chatnexo_inbox_id},
+            json={"contact_phone": str(contact_phone), "inbox_id": s.chatnexo_inbox_id},
         )
         data = response.json()
         return str(data["id"])

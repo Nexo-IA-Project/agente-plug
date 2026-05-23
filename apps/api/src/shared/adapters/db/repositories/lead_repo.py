@@ -218,3 +218,87 @@ class SqlLeadRepository:
         )
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_event_entity(m) for m in rows]
+
+    async def get_enrollments(
+        self, account_id: UUID, hubla_subscription_id: str
+    ) -> list[dict[str, Any]]:
+        """Retorna enrollments + steps de um lead (purchase_id = hubla_subscription_id).
+
+        Cada step inclui o `scheduled_for` resolvido via JOIN com scheduled_jobs
+        (campo `run_at`). Steps sem job associado retornam scheduled_for=None.
+        """
+        from shared.adapters.db.models import (
+            FollowupEnrollmentModel,
+            FollowupEnrollmentStepModel,
+            FollowupFlowModel,
+            ScheduledJobModel,
+        )
+
+        # 1. Busca enrollments do lead (purchase_id = hubla_subscription_id)
+        enr_stmt = (
+            select(FollowupEnrollmentModel, FollowupFlowModel.name)
+            .outerjoin(FollowupFlowModel, FollowupFlowModel.id == FollowupEnrollmentModel.flow_id)
+            .where(
+                FollowupEnrollmentModel.account_id == account_id,
+                FollowupEnrollmentModel.purchase_id == hubla_subscription_id,
+            )
+            .order_by(FollowupEnrollmentModel.created_at.asc())
+        )
+        enr_rows = (await self.session.execute(enr_stmt)).all()
+
+        if not enr_rows:
+            return []
+
+        enrollment_ids = [row[0].id for row in enr_rows]
+
+        # 2. Busca steps de todos os enrollments + JOIN com scheduled_jobs pra run_at
+        step_stmt = (
+            select(
+                FollowupEnrollmentStepModel,
+                ScheduledJobModel.run_at,
+            )
+            .outerjoin(
+                ScheduledJobModel,
+                ScheduledJobModel.id == FollowupEnrollmentStepModel.scheduled_job_id,
+            )
+            .where(FollowupEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
+            .order_by(
+                FollowupEnrollmentStepModel.enrollment_id,
+                FollowupEnrollmentStepModel.position,
+            )
+        )
+        step_rows = (await self.session.execute(step_stmt)).all()
+
+        # 3. Agrupa steps por enrollment
+        steps_by_enrollment: dict[UUID, list[dict[str, Any]]] = {}
+        for step_model, run_at in step_rows:
+            steps_by_enrollment.setdefault(step_model.enrollment_id, []).append(
+                {
+                    "id": step_model.id,
+                    "position": step_model.position,
+                    "template_name": step_model.meta_template_name,
+                    "message_text": step_model.message_text,
+                    "status": step_model.status,
+                    "delay_from_purchase_minutes": step_model.delay_from_purchase_minutes,
+                    "scheduled_for": run_at,
+                    "sent_at": step_model.sent_at,
+                    "failure_reason": step_model.failure_reason,
+                    "rendered_preview": None,  # TODO: renderizar preview ao mostrar
+                }
+            )
+
+        # 4. Monta resposta final
+        result: list[dict[str, Any]] = []
+        for enrollment_model, flow_name in enr_rows:
+            result.append(
+                {
+                    "id": enrollment_model.id,
+                    "flow_id": enrollment_model.flow_id,
+                    "flow_name": flow_name or "Flow removido",
+                    "product_name": enrollment_model.product_name,
+                    "trigger_event_type": "subscription.activated",  # snapshot histórico
+                    "enrolled_at": enrollment_model.created_at,
+                    "steps": steps_by_enrollment.get(enrollment_model.id, []),
+                }
+            )
+        return result

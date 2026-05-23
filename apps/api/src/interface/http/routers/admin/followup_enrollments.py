@@ -55,7 +55,7 @@ class EnrollmentListResponse(BaseModel):
 class EnrollmentStepItem(BaseModel):
     id: str
     position: int
-    delay_from_purchase_hours: int
+    delay_from_purchase_minutes: int
     template_name: str | None
     message_text_preview: str | None
     status: str
@@ -161,7 +161,7 @@ async def list_enrollment_steps(
         EnrollmentStepItem(
             id=str(s.id),
             position=s.position,
-            delay_from_purchase_hours=s.delay_from_purchase_hours,
+            delay_from_purchase_minutes=s.delay_from_purchase_minutes,
             template_name=s.meta_template_name,
             message_text_preview=(s.message_text[:80] if s.message_text else None),
             status=s.status,
@@ -171,3 +171,115 @@ async def list_enrollment_steps(
         )
         for s in steps
     ]
+
+
+class DispatchNowResponse(BaseModel):
+    status: str  # "sent" | "failed"
+    failure_reason: str | None
+    sent_at: str | None
+
+
+@router.post(
+    "/followup/enrollments/{enrollment_id}/steps/{step_id}/dispatch-now",
+    response_model=DispatchNowResponse,
+)
+async def dispatch_step_now(
+    enrollment_id: UUID,
+    step_id: UUID,
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> DispatchNowResponse:
+    """Força o disparo imediato de um step pending ou failed.
+
+    Pipeline:
+      1. Resolve account + carrega o enrollment_step
+      2. Valida que o step pertence ao enrollment passado (defense in depth)
+      3. Reset do status para PENDING + clear de failure_reason (permite retry de failed)
+      4. Cancela o ScheduledJob futuro (se houver) — evita disparo duplicado
+      5. Executa DispatchFollowupStep síncrono
+      6. Retorna status final (sent | failed)
+    """
+    from cryptography.fernet import Fernet
+    from sqlalchemy import update
+
+    from agent.history import ConversationHistory
+    from shared.adapters.chatnexo.client import ChatNexoClient
+    from shared.adapters.db.models import (
+        FollowupEnrollmentStepModel,
+        ScheduledJobModel,
+    )
+    from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
+    from shared.adapters.db.repositories.contact import ContactRepository
+    from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
+    from shared.application.use_cases.followup.dispatch_followup_step import (
+        DispatchFollowupStep,
+    )
+    from shared.config.settings import get_settings
+    from shared.domain.entities.followup import EnrollmentStepStatus
+
+    async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session, auth)
+
+        # 1+2. Resolve step e valida ownership (enrollment, account)
+        repo = FollowupEnrollmentRepository(session=session)
+        step = await repo.find_step_by_id(step_id)
+        if step is None or step.enrollment_id != enrollment_id:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="step não encontrado",
+            )
+        enrollment = await repo.find_enrollment_by_id(enrollment_id)
+        if enrollment is None or enrollment.account_id != account_uuid:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail="enrollment não encontrado",
+            )
+
+        # 3. Reset do status pra permitir o dispatch executar (failed → pending)
+        await session.execute(
+            update(FollowupEnrollmentStepModel)
+            .where(FollowupEnrollmentStepModel.id == step_id)
+            .values(status="pending", failure_reason=None)
+        )
+
+        # 4. Cancela job futuro (se houver) — evita race com o scheduler
+        if step.scheduled_job_id is not None:
+            await session.execute(
+                update(ScheduledJobModel)
+                .where(
+                    ScheduledJobModel.id == step.scheduled_job_id,
+                    ScheduledJobModel.status == "pending",
+                )
+                .values(status="cancelled")
+            )
+
+        await session.flush()
+
+        # 5. Despacha síncrono
+        settings_obj = get_settings()
+        fernet = Fernet(settings_obj.integration_credentials_key.encode())
+        config_repo = AccountConfigRepository(session=session, fernet=fernet)
+        config = await config_repo.get(account_id=1)
+        chatnexo = ChatNexoClient.from_account_config(config)
+        dispatch = DispatchFollowupStep(
+            enrollment_repo=repo,
+            contact_repo=ContactRepository(session=session),
+            chatnexo=chatnexo,
+            conversation_history=ConversationHistory(session=session),
+            meta_template_repo=MetaTemplateRepository(session=session),
+        )
+        result = await dispatch.execute(
+            enrollment_step_id=step_id,
+            account_id=account_uuid,
+            conversation_id=str(enrollment.conversation_id),
+            contact_phone=enrollment.contact_phone,
+        )
+
+        # 6. Recarrega step pra pegar sent_at atualizado
+        refreshed = await repo.find_step_by_id(step_id)
+        sent_at_iso = refreshed.sent_at.isoformat() if refreshed and refreshed.sent_at else None
+
+    return DispatchNowResponse(
+        status="sent" if result.status == EnrollmentStepStatus.SENT else "failed",
+        failure_reason=result.failure_reason,
+        sent_at=sent_at_iso,
+    )

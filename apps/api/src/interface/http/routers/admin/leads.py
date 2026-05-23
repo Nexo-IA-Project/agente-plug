@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
-from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.lead import Lead
 
 router = APIRouter(tags=["admin-leads"])
@@ -54,8 +54,32 @@ class HublaEventResponse(BaseModel):
     product_name: str
 
 
+class FollowupStepDetailResponse(BaseModel):
+    id: UUID
+    position: int
+    template_name: str | None
+    message_text: str | None
+    status: str  # "sent" | "pending" | "failed" | "cancelled"
+    delay_from_purchase_minutes: int
+    scheduled_for: datetime | None
+    sent_at: datetime | None
+    failure_reason: str | None
+    rendered_preview: str | None
+
+
+class FollowupEnrollmentDetailResponse(BaseModel):
+    id: UUID
+    flow_id: UUID | None
+    flow_name: str
+    product_name: str
+    trigger_event_type: str
+    enrolled_at: datetime
+    steps: list[FollowupStepDetailResponse]
+
+
 class LeadDetailResponse(LeadResponse):
     events: list[HublaEventResponse]
+    enrollments: list[FollowupEnrollmentDetailResponse]
 
 
 def _to_response(m: Lead) -> LeadResponse:
@@ -93,7 +117,7 @@ async def list_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadListResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         items, total = await repo.paginate(
             account_uuid,
@@ -123,7 +147,7 @@ async def export_leads(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> StreamingResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         items, _ = await repo.paginate(
             account_uuid,
@@ -200,12 +224,13 @@ async def get_lead(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> LeadDetailResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlLeadRepository(session=session)
         m = await repo.find_by_id(lead_id, account_uuid)
         if m is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="lead not found")
         events = await repo.get_events(account_uuid, m.hubla_subscription_id)
+        enrollments = await repo.get_enrollments(account_uuid, m.hubla_subscription_id)
 
     return LeadDetailResponse(
         **_to_response(m).model_dump(),
@@ -218,5 +243,17 @@ async def get_lead(
                 product_name=e.product_name,
             )
             for e in events
+        ],
+        enrollments=[
+            FollowupEnrollmentDetailResponse(
+                id=e["id"],
+                flow_id=e["flow_id"],
+                flow_name=e["flow_name"],
+                product_name=e["product_name"],
+                trigger_event_type=e["trigger_event_type"],
+                enrolled_at=e["enrolled_at"],
+                steps=[FollowupStepDetailResponse(**s) for s in e["steps"]],
+            )
+            for e in enrollments
         ],
     )

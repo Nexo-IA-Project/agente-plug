@@ -27,7 +27,7 @@ def _make_step(
         id=uuid4(),
         enrollment_id=uuid4(),
         position=1,
-        delay_from_purchase_hours=0,
+        delay_from_purchase_minutes=0,
         meta_template_name=meta_template_name,
         template_variables={"1": {"source": "static", "value": "João"}},
         status=status,

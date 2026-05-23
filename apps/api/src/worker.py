@@ -14,7 +14,7 @@ from interface.worker.scheduler import SchedulerLoop
 from shared.adapters.clock.system_clock import SystemClock
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
-from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.db.session import get_engine, get_sessionmaker
 from shared.adapters.observability.logger import configure_logging, get_logger
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.mutex import RedisMutex
@@ -84,6 +84,8 @@ async def main() -> None:
     )
     for t in pending:
         t.cancel()
+    await get_engine().dispose()
+    await redis.aclose()
     log.info("worker_stopped")
 
 

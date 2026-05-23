@@ -124,14 +124,18 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     <Drawer
       open={open}
       onClose={onClose}
-      title={activeFlow ? `Editar — ${activeFlow.name}` : "Novo follow-up"}
+      title={
+        activeFlow
+          ? `Follow-up — ${selectedProduct?.name ?? activeFlow.product?.name ?? "Produto"}`
+          : "Novo follow-up"
+      }
       footer={
         showFormFields ? (
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg px-4 py-2.5 text-sm text-on-surface-variant hover:bg-surface-container-high transition-colors"
+              className="border border-outline-variant bg-surface px-4 py-2.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
             >
               {activeFlow ? "Fechar" : "Cancelar"}
             </button>
@@ -139,7 +143,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
               type="submit"
               form="flow-form"
               disabled={saving || !name.trim() || !productId || noProducts}
-              className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {saving && (
                 <span
@@ -235,8 +239,8 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
             </div>
 
             {/* Evento disparador — radio-grid colorido por semântica do funil */}
-            <fieldset className="animate-fade-in flex flex-col gap-3">
-              <legend className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
+            <fieldset className="animate-fade-in flex flex-col">
+              <legend className="mb-4 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-on-surface-variant">
                 <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
                   bolt
                 </span>
@@ -346,7 +350,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
           <div className="mb-5 flex items-center gap-4">
             <div className="h-px flex-1 bg-outline-variant/40" />
             <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/60">
-              Steps de disparo
+              Mensagens da sequência
             </p>
             <div className="h-px flex-1 bg-outline-variant/40" />
           </div>

@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
-from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.config.single_tenant import get_default_account_uuid
 
 router = APIRouter(tags=["admin-products"])
 
@@ -42,23 +42,23 @@ async def list_products(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> list[ProductResponse]:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlProductRepository(session=session)
         products = await repo.list_by_account(account_uuid)
-        items: list[ProductResponse] = []
-        for p in products:
-            items.append(
-                ProductResponse(
-                    id=p.id,
-                    name=p.name,
-                    hubla_id=p.hubla_id,
-                    is_active=p.is_active,
-                    flow_count=await repo.count_flows(p.id),
-                    created_at=p.created_at,
-                    updated_at=p.updated_at,
-                )
-            )
-    return items
+        # Bulk count em UMA query (evita N+1 que causava 524 timeout em produção)
+        flow_counts = await repo.count_flows_bulk([p.id for p in products])
+    return [
+        ProductResponse(
+            id=p.id,
+            name=p.name,
+            hubla_id=p.hubla_id,
+            is_active=p.is_active,
+            flow_count=flow_counts.get(p.id, 0),
+            created_at=p.created_at,
+            updated_at=p.updated_at,
+        )
+        for p in products
+    ]
 
 
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
@@ -67,7 +67,7 @@ async def create_product(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> ProductResponse:
     async with session_scope() as session:
-        account_uuid = DEFAULT_ACCOUNT_UUID
+        account_uuid = await get_default_account_uuid(session)
         repo = SqlProductRepository(session=session)
         try:
             p = await repo.create(

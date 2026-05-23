@@ -6,6 +6,7 @@ from uuid import UUID
 
 import structlog
 
+from shared.config.settings import get_settings
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.value_objects.phone import Phone
 
@@ -228,13 +229,16 @@ class HublaEventHandler:
             product_id=product.id, event_type=event_type
         )
 
+        # ChatNexo (Chatwoot fork) usa account_id como integer; o UUID local não bate.
+        chatnexo_account_id = str(get_settings().chatnexo_account_id)
+
         for flow in flows:
             conversation_id = await self._chatnexo.get_open_conversation(
-                account_id=account_id_str, contact_phone=contact.phone
+                account_id=chatnexo_account_id, contact_phone=str(contact.phone)
             )
             if conversation_id is None:
                 conversation_id = await self._chatnexo.create_conversation(
-                    account_id=account_id_str, contact_phone=contact.phone
+                    account_id=chatnexo_account_id, contact_phone=str(contact.phone)
                 )
             await self._enroll_contact_uc.execute(
                 account_id=account_uuid,

@@ -33,7 +33,7 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
         id=m.id,
         flow_id=m.flow_id,
         position=m.position,
-        delay_from_purchase_hours=m.delay_from_purchase_hours,
+        delay_from_purchase_minutes=m.delay_from_purchase_minutes,
         meta_template_name=m.meta_template_name,
         template_variables=dict(m.template_variables or {}),
         created_at=m.created_at,
@@ -145,7 +145,7 @@ class FollowupFlowRepository:
         *,
         flow_id: uuid.UUID,
         position: int,
-        delay_from_purchase_hours: int,
+        delay_from_purchase_minutes: int,
         meta_template_name: str | None,
         template_variables: dict,
         message_text: str | None = None,
@@ -154,7 +154,7 @@ class FollowupFlowRepository:
             id=uuid.uuid4(),
             flow_id=flow_id,
             position=position,
-            delay_from_purchase_hours=delay_from_purchase_hours,
+            delay_from_purchase_minutes=delay_from_purchase_minutes,
             meta_template_name=meta_template_name,
             template_variables=template_variables,
             message_text=message_text,
@@ -168,7 +168,7 @@ class FollowupFlowRepository:
         self,
         step_id: uuid.UUID,
         *,
-        delay_from_purchase_hours: int | None = None,
+        delay_from_purchase_minutes: int | None = None,
         meta_template_name: str | None = None,
         template_variables: dict | None = None,
         position: int | None = None,
@@ -179,8 +179,8 @@ class FollowupFlowRepository:
         model = await self.session.get(FollowupStepModel, step_id)
         if model is None:
             return None
-        if delay_from_purchase_hours is not None:
-            model.delay_from_purchase_hours = delay_from_purchase_hours
+        if delay_from_purchase_minutes is not None:
+            model.delay_from_purchase_minutes = delay_from_purchase_minutes
         if meta_template_name is not None:
             model.meta_template_name = meta_template_name
         if clear_template:

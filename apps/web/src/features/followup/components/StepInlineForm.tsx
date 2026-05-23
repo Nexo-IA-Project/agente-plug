@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listMetaTemplates } from "@/lib/api";
+import { Collapse } from "@/shared/components/Collapse";
 import type { MetaTemplate } from "@/features/templates/types";
 import type {
   CreateStepInput,
@@ -22,17 +23,17 @@ interface Props {
   onCancel: () => void;
 }
 
-function hoursToDisplay(hours: number): { value: number; unit: DelayUnit } {
-  if (hours === 0) return { value: 0, unit: "horas" };
-  if (hours % 24 === 0) return { value: hours / 24, unit: "dias" };
-  if (hours < 1) return { value: Math.round(hours * 60), unit: "minutos" };
-  return { value: hours, unit: "horas" };
+function minutesToDisplay(minutes: number): { value: number; unit: DelayUnit } {
+  if (minutes === 0) return { value: 0, unit: "minutos" };
+  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "dias" };
+  if (minutes % 60 === 0) return { value: minutes / 60, unit: "horas" };
+  return { value: minutes, unit: "minutos" };
 }
 
-function toHours(value: number, unit: DelayUnit): number {
-  if (unit === "minutos") return value / 60;
-  if (unit === "horas") return value;
-  return value * 24;
+function toMinutes(value: number, unit: DelayUnit): number {
+  if (unit === "minutos") return value;
+  if (unit === "horas") return value * 60;
+  return value * 1440;
 }
 
 function getTemplateBody(template: MetaTemplate | undefined): string | null {
@@ -43,15 +44,26 @@ function getTemplateBody(template: MetaTemplate | undefined): string | null {
 const inputCls = "field-input";
 const labelCls = "field-label";
 
+const EXIT_DURATION_MS = 320;
+
 export function StepInlineForm({ step, onSave, onCancel }: Props) {
-  // Fade in ao montar
+  // Fade in/out controlado: visible começa false, vira true no mount.
+  // Ao cancelar/salvar, exiting vira true e esperamos EXIT_DURATION_MS antes
+  // de chamar o callback do pai (que vai unmontar o componente).
   const [visible, setVisible] = useState(false);
+  const [exiting, setExiting] = useState(false);
   useEffect(() => {
     const raf = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  const initialDisplay = hoursToDisplay(step?.delay_from_purchase_hours ?? 0);
+  const handleCancelClick = () => {
+    if (exiting) return;
+    setExiting(true);
+    setTimeout(onCancel, EXIT_DURATION_MS);
+  };
+
+  const initialDisplay = minutesToDisplay(step?.delay_from_purchase_minutes ?? 0);
   const [mode, setMode] = useState<StepMode>(
     step ? (step.message_text ? "text" : "template") : "template"
   );
@@ -95,11 +107,11 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const hours = toHours(delayValue, delayUnit);
+    const minutes = toMinutes(delayValue, delayUnit);
     try {
       if (mode === "template") {
         const dto: UpdateStepInput = {
-          delay_from_purchase_hours: hours,
+          delay_from_purchase_minutes: minutes,
           meta_template_name: selectedTemplate || null,
           template_variables: templateVariables,
           message_text: null,
@@ -107,35 +119,36 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         await onSave(dto);
       } else {
         const dto: UpdateStepInput = {
-          delay_from_purchase_hours: hours,
+          delay_from_purchase_minutes: minutes,
           meta_template_name: null,
           template_variables: {},
           message_text: messageText,
         };
         await onSave(dto);
       }
+      // Sucesso — dispara fade-out antes do pai unmontar (esperamos via Promise)
+      setExiting(true);
+      await new Promise<void>((resolve) => setTimeout(resolve, EXIT_DURATION_MS));
+    } catch {
+      setExiting(false);
     } finally {
       setSaving(false);
     }
   }
 
+  const isOpen = visible && !exiting;
+
   return (
-    <div
-      className="rounded-2xl border border-primary/20 bg-surface-container p-5 shadow-sm"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(10px)",
-        transition: "opacity 320ms ease, transform 320ms ease",
-      }}
-    >
+    <Collapse open={isOpen} durationMs={480}>
+      <div className="border border-primary/20 bg-surface-container p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <p className="text-label-sm font-semibold text-on-surface">
           {step ? "Editar step" : "Novo step"}
         </p>
         <button
           type="button"
-          onClick={onCancel}
-          className="rounded-lg p-1 text-on-surface-variant hover:bg-surface-container-high"
+          onClick={handleCancelClick}
+          className="p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high"
         >
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
             close
@@ -147,14 +160,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         {/* Tipo de mensagem */}
         <div>
           <label className={labelCls}>Tipo de mensagem</label>
-          <div className="flex overflow-hidden rounded-xl border border-outline-variant">
+          <div className="flex border border-outline-variant">
             {(["template", "text"] as StepMode[]).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
                 className={[
-                  "flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
+                  "flex flex-1 items-center justify-center gap-2 py-3 text-sm font-medium transition-colors",
                   mode === m
                     ? "bg-primary text-on-primary"
                     : "bg-surface text-on-surface-variant hover:bg-surface-container",
@@ -191,15 +204,15 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
             </select>
           </div>
           <p className="mt-1 text-xs text-on-surface-variant">
-            {delayValue === 0 && delayUnit === "horas"
+            {delayValue === 0
               ? "Imediato — dispara assim que a compra é registrada"
-              : `${toHours(delayValue, delayUnit)} hora(s) após a compra`}
+              : `${toMinutes(delayValue, delayUnit)} minuto(s) após a compra`}
           </p>
         </div>
 
         {/* Template mode */}
-        {mode === "template" && (
-          <div key="template-mode" className="animate-fade-in space-y-4">
+        <Collapse open={mode === "template"} durationMs={420}>
+          <div className="space-y-4">
             <div>
               <label className={labelCls}>Template</label>
               {loadingTemplates ? (
@@ -230,14 +243,14 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
               )}
             </div>
 
-            {currentTemplate && templateBody && (
-              <div className="animate-fade-in rounded-lg border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
+            <Collapse open={!!currentTemplate && !!templateBody} durationMs={380}>
+              <div className="mt-1 border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
                 {templateBody}
               </div>
-            )}
+            </Collapse>
 
-            {currentTemplate && (
-              <div className="animate-fade-in space-y-2">
+            <Collapse open={!!currentTemplate} durationMs={380}>
+              <div className="mt-3 space-y-2">
                 <label className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                   Variáveis do template
                 </label>
@@ -247,13 +260,13 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
                   onChange={setTemplateVariables}
                 />
               </div>
-            )}
+            </Collapse>
           </div>
-        )}
+        </Collapse>
 
         {/* Text mode */}
-        {mode === "text" && (
-          <div key="text-mode" className="animate-fade-in">
+        <Collapse open={mode === "text"} durationMs={420}>
+          <div>
             <label className={labelCls}>Mensagem</label>
             <textarea
               value={messageText}
@@ -264,21 +277,21 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
               className="field-textarea"
             />
           </div>
-        )}
+        </Collapse>
 
         {/* Ações */}
         <div className="flex gap-2 pt-1">
           <button
             type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-xl py-2.5 text-label-sm text-on-surface-variant hover:bg-surface-container-high"
+            onClick={handleCancelClick}
+            className="flex-1 border border-outline-variant bg-surface py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-label-sm font-semibold text-on-primary disabled:opacity-50"
+            className="flex flex-1 items-center justify-center gap-2 bg-primary py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {saving && (
               <span
@@ -292,6 +305,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </Collapse>
   );
 }
