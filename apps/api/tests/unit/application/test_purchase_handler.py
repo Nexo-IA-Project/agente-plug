@@ -72,7 +72,31 @@ async def test_creates_contact_and_access_case():
 
 
 @pytest.mark.asyncio
-async def test_sends_welcome_template():
+async def test_sends_welcome_template_when_configured(monkeypatch):
+    """Quando WELCOME_PURCHASE_TEMPLATE está configurado, dispara o template.
+
+    Comportamento por default (string vazia) é skip — quem manda o welcome é o
+    flow customizado configurado pelo user no FlowDrawer.
+    """
+    # Patch a setting para simular config ativa
+    from shared.application import purchase_handler as ph
+
+    original_get_settings = ph.get_settings
+
+    def patched_get_settings():
+        settings_obj = original_get_settings()
+        # Cria um proxy que retorna welcome_purchase_template="welcome_purchase"
+        from types import SimpleNamespace
+
+        return SimpleNamespace(
+            **{
+                **{k: getattr(settings_obj, k) for k in dir(settings_obj) if not k.startswith("_")},
+                "welcome_purchase_template": "welcome_purchase",
+            }
+        )
+
+    monkeypatch.setattr(ph, "get_settings", patched_get_settings)
+
     contact_repo = AsyncMock()
     contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
     chatnexo = AsyncMock()
@@ -85,6 +109,21 @@ async def test_sends_welcome_template():
     chatnexo.send_template.assert_called_once()
     call_kwargs = chatnexo.send_template.call_args.kwargs
     assert call_kwargs["template_name"] == "welcome_purchase"
+
+
+@pytest.mark.asyncio
+async def test_skips_welcome_template_when_not_configured():
+    """Setting vazia (default) → skip de send_template; flow assume o welcome."""
+    contact_repo = AsyncMock()
+    contact_repo.upsert.return_value = MagicMock(id="contact-1", phone="5511999990000")
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation.return_value = "existing-conv"
+    handler = _make_handler(
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+    )
+    await handler.execute(fake_event())
+    chatnexo.send_template.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -90,14 +90,18 @@ async def test_dispatch_sends_template_and_saves_to_history():
 
     assert isinstance(result, DispatchResult)
     assert result.status == EnrollmentStepStatus.SENT
+    # account_id passado pro ChatNexo é o chatnexo_account_id (int) — Chatwoot
+    # fork usa integer, não o UUID local. rendered_body=None porque o template
+    # mockado não tem body components.
     chatnexo.send_template.assert_called_once_with(
-        account_id=str(account_id),
+        account_id="1",
         conversation_id=str(conversation_id),
         template_name="mv_boas_vindas",
         language=None,
         variables={"1": "Fabio"},
         header_link=None,
         header_kind=None,
+        rendered_body=None,
     )
     history.load.assert_called_once_with(thread_id=thread_id)
     history.save.assert_called_once()
