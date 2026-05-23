@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     chatnexo_base_url: str
     chatnexo_api_key: str
     chatnexo_account_id: int = 1  # ID da conta no ChatNexo (Chatwoot fork usa int, default 1)
-    chatnexo_inbox_id: int = 1  # ID da caixa de entrada no ChatNexo (default 1; ajuste via .env.prod)
+    chatnexo_inbox_id: int = (
+        1  # ID da caixa de entrada no ChatNexo (default 1; ajuste via .env.prod)
+    )
     # Welcome template enviado após subscription.activated. String vazia = skip
     # (o welcome fica a cargo do flow configurado pelo user no /followup).
     welcome_purchase_template: str = ""
