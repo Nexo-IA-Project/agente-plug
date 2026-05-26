@@ -238,41 +238,55 @@ class ChatNexoClient:
         return None
 
     async def create_conversation(
-        self, account_id: str, contact_phone: str, *, contact_name: str | None = None
+        self,
+        account_id: str,
+        contact_phone: str,
+        *,
+        contact_name: str | None = None,
+        contact_email: str | None = None,
     ) -> str:
-        """Cria contato (se não existir) + conversation no Chatwoot/ChatNexo.
+        """Cria contato + contact_inbox + conversation no Chatwoot/ChatNexo.
 
-        Fluxo correto Chatwoot v3:
-          1. POST /contacts {name, phone_number, inbox_id} → cria contato + contact_inbox
-             - Resposta: {payload: {contact: {id, ...}, contact_inboxes: [{source_id, inbox: {id}}]}}
-          2. Pega o source_id do contact_inbox que bate com o inbox_id alvo
-          3. POST /conversations {source_id, inbox_id, contact_id} → cria conversation
+        Fluxo Chatwoot v3 (validado contra workflow N8N de produção):
+          1. POST /contacts {name, email, phone_number, identifier}  ← SEM inbox_id
+          2. POST /contacts/{id}/contact_inboxes {inbox_id, source_id=phone-sem-+}
+          3. POST /conversations {source_id, inbox_id, contact_id}
 
-        O endpoint antigo (POST /conversations com `contact_phone`) NÃO existe no Chatwoot
-        e retorna 404 (bug encontrado em prod 2026-05-26).
+        ⚠ POST /contacts com inbox_id no body retorna 404 silenciosamente quando
+        a inbox passada no body não bate exatamente com a do account (bug do
+        Chatwoot/ChatNexo descoberto em prod 2026-05-26). Sempre criar contact
+        sem inbox_id e vincular depois via contact_inboxes.
         """
         s = get_settings()
         inbox_id = s.chatnexo_inbox_id
         phone = str(contact_phone)
 
-        # 1. Criar contato (Chatwoot já cria contact_inbox em uma chamada)
-        contact_body: dict[str, Any] = {"phone_number": phone, "inbox_id": inbox_id}
+        # 1. Criar contato — NÃO envia inbox_id (causa 404)
+        contact_body: dict[str, Any] = {
+            "phone_number": phone,
+            "identifier": phone,
+        }
         if contact_name:
             contact_body["name"] = contact_name
+        if contact_email:
+            contact_body["email"] = contact_email
 
+        contact_id: int | None = None
         try:
             contact_resp = await self._post(f"/accounts/{account_id}/contacts", json=contact_body)
             contact_data = contact_resp.json()
+            payload = contact_data.get("payload", contact_data)
+            contact = payload.get("contact", payload) if isinstance(payload, dict) else {}
+            contact_id = contact.get("id") if isinstance(contact, dict) else None
         except httpx.HTTPStatusError as exc:
-            # 422 = contato já existe com esse phone — busca dele
             if exc.response.status_code != 422:
                 raise
+            # 422 = já existe → busca via search
             search_resp = await self._get(
                 f"/accounts/{account_id}/contacts/search",
                 params={"q": phone, "include": "contact_inboxes"},
             )
-            search_data = search_resp.json()
-            search_payload = search_data.get("payload", []) if isinstance(search_data, dict) else []
+            search_payload = search_resp.json().get("payload", [])
             target_digits = "".join(c for c in phone if c.isdigit())
             existing = next(
                 (
@@ -286,41 +300,39 @@ class ChatNexoClient:
             )
             if existing is None:
                 raise
-            contact_data = {"payload": existing}
+            contact_id = existing.get("id")
 
-        payload = contact_data.get("payload", contact_data)
-        contact = payload.get("contact", payload) if isinstance(payload, dict) else {}
-        contact_id = contact.get("id") if isinstance(contact, dict) else None
+        if contact_id is None:
+            raise ChatNexoError(f"failed to resolve contact_id for phone={phone[-4:]}")
 
-        contact_inboxes = (
-            (payload.get("contact_inboxes") if isinstance(payload, dict) else None)
-            or (contact.get("contact_inboxes") if isinstance(contact, dict) else None)
-            or []
-        )
-
-        source_id = next(
-            (
-                ci.get("source_id")
-                for ci in contact_inboxes
-                if isinstance(ci, dict)
-                and isinstance(ci.get("inbox"), dict)
-                and ci["inbox"].get("id") == inbox_id
-            ),
-            None,
-        )
-
-        # 1b. Se contact existe mas sem contact_inbox vinculada à inbox alvo, cria
-        if source_id is None and contact_id is not None:
+        # 2. Vincular contato à inbox — source_id = phone sem o "+"
+        source_id_input = phone.lstrip("+")
+        try:
             ci_resp = await self._post(
                 f"/accounts/{account_id}/contacts/{contact_id}/contact_inboxes",
-                json={"inbox_id": inbox_id},
+                json={"inbox_id": inbox_id, "source_id": source_id_input},
             )
-            source_id = ci_resp.json().get("source_id")
+            source_id = ci_resp.json().get("source_id") or source_id_input
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code != 422:
+                raise
+            # 422 = contact_inbox já existe → busca via GET /contacts/{id}
+            cl_resp = await self._get(f"/accounts/{account_id}/contacts/{contact_id}")
+            cl_payload = cl_resp.json().get("payload", {})
+            source_id = next(
+                (
+                    ci.get("source_id")
+                    for ci in cl_payload.get("contact_inboxes", [])
+                    if isinstance(ci, dict)
+                    and isinstance(ci.get("inbox"), dict)
+                    and ci["inbox"].get("id") == inbox_id
+                ),
+                None,
+            )
+            if source_id is None:
+                raise
 
-        if source_id is None or contact_id is None:
-            raise ChatNexoError(f"failed to resolve source_id/contact_id for phone={phone[-4:]}")
-
-        # 2. Criar conversation
+        # 3. Criar conversation
         conv_resp = await self._post(
             f"/accounts/{account_id}/conversations",
             json={"source_id": source_id, "inbox_id": inbox_id, "contact_id": contact_id},
