@@ -10,11 +10,14 @@ from agent.context import AgentContext
 from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
 from agent.runner import run_agent
 from agent.skill_loader import Adapters, build_registry
+from shared.adapters.agent_selection.random_selection import RandomAgentSelection
 from shared.adapters.cademi.client import CademiClient
+from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
+from shared.adapters.db.repositories.conversation import ConversationRepository
 from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
 from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
 from shared.adapters.db.session import session_scope
@@ -23,6 +26,7 @@ from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 
 log = structlog.get_logger(__name__)
 
@@ -78,11 +82,6 @@ async def _process_message(
         openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
 
         # Resolução de agente: usar o agente travado pela última mensagem de onboarding
-        from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
-        from shared.adapters.agent_selection.random_selection import RandomAgentSelection
-        from shared.adapters.db.repositories.conversation import ConversationRepository
-        from shared.config.single_tenant import get_default_account_uuid
-
         account_uuid = await get_default_account_uuid(session)
         conv_repo = ConversationRepository(session=session)
         last_agent_id = await conv_repo.get_last_onboarding_agent_id(
