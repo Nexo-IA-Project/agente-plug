@@ -146,55 +146,96 @@ class ChatNexoClient:
         )
 
     async def get_open_conversation(self, account_id: str, contact_phone: str) -> str | None:
-        """Return the open conversation ID for a contact, or None if not found.
+        """Retorna o ID da conversation OPEN do contato com esse phone, ou None.
 
-        ChatNexo retorna 404 quando não há conversa aberta para o contato — esse é
-        o caso normal de primeira compra, não erro. Tratamos como None.
+        IMPORTANTE: o endpoint `/accounts/{id}/conversations` do Chatwoot/ChatNexo
+        **ignora** o query param `contact_phone`. Se usado, retorna TODAS as
+        conversations da conta — o que faz `items[0]` cair em conversa de OUTRO
+        contato e mensagens vazarem (bug crítico encontrado em prod, 2026-05-26).
 
-        ChatNexo response shapes possíveis:
-        - `{"data": {"meta": ..., "payload": [...]}}` (Chatwoot v3 contact_conversations)
-        - `{"data": [...]}`
-        - `[...]`
+        Fluxo correto:
+          1. `GET /accounts/{id}/contacts/search?q={phone}` → acha contact_id
+          2. Filtra pelo phone exato (search é fuzzy match)
+          3. `GET /accounts/{id}/contacts/{contact_id}/conversations` → conversas dele
+          4. Pega a primeira com `status == "open"`
         """
         import logging
 
         log = logging.getLogger(__name__)
 
+        # 1. Busca contato por phone
         try:
-            response = await self._get(
-                f"/accounts/{account_id}/conversations",
-                params={"contact_phone": contact_phone, "status": "open"},
+            search_resp = await self._get(
+                f"/accounts/{account_id}/contacts/search",
+                params={"q": contact_phone, "include": "contact_inboxes"},
             )
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 return None
             raise
 
-        data = response.json()
-        log.warning(
-            "chatnexo_get_open_conversation_response",
-            extra={"shape": str(type(data).__name__), "preview": str(data)[:300]},
-        )
+        search_data = search_resp.json()
+        payload = search_data.get("payload") if isinstance(search_data, dict) else None
+        if not isinstance(payload, list):
+            payload = (
+                search_data.get("data", {}).get("payload", [])
+                if isinstance(search_data, dict)
+                else []
+            )
 
-        # Normalize: extract list of conversations from variable response shape
-        if isinstance(data, dict):
-            inner = data.get("data", data)
+        # Match exato pelo phone (search é fuzzy — pode retornar similar)
+        def _normalize(p: str) -> str:
+            return "".join(c for c in p if c.isdigit())
+
+        target = _normalize(contact_phone)
+        contact_id = None
+        for c in payload if isinstance(payload, list) else []:
+            if not isinstance(c, dict):
+                continue
+            phone = c.get("phone_number") or ""
+            if _normalize(str(phone)) == target:
+                contact_id = c.get("id")
+                break
+
+        if contact_id is None:
+            log.info(
+                "chatnexo_contact_not_found", extra={"phone_suffix": target[-4:] if target else ""}
+            )
+            return None
+
+        # 2. Busca conversas desse contato
+        try:
+            conv_resp = await self._get(
+                f"/accounts/{account_id}/contacts/{contact_id}/conversations",
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return None
+            raise
+
+        conv_data = conv_resp.json()
+        if isinstance(conv_data, dict):
+            inner = conv_data.get("data", conv_data)
             if isinstance(inner, dict):
                 items = inner.get("payload", inner.get("conversations", []))
             else:
                 items = inner
         else:
-            items = data
+            items = conv_data
 
-        if not isinstance(items, list) or not items:
+        if not isinstance(items, list):
             return None
 
-        first = items[0]
-        if not isinstance(first, dict):
-            return None
+        # Pega a primeira conversa OPEN
+        for conv in items:
+            if not isinstance(conv, dict):
+                continue
+            if conv.get("status") == "open":
+                cid = conv.get("id") or conv.get("conversation_id")
+                if cid is not None:
+                    return str(cid)
 
-        conv_id = first.get("id") or first.get("conversation_id")
-        return str(conv_id) if conv_id is not None else None
+        return None
 
     async def create_conversation(self, account_id: str, contact_phone: str) -> str:
         """Create a new conversation for a contact and return its ID."""
