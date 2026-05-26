@@ -169,6 +169,8 @@ jobs:
           push: false
           load: true
           tags: agente-plug-${{ matrix.target }}:ci
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api-iag2.ianexo.com.br
           cache-from: type=gha,scope=${{ matrix.scope }}
           cache-to: type=gha,mode=max,scope=${{ matrix.scope }}
 
@@ -243,6 +245,8 @@ jobs:
           push: true
           tags: ${{ steps.meta-web.outputs.tags }}
           labels: ${{ steps.meta-web.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://api-iag2.ianexo.com.br
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
 
