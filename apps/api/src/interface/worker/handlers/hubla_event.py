@@ -75,6 +75,7 @@ async def handle_hubla_event(payload: dict) -> None:
             lead_repo=lead_repo,
             hubla_event_repo=hubla_event_repo,
             account_id=account_uuid,
+            chatnexo_account_id=account_config.integration.chatnexo_account_id,
         )
 
         await handler.handle(payload)
