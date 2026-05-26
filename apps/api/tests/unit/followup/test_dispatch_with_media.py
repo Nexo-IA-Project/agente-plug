@@ -1,8 +1,8 @@
-"""Testa que o DispatchFollowupStep passa corretamente header_link e header_kind
+"""Testa que o DispatchOnboardingStep passa corretamente header_link e header_kind
 para chatnexo.send_template quando o template associado ao step tem mídia.
 
 A mídia é lida do MetaTemplateModel via MetaTemplateRepository.get_by_name,
-não do FollowupEnrollmentStep (que não possui esses campos).
+não do OnboardingEnrollmentStep (que não possui esses campos).
 """
 
 from __future__ import annotations
@@ -14,16 +14,16 @@ from uuid import uuid4
 import pytest
 
 from shared.adapters.db.models import MetaTemplateModel
-from shared.application.use_cases.followup.dispatch_followup_step import DispatchFollowupStep
-from shared.domain.entities.followup import EnrollmentStepStatus, FollowupEnrollmentStep
+from shared.application.use_cases.onboarding.dispatch_onboarding_step import DispatchOnboardingStep
+from shared.domain.entities.onboarding import EnrollmentStepStatus, OnboardingEnrollmentStep
 
 
 def _make_step(
     status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING,
     meta_template_name: str = "promo_video",
-) -> FollowupEnrollmentStep:
-    """Cria FollowupEnrollmentStep real (entidade de domínio)."""
-    return FollowupEnrollmentStep(
+) -> OnboardingEnrollmentStep:
+    """Cria OnboardingEnrollmentStep real (entidade de domínio)."""
+    return OnboardingEnrollmentStep(
         id=uuid4(),
         enrollment_id=uuid4(),
         position=1,
@@ -50,7 +50,7 @@ def _make_template(
 
 def _make_uc(
     *, step, template_return_value
-) -> tuple[DispatchFollowupStep, AsyncMock, AsyncMock, AsyncMock]:
+) -> tuple[DispatchOnboardingStep, AsyncMock, AsyncMock, AsyncMock]:
     enrollment_repo = AsyncMock()
     enrollment_repo.find_step_by_id.return_value = step
     enrollment_repo.all_steps_sent.return_value = False
@@ -72,7 +72,7 @@ def _make_uc(
     template_repo = AsyncMock()
     template_repo.get_by_name.return_value = template_return_value
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=contact_repo,
         chatnexo=chatnexo,

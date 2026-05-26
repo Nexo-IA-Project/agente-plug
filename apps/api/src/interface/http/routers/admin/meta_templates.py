@@ -76,18 +76,18 @@ async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient
 
 async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict[str, Any]]:
     """Retorna lista de flows que usam o template (id, name, step_position)."""
-    from shared.adapters.db.models import FollowupFlowModel, FollowupStepModel
+    from shared.adapters.db.models import OnboardingFlowModel, OnboardingStepModel
 
     async with session_scope() as session:
         result = await session.execute(
             select(
-                FollowupFlowModel.id,
-                FollowupFlowModel.name,
-                FollowupStepModel.position,
+                OnboardingFlowModel.id,
+                OnboardingFlowModel.name,
+                OnboardingStepModel.position,
             )
-            .join(FollowupStepModel, FollowupStepModel.flow_id == FollowupFlowModel.id)
-            .where(FollowupFlowModel.account_id == account_id)
-            .where(FollowupStepModel.meta_template_name == template_name)
+            .join(OnboardingStepModel, OnboardingStepModel.flow_id == OnboardingFlowModel.id)
+            .where(OnboardingFlowModel.account_id == account_id)
+            .where(OnboardingStepModel.meta_template_name == template_name)
         )
         return [
             {"id": str(row.id), "name": row.name, "step_position": row.position}

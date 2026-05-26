@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from shared.application.use_cases.followup.variable_resolver import (
+from shared.application.use_cases.onboarding.variable_resolver import (
     ConventionStrategy,
     EmptyFallbackStrategy,
     ExplicitBindingStrategy,

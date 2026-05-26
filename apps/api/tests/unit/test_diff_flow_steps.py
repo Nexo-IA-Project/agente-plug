@@ -1,8 +1,8 @@
 import uuid
 from types import SimpleNamespace
 
-from shared.application.use_cases.followup.diff_flow_steps import compute_diff
-from shared.domain.entities.followup import EnrollmentStepStatus
+from shared.application.use_cases.onboarding.diff_flow_steps import compute_diff
+from shared.domain.entities.onboarding import EnrollmentStepStatus
 
 
 def _flow_step(id_, position=1, delay=24, template="t", text=None, vars=None):

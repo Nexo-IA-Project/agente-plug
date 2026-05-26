@@ -54,7 +54,7 @@ class HublaEventResponse(BaseModel):
     product_name: str
 
 
-class FollowupStepDetailResponse(BaseModel):
+class OnboardingStepDetailResponse(BaseModel):
     id: UUID
     position: int
     template_name: str | None
@@ -67,19 +67,19 @@ class FollowupStepDetailResponse(BaseModel):
     rendered_preview: str | None
 
 
-class FollowupEnrollmentDetailResponse(BaseModel):
+class OnboardingEnrollmentDetailResponse(BaseModel):
     id: UUID
     flow_id: UUID | None
     flow_name: str
     product_name: str
     trigger_event_type: str
     enrolled_at: datetime
-    steps: list[FollowupStepDetailResponse]
+    steps: list[OnboardingStepDetailResponse]
 
 
 class LeadDetailResponse(LeadResponse):
     events: list[HublaEventResponse]
-    enrollments: list[FollowupEnrollmentDetailResponse]
+    enrollments: list[OnboardingEnrollmentDetailResponse]
 
 
 def _to_response(m: Lead) -> LeadResponse:
@@ -245,14 +245,14 @@ async def get_lead(
             for e in events
         ],
         enrollments=[
-            FollowupEnrollmentDetailResponse(
+            OnboardingEnrollmentDetailResponse(
                 id=e["id"],
                 flow_id=e["flow_id"],
                 flow_name=e["flow_name"],
                 product_name=e["product_name"],
                 trigger_event_type=e["trigger_event_type"],
                 enrolled_at=e["enrolled_at"],
-                steps=[FollowupStepDetailResponse(**s) for s in e["steps"]],
+                steps=[OnboardingStepDetailResponse(**s) for s in e["steps"]],
             )
             for e in enrollments
         ],

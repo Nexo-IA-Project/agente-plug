@@ -5,10 +5,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from shared.application.use_cases.followup.resync_enrollment import (
+from shared.application.use_cases.onboarding.resync_enrollment import (
     ResyncEnrollmentUseCase,
 )
-from shared.domain.entities.followup import EnrollmentStepStatus
+from shared.domain.entities.onboarding import EnrollmentStepStatus
 
 
 def _make_use_case(flow_steps, enrollment_steps):

@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from shared.application.use_cases.followup.enroll_contact import (
+from shared.application.use_cases.onboarding.enroll_contact import (
     EnrollContact,
     EnrollResult,
 )

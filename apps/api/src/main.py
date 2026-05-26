@@ -19,9 +19,9 @@ from interface.http.routers.admin import api_tokens as admin_api_tokens
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
-from interface.http.routers.admin import followup as admin_followup
+from interface.http.routers.admin import onboarding as admin_onboarding
 from interface.http.routers.admin import (
-    followup_enrollments as admin_followup_enrollments,
+    onboarding_enrollments as admin_onboarding_enrollments,
 )
 from interface.http.routers.admin import leads as admin_leads
 from interface.http.routers.admin import meta_templates as admin_meta_templates
@@ -108,8 +108,8 @@ def create_app() -> FastAPI:
     app.include_router(admin_search.router, prefix="/admin")
     app.include_router(admin_dlq.router, prefix="/admin")
     app.include_router(admin_settings.router, prefix="/admin")
-    app.include_router(admin_followup.router, prefix="/admin")
-    app.include_router(admin_followup_enrollments.router, prefix="/admin")
+    app.include_router(admin_onboarding.router, prefix="/admin")
+    app.include_router(admin_onboarding_enrollments.router, prefix="/admin")
     app.include_router(admin_meta_templates.router, prefix="/admin")
     app.include_router(admin_products.router, prefix="/admin")
     app.include_router(admin_leads.router, prefix="/admin")

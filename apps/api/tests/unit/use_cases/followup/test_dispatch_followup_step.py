@@ -6,18 +6,18 @@ from uuid import uuid4
 
 import pytest
 
-from shared.application.use_cases.followup.dispatch_followup_step import (
-    DispatchFollowupStep,
+from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
+    DispatchOnboardingStep,
     DispatchResult,
 )
-from shared.domain.entities.followup import EnrollmentStepStatus, FollowupEnrollmentStep
+from shared.domain.entities.onboarding import EnrollmentStepStatus, OnboardingEnrollmentStep
 
 
 def _make_step(
     status: EnrollmentStepStatus = EnrollmentStepStatus.PENDING,
     template_variables: dict | None = None,
-) -> FollowupEnrollmentStep:
-    return FollowupEnrollmentStep(
+) -> OnboardingEnrollmentStep:
+    return OnboardingEnrollmentStep(
         id=uuid4(),
         enrollment_id=uuid4(),
         position=1,
@@ -34,7 +34,7 @@ def _make_step(
 
 
 def _make_enrollment_repo_with_step(
-    step: FollowupEnrollmentStep,
+    step: OnboardingEnrollmentStep,
     *,
     enrollment: SimpleNamespace | None = None,
     all_steps_sent: bool = False,
@@ -74,7 +74,7 @@ async def test_dispatch_sends_template_and_saves_to_history():
     contact_phone = "5511999990000"
     thread_id = f"{account_id}:{contact_phone}"
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=_make_contact_repo(),
         chatnexo=chatnexo,
@@ -111,7 +111,7 @@ async def test_dispatch_sends_template_and_saves_to_history():
         for m in saved_messages
     )
     enrollment_repo.update_step.assert_called_once()
-    updated_step: FollowupEnrollmentStep = enrollment_repo.update_step.call_args.args[0]
+    updated_step: OnboardingEnrollmentStep = enrollment_repo.update_step.call_args.args[0]
     assert updated_step.status == EnrollmentStepStatus.SENT
     assert updated_step.sent_at is not None
 
@@ -121,7 +121,7 @@ async def test_dispatch_marks_enrollment_completed_when_all_steps_sent():
     step = _make_step()
     enrollment_repo = _make_enrollment_repo_with_step(step, all_steps_sent=True)
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=_make_contact_repo(),
         chatnexo=AsyncMock(),
@@ -135,7 +135,7 @@ async def test_dispatch_marks_enrollment_completed_when_all_steps_sent():
         contact_phone="5511999990000",
     )
 
-    from shared.domain.entities.followup import EnrollmentStatus
+    from shared.domain.entities.onboarding import EnrollmentStatus
 
     enrollment_repo.update_enrollment_status.assert_called_once_with(
         step.enrollment_id, EnrollmentStatus.COMPLETED
@@ -147,7 +147,7 @@ async def test_dispatch_ignores_already_sent_step():
     step = _make_step(status=EnrollmentStepStatus.SENT)
     enrollment_repo = _make_enrollment_repo_with_step(step)
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=_make_contact_repo(),
         chatnexo=AsyncMock(),
@@ -171,7 +171,7 @@ async def test_dispatch_resolves_dynamic_variables():
     """Step com bindings dinâmicos resolve customer_name e product_name do enrollment."""
     enrollment_id = uuid4()
     contact_id = uuid4()
-    step = FollowupEnrollmentStep(
+    step = OnboardingEnrollmentStep(
         id=uuid4(),
         enrollment_id=enrollment_id,
         position=0,
@@ -198,7 +198,7 @@ async def test_dispatch_resolves_dynamic_variables():
         media_url=None, media_kind=None, language="pt_BR"
     )
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=contact_repo,
         chatnexo=chatnexo,
@@ -224,7 +224,7 @@ async def test_dispatch_resolves_static_binding():
     enrollment_repo = _make_enrollment_repo_with_step(step)
     chatnexo = AsyncMock()
 
-    uc = DispatchFollowupStep(
+    uc = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=_make_contact_repo(),
         chatnexo=chatnexo,

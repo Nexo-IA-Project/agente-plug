@@ -6,11 +6,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from shared.application.use_cases.followup.enroll_contact import EnrollContact
-from shared.domain.entities.followup import (
+from shared.application.use_cases.onboarding.enroll_contact import EnrollContact
+from shared.domain.entities.onboarding import (
     EnrollmentStatus,
-    FollowupFlow,
-    FollowupStep,
+    OnboardingFlow,
+    OnboardingStep,
 )
 
 
@@ -31,8 +31,8 @@ _FLOW_ID = uuid4()
 _COURSE_ID = uuid4()
 
 
-def _make_flow(is_active: bool = True) -> FollowupFlow:
-    return FollowupFlow(
+def _make_flow(is_active: bool = True) -> OnboardingFlow:
+    return OnboardingFlow(
         id=_FLOW_ID,
         account_id=_ACCOUNT_ID,
         product_id=_COURSE_ID,
@@ -43,8 +43,8 @@ def _make_flow(is_active: bool = True) -> FollowupFlow:
     )
 
 
-def _make_step(position: int, delay: int) -> FollowupStep:
-    return FollowupStep(
+def _make_step(position: int, delay: int) -> OnboardingStep:
+    return OnboardingStep(
         id=uuid4(),
         flow_id=_FLOW_ID,
         position=position,

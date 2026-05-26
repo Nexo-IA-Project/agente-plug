@@ -32,7 +32,7 @@ async def handle_scheduled(payload: dict) -> None:
         await lifecycle.send_close(
             account_id=account_id, phone=phone, conversation_id=conversation_id
         )
-    elif job_type == JobType.FOLLOWUP_STEP.value:
+    elif job_type in (JobType.FOLLOWUP_STEP.value, "onboarding_step"):
         from uuid import UUID as _UUID
 
         from cryptography.fernet import Fernet
@@ -41,16 +41,16 @@ async def handle_scheduled(payload: dict) -> None:
         from shared.adapters.chatnexo.client import ChatNexoClient
         from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
         from shared.adapters.db.repositories.contact import ContactRepository
-        from shared.adapters.db.repositories.followup_enrollment_repo import (
-            FollowupEnrollmentRepository,
+        from shared.adapters.db.repositories.onboarding_enrollment_repo import (
+            OnboardingEnrollmentRepository,
         )
         from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
         from shared.adapters.db.session import session_scope
-        from shared.application.use_cases.followup.dispatch_followup_step import (
-            DispatchFollowupStep,
+        from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
+            DispatchOnboardingStep,
         )
         from shared.config.settings import get_settings
-        from shared.domain.entities.followup import EnrollmentStepStatus
+        from shared.domain.entities.onboarding import EnrollmentStepStatus
 
         settings_obj = get_settings()
         fernet = Fernet(settings_obj.integration_credentials_key.encode())
@@ -58,8 +58,8 @@ async def handle_scheduled(payload: dict) -> None:
             config_repo = AccountConfigRepository(session=session, fernet=fernet)
             config = await config_repo.get(account_id=1)
             chatnexo = ChatNexoClient.from_account_config(config)
-            dispatch = DispatchFollowupStep(
-                enrollment_repo=FollowupEnrollmentRepository(session=session),
+            dispatch = DispatchOnboardingStep(
+                enrollment_repo=OnboardingEnrollmentRepository(session=session),
                 contact_repo=ContactRepository(session=session),
                 chatnexo=chatnexo,
                 conversation_history=ConversationHistory(session=session),

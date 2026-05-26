@@ -7,8 +7,8 @@ from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.contact import ContactRepository
-from shared.adapters.db.repositories.followup_enrollment_repo import FollowupEnrollmentRepository
-from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.onboarding_enrollment_repo import OnboardingEnrollmentRepository
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.repositories.hubla_event_repo import SqlHublaEventRepository
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
@@ -16,7 +16,7 @@ from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
 from shared.application.hubla_event_handler import HublaEventHandler
 from shared.application.purchase_handler import PurchaseHandler
-from shared.application.use_cases.followup.enroll_contact import EnrollContact
+from shared.application.use_cases.onboarding.enroll_contact import EnrollContact
 from shared.config.settings import get_settings
 from shared.config.single_tenant import get_default_account_uuid
 
@@ -40,8 +40,8 @@ async def handle_hubla_event(payload: dict) -> None:
         access_case_repo = AccessCaseRepository(session=session)
         scheduler = ScheduledJobRepository(session=session)
         product_repo = SqlProductRepository(session=session)
-        flow_repo = FollowupFlowRepository(session=session)
-        enrollment_repo = FollowupEnrollmentRepository(session=session)
+        flow_repo = OnboardingFlowRepository(session=session)
+        enrollment_repo = OnboardingEnrollmentRepository(session=session)
         hubla_event_repo = SqlHublaEventRepository(session=session)
         lead_repo = SqlLeadRepository(session=session)
 

@@ -13,8 +13,8 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
     account_id = str(uuid4())
     conv_id = "42"  # chatnexo external string, não UUID
 
-    from shared.application.use_cases.followup.dispatch_followup_step import DispatchResult
-    from shared.domain.entities.followup import EnrollmentStepStatus
+    from shared.application.use_cases.onboarding.dispatch_onboarding_step import DispatchResult
+    from shared.domain.entities.onboarding import EnrollmentStepStatus
 
     mock_dispatch = AsyncMock()
     mock_dispatch.execute = AsyncMock(
@@ -40,11 +40,11 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
         ) as mock_repo_cls,
         patch("shared.adapters.chatnexo.client.ChatNexoClient") as mock_chatnexo_cls,
         patch(
-            "shared.adapters.db.repositories.followup_enrollment_repo.FollowupEnrollmentRepository"
+            "shared.adapters.db.repositories.onboarding_enrollment_repo.OnboardingEnrollmentRepository"
         ),
         patch("agent.history.ConversationHistory"),
         patch(
-            "shared.application.use_cases.followup.dispatch_followup_step.DispatchFollowupStep",
+            "shared.application.use_cases.onboarding.dispatch_onboarding_step.DispatchOnboardingStep",
             return_value=mock_dispatch,
         ),
     ):
