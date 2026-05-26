@@ -76,6 +76,11 @@ class ChatNexoClient:
         response.raise_for_status()
         return response
 
+    async def _patch(self, path: str, json: dict[str, Any]) -> httpx.Response:
+        response = await self.http.patch(f"{_API_PREFIX}{path}", json=json)
+        response.raise_for_status()
+        return response
+
     async def send_message(self, *, account_id: str, conversation_id: str, text: str) -> None:
         from shared.adapters.chatnexo.message_splitter import split_message
 
@@ -107,6 +112,7 @@ class ChatNexoClient:
         header_link: str | None = None,
         header_kind: Literal["image", "video", "document"] | None = None,
         rendered_body: str | None = None,
+        parameter_format: Literal["NAMED", "POSITIONAL"] = "NAMED",
     ) -> None:
         """Envia template via ChatNexo.
 
@@ -115,14 +121,30 @@ class ChatNexoClient:
         livre. Por isso passamos o body renderizado localmente como `content` e
         anexamos `template_params` como metadata (usado para reenvio fora da
         janela quando o ChatNexo dispara via Meta).
+
+        `parameter_format` indica se o template usa variáveis nomeadas (`{{name}}`)
+        ou posicionais (`{{1}}`). Templates criados a partir de 2024 são geralmente
+        NAMED. Sem isso, a Meta retorna #132012 Parameter format does not match.
         """
+        # Para templates NAMED, processed_params é dict {name: value}.
+        # Para POSITIONAL, ChatNexo espera dict {"1": value, "2": value, ...}.
+        processed: dict[str, Any] = variables or {}
+        # Pra POSITIONAL com chaves nomeadas, converte ordenando alfabeticamente.
+        if (
+            parameter_format == "POSITIONAL"
+            and processed
+            and any(not k.isdigit() for k in processed)
+        ):
+            processed = {str(i + 1): v for i, (_, v) in enumerate(sorted(processed.items()))}
+
         body: dict[str, Any] = {}
         if rendered_body:
             body["content"] = rendered_body
         body["template_params"] = {
             "name": template_name,
             "language": language,
-            "processed_params": variables or {},
+            "parameter_format": parameter_format,
+            "processed_params": processed,
         }
         if header_link and header_kind:
             body["template_params"]["header"] = {"type": header_kind, "link": header_link}
@@ -303,6 +325,23 @@ class ChatNexoClient:
             if existing is None:
                 raise
             contact_id = existing.get("id")
+
+            # Contato já existe — atualiza nome/email com o que veio do payload
+            # (anteriormente o ChatNexo herdava do agente atribuído, ficando errado).
+            patch_body: dict[str, Any] = {}
+            if contact_name and existing.get("name") != contact_name:
+                patch_body["name"] = contact_name
+            if contact_email and existing.get("email") != contact_email:
+                patch_body["email"] = contact_email
+            if patch_body:
+                import contextlib
+
+                # PATCH é best-effort — não bloqueia o disparo se falhar
+                with contextlib.suppress(httpx.HTTPStatusError):
+                    await self._patch(
+                        f"/accounts/{account_id}/contacts/{contact_id}",
+                        json=patch_body,
+                    )
 
         if contact_id is None:
             raise ChatNexoError(f"failed to resolve contact_id for phone={phone[-4:]}")
