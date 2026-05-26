@@ -31,6 +31,14 @@ class ChatNexoPort(Protocol):
         """Retorna conversation_id se houver conversa aberta, None caso contrário."""
         ...
 
-    async def create_conversation(self, account_id: str, contact_phone: str) -> str:
-        """Cria nova conversa e retorna o conversation_id."""
+    async def create_conversation(
+        self,
+        account_id: str,
+        contact_phone: str,
+        *,
+        inbox_id: int,
+        contact_name: str | None = None,
+        contact_email: str | None = None,
+    ) -> str:
+        """Cria contato + contact_inbox + conversa e retorna conversation_id."""
         ...

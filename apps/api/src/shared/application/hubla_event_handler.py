@@ -39,6 +39,7 @@ class HublaEventHandler:
         hubla_event_repo: Any | None = None,
         account_id: UUID | None = None,
         chatnexo_account_id: int = 1,
+        chatnexo_inbox_id: int = 1,
     ) -> None:
         self._product_repo = product_repo
         self._flow_repo = flow_repo
@@ -50,6 +51,7 @@ class HublaEventHandler:
         self._hubla_event_repo = hubla_event_repo
         self._account_id = account_id or DEFAULT_ACCOUNT_UUID
         self._chatnexo_account_id = chatnexo_account_id
+        self._chatnexo_inbox_id = chatnexo_inbox_id
 
     async def handle(self, payload: dict[str, Any]) -> None:
         event_type: str = payload.get("type", "")
@@ -239,7 +241,11 @@ class HublaEventHandler:
             )
             if conversation_id is None:
                 conversation_id = await self._chatnexo.create_conversation(
-                    account_id=chatnexo_account_id, contact_phone=str(contact.phone)
+                    account_id=chatnexo_account_id,
+                    contact_phone=str(contact.phone),
+                    inbox_id=self._chatnexo_inbox_id,
+                    contact_name=payer_full_name or None,
+                    contact_email=payer_email or None,
                 )
             await self._enroll_contact_uc.execute(
                 account_id=account_uuid,
