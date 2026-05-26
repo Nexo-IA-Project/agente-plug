@@ -43,10 +43,6 @@ def _setup_default_settings(mock_s):
     s.chatnexo_base_url = "http://default"
     s.chatnexo_api_key = "default_key"
     s.hubla_webhook_secret = "default_secret"
-    s.cademi_api_url = ""
-    s.cademi_api_key = ""
-    s.cademi_max_retries = 3
-    s.cademi_retry_base_seconds = 1.0
     s.openai_api_key = "sk-default"
     s.meta_api_key = "meta_default"
     s.idle_ping_minutes = 30
