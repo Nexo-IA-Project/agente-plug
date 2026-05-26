@@ -242,6 +242,7 @@ class ChatNexoClient:
         account_id: str,
         contact_phone: str,
         *,
+        inbox_id: int,
         contact_name: str | None = None,
         contact_email: str | None = None,
     ) -> str:
@@ -256,9 +257,10 @@ class ChatNexoClient:
         a inbox passada no body não bate exatamente com a do account (bug do
         Chatwoot/ChatNexo descoberto em prod 2026-05-26). Sempre criar contact
         sem inbox_id e vincular depois via contact_inboxes.
+
+        `inbox_id` agora vem por parâmetro (do banco via account_config), não
+        do env — pra que trocar a inbox pela UI de Settings tenha efeito.
         """
-        s = get_settings()
-        inbox_id = s.chatnexo_inbox_id
         phone = str(contact_phone)
 
         # 1. Criar contato — NÃO envia inbox_id (causa 404)

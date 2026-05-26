@@ -32,6 +32,7 @@ class PurchaseHandler:
         product_repo: Any,
         *,
         chatnexo_account_id: int = 1,
+        chatnexo_inbox_id: int = 1,
     ) -> None:
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
@@ -39,6 +40,7 @@ class PurchaseHandler:
         self._scheduler = scheduler
         self._product_repo = product_repo
         self._chatnexo_account_id = chatnexo_account_id
+        self._chatnexo_inbox_id = chatnexo_inbox_id
 
     async def handle_one(
         self,
@@ -76,7 +78,11 @@ class PurchaseHandler:
         )
         if conversation_id is None:
             conversation_id = await self._chatnexo.create_conversation(
-                account_id=chatnexo_account_id, contact_phone=str(contact.phone)
+                account_id=chatnexo_account_id,
+                contact_phone=str(contact.phone),
+                inbox_id=self._chatnexo_inbox_id,
+                contact_name=payer_full_name or None,
+                contact_email=payer_email or None,
             )
 
         # Access capability — sempre executa.
