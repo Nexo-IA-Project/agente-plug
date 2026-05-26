@@ -2,15 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createFollowupFlow,
-  deleteFollowupFlow,
-  listFollowupFlows,
-  updateFollowupFlow,
+  createOnboardingFlow,
+  deleteOnboardingFlow,
+  listOnboardingFlows,
+  updateOnboardingFlow,
 } from "@/lib/api";
-import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "../types";
+import type { CreateFlowInput, OnboardingFlow, UpdateFlowInput } from "../types";
 
-export function useFollowupFlows() {
-  const [flows, setFlows] = useState<FollowupFlow[]>([]);
+export function useOnboardingFlows() {
+  const [flows, setFlows] = useState<OnboardingFlow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,7 +18,7 @@ export function useFollowupFlows() {
     setLoading(true);
     setError(null);
     try {
-      const data = await listFollowupFlows();
+      const data = await listOnboardingFlows();
       setFlows(data);
     } catch {
       setError("Não foi possível carregar os flows.");
@@ -32,8 +32,8 @@ export function useFollowupFlows() {
   }, [load]);
 
   const create = useCallback(
-    async (dto: CreateFlowInput): Promise<FollowupFlow> => {
-      const flow = await createFollowupFlow(dto);
+    async (dto: CreateFlowInput): Promise<OnboardingFlow> => {
+      const flow = await createOnboardingFlow(dto);
       setFlows((prev) => [...prev, flow]);
       return flow;
     },
@@ -41,12 +41,12 @@ export function useFollowupFlows() {
   );
 
   const update = useCallback(async (id: string, dto: UpdateFlowInput): Promise<void> => {
-    const updated = await updateFollowupFlow(id, dto);
+    const updated = await updateOnboardingFlow(id, dto);
     setFlows((prev) => prev.map((f) => (f.id === id ? updated : f)));
   }, []);
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    await deleteFollowupFlow(id);
+    await deleteOnboardingFlow(id);
     setFlows((prev) => prev.filter((f) => f.id !== id));
   }, []);
 

@@ -9,12 +9,12 @@ import type { AccountSettings, AccountSettingsPatch } from "@/features/settings/
 import type {
   CreateFlowInput,
   CreateStepInput,
-  FollowupFlow,
-  FollowupStep,
+  OnboardingFlow,
+  OnboardingStep,
   ReorderItem,
   UpdateFlowInput,
   UpdateStepInput,
-} from "@/features/followup/types";
+} from "@/features/onboarding/types";
 import type {
   Product,
   CreateProductInput,
@@ -143,64 +143,64 @@ export async function updateAccountSettings(patch: AccountSettingsPatch): Promis
   });
 }
 
-// ─── Follow-up Flows ─────────────────────────────────────────────────────────
+// ─── Onboarding Flows ────────────────────────────────────────────────────────
 
-export async function listFollowupFlows(): Promise<FollowupFlow[]> {
-  return apiFetch<FollowupFlow[]>("/admin/followup/flows");
+export async function listOnboardingFlows(): Promise<OnboardingFlow[]> {
+  return apiFetch<OnboardingFlow[]>("/admin/onboarding/flows");
 }
 
-export async function createFollowupFlow(dto: CreateFlowInput): Promise<FollowupFlow> {
-  return apiFetch<FollowupFlow>("/admin/followup/flows", {
+export async function createOnboardingFlow(dto: CreateFlowInput): Promise<OnboardingFlow> {
+  return apiFetch<OnboardingFlow>("/admin/onboarding/flows", {
     method: "POST",
     body: JSON.stringify(dto),
   });
 }
 
-export async function updateFollowupFlow(id: string, dto: UpdateFlowInput): Promise<FollowupFlow> {
-  return apiFetch<FollowupFlow>(`/admin/followup/flows/${id}`, {
+export async function updateOnboardingFlow(id: string, dto: UpdateFlowInput): Promise<OnboardingFlow> {
+  return apiFetch<OnboardingFlow>(`/admin/onboarding/flows/${id}`, {
     method: "PUT",
     body: JSON.stringify(dto),
   });
 }
 
-export async function deleteFollowupFlow(id: string): Promise<void> {
-  return apiFetch<void>(`/admin/followup/flows/${id}`, { method: "DELETE" });
+export async function deleteOnboardingFlow(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/onboarding/flows/${id}`, { method: "DELETE" });
 }
 
-export async function listFollowupSteps(flowId: string): Promise<FollowupStep[]> {
-  return apiFetch<FollowupStep[]>(`/admin/followup/flows/${flowId}/steps`);
+export async function listOnboardingSteps(flowId: string): Promise<OnboardingStep[]> {
+  return apiFetch<OnboardingStep[]>(`/admin/onboarding/flows/${flowId}/steps`);
 }
 
-export async function createFollowupStep(
+export async function createOnboardingStep(
   flowId: string,
   dto: CreateStepInput
-): Promise<FollowupStep> {
-  return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps`, {
+): Promise<OnboardingStep> {
+  return apiFetch<OnboardingStep>(`/admin/onboarding/flows/${flowId}/steps`, {
     method: "POST",
     body: JSON.stringify(dto),
   });
 }
 
-export async function updateFollowupStep(
+export async function updateOnboardingStep(
   flowId: string,
   stepId: string,
   dto: UpdateStepInput
-): Promise<FollowupStep> {
-  return apiFetch<FollowupStep>(`/admin/followup/flows/${flowId}/steps/${stepId}`, {
+): Promise<OnboardingStep> {
+  return apiFetch<OnboardingStep>(`/admin/onboarding/flows/${flowId}/steps/${stepId}`, {
     method: "PUT",
     body: JSON.stringify(dto),
   });
 }
 
-export async function deleteFollowupStep(flowId: string, stepId: string): Promise<void> {
-  return apiFetch<void>(`/admin/followup/flows/${flowId}/steps/${stepId}`, { method: "DELETE" });
+export async function deleteOnboardingStep(flowId: string, stepId: string): Promise<void> {
+  return apiFetch<void>(`/admin/onboarding/flows/${flowId}/steps/${stepId}`, { method: "DELETE" });
 }
 
-export async function reorderFollowupSteps(
+export async function reorderOnboardingSteps(
   flowId: string,
   items: ReorderItem[]
 ): Promise<void> {
-  return apiFetch<void>(`/admin/followup/flows/${flowId}/steps/reorder`, {
+  return apiFetch<void>(`/admin/onboarding/flows/${flowId}/steps/reorder`, {
     method: "PATCH",
     body: JSON.stringify({ steps: items }),
   });
@@ -297,7 +297,7 @@ export async function dispatchEnrollmentStep(
   stepId: string,
 ): Promise<void> {
   return apiFetch<void>(
-    `/admin/followup/enrollments/${enrollmentId}/steps/${stepId}/dispatch-now`,
+    `/admin/onboarding/enrollments/${enrollmentId}/steps/${stepId}/dispatch-now`,
     { method: "POST" },
   );
 }

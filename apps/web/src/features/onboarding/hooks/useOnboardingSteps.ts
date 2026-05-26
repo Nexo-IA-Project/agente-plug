@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  createFollowupStep,
-  deleteFollowupStep,
-  listFollowupSteps,
-  reorderFollowupSteps,
-  updateFollowupStep,
+  createOnboardingStep,
+  deleteOnboardingStep,
+  listOnboardingSteps,
+  reorderOnboardingSteps,
+  updateOnboardingStep,
 } from "@/lib/api";
-import type { CreateStepInput, FollowupStep, ReorderItem, UpdateStepInput } from "../types";
+import type { CreateStepInput, OnboardingStep, ReorderItem, UpdateStepInput } from "../types";
 
-export function useFollowupSteps(flowId: string) {
-  const [steps, setSteps] = useState<FollowupStep[]>([]);
+export function useOnboardingSteps(flowId: string) {
+  const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +24,7 @@ export function useFollowupSteps(flowId: string) {
     setLoading(true);
     setError(null);
     try {
-      const data = await listFollowupSteps(flowId);
+      const data = await listOnboardingSteps(flowId);
       setSteps(data.sort((a, b) => a.position - b.position));
     } catch {
       setError("Não foi possível carregar os steps.");
@@ -39,7 +39,7 @@ export function useFollowupSteps(flowId: string) {
 
   const create = useCallback(
     async (dto: CreateStepInput): Promise<void> => {
-      const step = await createFollowupStep(flowId, dto);
+      const step = await createOnboardingStep(flowId, dto);
       setSteps((prev) => [...prev, step].sort((a, b) => a.position - b.position));
     },
     [flowId]
@@ -47,7 +47,7 @@ export function useFollowupSteps(flowId: string) {
 
   const update = useCallback(
     async (stepId: string, dto: UpdateStepInput): Promise<void> => {
-      const updated = await updateFollowupStep(flowId, stepId, dto);
+      const updated = await updateOnboardingStep(flowId, stepId, dto);
       setSteps((prev) =>
         prev
           .map((s) => (s.id === stepId ? updated : s))
@@ -59,7 +59,7 @@ export function useFollowupSteps(flowId: string) {
 
   const remove = useCallback(
     async (stepId: string): Promise<void> => {
-      await deleteFollowupStep(flowId, stepId);
+      await deleteOnboardingStep(flowId, stepId);
       setSteps((prev) => prev.filter((s) => s.id !== stepId));
     },
     [flowId]
@@ -68,7 +68,7 @@ export function useFollowupSteps(flowId: string) {
   const reorder = useCallback(
     async (items: ReorderItem[]): Promise<void> => {
       const posMap = new Map(items.map((i) => [i.id, i.position]));
-      let snapshot: FollowupStep[] = [];
+      let snapshot: OnboardingStep[] = [];
       setSteps((prev) => {
         snapshot = prev;
         return prev
@@ -76,7 +76,7 @@ export function useFollowupSteps(flowId: string) {
           .sort((a, b) => a.position - b.position);
       });
       try {
-        await reorderFollowupSteps(flowId, items);
+        await reorderOnboardingSteps(flowId, items);
       } catch (err) {
         setSteps(snapshot);
         throw err;

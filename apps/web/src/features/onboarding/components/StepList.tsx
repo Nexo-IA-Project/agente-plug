@@ -19,10 +19,10 @@ import {
 import { useToast } from "@/shared/hooks/useToast";
 import { StepItem } from "./StepItem";
 import { StepInlineForm } from "./StepInlineForm";
-import type { CreateStepInput, FollowupStep, UpdateStepInput } from "../types";
+import type { CreateStepInput, OnboardingStep, UpdateStepInput } from "../types";
 
 interface Props {
-  steps: FollowupStep[];
+  steps: OnboardingStep[];
   onReorder: (items: { id: string; position: number }[]) => Promise<void>;
   onCreate: (dto: CreateStepInput) => Promise<void>;
   onUpdate: (stepId: string, dto: UpdateStepInput) => Promise<void>;
@@ -31,7 +31,7 @@ interface Props {
 
 export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Props) {
   const toast = useToast();
-  const [editingStep, setEditingStep] = useState<FollowupStep | null>(null);
+  const [editingStep, setEditingStep] = useState<OnboardingStep | null>(null);
   const [addingStep, setAddingStep] = useState(false);
 
   const sensors = useSensors(
@@ -39,7 +39,7 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  async function reorderAndToast(reordered: FollowupStep[]) {
+  async function reorderAndToast(reordered: OnboardingStep[]) {
     try {
       await onReorder(reordered.map((s, i) => ({ id: s.id, position: i + 1 })));
       toast.success("Ordem das mensagens atualizada");

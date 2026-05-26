@@ -4,10 +4,10 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { DelayBadge } from "./DelayBadge";
-import type { FollowupStep } from "../types";
+import type { OnboardingStep } from "../types";
 
 interface Props {
-  step: FollowupStep;
+  step: OnboardingStep;
   isFirst: boolean;
   isLast: boolean;
   onEdit: () => void;

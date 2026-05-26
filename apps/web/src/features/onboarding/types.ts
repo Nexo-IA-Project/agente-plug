@@ -10,7 +10,7 @@ export interface StepVariableBinding {
   value?: string;
 }
 
-export interface FollowupStep {
+export interface OnboardingStep {
   id: string;
   flow_id: string;
   position: number;
@@ -26,7 +26,7 @@ export interface ProductSummary {
   hubla_id: string;
 }
 
-export interface FollowupFlow {
+export interface OnboardingFlow {
   id: string;
   name: string;
   is_active: boolean;

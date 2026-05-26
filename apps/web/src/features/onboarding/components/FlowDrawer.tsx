@@ -4,17 +4,17 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
 import { useProducts } from "@/features/products/hooks/useProducts";
-import { useFollowupSteps } from "../hooks/useFollowupSteps";
+import { useOnboardingSteps } from "../hooks/useOnboardingSteps";
 import { StepList } from "./StepList";
 import { useToast } from "@/shared/hooks/useToast";
-import type { CreateFlowInput, FollowupFlow, UpdateFlowInput } from "../types";
+import type { CreateFlowInput, OnboardingFlow, UpdateFlowInput } from "../types";
 import { TRIGGER_EVENTS } from "../lib/triggerEvents";
 
 interface Props {
   open: boolean;
-  flow: FollowupFlow | null;
+  flow: OnboardingFlow | null;
   onClose: () => void;
-  onCreate: (dto: CreateFlowInput) => Promise<FollowupFlow>;
+  onCreate: (dto: CreateFlowInput) => Promise<OnboardingFlow>;
   onUpdate: (id: string, dto: UpdateFlowInput) => Promise<void>;
 }
 
@@ -29,7 +29,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     flow?.trigger_event_type ?? "subscription.activated"
   );
   const [saving, setSaving] = useState(false);
-  const [activeFlow, setActiveFlow] = useState<FollowupFlow | null>(null);
+  const [activeFlow, setActiveFlow] = useState<OnboardingFlow | null>(null);
 
   const isEditing = activeFlow !== null;
   const selectedProduct = products.find((p) => p.id === productId);
@@ -41,7 +41,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
     update: updateStep,
     remove: removeStep,
     reorder,
-  } = useFollowupSteps(activeFlow?.id ?? "");
+  } = useOnboardingSteps(activeFlow?.id ?? "");
 
   useEffect(() => {
     if (open) {

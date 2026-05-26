@@ -6,7 +6,7 @@ import { Collapse } from "@/shared/components/Collapse";
 import type { MetaTemplate } from "@/features/templates/types";
 import type {
   CreateStepInput,
-  FollowupStep,
+  OnboardingStep,
   StepVariableBinding,
   UpdateStepInput,
 } from "../types";
@@ -16,7 +16,7 @@ type StepMode = "template" | "text";
 type DelayUnit = "minutos" | "horas" | "dias";
 
 interface Props {
-  step?: FollowupStep;
+  step?: OnboardingStep;
   /** Mantido para compatibilidade com StepList; não é mais usado no form (server resolve posição). */
   nextPosition?: number;
   onSave: (dto: CreateStepInput | UpdateStepInput) => Promise<void>;

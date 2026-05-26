@@ -2,10 +2,10 @@
 
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { getTriggerEventMeta } from "../lib/triggerEvents";
-import type { FollowupFlow } from "../types";
+import type { OnboardingFlow } from "../types";
 
 interface Props {
-  flow: FollowupFlow;
+  flow: OnboardingFlow;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
