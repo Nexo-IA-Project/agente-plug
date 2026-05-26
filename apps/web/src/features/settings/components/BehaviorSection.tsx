@@ -174,9 +174,9 @@ function GroupCard({ group, settings, values, onChange }: GroupCardProps) {
   const dirtyCount = group.fields.filter((f) => f.key in values).length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
+    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
       {/* Group header */}
-      <div className="flex items-center justify-between border-b border-outline-variant/60 bg-surface-container px-5 py-4">
+      <div className="flex items-center justify-between border-b border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container">
             <span

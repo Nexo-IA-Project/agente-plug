@@ -130,7 +130,7 @@ export function ChatNexoAgentsSection() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
+      <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
         {/* Agents list */}
         <div className="p-5">
           {loading ? (
@@ -156,7 +156,7 @@ export function ChatNexoAgentsSection() {
         </div>
 
         {/* Add agent form */}
-        <div className="border-t border-outline-variant/60 bg-surface-container px-5 py-4">
+        <div className="border-t border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
             Adicionar atendente
           </p>

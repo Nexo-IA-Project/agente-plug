@@ -112,9 +112,9 @@ function SectionCard({ section, settings, onSaved }: {
   const { saveField } = useFieldSave(onSaved);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
+    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-outline-variant/60 bg-surface-container px-5 py-4">
+      <div className="flex items-center gap-3 border-b border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container">
           <span
             className="material-symbols-outlined text-on-primary-container"
