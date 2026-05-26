@@ -67,12 +67,6 @@ welcome_capability_total = Counter(
     ["status"],
     registry=REGISTRY,
 )
-welcome_cademi_latency_seconds = Histogram(
-    "welcome_cademi_latency_seconds",
-    "Latência das chamadas à Cademi API",
-    buckets=[0.1, 0.5, 1.0, 3.0, 9.0, 30.0],
-    registry=REGISTRY,
-)
 welcome_d1_scheduled_total = Counter(
     "welcome_d1_scheduled_total",
     "Total de follow-ups D+1 agendados pela Welcome Capability",
@@ -90,12 +84,6 @@ access_capability_total = Counter(
     "access_capability_total",
     "Total de execuções da Capability Access",
     ["status"],
-    registry=REGISTRY,
-)
-access_cademi_cascade_attempts = Histogram(
-    "access_cademi_cascade_attempts",
-    "Distribuição de tentativas até encontrar aluno na cascade Cademi",
-    buckets=[1, 2, 3],
     registry=REGISTRY,
 )
 access_cpf_fallback_total = Counter(

@@ -11,10 +11,6 @@ class IntegrationConfig:
     chatnexo_base_url: str
     chatnexo_api_key: str
     hubla_webhook_secret: str
-    cademi_api_url: str
-    cademi_api_key: str
-    cademi_max_retries: int
-    cademi_retry_base_seconds: float
     openai_api_key: str
     meta_api_key: str
     meta_waba_id: str
@@ -46,10 +42,6 @@ class AccountConfigPatch:
     chatnexo_base_url: str | None = field(default=None)
     chatnexo_api_key: str | None = field(default=None)
     hubla_webhook_secret: str | None = field(default=None)
-    cademi_api_url: str | None = field(default=None)
-    cademi_api_key: str | None = field(default=None)
-    cademi_max_retries: int | None = field(default=None)
-    cademi_retry_base_seconds: float | None = field(default=None)
     openai_api_key: str | None = field(default=None)
     meta_api_key: str | None = field(default=None)
     meta_waba_id: str | None = field(default=None)

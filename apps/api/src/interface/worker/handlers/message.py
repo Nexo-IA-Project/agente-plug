@@ -11,7 +11,6 @@ from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
 from agent.runner import run_agent
 from agent.skill_loader import Adapters, build_registry
 from shared.adapters.agent_selection.random_selection import RandomAgentSelection
-from shared.adapters.cademi.client import CademiClient
 from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
@@ -111,7 +110,6 @@ async def _process_message(
                 strategy=RandomAgentSelection(),
                 fallback_api_key=fallback_key,
             )
-        cademi = CademiClient.from_account_config(account_config)
         hubla = HublaClient()
         refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
 
@@ -122,7 +120,6 @@ async def _process_message(
         )
         adapters = Adapters(
             access_repo=AccessCaseRepository(session),
-            cademi=cademi,
             chatnexo=chatnexo,
             refund_repo=RefundCaseRepository(session),
             hubla=hubla,

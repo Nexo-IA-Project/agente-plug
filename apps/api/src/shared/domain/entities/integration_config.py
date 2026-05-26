@@ -8,7 +8,6 @@ from uuid import UUID
 
 class IntegrationType(StrEnum):
     HUBLA = "hubla"
-    CADEMI = "cademi"
     META = "meta"
     CHATNEXO = "chatnexo"
 

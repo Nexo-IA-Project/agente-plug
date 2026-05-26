@@ -59,12 +59,6 @@ class Settings(BaseSettings):
     idle_close_minutes: int = Field(default=20, ge=1)
     intent_confidence_threshold: float = Field(default=0.7, ge=0.0, le=1.0)
 
-    # Cademi API
-    cademi_api_url: str = ""
-    cademi_api_key: str = ""
-    cademi_max_retries: int = 3
-    cademi_retry_base_seconds: float = 1.0
-
     # Capability Welcome
     welcome_check_delay_hours: int = 1
     welcome_d1_delay_hours: int = 24
