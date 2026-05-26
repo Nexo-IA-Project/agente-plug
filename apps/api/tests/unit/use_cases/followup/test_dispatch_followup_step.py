@@ -102,6 +102,7 @@ async def test_dispatch_sends_template_and_saves_to_history():
         header_link=None,
         header_kind=None,
         rendered_body=None,
+        parameter_format="NAMED",
     )
     history.load.assert_called_once_with(thread_id=thread_id)
     history.save.assert_called_once()

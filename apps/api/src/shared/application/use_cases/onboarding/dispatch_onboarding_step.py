@@ -102,6 +102,7 @@ class DispatchOnboardingStep:
             header_kind: str | None = None
             language: str | None = None
             body_text: str | None = None
+            parameter_format: str = "NAMED"
 
             if step.meta_template_name:
                 template = await self._template_repo.get_by_name(
@@ -115,10 +116,18 @@ class DispatchOnboardingStep:
                     # Extrai o BODY do template para renderização local — dentro da
                     # janela 24h o ChatNexo envia o `content` como texto livre direto.
                     components = getattr(template, "components", None) or []
-                    body_text = next(
-                        (c.get("text") for c in components if c.get("type") == "BODY"),
+                    body_node = next(
+                        (c for c in components if c.get("type") == "BODY"),
                         None,
                     )
+                    body_text = body_node.get("text") if body_node else None
+                    # Detecta parameter_format pelo formato do example.
+                    # body_text_named_params → NAMED; body_text → POSITIONAL.
+                    if body_node and isinstance(body_node.get("example"), dict):
+                        if "body_text_named_params" in body_node["example"]:
+                            parameter_format = "NAMED"
+                        elif "body_text" in body_node["example"]:
+                            parameter_format = "POSITIONAL"
                     log.debug(
                         "followup_step_template_loaded",
                         template_name=step.meta_template_name,
@@ -192,6 +201,7 @@ class DispatchOnboardingStep:
                     header_link=header_link,
                     header_kind=header_kind,
                     rendered_body=rendered_body,
+                    parameter_format=parameter_format,  # type: ignore[arg-type]
                 )
             except Exception as exc:
                 reason = str(exc)[:500]
