@@ -86,22 +86,6 @@ const GROUPS: ParamGroup[] = [
       },
     ],
   },
-  {
-    id: "followups",
-    title: "Follow-ups de Jornada",
-    description: "Intervalos de envio de mensagens pós-compra",
-    icon: "route",
-    fields: [
-      {
-        key: "welcome_d1_delay_hours",
-        label: "Boas-vindas D+1",
-        description: "Horas após compra para lembrete inicial",
-        unit: "h",
-        icon: "waving_hand",
-        min: 1,
-      },
-    ],
-  },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
