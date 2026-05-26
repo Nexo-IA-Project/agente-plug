@@ -54,6 +54,9 @@ class ContactRepository:
                 if v is not None and hasattr(model, k):
                     setattr(model, k, v)
             await self.session.flush()
+            # Atributos com onupdate/server_default precisam de refresh
+            # explícito senão o acesso lazy crasha com greenlet_spawn em async.
+            await self.session.refresh(model)
             return _to_entity(model)
 
         new_model = ContactModel(
@@ -64,4 +67,8 @@ class ContactRepository:
         )
         self.session.add(new_model)
         await self.session.flush()
+        # server_default columns (created_at/updated_at) só são populadas
+        # após refresh — sem isso, _to_entity dispara lazy load síncrono
+        # e crasha em contexto async (greenlet_spawn error).
+        await self.session.refresh(new_model)
         return _to_entity(new_model)
