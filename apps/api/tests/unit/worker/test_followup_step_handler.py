@@ -12,6 +12,7 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
     step_id = str(uuid4())
     account_id = str(uuid4())
     conv_id = "42"  # chatnexo external string, não UUID
+    account_uuid = uuid4()
 
     from shared.application.use_cases.onboarding.dispatch_onboarding_step import DispatchResult
     from shared.domain.entities.onboarding import EnrollmentStepStatus
@@ -27,6 +28,15 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
     async def _fake_scope():
         yield mock_session
 
+    mock_config = MagicMock()
+    mock_config.integration.chatnexo_agents = []  # empty → fallback_api_key usado
+    mock_config.integration.chatnexo_base_url = "https://chatnexo.example.com"
+    mock_config.integration.chatnexo_api_key = "test-api-key"
+
+    mock_chatnexo_client = MagicMock()
+    mock_conv_repo = AsyncMock()
+    mock_conv_repo.set_last_onboarding_agent_id = AsyncMock()
+
     with (
         patch("shared.adapters.db.session.session_scope", _fake_scope),
         patch(
@@ -38,7 +48,10 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
         patch(
             "shared.adapters.db.repositories.account_config_repo.AccountConfigRepository"
         ) as mock_repo_cls,
-        patch("shared.adapters.chatnexo.client.ChatNexoClient") as mock_chatnexo_cls,
+        patch(
+            "shared.adapters.chatnexo.agent_picker.build_chatnexo_client",
+            return_value=(mock_chatnexo_client, None),
+        ),
         patch(
             "shared.adapters.db.repositories.onboarding_enrollment_repo.OnboardingEnrollmentRepository"
         ),
@@ -47,11 +60,18 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
             "shared.application.use_cases.onboarding.dispatch_onboarding_step.DispatchOnboardingStep",
             return_value=mock_dispatch,
         ),
+        patch(
+            "shared.config.single_tenant.get_default_account_uuid",
+            new=AsyncMock(return_value=account_uuid),
+        ),
+        patch(
+            "shared.adapters.db.repositories.conversation.ConversationRepository",
+            return_value=mock_conv_repo,
+        ),
     ):
         mock_repo_instance = AsyncMock()
-        mock_repo_instance.get = AsyncMock(return_value=MagicMock())
+        mock_repo_instance.get = AsyncMock(return_value=mock_config)
         mock_repo_cls.return_value = mock_repo_instance
-        mock_chatnexo_cls.from_account_config = MagicMock(return_value=AsyncMock())
 
         from interface.worker.handlers.scheduled import handle_scheduled
 

@@ -76,7 +76,42 @@ async def _process_message(
         account_config = await config_repo.get(account_id=account_id)
 
         openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
-        chatnexo = ChatNexoClient.from_account_config(account_config)
+
+        # Resolução de agente: usar o agente travado pela última mensagem de onboarding
+        from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
+        from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+        from shared.adapters.db.repositories.conversation import ConversationRepository
+        from shared.config.single_tenant import get_default_account_uuid
+
+        account_uuid = await get_default_account_uuid(session)
+        conv_repo = ConversationRepository(session=session)
+        last_agent_id = await conv_repo.get_last_onboarding_agent_id(
+            account_id=account_uuid,
+            chatnexo_conversation_id=conversation_id,
+        )
+
+        agents = account_config.integration.chatnexo_agents
+        base_url = account_config.integration.chatnexo_base_url
+        fallback_key = account_config.integration.chatnexo_api_key
+
+        if last_agent_id:
+            locked_agent = next((a for a in agents if a.id == last_agent_id), None)
+            if locked_agent:
+                chatnexo = ChatNexoClient.with_key(base_url, locked_agent.api_key)
+            else:
+                chatnexo, _ = build_chatnexo_client(
+                    base_url=base_url,
+                    agents=agents,
+                    strategy=RandomAgentSelection(),
+                    fallback_api_key=fallback_key,
+                )
+        else:
+            chatnexo, _ = build_chatnexo_client(
+                base_url=base_url,
+                agents=agents,
+                strategy=RandomAgentSelection(),
+                fallback_api_key=fallback_key,
+            )
         cademi = CademiClient.from_account_config(account_config)
         hubla = HublaClient()
         refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
