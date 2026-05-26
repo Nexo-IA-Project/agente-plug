@@ -31,7 +31,7 @@ const SERVICES: ServiceGroup[] = [
     description: "Plataforma de mensagens WhatsApp",
     fields: [
       { key: "chatnexo_base_url", label: "Base URL", type: "url", placeholder: "https://api.chatnexo.com.br" },
-      { key: "chatnexo_api_key", label: "API Key", type: "secret", description: "Chave de acesso à API" },
+      { key: "chatnexo_api_key", label: "API Key (fallback)", type: "secret", description: "Chave de acesso à API usada quando nenhum atendente específico está configurado" },
     ],
   },
   {

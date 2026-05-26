@@ -344,6 +344,48 @@ export async function downloadLeadsCsv(
 }
 
 
+// ── ChatNexo Agents ─────────────────────────────────────────────
+export interface AgentItem {
+  id: string;
+  name: string;
+  api_key_masked: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface CreateAgentInput {
+  name: string;
+  api_key: string;
+}
+
+export interface UpdateAgentInput {
+  name?: string;
+  api_key?: string;
+  is_active?: boolean;
+}
+
+export async function listChatnexoAgents(): Promise<AgentItem[]> {
+  return apiFetch<AgentItem[]>("/admin/chatnexo-agents");
+}
+
+export async function createChatnexoAgent(dto: CreateAgentInput): Promise<AgentItem> {
+  return apiFetch<AgentItem>("/admin/chatnexo-agents", {
+    method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function updateChatnexoAgent(id: string, dto: UpdateAgentInput): Promise<AgentItem> {
+  return apiFetch<AgentItem>(`/admin/chatnexo-agents/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function deleteChatnexoAgent(id: string): Promise<void> {
+  return apiFetch<void>(`/admin/chatnexo-agents/${id}`, { method: "DELETE" });
+}
+
 export function uploadTemplateMedia(
   file: File,
   kind: "IMAGE" | "VIDEO" | "DOCUMENT",

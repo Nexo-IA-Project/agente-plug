@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
+import { ChatNexoAgentsSection } from "@/features/settings/components/ChatNexoAgentsSection";
 import type { AccountSettings } from "@/features/settings/types";
 
 export default function SettingsPage() {
@@ -75,6 +76,11 @@ export default function SettingsPage() {
 
       {/* Sections */}
       <IntegrationSection initial={settings} onSaved={setSettings} />
+
+      {/* ChatNexo Agents */}
+      <div className="flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container-low p-6">
+        <ChatNexoAgentsSection />
+      </div>
     </div>
   );
 }
