@@ -28,6 +28,8 @@ def _to_response(config: AccountConfig) -> AccountSettingsResponse:
     return AccountSettingsResponse(
         chatnexo_base_url=i.chatnexo_base_url,
         chatnexo_api_key=_mask(i.chatnexo_api_key),
+        chatnexo_account_id=i.chatnexo_account_id,
+        chatnexo_inbox_id=i.chatnexo_inbox_id,
         hubla_webhook_secret=_mask(i.hubla_webhook_secret),
         openai_api_key=_mask(i.openai_api_key),
         meta_api_key=_mask(i.meta_api_key),
@@ -66,6 +68,8 @@ async def update_settings_endpoint(
     patch = AccountConfigPatch(
         chatnexo_base_url=body.chatnexo_base_url,
         chatnexo_api_key=body.chatnexo_api_key,
+        chatnexo_account_id=body.chatnexo_account_id,
+        chatnexo_inbox_id=body.chatnexo_inbox_id,
         hubla_webhook_secret=body.hubla_webhook_secret,
         openai_api_key=body.openai_api_key,
         meta_api_key=body.meta_api_key,

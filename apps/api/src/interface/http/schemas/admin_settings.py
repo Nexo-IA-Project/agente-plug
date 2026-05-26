@@ -8,6 +8,8 @@ class AccountSettingsResponse(BaseModel):
     # Integrações
     chatnexo_base_url: str
     chatnexo_api_key: str
+    chatnexo_account_id: int
+    chatnexo_inbox_id: int
     hubla_webhook_secret: str
     openai_api_key: str
     meta_api_key: str
@@ -27,6 +29,8 @@ class AccountSettingsUpdateRequest(BaseModel):
     # Integrações
     chatnexo_base_url: str | None = None
     chatnexo_api_key: str | None = None
+    chatnexo_account_id: int | None = None
+    chatnexo_inbox_id: int | None = None
     hubla_webhook_secret: str | None = None
     openai_api_key: str | None = None
     meta_api_key: str | None = None
