@@ -94,3 +94,32 @@ class ConversationRepository:
         )
         model = (await self.session.execute(stmt)).scalar_one()
         model.last_activity_at = at
+
+    async def get_last_onboarding_agent_id(
+        self, *, account_id: UUID, chatnexo_conversation_id: int
+    ) -> UUID | None:
+        stmt = select(ConversationModel).where(
+            ConversationModel.account_id == account_id,
+            ConversationModel.chatnexo_conversation_id == chatnexo_conversation_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model is None:
+            return None
+        return model.last_onboarding_agent_id  # type: ignore[return-value]
+
+    async def set_last_onboarding_agent_id(
+        self,
+        *,
+        account_id: UUID,
+        chatnexo_conversation_id: int,
+        agent_id: UUID,
+    ) -> None:
+        stmt = select(ConversationModel).where(
+            ConversationModel.account_id == account_id,
+            ConversationModel.chatnexo_conversation_id == chatnexo_conversation_id,
+        )
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+        if model is not None:
+            model.last_onboarding_agent_id = agent_id
