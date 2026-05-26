@@ -517,7 +517,10 @@ class OnboardingStepModel(Base):
     __tablename__ = "onboarding_steps"
     id: Mapped[uuid.UUID] = _pk()
     flow_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("onboarding_flows.id"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("onboarding_flows.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
