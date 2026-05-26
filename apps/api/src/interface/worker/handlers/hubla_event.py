@@ -3,7 +3,8 @@ from __future__ import annotations
 import structlog
 from cryptography.fernet import Fernet
 
-from shared.adapters.chatnexo.client import ChatNexoClient
+from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.contact import ContactRepository
@@ -36,7 +37,15 @@ async def handle_hubla_event(payload: dict) -> None:
     async with session_scope() as session:
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
         account_config = await config_repo.get(account_id=1)
-        chatnexo = ChatNexoClient.from_account_config(account_config)
+        # Usa key de um atendente ativo (random); cai pro fallback chatnexo_api_key
+        # apenas se não houver nenhum atendente cadastrado. O fallback historicamente
+        # pode ser de outra conta — sempre prefira o atendente.
+        chatnexo, _ = build_chatnexo_client(
+            base_url=account_config.integration.chatnexo_base_url,
+            agents=account_config.integration.chatnexo_agents,
+            strategy=RandomAgentSelection(),
+            fallback_api_key=account_config.integration.chatnexo_api_key,
+        )
 
         contact_repo = ContactRepository(session=session)
         access_case_repo = AccessCaseRepository(session=session)
