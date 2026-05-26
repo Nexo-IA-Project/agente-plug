@@ -20,6 +20,8 @@ def _make_config() -> AccountConfig:
         integration=IntegrationConfig(
             chatnexo_base_url="http://nexo",
             chatnexo_api_key="key",
+            chatnexo_account_id=1,
+            chatnexo_inbox_id=1,
             hubla_webhook_secret="secret",
             openai_api_key="sk-test",
             meta_api_key="meta",

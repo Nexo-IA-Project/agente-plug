@@ -30,12 +30,15 @@ class PurchaseHandler:
         access_case_repo: Any,
         scheduler: Any,
         product_repo: Any,
+        *,
+        chatnexo_account_id: int = 1,
     ) -> None:
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
         self._access_case_repo = access_case_repo
         self._scheduler = scheduler
         self._product_repo = product_repo
+        self._chatnexo_account_id = chatnexo_account_id
 
     async def handle_one(
         self,
@@ -58,7 +61,7 @@ class PurchaseHandler:
         account_uuid = account_id or DEFAULT_ACCOUNT_UUID
         account_id_str = str(account_uuid)
         # ChatNexo (Chatwoot fork) usa account_id como integer; o UUID local não bate.
-        chatnexo_account_id_int = get_settings().chatnexo_account_id
+        chatnexo_account_id_int = self._chatnexo_account_id
         chatnexo_account_id = str(chatnexo_account_id_int)
 
         contact = await self._contact_repo.upsert(

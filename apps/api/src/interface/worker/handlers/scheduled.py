@@ -83,6 +83,7 @@ async def handle_scheduled(payload: dict) -> None:
                 account_id=_UUID(payload["account_id"]),
                 conversation_id=payload["conversation_id"],
                 contact_phone=payload.get("contact_phone", ""),
+                chatnexo_account_id=config.integration.chatnexo_account_id,
             )
 
             # Persistir agente escolhido na conversa para a IA travar o atendente

@@ -108,6 +108,8 @@ class AccountConfigRepository:
             integration=IntegrationConfig(
                 chatnexo_base_url=gs("chatnexo_base_url", s.chatnexo_base_url),
                 chatnexo_api_key=gs("chatnexo_api_key", s.chatnexo_api_key),
+                chatnexo_account_id=int(i.get("chatnexo_account_id", s.chatnexo_account_id)),
+                chatnexo_inbox_id=int(i.get("chatnexo_inbox_id", s.chatnexo_inbox_id)),
                 hubla_webhook_secret=gs("hubla_webhook_secret", s.hubla_webhook_secret),
                 openai_api_key=gs("openai_api_key", s.openai_api_key),
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
@@ -155,6 +157,11 @@ class AccountConfigRepository:
                 continue
             assert val is not None
             i[key] = _encrypt(self.fernet, val) if key in _SENSITIVE else val
+
+        if patch.chatnexo_account_id is not None:
+            i["chatnexo_account_id"] = patch.chatnexo_account_id
+        if patch.chatnexo_inbox_id is not None:
+            i["chatnexo_inbox_id"] = patch.chatnexo_inbox_id
 
         for key in (
             "idle_ping_minutes",

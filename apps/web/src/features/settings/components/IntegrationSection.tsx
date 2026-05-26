@@ -45,6 +45,18 @@ const SECTIONS: SectionSpec[] = [
         type: "secret",
         description: "Usada quando nenhum atendente está configurado",
       },
+      {
+        key: "chatnexo_account_id",
+        label: "Account ID",
+        type: "number",
+        description: "ID da conta no ChatNexo (troca de conta sem deploy)",
+      },
+      {
+        key: "chatnexo_inbox_id",
+        label: "Inbox ID",
+        type: "number",
+        description: "ID da inbox dentro da conta",
+      },
     ],
   },
   {

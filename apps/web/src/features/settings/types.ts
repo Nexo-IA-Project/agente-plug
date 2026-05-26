@@ -1,6 +1,8 @@
 export interface AccountSettings {
   chatnexo_base_url: string;
   chatnexo_api_key: string;
+  chatnexo_account_id: number;
+  chatnexo_inbox_id: number;
   hubla_webhook_secret: string;
   openai_api_key: string;
   meta_api_key: string;

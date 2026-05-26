@@ -60,6 +60,7 @@ async def handle_hubla_event(payload: dict) -> None:
             access_case_repo=access_case_repo,
             scheduler=scheduler,
             product_repo=product_repo,
+            chatnexo_account_id=account_config.integration.chatnexo_account_id,
         )
 
         account_uuid = await get_default_account_uuid(session)
@@ -74,6 +75,7 @@ async def handle_hubla_event(payload: dict) -> None:
             lead_repo=lead_repo,
             hubla_event_repo=hubla_event_repo,
             account_id=account_uuid,
+            chatnexo_account_id=account_config.integration.chatnexo_account_id,
         )
 
         await handler.handle(payload)
