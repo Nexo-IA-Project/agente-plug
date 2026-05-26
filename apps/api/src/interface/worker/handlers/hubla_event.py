@@ -60,6 +60,7 @@ async def handle_hubla_event(payload: dict) -> None:
             access_case_repo=access_case_repo,
             scheduler=scheduler,
             product_repo=product_repo,
+            chatnexo_account_id=account_config.integration.chatnexo_account_id,
         )
 
         account_uuid = await get_default_account_uuid(session)
