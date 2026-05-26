@@ -180,3 +180,65 @@ def test_mask_hides_sensitive_values():
     assert _mask("short") == "****"
     assert _mask("") == ""
     assert _mask("12345678") == "12345678****"
+
+
+@pytest.mark.asyncio
+async def test_get_chatnexo_account_and_inbox_ids_fallback_to_env():
+    """Quando settings={}, usa os defaults do Settings (chatnexo_account_id=1, inbox_id=1)."""
+    session = _mock_session_with_account(_mock_account({}))
+    fernet = _make_fernet()
+    repo = _make_repo(session, fernet)
+
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
+        _setup_default_settings(mock_s)
+        mock_s.return_value.chatnexo_account_id = 1
+        mock_s.return_value.chatnexo_inbox_id = 1
+        config = await repo.get(account_id=1)
+
+    assert config.integration.chatnexo_account_id == 1
+    assert config.integration.chatnexo_inbox_id == 1
+
+
+@pytest.mark.asyncio
+async def test_get_chatnexo_account_and_inbox_ids_from_jsonb():
+    """Quando JSONB contém chatnexo_account_id e chatnexo_inbox_id, usa esses valores."""
+    account = _mock_account(
+        {
+            "integration": {
+                "chatnexo_account_id": 42,
+                "chatnexo_inbox_id": 7,
+            },
+        }
+    )
+    session = _mock_session_with_account(account)
+    fernet = _make_fernet()
+    repo = _make_repo(session, fernet)
+
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
+        _setup_default_settings(mock_s)
+        mock_s.return_value.chatnexo_account_id = 1
+        mock_s.return_value.chatnexo_inbox_id = 1
+        config = await repo.get(account_id=1)
+
+    assert config.integration.chatnexo_account_id == 42
+    assert config.integration.chatnexo_inbox_id == 7
