@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
+import { ChatNexoAgentsSection } from "@/features/settings/components/ChatNexoAgentsSection";
+import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
 import type { AccountSettings } from "@/features/settings/types";
 
 export default function SettingsPage() {
@@ -17,18 +19,10 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-error/30 bg-error-container px-8 py-6 text-center">
-          <span className="material-symbols-outlined text-error" style={{ fontSize: "32px" }}>
-            error_outline
-          </span>
-          <p className="text-body-base text-on-surface font-medium">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-1 rounded-lg bg-primary px-4 py-2 text-label-caps font-sans font-semibold uppercase tracking-wider text-on-primary transition-opacity hover:opacity-90"
-          >
-            Tentar novamente
-          </button>
+      <div className="flex min-h-[200px] items-center justify-center">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <span className="material-symbols-outlined text-error" style={{ fontSize: "32px" }}>error</span>
+          <p className="text-sm font-medium text-error">{error}</p>
         </div>
       </div>
     );
@@ -36,45 +30,50 @@ export default function SettingsPage() {
 
   if (!settings) {
     return (
-      <div className="flex flex-1 items-center justify-center py-24">
-        <div className="flex flex-col items-center gap-4">
-          <span
-            className="material-symbols-outlined animate-spin text-primary"
-            style={{ fontSize: "36px" }}
-          >
-            progress_activity
-          </span>
-          <p className="text-body-sm text-on-surface-variant">Carregando configurações…</p>
+      <div className="flex min-h-[200px] items-center justify-center">
+        <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+          <span className="material-symbols-outlined animate-spin" style={{ fontSize: "20px" }}>progress_activity</span>
+          Carregando configurações...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-12">
+    <div className="space-y-10 p-6">
       {/* Page header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <p className="text-label-caps font-sans uppercase tracking-wider text-on-surface-variant">
-            Sistema
-          </p>
-          <h1 className="mt-1 text-h1 font-sans font-bold text-on-background">Configurações</h1>
-          <p className="mt-1 text-body-base text-on-surface-variant">
-            Credenciais de integração com serviços externos. As alterações têm efeito imediato.
-          </p>
+      <header className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
+        <div className="flex items-center gap-5 px-7 py-6">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-container">
+            <span
+              className="material-symbols-outlined text-on-primary-container"
+              style={{ fontSize: "28px", fontVariationSettings: "'FILL' 1" }}
+            >
+              tune
+            </span>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-on-surface">Configurações</h1>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                Painel
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Gerencie as integrações, atendentes e o comportamento do agente de IA.
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container px-4 py-2">
-          <span
-            className="inline-block h-2 w-2 rounded-full bg-green-400"
-          />
-          <span className="text-label-caps font-sans uppercase tracking-wider text-on-surface-variant">
-            Agente ativo
-          </span>
-        </div>
-      </div>
+      </header>
 
-      {/* Sections */}
+      {/* Integrations */}
       <IntegrationSection initial={settings} onSaved={setSettings} />
+
+      {/* ChatNexo agents */}
+      <ChatNexoAgentsSection />
+
+      {/* Behavior */}
+      {settings && <BehaviorSection initial={settings} onSaved={setSettings} />}
     </div>
   );
 }

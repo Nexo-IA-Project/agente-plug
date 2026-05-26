@@ -9,10 +9,6 @@ class AccountSettingsResponse(BaseModel):
     chatnexo_base_url: str
     chatnexo_api_key: str
     hubla_webhook_secret: str
-    cademi_api_url: str
-    cademi_api_key: str
-    cademi_max_retries: int
-    cademi_retry_base_seconds: float
     openai_api_key: str
     meta_api_key: str
     meta_waba_id: str
@@ -32,10 +28,6 @@ class AccountSettingsUpdateRequest(BaseModel):
     chatnexo_base_url: str | None = None
     chatnexo_api_key: str | None = None
     hubla_webhook_secret: str | None = None
-    cademi_api_url: str | None = None
-    cademi_api_key: str | None = None
-    cademi_max_retries: int | None = None
-    cademi_retry_base_seconds: float | None = None
     openai_api_key: str | None = None
     meta_api_key: str | None = None
     meta_waba_id: str | None = None

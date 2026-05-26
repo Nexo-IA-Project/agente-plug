@@ -10,11 +10,13 @@ from agent.context import AgentContext
 from agent.guards import GuardService, LegalMentionGuard, LoopDetectorGuard
 from agent.runner import run_agent
 from agent.skill_loader import Adapters, build_registry
-from shared.adapters.cademi.client import CademiClient
+from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
+from shared.adapters.db.repositories.conversation import ConversationRepository
 from shared.adapters.db.repositories.refund_case_repo import RefundCaseRepository
 from shared.adapters.db.repositories.usage_log_repo import UsageLogRepository
 from shared.adapters.db.session import session_scope
@@ -23,6 +25,7 @@ from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 
 log = structlog.get_logger(__name__)
 
@@ -76,8 +79,37 @@ async def _process_message(
         account_config = await config_repo.get(account_id=account_id)
 
         openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
-        chatnexo = ChatNexoClient.from_account_config(account_config)
-        cademi = CademiClient.from_account_config(account_config)
+
+        # Resolução de agente: usar o agente travado pela última mensagem de onboarding
+        account_uuid = await get_default_account_uuid(session)
+        conv_repo = ConversationRepository(session=session)
+        last_agent_id = await conv_repo.get_last_onboarding_agent_id(
+            account_id=account_uuid,
+            chatnexo_conversation_id=conversation_id,
+        )
+
+        agents = account_config.integration.chatnexo_agents
+        base_url = account_config.integration.chatnexo_base_url
+        fallback_key = account_config.integration.chatnexo_api_key
+
+        if last_agent_id:
+            locked_agent = next((a for a in agents if a.id == last_agent_id), None)
+            if locked_agent:
+                chatnexo = ChatNexoClient.with_key(base_url, locked_agent.api_key)
+            else:
+                chatnexo, _ = build_chatnexo_client(
+                    base_url=base_url,
+                    agents=agents,
+                    strategy=RandomAgentSelection(),
+                    fallback_api_key=fallback_key,
+                )
+        else:
+            chatnexo, _ = build_chatnexo_client(
+                base_url=base_url,
+                agents=agents,
+                strategy=RandomAgentSelection(),
+                fallback_api_key=fallback_key,
+            )
         hubla = HublaClient()
         refund_mutex = RedisRefundMutex(redis, ttl_seconds=settings.refund_mutex_ttl_seconds)
 
@@ -88,7 +120,6 @@ async def _process_message(
         )
         adapters = Adapters(
             access_repo=AccessCaseRepository(session),
-            cademi=cademi,
             chatnexo=chatnexo,
             refund_repo=RefundCaseRepository(session),
             hubla=hubla,

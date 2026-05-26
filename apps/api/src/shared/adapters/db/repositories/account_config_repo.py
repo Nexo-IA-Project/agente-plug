@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import AccountModel
+from shared.adapters.db.repositories.chatnexo_agent_repo import ChatNexoAgentRepository
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.account_config import (
     AccountConfig,
     AccountConfigPatch,
@@ -20,7 +22,6 @@ _SENSITIVE = frozenset(
     {
         "chatnexo_api_key",
         "hubla_webhook_secret",
-        "cademi_api_key",
         "openai_api_key",
         "meta_api_key",
     }
@@ -98,21 +99,21 @@ class AccountConfigRepository:
             v = b.get(key)
             return float(v) if v is not None else default
 
+        # Carregar agentes ativos do ChatNexo
+        agent_repo = ChatNexoAgentRepository(session=self.session, fernet=self.fernet)
+        account_uuid = await get_default_account_uuid(self.session)
+        agents = await agent_repo.list_active(account_uuid)
+
         return AccountConfig(
             integration=IntegrationConfig(
                 chatnexo_base_url=gs("chatnexo_base_url", s.chatnexo_base_url),
                 chatnexo_api_key=gs("chatnexo_api_key", s.chatnexo_api_key),
                 hubla_webhook_secret=gs("hubla_webhook_secret", s.hubla_webhook_secret),
-                cademi_api_url=gs("cademi_api_url", s.cademi_api_url),
-                cademi_api_key=gs("cademi_api_key", s.cademi_api_key),
-                cademi_max_retries=int(i.get("cademi_max_retries", s.cademi_max_retries)),
-                cademi_retry_base_seconds=float(
-                    i.get("cademi_retry_base_seconds", s.cademi_retry_base_seconds)
-                ),
                 openai_api_key=gs("openai_api_key", s.openai_api_key),
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
                 meta_waba_id=i.get("meta_waba_id") or s.meta_waba_id,
                 meta_app_id=i.get("meta_app_id") or (s.meta_app_id or ""),
+                chatnexo_agents=agents,
             ),
             behavior=BehaviorConfig(
                 idle_ping_minutes=gi("idle_ping_minutes", s.idle_ping_minutes),
@@ -144,8 +145,6 @@ class AccountConfigRepository:
             "chatnexo_base_url",
             "chatnexo_api_key",
             "hubla_webhook_secret",
-            "cademi_api_url",
-            "cademi_api_key",
             "openai_api_key",
             "meta_api_key",
             "meta_waba_id",
@@ -156,11 +155,6 @@ class AccountConfigRepository:
                 continue
             assert val is not None
             i[key] = _encrypt(self.fernet, val) if key in _SENSITIVE else val
-
-        if patch.cademi_max_retries is not None:
-            i["cademi_max_retries"] = patch.cademi_max_retries
-        if patch.cademi_retry_base_seconds is not None:
-            i["cademi_retry_base_seconds"] = patch.cademi_retry_base_seconds
 
         for key in (
             "idle_ping_minutes",

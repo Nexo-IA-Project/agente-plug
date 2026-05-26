@@ -14,10 +14,9 @@ Estratégia: usa testcontainers (postgres) + roda alembic upgrade no setup.
 from __future__ import annotations
 
 import pytest
+from shared.domain.entities.followup import EnrollmentStepStatus
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from shared.domain.entities.followup import EnrollmentStepStatus
 
 # ──────────────────────────────────────────────────────────────
 # Migrations no testcontainer (autouse)

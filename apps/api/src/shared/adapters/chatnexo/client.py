@@ -56,6 +56,15 @@ class ChatNexoClient:
         )
         return cls(http=client)
 
+    @classmethod
+    def with_key(cls, base_url: str, api_key: str) -> ChatNexoClient:
+        client = httpx.AsyncClient(
+            base_url=base_url,
+            headers={"api_access_token": api_key},
+            timeout=httpx.Timeout(10.0, connect=3.0),
+        )
+        return cls(http=client)
+
     @_retry
     async def _post(self, path: str, json: dict[str, Any]) -> httpx.Response:
         response = await self.http.post(f"{_API_PREFIX}{path}", json=json)

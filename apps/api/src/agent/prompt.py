@@ -1727,9 +1727,7 @@ Cada mensagem deve aproximar o aluno da solução.\
 
 _CAPABILITIES = """\
 Skills disponíveis — use-as somente quando o aluno demonstrar a necessidade clara:
-- buscar_aluno_cademi: localiza o aluno pelo telefone no Cademi.
 - verificar_caso_acesso: verifica o histórico de acesso ao curso.
-- enviar_link_acesso: reenvia o link de acesso ao curso.
 - verificar_elegibilidade_reembolso: checa se o aluno tem direito ao reembolso.
 - processar_reembolso: processa o pedido de reembolso.
 - oferecer_retencao: oferece alternativas antes do cancelamento.

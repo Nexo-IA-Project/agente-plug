@@ -7,7 +7,6 @@ from shared.adapters.observability.metrics import (
 
 def test_welcome_capability_counter_labels():
     welcome_capability_total.labels(status="success").inc()
-    welcome_capability_total.labels(status="cademi_failed").inc()
     welcome_capability_total.labels(status="error").inc()
 
 

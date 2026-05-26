@@ -6,11 +6,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from shared.application.use_cases.followup.dispatch_followup_step import (
-    DispatchFollowupStep,
+from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
+    DispatchOnboardingStep,
     DispatchResult,
 )
-from shared.domain.entities.followup import EnrollmentStepStatus
+from shared.domain.entities.onboarding import EnrollmentStepStatus
 
 
 def _step(status=EnrollmentStepStatus.PENDING, template="t", text=None):
@@ -43,7 +43,7 @@ async def test_dispatch_marks_failed_on_send_template_error():
     template_repo = AsyncMock()
     template_repo.get_by_name.return_value = None
 
-    use_case = DispatchFollowupStep(
+    use_case = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=AsyncMock(),
         chatnexo=chatnexo,
@@ -77,7 +77,7 @@ async def test_dispatch_marks_failed_on_send_message_error():
     chatnexo = AsyncMock()
     chatnexo.send_message.side_effect = ValueError("api down")
 
-    use_case = DispatchFollowupStep(
+    use_case = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=AsyncMock(),
         chatnexo=chatnexo,
@@ -116,7 +116,7 @@ async def test_dispatch_returns_sent_on_success():
     history = AsyncMock()
     history.load.return_value = []
 
-    use_case = DispatchFollowupStep(
+    use_case = DispatchOnboardingStep(
         enrollment_repo=enrollment_repo,
         contact_repo=AsyncMock(),
         chatnexo=chatnexo,

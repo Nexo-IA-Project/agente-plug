@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
 import { dispatchEnrollmentStep, getLead } from "@/lib/api";
-import { getTriggerEventMeta } from "@/features/followup/lib/triggerEvents";
+import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
 import { getLeadStatusBadge } from "../lib/statusBadges";
 import type { Lead, LeadDetail } from "../types";
 import { FollowupTimeline } from "./FollowupTimeline";

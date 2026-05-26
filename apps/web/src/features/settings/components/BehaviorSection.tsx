@@ -86,54 +86,6 @@ const GROUPS: ParamGroup[] = [
       },
     ],
   },
-  {
-    id: "followups",
-    title: "Follow-ups de Jornada",
-    description: "Intervalos de envio de mensagens pós-compra",
-    icon: "route",
-    fields: [
-      {
-        key: "welcome_d1_delay_hours",
-        label: "Boas-vindas D+1",
-        description: "Horas após compra para lembrete inicial",
-        unit: "h",
-        icon: "waving_hand",
-        min: 1,
-      },
-      {
-        key: "loja_express_d1_delay_hours",
-        label: "Loja Express D+1",
-        description: "Follow-up no primeiro dia",
-        unit: "h",
-        icon: "looks_one",
-        min: 1,
-      },
-      {
-        key: "loja_express_d3_delay_hours",
-        label: "Loja Express D+3",
-        description: "Follow-up no terceiro dia",
-        unit: "h",
-        icon: "looks_3",
-        min: 1,
-      },
-      {
-        key: "loja_express_d5_delay_hours",
-        label: "Loja Express D+5",
-        description: "Follow-up no quinto dia",
-        unit: "h",
-        icon: "looks_5",
-        min: 1,
-      },
-      {
-        key: "loja_express_d7_delay_hours",
-        label: "Loja Express D+7",
-        description: "Alerta crítico — sétimo dia",
-        unit: "h",
-        icon: "warning",
-        min: 1,
-      },
-    ],
-  },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -206,9 +158,9 @@ function GroupCard({ group, settings, values, onChange }: GroupCardProps) {
   const dirtyCount = group.fields.filter((f) => f.key in values).length;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-low">
+    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
       {/* Group header */}
-      <div className="flex items-center justify-between border-b border-outline-variant/60 bg-surface-container px-5 py-4">
+      <div className="flex items-center justify-between border-b border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-container">
             <span

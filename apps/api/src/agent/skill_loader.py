@@ -9,7 +9,6 @@ from pathlib import Path
 
 from agent.skill import register_skill
 from agent.tool_registry import ToolRegistry
-from shared.domain.ports.cademi_port import CademiPort
 from shared.domain.ports.chatnexo import ChatNexoPort
 from shared.domain.ports.hubla_port import HublaPort
 from shared.domain.ports.knowledge import KnowledgePort
@@ -20,7 +19,6 @@ from shared.domain.ports.refund_mutex import RefundMutexPort
 @dataclass
 class Adapters:
     access_repo: object
-    cademi: CademiPort
     chatnexo: ChatNexoPort
     refund_repo: object
     hubla: HublaPort

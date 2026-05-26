@@ -21,10 +21,6 @@ def _make_config() -> AccountConfig:
             chatnexo_base_url="http://nexo",
             chatnexo_api_key="key",
             hubla_webhook_secret="secret",
-            cademi_api_url="",
-            cademi_api_key="",
-            cademi_max_retries=3,
-            cademi_retry_base_seconds=1.0,
             openai_api_key="sk-test",
             meta_api_key="meta",
             meta_waba_id="",
@@ -74,16 +70,5 @@ async def test_update_rejects_invalid_confidence_threshold():
 
     with pytest.raises(ValueError, match="intent_confidence_threshold"):
         await uc.execute(account_id=1, patch=AccountConfigPatch(intent_confidence_threshold=1.5))
-
-    repo.update.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_update_rejects_negative_max_retries():
-    repo = AsyncMock()
-    uc = UpdateAccountConfig(repo=repo)
-
-    with pytest.raises(ValueError, match="cademi_max_retries"):
-        await uc.execute(account_id=1, patch=AccountConfigPatch(cademi_max_retries=-1))
 
     repo.update.assert_not_called()

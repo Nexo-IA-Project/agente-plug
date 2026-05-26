@@ -5,13 +5,13 @@ import uuid
 import structlog
 
 from shared.adapters.db.models import AuditEventModel
-from shared.adapters.db.repositories.followup_enrollment_repo import (
-    FollowupEnrollmentRepository,
+from shared.adapters.db.repositories.onboarding_enrollment_repo import (
+    OnboardingEnrollmentRepository,
 )
-from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
-from shared.application.use_cases.followup.resync_enrollment import (
+from shared.application.use_cases.onboarding.resync_enrollment import (
     ResyncEnrollmentUseCase,
 )
 
@@ -24,8 +24,8 @@ async def handle_resync_flow(payload: dict) -> None:
     log.info("resync_flow_started", flow_id=str(flow_id))
 
     async with session_scope() as session:
-        enrollment_repo = FollowupEnrollmentRepository(session=session)
-        flow_step_repo = FollowupFlowRepository(session=session)
+        enrollment_repo = OnboardingEnrollmentRepository(session=session)
+        flow_step_repo = OnboardingFlowRepository(session=session)
         scheduled_job_repo = ScheduledJobRepository(session=session)
 
         enrollments = await enrollment_repo.find_active_by_flow(

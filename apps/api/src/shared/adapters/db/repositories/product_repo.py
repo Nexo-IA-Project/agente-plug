@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import FollowupFlowModel, ProductModel
+from shared.adapters.db.models import OnboardingFlowModel, ProductModel
 from shared.domain.entities.product import Product
 
 
@@ -96,8 +96,8 @@ class SqlProductRepository:
         return True
 
     async def count_flows(self, product_id: UUID) -> int:
-        stmt = select(func.count(FollowupFlowModel.id)).where(
-            FollowupFlowModel.product_id == product_id
+        stmt = select(func.count(OnboardingFlowModel.id)).where(
+            OnboardingFlowModel.product_id == product_id
         )
         return int((await self.session.execute(stmt)).scalar_one())
 
@@ -111,11 +111,11 @@ class SqlProductRepository:
             return {}
         stmt = (
             select(
-                FollowupFlowModel.product_id,
-                func.count(FollowupFlowModel.id),
+                OnboardingFlowModel.product_id,
+                func.count(OnboardingFlowModel.id),
             )
-            .where(FollowupFlowModel.product_id.in_(product_ids))
-            .group_by(FollowupFlowModel.product_id)
+            .where(OnboardingFlowModel.product_id.in_(product_ids))
+            .group_by(OnboardingFlowModel.product_id)
         )
         rows = (await self.session.execute(stmt)).all()
         return {row[0]: int(row[1]) for row in rows}

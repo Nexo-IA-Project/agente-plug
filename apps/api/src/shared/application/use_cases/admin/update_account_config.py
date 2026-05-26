@@ -19,5 +19,3 @@ class UpdateAccountConfig:
             and not 0.0 <= patch.intent_confidence_threshold <= 1.0
         ):
             raise ValueError("intent_confidence_threshold deve estar entre 0.0 e 1.0")
-        if patch.cademi_max_retries is not None and patch.cademi_max_retries < 0:
-            raise ValueError("cademi_max_retries não pode ser negativo")

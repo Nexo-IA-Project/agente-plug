@@ -228,21 +228,23 @@ class SqlLeadRepository:
         (campo `run_at`). Steps sem job associado retornam scheduled_for=None.
         """
         from shared.adapters.db.models import (
-            FollowupEnrollmentModel,
-            FollowupEnrollmentStepModel,
-            FollowupFlowModel,
+            OnboardingEnrollmentModel,
+            OnboardingEnrollmentStepModel,
+            OnboardingFlowModel,
             ScheduledJobModel,
         )
 
         # 1. Busca enrollments do lead (purchase_id = hubla_subscription_id)
         enr_stmt = (
-            select(FollowupEnrollmentModel, FollowupFlowModel.name)
-            .outerjoin(FollowupFlowModel, FollowupFlowModel.id == FollowupEnrollmentModel.flow_id)
-            .where(
-                FollowupEnrollmentModel.account_id == account_id,
-                FollowupEnrollmentModel.purchase_id == hubla_subscription_id,
+            select(OnboardingEnrollmentModel, OnboardingFlowModel.name)
+            .outerjoin(
+                OnboardingFlowModel, OnboardingFlowModel.id == OnboardingEnrollmentModel.flow_id
             )
-            .order_by(FollowupEnrollmentModel.created_at.asc())
+            .where(
+                OnboardingEnrollmentModel.account_id == account_id,
+                OnboardingEnrollmentModel.purchase_id == hubla_subscription_id,
+            )
+            .order_by(OnboardingEnrollmentModel.created_at.asc())
         )
         enr_rows = (await self.session.execute(enr_stmt)).all()
 
@@ -254,17 +256,17 @@ class SqlLeadRepository:
         # 2. Busca steps de todos os enrollments + JOIN com scheduled_jobs pra run_at
         step_stmt = (
             select(
-                FollowupEnrollmentStepModel,
+                OnboardingEnrollmentStepModel,
                 ScheduledJobModel.run_at,
             )
             .outerjoin(
                 ScheduledJobModel,
-                ScheduledJobModel.id == FollowupEnrollmentStepModel.scheduled_job_id,
+                ScheduledJobModel.id == OnboardingEnrollmentStepModel.scheduled_job_id,
             )
-            .where(FollowupEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
+            .where(OnboardingEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
             .order_by(
-                FollowupEnrollmentStepModel.enrollment_id,
-                FollowupEnrollmentStepModel.position,
+                OnboardingEnrollmentStepModel.enrollment_id,
+                OnboardingEnrollmentStepModel.position,
             )
         )
         step_rows = (await self.session.execute(step_stmt)).all()
