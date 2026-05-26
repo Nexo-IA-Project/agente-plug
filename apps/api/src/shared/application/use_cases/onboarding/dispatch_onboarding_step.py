@@ -8,19 +8,19 @@ from uuid import UUID
 import structlog
 
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
-from shared.application.use_cases.followup.variable_resolver import (
+from shared.application.use_cases.onboarding.variable_resolver import (
     ResolutionContext,
     VariableResolver,
 )
 from shared.config.settings import get_settings
-from shared.domain.entities.followup import EnrollmentStatus, EnrollmentStepStatus
+from shared.domain.entities.onboarding import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
 
 
 @dataclass(frozen=True)
 class DispatchResult:
-    """Resultado de DispatchFollowupStep.execute().
+    """Resultado de DispatchOnboardingStep.execute().
 
     Atributos:
         status: EnrollmentStepStatus correspondente. SENT no caminho feliz, FAILED
@@ -35,7 +35,7 @@ class DispatchResult:
     failure_reason: str | None = None
 
 
-class DispatchFollowupStep:
+class DispatchOnboardingStep:
     def __init__(
         self,
         *,

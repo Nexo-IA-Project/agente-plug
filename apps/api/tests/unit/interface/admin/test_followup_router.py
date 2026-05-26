@@ -37,8 +37,12 @@ def test_list_flows_returns_empty(client):
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("interface.http.routers.admin.onboarding.OnboardingFlowRepository") as MockFlowRepo,
-            patch("interface.http.routers.admin.onboarding.SqlProductRepository") as MockProductRepo,
+            patch(
+                "interface.http.routers.admin.onboarding.OnboardingFlowRepository"
+            ) as MockFlowRepo,
+            patch(
+                "interface.http.routers.admin.onboarding.SqlProductRepository"
+            ) as MockProductRepo,
         ):
             flow_instance = MockFlowRepo.return_value
             flow_instance.list_flows = AsyncMock(return_value=[])

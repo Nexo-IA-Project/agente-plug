@@ -15,6 +15,13 @@ import uuid
 from datetime import UTC, datetime
 
 import pytest
+from shared.adapters.db.repositories.followup_enrollment_repo import (
+    FollowupEnrollmentRepository,
+)
+from shared.domain.entities.followup import (
+    EnrollmentStatus,
+    EnrollmentStepStatus,
+)
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,13 +33,6 @@ from shared.adapters.db.models import (
     FollowupFlowModel,
     FollowupStepModel,
     ProductModel,
-)
-from shared.adapters.db.repositories.followup_enrollment_repo import (
-    FollowupEnrollmentRepository,
-)
-from shared.domain.entities.followup import (
-    EnrollmentStatus,
-    EnrollmentStepStatus,
 )
 
 # ──────────────────────────────────────────────────────────────

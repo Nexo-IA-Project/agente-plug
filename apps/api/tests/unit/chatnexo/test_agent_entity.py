@@ -1,6 +1,7 @@
-import pytest
 from dataclasses import FrozenInstanceError
 from uuid import UUID
+
+import pytest
 
 from shared.domain.entities.chatnexo_agent import ChatNexoAgent
 

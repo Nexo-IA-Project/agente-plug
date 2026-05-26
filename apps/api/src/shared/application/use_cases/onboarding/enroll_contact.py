@@ -9,10 +9,10 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.domain.entities.followup import (
+from shared.domain.entities.onboarding import (
     EnrollmentStepStatus,
-    FollowupEnrollment,
-    FollowupEnrollmentStep,
+    OnboardingEnrollment,
+    OnboardingEnrollmentStep,
 )
 from shared.domain.entities.scheduled_job import JobType
 
@@ -32,7 +32,7 @@ class EnrollResult:
       automaticamente (não há jobs órfãos para cancelar manualmente).
     """
 
-    enrollment: FollowupEnrollment | None
+    enrollment: OnboardingEnrollment | None
     deduped: bool = False
 
 
@@ -76,7 +76,7 @@ class EnrollContact:
             log.info("followup_flow_has_no_steps", flow_id=str(flow.id))
             return None
 
-        enrollment = FollowupEnrollment(
+        enrollment = OnboardingEnrollment(
             account_id=account_id,
             flow_id=flow.id,
             contact_id=contact_id,
@@ -93,10 +93,10 @@ class EnrollContact:
             # scheduled_jobs) são revertidas — a sessão pai (contact upsert, outros
             # enrollments do mesmo handle_one) permanece intacta.
             async with self._session.begin_nested():
-                enrollment_steps: list[FollowupEnrollmentStep] = []
+                enrollment_steps: list[OnboardingEnrollmentStep] = []
                 for step in steps:
                     run_at = purchase_time + timedelta(minutes=step.delay_from_purchase_minutes)
-                    enrollment_step = FollowupEnrollmentStep(
+                    enrollment_step = OnboardingEnrollmentStep(
                         enrollment_id=enrollment.id,
                         flow_step_id=step.id,
                         position=step.position,

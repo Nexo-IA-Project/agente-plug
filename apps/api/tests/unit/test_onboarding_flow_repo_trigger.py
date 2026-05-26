@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 
 
 @pytest.mark.asyncio
@@ -25,7 +25,7 @@ async def test_list_active_by_product_and_event_returns_matching_flows():
     result_mock.scalars.return_value.all.return_value = [mock_flow]
     session.execute = AsyncMock(return_value=result_mock)
 
-    repo = FollowupFlowRepository(session=session)
+    repo = OnboardingFlowRepository(session=session)
     flows = await repo.list_active_by_product_and_event(
         product_id=product_id, event_type="subscription.activated"
     )

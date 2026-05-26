@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from shared.domain.entities.followup import EnrollmentStepStatus
+from shared.domain.entities.onboarding import EnrollmentStepStatus
 
 
 @dataclass(frozen=True)

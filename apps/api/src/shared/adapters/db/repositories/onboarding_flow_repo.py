@@ -8,15 +8,15 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
-    FollowupEnrollmentModel,
-    FollowupFlowModel,
-    FollowupStepModel,
+    OnboardingEnrollmentModel,
+    OnboardingFlowModel,
+    OnboardingStepModel,
 )
-from shared.domain.entities.followup import FollowupFlow, FollowupStep
+from shared.domain.entities.onboarding import OnboardingFlow, OnboardingStep
 
 
-def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
-    return FollowupFlow(
+def _flow_to_entity(m: OnboardingFlowModel) -> OnboardingFlow:
+    return OnboardingFlow(
         id=m.id,
         account_id=m.account_id,
         product_id=m.product_id,
@@ -28,8 +28,8 @@ def _flow_to_entity(m: FollowupFlowModel) -> FollowupFlow:
     )
 
 
-def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
-    return FollowupStep(
+def _step_to_entity(m: OnboardingStepModel) -> OnboardingStep:
+    return OnboardingStep(
         id=m.id,
         flow_id=m.flow_id,
         position=m.position,
@@ -42,45 +42,45 @@ def _step_to_entity(m: FollowupStepModel) -> FollowupStep:
 
 
 @dataclass
-class FollowupFlowRepository:
+class OnboardingFlowRepository:
     session: AsyncSession
 
-    async def list_active_by_product(self, product_id: uuid.UUID) -> list[FollowupFlow]:
-        stmt = select(FollowupFlowModel).where(
-            FollowupFlowModel.product_id == product_id,
-            FollowupFlowModel.is_active.is_(True),
+    async def list_active_by_product(self, product_id: uuid.UUID) -> list[OnboardingFlow]:
+        stmt = select(OnboardingFlowModel).where(
+            OnboardingFlowModel.product_id == product_id,
+            OnboardingFlowModel.is_active.is_(True),
         )
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_flow_to_entity(m) for m in rows]
 
     async def list_active_by_product_and_event(
         self, product_id: uuid.UUID, event_type: str
-    ) -> list[FollowupFlow]:
-        stmt = select(FollowupFlowModel).where(
-            FollowupFlowModel.product_id == product_id,
-            FollowupFlowModel.trigger_event_type == event_type,
-            FollowupFlowModel.is_active.is_(True),
+    ) -> list[OnboardingFlow]:
+        stmt = select(OnboardingFlowModel).where(
+            OnboardingFlowModel.product_id == product_id,
+            OnboardingFlowModel.trigger_event_type == event_type,
+            OnboardingFlowModel.is_active.is_(True),
         )
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_flow_to_entity(m) for m in rows]
 
-    async def find_by_id(self, flow_id: uuid.UUID) -> FollowupFlow | None:
-        model = await self.session.get(FollowupFlowModel, flow_id)
+    async def find_by_id(self, flow_id: uuid.UUID) -> OnboardingFlow | None:
+        model = await self.session.get(OnboardingFlowModel, flow_id)
         return None if model is None else _flow_to_entity(model)
 
-    async def get_steps(self, flow_id: uuid.UUID) -> list[FollowupStep]:
+    async def get_steps(self, flow_id: uuid.UUID) -> list[OnboardingStep]:
         result = await self.session.execute(
-            select(FollowupStepModel)
-            .where(FollowupStepModel.flow_id == flow_id)
-            .order_by(FollowupStepModel.position)
+            select(OnboardingStepModel)
+            .where(OnboardingStepModel.flow_id == flow_id)
+            .order_by(OnboardingStepModel.position)
         )
         return [_step_to_entity(m) for m in result.scalars().all()]
 
-    async def list_flows(self, account_id: uuid.UUID) -> list[FollowupFlow]:
+    async def list_flows(self, account_id: uuid.UUID) -> list[OnboardingFlow]:
         result = await self.session.execute(
-            select(FollowupFlowModel)
-            .where(FollowupFlowModel.account_id == account_id)
-            .order_by(FollowupFlowModel.created_at)
+            select(OnboardingFlowModel)
+            .where(OnboardingFlowModel.account_id == account_id)
+            .order_by(OnboardingFlowModel.created_at)
         )
         return [_flow_to_entity(m) for m in result.scalars().all()]
 
@@ -92,9 +92,9 @@ class FollowupFlowRepository:
         name: str,
         trigger_event_type: str = "subscription.activated",
         is_active: bool = True,
-    ) -> FollowupFlow:
+    ) -> OnboardingFlow:
         now = datetime.now(UTC)
-        model = FollowupFlowModel(
+        model = OnboardingFlowModel(
             id=uuid.uuid4(),
             account_id=account_id,
             product_id=product_id,
@@ -116,8 +116,8 @@ class FollowupFlowRepository:
         product_id: uuid.UUID | None = None,
         trigger_event_type: str | None = None,
         is_active: bool | None = None,
-    ) -> FollowupFlow | None:
-        model = await self.session.get(FollowupFlowModel, flow_id)
+    ) -> OnboardingFlow | None:
+        model = await self.session.get(OnboardingFlowModel, flow_id)
         if model is None:
             return None
         if name is not None:
@@ -133,7 +133,7 @@ class FollowupFlowRepository:
         return _flow_to_entity(model)
 
     async def delete_flow(self, flow_id: uuid.UUID) -> bool:
-        model = await self.session.get(FollowupFlowModel, flow_id)
+        model = await self.session.get(OnboardingFlowModel, flow_id)
         if model is None:
             return False
         await self.session.delete(model)
@@ -149,8 +149,8 @@ class FollowupFlowRepository:
         meta_template_name: str | None,
         template_variables: dict,
         message_text: str | None = None,
-    ) -> FollowupStep:
-        model = FollowupStepModel(
+    ) -> OnboardingStep:
+        model = OnboardingStepModel(
             id=uuid.uuid4(),
             flow_id=flow_id,
             position=position,
@@ -175,8 +175,8 @@ class FollowupFlowRepository:
         message_text: str | None = None,
         clear_template: bool = False,
         clear_message_text: bool = False,
-    ) -> FollowupStep | None:
-        model = await self.session.get(FollowupStepModel, step_id)
+    ) -> OnboardingStep | None:
+        model = await self.session.get(OnboardingStepModel, step_id)
         if model is None:
             return None
         if delay_from_purchase_minutes is not None:
@@ -198,15 +198,15 @@ class FollowupFlowRepository:
         return _step_to_entity(model)
 
     async def delete_step(self, step_id: uuid.UUID) -> bool:
-        model = await self.session.get(FollowupStepModel, step_id)
+        model = await self.session.get(OnboardingStepModel, step_id)
         if model is None:
             return False
         await self.session.delete(model)
         await self.session.flush()
         return True
 
-    async def get_step(self, step_id: uuid.UUID) -> FollowupStep | None:
-        model = await self.session.get(FollowupStepModel, step_id)
+    async def get_step(self, step_id: uuid.UUID) -> OnboardingStep | None:
+        model = await self.session.get(OnboardingStepModel, step_id)
         return None if model is None else _step_to_entity(model)
 
     async def stats_by_flows(
@@ -224,17 +224,17 @@ class FollowupFlowRepository:
             return {}
         result = await self.session.execute(
             select(
-                FollowupEnrollmentModel.flow_id,
-                FollowupEnrollmentModel.status,
-                func.count(FollowupEnrollmentModel.id),
+                OnboardingEnrollmentModel.flow_id,
+                OnboardingEnrollmentModel.status,
+                func.count(OnboardingEnrollmentModel.id),
             )
             .where(
-                FollowupEnrollmentModel.account_id == account_id,
-                FollowupEnrollmentModel.flow_id.in_(flow_ids),
+                OnboardingEnrollmentModel.account_id == account_id,
+                OnboardingEnrollmentModel.flow_id.in_(flow_ids),
             )
             .group_by(
-                FollowupEnrollmentModel.flow_id,
-                FollowupEnrollmentModel.status,
+                OnboardingEnrollmentModel.flow_id,
+                OnboardingEnrollmentModel.status,
             )
         )
         out: dict[uuid.UUID, dict[str, int]] = {}

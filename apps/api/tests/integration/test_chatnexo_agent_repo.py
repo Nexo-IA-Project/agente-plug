@@ -1,4 +1,5 @@
 """Testes de integração: ChatNexoAgentRepository."""
+
 from __future__ import annotations
 
 import uuid
@@ -11,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.adapters.db.models import AccountModel, ChatNexoAgentModel
 from shared.adapters.db.repositories.chatnexo_agent_repo import ChatNexoAgentRepository
 from shared.config.single_tenant import get_default_account_uuid, reset_cache
-
 
 # ──────────────────────────────────────────────────────────────
 # Migrations no testcontainer (autouse session-scope)

@@ -38,7 +38,7 @@ class StepVariableBindingDto(BaseModel):
         return self
 
 
-class FollowupStepResponse(BaseModel):
+class OnboardingStepResponse(BaseModel):
     id: UUID
     flow_id: UUID
     position: int
@@ -55,12 +55,12 @@ class ProductSummary(BaseModel):
     hubla_id: str
 
 
-class FollowupFlowStats(BaseModel):
+class OnboardingFlowStats(BaseModel):
     enrollments_active: int = 0
     enrollments_completed: int = 0
 
 
-class FollowupFlowResponse(BaseModel):
+class OnboardingFlowResponse(BaseModel):
     id: UUID
     name: str
     is_active: bool
@@ -69,7 +69,7 @@ class FollowupFlowResponse(BaseModel):
     steps_count: int
     created_at: datetime
     updated_at: datetime
-    stats: FollowupFlowStats = Field(default_factory=FollowupFlowStats)
+    stats: OnboardingFlowStats = Field(default_factory=OnboardingFlowStats)
 
 
 class CreateFlowRequest(BaseModel):

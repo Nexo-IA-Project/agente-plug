@@ -7,7 +7,7 @@ from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from interface.http.deps.admin_auth import require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.repositories.chatnexo_agent_repo import (
     ChatNexoAgentRepository,
     _decrypt,
@@ -44,7 +44,7 @@ def _fernet() -> Fernet:
 
 
 @router.get("/chatnexo-agents", response_model=list[AgentItem])
-async def list_agents(_auth=Depends(require_admin)) -> list[AgentItem]:
+async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentItem]:  # noqa: B008
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)
@@ -63,7 +63,10 @@ async def list_agents(_auth=Depends(require_admin)) -> list[AgentItem]:
 
 
 @router.post("/chatnexo-agents", response_model=AgentItem, status_code=status.HTTP_201_CREATED)
-async def create_agent(body: CreateAgentInput, _auth=Depends(require_admin)) -> AgentItem:
+async def create_agent(
+    body: CreateAgentInput,
+    _auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> AgentItem:
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)
@@ -80,7 +83,9 @@ async def create_agent(body: CreateAgentInput, _auth=Depends(require_admin)) -> 
 
 @router.patch("/chatnexo-agents/{agent_id}", response_model=AgentItem)
 async def update_agent(
-    agent_id: UUID, body: UpdateAgentInput, _auth=Depends(require_admin)
+    agent_id: UUID,
+    body: UpdateAgentInput,
+    _auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> AgentItem:
     if body.name is None and body.api_key is None and body.is_active is None:
         raise HTTPException(
@@ -99,8 +104,10 @@ async def update_agent(
                 api_key=body.api_key,
                 is_active=body.is_active,
             )
-        except KeyError:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado")
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado"
+            ) from exc
         return AgentItem(
             id=agent.id,
             name=agent.name,
@@ -111,12 +118,14 @@ async def update_agent(
 
 
 @router.delete("/chatnexo-agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_agent(agent_id: UUID, _auth=Depends(require_admin)) -> None:
+async def delete_agent(agent_id: UUID, _auth: AdminAuth = Depends(require_admin)) -> None:  # noqa: B008
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)
         account_id = await get_default_account_uuid(session)
         try:
             await repo.delete(id=agent_id, account_id=account_id)
-        except KeyError:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado")
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado"
+            ) from exc

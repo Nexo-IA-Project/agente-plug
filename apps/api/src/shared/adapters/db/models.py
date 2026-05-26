@@ -679,7 +679,10 @@ class ChatNexoAgentModel(Base):
     )
     id: Mapped[uuid.UUID] = _pk()
     account_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     api_key_encrypted: Mapped[str] = mapped_column(Text, nullable=False)

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from interface.http.schemas.followup import (
+from interface.http.schemas.onboarding import (
     HUBLA_EVENT_TYPES,
     CreateFlowRequest,
     UpdateFlowRequest,

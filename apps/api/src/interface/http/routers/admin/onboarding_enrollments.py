@@ -1,7 +1,7 @@
 """Endpoints de relatório de enrollments para o painel admin.
 
-- ``GET /admin/followup/enrollments`` — lista paginada com filtros.
-- ``GET /admin/followup/enrollments/{id}/steps`` — steps de um enrollment com
+- ``GET /admin/onboarding/enrollments`` — lista paginada com filtros.
+- ``GET /admin/onboarding/enrollments/{id}/steps`` — steps de um enrollment com
   ``sent_at``, ``scheduled_for`` (vindo de ``scheduled_jobs.run_at``) e
   ``failure_reason``.
 """
@@ -18,13 +18,13 @@ from sqlalchemy import select
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.adapters.db.models import AccountModel
-from shared.adapters.db.repositories.followup_enrollment_repo import (
-    FollowupEnrollmentRepository,
+from shared.adapters.db.repositories.onboarding_enrollment_repo import (
+    OnboardingEnrollmentRepository,
 )
 from shared.adapters.db.session import session_scope
-from shared.domain.entities.followup import EnrollmentStatus
+from shared.domain.entities.onboarding import EnrollmentStatus
 
-router = APIRouter(tags=["admin-followup-reports"])
+router = APIRouter(tags=["admin-onboarding-reports"])
 
 
 # ──────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ async def _get_account_uuid(session, auth: AdminAuth) -> _uuid_module.UUID:
 # ──────────────────────────────────────────────────────────────
 
 
-@router.get("/followup/enrollments", response_model=EnrollmentListResponse)
+@router.get("/onboarding/enrollments", response_model=EnrollmentListResponse)
 async def list_enrollments(
     flow_id: UUID | None = Query(default=None),  # noqa: B008
     contact_phone: str | None = Query(default=None),
@@ -108,7 +108,7 @@ async def list_enrollments(
 
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupEnrollmentRepository(session=session)
+        repo = OnboardingEnrollmentRepository(session=session)
         rows, total = await repo.list_for_report(
             account_id=account_uuid,
             flow_id=flow_id,
@@ -143,7 +143,7 @@ async def list_enrollments(
 
 
 @router.get(
-    "/followup/enrollments/{enrollment_id}/steps",
+    "/onboarding/enrollments/{enrollment_id}/steps",
     response_model=list[EnrollmentStepItem],
 )
 async def list_enrollment_steps(
@@ -152,7 +152,7 @@ async def list_enrollment_steps(
 ) -> list[EnrollmentStepItem]:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupEnrollmentRepository(session=session)
+        repo = OnboardingEnrollmentRepository(session=session)
         steps = await repo.list_steps_for_report(
             enrollment_id,
             account_id=account_uuid,
@@ -180,7 +180,7 @@ class DispatchNowResponse(BaseModel):
 
 
 @router.post(
-    "/followup/enrollments/{enrollment_id}/steps/{step_id}/dispatch-now",
+    "/onboarding/enrollments/{enrollment_id}/steps/{step_id}/dispatch-now",
     response_model=DispatchNowResponse,
 )
 async def dispatch_step_now(
@@ -195,7 +195,7 @@ async def dispatch_step_now(
       2. Valida que o step pertence ao enrollment passado (defense in depth)
       3. Reset do status para PENDING + clear de failure_reason (permite retry de failed)
       4. Cancela o ScheduledJob futuro (se houver) — evita disparo duplicado
-      5. Executa DispatchFollowupStep síncrono
+      5. Executa DispatchOnboardingStep síncrono
       6. Retorna status final (sent | failed)
     """
     from cryptography.fernet import Fernet
@@ -204,23 +204,23 @@ async def dispatch_step_now(
     from agent.history import ConversationHistory
     from shared.adapters.chatnexo.client import ChatNexoClient
     from shared.adapters.db.models import (
-        FollowupEnrollmentStepModel,
+        OnboardingEnrollmentStepModel,
         ScheduledJobModel,
     )
     from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
     from shared.adapters.db.repositories.contact import ContactRepository
     from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
-    from shared.application.use_cases.followup.dispatch_followup_step import (
-        DispatchFollowupStep,
+    from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
+        DispatchOnboardingStep,
     )
     from shared.config.settings import get_settings
-    from shared.domain.entities.followup import EnrollmentStepStatus
+    from shared.domain.entities.onboarding import EnrollmentStepStatus
 
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
 
         # 1+2. Resolve step e valida ownership (enrollment, account)
-        repo = FollowupEnrollmentRepository(session=session)
+        repo = OnboardingEnrollmentRepository(session=session)
         step = await repo.find_step_by_id(step_id)
         if step is None or step.enrollment_id != enrollment_id:
             raise HTTPException(
@@ -236,8 +236,8 @@ async def dispatch_step_now(
 
         # 3. Reset do status pra permitir o dispatch executar (failed → pending)
         await session.execute(
-            update(FollowupEnrollmentStepModel)
-            .where(FollowupEnrollmentStepModel.id == step_id)
+            update(OnboardingEnrollmentStepModel)
+            .where(OnboardingEnrollmentStepModel.id == step_id)
             .values(status="pending", failure_reason=None)
         )
 
@@ -260,7 +260,7 @@ async def dispatch_step_now(
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
         config = await config_repo.get(account_id=1)
         chatnexo = ChatNexoClient.from_account_config(config)
-        dispatch = DispatchFollowupStep(
+        dispatch = DispatchOnboardingStep(
             enrollment_repo=repo,
             contact_repo=ContactRepository(session=session),
             chatnexo=chatnexo,

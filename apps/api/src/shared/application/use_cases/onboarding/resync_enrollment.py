@@ -6,10 +6,10 @@ from typing import Any
 
 import structlog
 
-from shared.application.use_cases.followup.diff_flow_steps import compute_diff
-from shared.domain.entities.followup import (
+from shared.application.use_cases.onboarding.diff_flow_steps import compute_diff
+from shared.domain.entities.onboarding import (
     EnrollmentStepStatus,
-    FollowupEnrollmentStep,
+    OnboardingEnrollmentStep,
 )
 from shared.domain.entities.scheduled_job import JobType
 
@@ -52,7 +52,7 @@ class ResyncEnrollmentUseCase:
         }
 
         for fs in diff.to_add:
-            new_step = FollowupEnrollmentStep(
+            new_step = OnboardingEnrollmentStep(
                 enrollment_id=enrollment.id,
                 flow_step_id=fs.id,
                 position=fs.position,

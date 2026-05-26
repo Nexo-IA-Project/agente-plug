@@ -9,17 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
     ContactModel,
-    FollowupEnrollmentModel,
-    FollowupEnrollmentStepModel,
-    FollowupFlowModel,
+    OnboardingEnrollmentModel,
+    OnboardingEnrollmentStepModel,
+    OnboardingFlowModel,
     ProductModel,
     ScheduledJobModel,
 )
-from shared.domain.entities.followup import (
+from shared.domain.entities.onboarding import (
     EnrollmentStatus,
     EnrollmentStepStatus,
-    FollowupEnrollment,
-    FollowupEnrollmentStep,
+    OnboardingEnrollment,
+    OnboardingEnrollmentStep,
 )
 
 
@@ -52,8 +52,8 @@ class EnrollmentStepRow:
     failure_reason: str | None
 
 
-def _enrollment_to_entity(m: FollowupEnrollmentModel) -> FollowupEnrollment:
-    return FollowupEnrollment(
+def _enrollment_to_entity(m: OnboardingEnrollmentModel) -> OnboardingEnrollment:
+    return OnboardingEnrollment(
         id=m.id,
         account_id=m.account_id,
         flow_id=m.flow_id,
@@ -69,8 +69,8 @@ def _enrollment_to_entity(m: FollowupEnrollmentModel) -> FollowupEnrollment:
     )
 
 
-def _step_to_entity(m: FollowupEnrollmentStepModel) -> FollowupEnrollmentStep:
-    return FollowupEnrollmentStep(
+def _step_to_entity(m: OnboardingEnrollmentStepModel) -> OnboardingEnrollmentStep:
+    return OnboardingEnrollmentStep(
         id=m.id,
         enrollment_id=m.enrollment_id,
         position=m.position,
@@ -87,15 +87,15 @@ def _step_to_entity(m: FollowupEnrollmentStepModel) -> FollowupEnrollmentStep:
 
 
 @dataclass
-class FollowupEnrollmentRepository:
+class OnboardingEnrollmentRepository:
     session: AsyncSession
 
     async def create_with_steps(
         self,
-        enrollment: FollowupEnrollment,
-        steps: list[FollowupEnrollmentStep],
+        enrollment: OnboardingEnrollment,
+        steps: list[OnboardingEnrollmentStep],
     ) -> None:
-        enrollment_model = FollowupEnrollmentModel(
+        enrollment_model = OnboardingEnrollmentModel(
             id=enrollment.id,
             account_id=enrollment.account_id,
             flow_id=enrollment.flow_id,
@@ -111,7 +111,7 @@ class FollowupEnrollmentRepository:
         await self.session.flush()
 
         for step in steps:
-            step_model = FollowupEnrollmentStepModel(
+            step_model = OnboardingEnrollmentStepModel(
                 id=step.id,
                 enrollment_id=step.enrollment_id,
                 position=step.position,
@@ -126,12 +126,12 @@ class FollowupEnrollmentRepository:
             self.session.add(step_model)
         await self.session.flush()
 
-    async def find_step_by_id(self, step_id: uuid.UUID) -> FollowupEnrollmentStep | None:
-        model = await self.session.get(FollowupEnrollmentStepModel, step_id)
+    async def find_step_by_id(self, step_id: uuid.UUID) -> OnboardingEnrollmentStep | None:
+        model = await self.session.get(OnboardingEnrollmentStepModel, step_id)
         return None if model is None else _step_to_entity(model)
 
-    async def find_enrollment_by_id(self, enrollment_id: uuid.UUID) -> FollowupEnrollment | None:
-        model = await self.session.get(FollowupEnrollmentModel, enrollment_id)
+    async def find_enrollment_by_id(self, enrollment_id: uuid.UUID) -> OnboardingEnrollment | None:
+        model = await self.session.get(OnboardingEnrollmentModel, enrollment_id)
         return None if model is None else _enrollment_to_entity(model)
 
     async def find_by_dedup_key(
@@ -141,23 +141,23 @@ class FollowupEnrollmentRepository:
         contact_id: uuid.UUID,
         flow_id: uuid.UUID,
         purchase_id: str,
-    ) -> FollowupEnrollment | None:
+    ) -> OnboardingEnrollment | None:
         """Busca enrollment por chave de dedup (account_id, contact_id, flow_id, purchase_id)."""
         result = await self.session.execute(
-            select(FollowupEnrollmentModel).where(
-                FollowupEnrollmentModel.account_id == account_id,
-                FollowupEnrollmentModel.contact_id == contact_id,
-                FollowupEnrollmentModel.flow_id == flow_id,
-                FollowupEnrollmentModel.purchase_id == purchase_id,
+            select(OnboardingEnrollmentModel).where(
+                OnboardingEnrollmentModel.account_id == account_id,
+                OnboardingEnrollmentModel.contact_id == contact_id,
+                OnboardingEnrollmentModel.flow_id == flow_id,
+                OnboardingEnrollmentModel.purchase_id == purchase_id,
             )
         )
         row = result.scalar_one_or_none()
         return _enrollment_to_entity(row) if row else None
 
-    async def update_step(self, step: FollowupEnrollmentStep) -> None:
-        model = await self.session.get(FollowupEnrollmentStepModel, step.id)
+    async def update_step(self, step: OnboardingEnrollmentStep) -> None:
+        model = await self.session.get(OnboardingEnrollmentStepModel, step.id)
         if model is None:
-            raise ValueError(f"FollowupEnrollmentStep {step.id} not found")
+            raise ValueError(f"OnboardingEnrollmentStep {step.id} not found")
         model.status = step.status.value
         model.sent_at = step.sent_at
         model.scheduled_job_id = step.scheduled_job_id
@@ -166,10 +166,10 @@ class FollowupEnrollmentRepository:
     async def all_steps_sent(self, enrollment_id: uuid.UUID) -> bool:
         result = await self.session.execute(
             select(func.count())
-            .select_from(FollowupEnrollmentStepModel)
+            .select_from(OnboardingEnrollmentStepModel)
             .where(
-                FollowupEnrollmentStepModel.enrollment_id == enrollment_id,
-                FollowupEnrollmentStepModel.status != EnrollmentStepStatus.SENT.value,
+                OnboardingEnrollmentStepModel.enrollment_id == enrollment_id,
+                OnboardingEnrollmentStepModel.status != EnrollmentStepStatus.SENT.value,
             )
         )
         return result.scalar_one() == 0
@@ -177,28 +177,28 @@ class FollowupEnrollmentRepository:
     async def update_enrollment_status(
         self, enrollment_id: uuid.UUID, status: EnrollmentStatus
     ) -> None:
-        model = await self.session.get(FollowupEnrollmentModel, enrollment_id)
+        model = await self.session.get(OnboardingEnrollmentModel, enrollment_id)
         if model is None:
-            raise ValueError(f"FollowupEnrollment {enrollment_id} not found")
+            raise ValueError(f"OnboardingEnrollment {enrollment_id} not found")
         model.status = status.value
         await self.session.flush()
 
     async def find_active_by_flow(
         self, *, account_id: uuid.UUID, flow_id: uuid.UUID
-    ) -> list[FollowupEnrollment]:
+    ) -> list[OnboardingEnrollment]:
         """Lista enrollments com status='active' de um flow específico de uma conta.
 
         Multi-tenant defense-in-depth: filtra também por account_id.
         Ordenação determinística por created_at ASC.
         """
         result = await self.session.execute(
-            select(FollowupEnrollmentModel)
+            select(OnboardingEnrollmentModel)
             .where(
-                FollowupEnrollmentModel.account_id == account_id,
-                FollowupEnrollmentModel.flow_id == flow_id,
-                FollowupEnrollmentModel.status == EnrollmentStatus.ACTIVE.value,
+                OnboardingEnrollmentModel.account_id == account_id,
+                OnboardingEnrollmentModel.flow_id == flow_id,
+                OnboardingEnrollmentModel.status == EnrollmentStatus.ACTIVE.value,
             )
-            .order_by(FollowupEnrollmentModel.created_at.asc())
+            .order_by(OnboardingEnrollmentModel.created_at.asc())
         )
         rows = result.scalars().all()
         return [_enrollment_to_entity(row) for row in rows]
@@ -212,26 +212,26 @@ class FollowupEnrollmentRepository:
         status: EnrollmentStatus | None,
         page: int,
         page_size: int,
-    ) -> tuple[list[FollowupEnrollment], int]:
+    ) -> tuple[list[OnboardingEnrollment], int]:
         """Lista enrollments paginados. Retorna (items, total)."""
-        base = select(FollowupEnrollmentModel).where(
-            FollowupEnrollmentModel.account_id == account_id
+        base = select(OnboardingEnrollmentModel).where(
+            OnboardingEnrollmentModel.account_id == account_id
         )
         if flow_id is not None:
-            base = base.where(FollowupEnrollmentModel.flow_id == flow_id)
+            base = base.where(OnboardingEnrollmentModel.flow_id == flow_id)
         if status is not None:
-            base = base.where(FollowupEnrollmentModel.status == status.value)
+            base = base.where(OnboardingEnrollmentModel.status == status.value)
         if contact_phone:
             base = base.join(
                 ContactModel,
-                ContactModel.id == FollowupEnrollmentModel.contact_id,
+                ContactModel.id == OnboardingEnrollmentModel.contact_id,
             ).where(ContactModel.phone == contact_phone)
 
         total_result = await self.session.execute(select(func.count()).select_from(base.subquery()))
         total = int(total_result.scalar_one())
 
         paged = (
-            base.order_by(FollowupEnrollmentModel.created_at.desc())
+            base.order_by(OnboardingEnrollmentModel.created_at.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         )
@@ -242,11 +242,11 @@ class FollowupEnrollmentRepository:
         """Conta steps de um enrollment agrupados por status (lowercase)."""
         result = await self.session.execute(
             select(
-                FollowupEnrollmentStepModel.status,
-                func.count(FollowupEnrollmentStepModel.id),
+                OnboardingEnrollmentStepModel.status,
+                func.count(OnboardingEnrollmentStepModel.id),
             )
-            .where(FollowupEnrollmentStepModel.enrollment_id == enrollment_id)
-            .group_by(FollowupEnrollmentStepModel.status)
+            .where(OnboardingEnrollmentStepModel.enrollment_id == enrollment_id)
+            .group_by(OnboardingEnrollmentStepModel.status)
         )
         return {row[0]: int(row[1]) for row in result.all()}
 
@@ -257,17 +257,17 @@ class FollowupEnrollmentRepository:
         Idempotente: chamar várias vezes em um step já não-PENDING é no-op.
         """
         await self.session.execute(
-            update(FollowupEnrollmentStepModel)
+            update(OnboardingEnrollmentStepModel)
             .where(
-                FollowupEnrollmentStepModel.id == step_id,
-                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+                OnboardingEnrollmentStepModel.id == step_id,
+                OnboardingEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
             )
             .values(status=EnrollmentStepStatus.CANCELLED.value)
         )
 
-    async def add_step_with_job(self, step: FollowupEnrollmentStep) -> None:
+    async def add_step_with_job(self, step: OnboardingEnrollmentStep) -> None:
         """Persiste um novo enrollment_step (com flow_step_id e scheduled_job_id já setados)."""
-        model = FollowupEnrollmentStepModel(
+        model = OnboardingEnrollmentStepModel(
             id=step.id,
             enrollment_id=step.enrollment_id,
             flow_step_id=step.flow_step_id,
@@ -305,26 +305,26 @@ class FollowupEnrollmentRepository:
         if scheduled_job_id is not None:
             values["scheduled_job_id"] = scheduled_job_id
         await self.session.execute(
-            update(FollowupEnrollmentStepModel)
+            update(OnboardingEnrollmentStepModel)
             .where(
-                FollowupEnrollmentStepModel.id == step_id,
-                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+                OnboardingEnrollmentStepModel.id == step_id,
+                OnboardingEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
             )
             .values(**values)
         )
 
-    async def get_with_steps(self, enrollment_id: uuid.UUID) -> FollowupEnrollment | None:
+    async def get_with_steps(self, enrollment_id: uuid.UUID) -> OnboardingEnrollment | None:
         """Carrega enrollment + todos os seus steps em uma só ida ao DB."""
         e_result = await self.session.execute(
-            select(FollowupEnrollmentModel).where(FollowupEnrollmentModel.id == enrollment_id)
+            select(OnboardingEnrollmentModel).where(OnboardingEnrollmentModel.id == enrollment_id)
         )
         e_model = e_result.scalar_one_or_none()
         if e_model is None:
             return None
         s_result = await self.session.execute(
-            select(FollowupEnrollmentStepModel)
-            .where(FollowupEnrollmentStepModel.enrollment_id == enrollment_id)
-            .order_by(FollowupEnrollmentStepModel.position)
+            select(OnboardingEnrollmentStepModel)
+            .where(OnboardingEnrollmentStepModel.enrollment_id == enrollment_id)
+            .order_by(OnboardingEnrollmentStepModel.position)
         )
         step_rows = s_result.scalars().all()
         enrollment = _enrollment_to_entity(e_model)
@@ -338,10 +338,10 @@ class FollowupEnrollmentRepository:
         """
         truncated = (reason or "")[:500]
         await self.session.execute(
-            update(FollowupEnrollmentStepModel)
+            update(OnboardingEnrollmentStepModel)
             .where(
-                FollowupEnrollmentStepModel.id == step_id,
-                FollowupEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+                OnboardingEnrollmentStepModel.id == step_id,
+                OnboardingEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
             )
             .values(
                 status=EnrollmentStepStatus.FAILED.value,
@@ -367,29 +367,29 @@ class FollowupEnrollmentRepository:
         """
         base = (
             select(
-                FollowupEnrollmentModel.id,
-                FollowupEnrollmentModel.contact_phone.label("e_phone"),
-                FollowupEnrollmentModel.customer_name.label("e_customer_name"),
+                OnboardingEnrollmentModel.id,
+                OnboardingEnrollmentModel.contact_phone.label("e_phone"),
+                OnboardingEnrollmentModel.customer_name.label("e_customer_name"),
                 ContactModel.phone.label("c_phone"),
                 ContactModel.name.label("c_name"),
-                FollowupEnrollmentModel.flow_id,
-                FollowupFlowModel.name.label("flow_name"),
+                OnboardingEnrollmentModel.flow_id,
+                OnboardingFlowModel.name.label("flow_name"),
                 ProductModel.name.label("product_name"),
-                FollowupEnrollmentModel.status,
-                FollowupEnrollmentModel.created_at,
+                OnboardingEnrollmentModel.status,
+                OnboardingEnrollmentModel.created_at,
             )
-            .join(ContactModel, ContactModel.id == FollowupEnrollmentModel.contact_id)
+            .join(ContactModel, ContactModel.id == OnboardingEnrollmentModel.contact_id)
             .outerjoin(
-                FollowupFlowModel,
-                FollowupFlowModel.id == FollowupEnrollmentModel.flow_id,
+                OnboardingFlowModel,
+                OnboardingFlowModel.id == OnboardingEnrollmentModel.flow_id,
             )
-            .outerjoin(ProductModel, ProductModel.id == FollowupFlowModel.product_id)
-            .where(FollowupEnrollmentModel.account_id == account_id)
+            .outerjoin(ProductModel, ProductModel.id == OnboardingFlowModel.product_id)
+            .where(OnboardingEnrollmentModel.account_id == account_id)
         )
         if flow_id is not None:
-            base = base.where(FollowupEnrollmentModel.flow_id == flow_id)
+            base = base.where(OnboardingEnrollmentModel.flow_id == flow_id)
         if status is not None:
-            base = base.where(FollowupEnrollmentModel.status == status.value)
+            base = base.where(OnboardingEnrollmentModel.status == status.value)
         if contact_phone:
             base = base.where(ContactModel.phone == contact_phone)
 
@@ -397,7 +397,7 @@ class FollowupEnrollmentRepository:
         total = int(total_result.scalar_one())
 
         paged = (
-            base.order_by(FollowupEnrollmentModel.created_at.desc())
+            base.order_by(OnboardingEnrollmentModel.created_at.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         )
@@ -426,14 +426,14 @@ class FollowupEnrollmentRepository:
             return {}
         result = await self.session.execute(
             select(
-                FollowupEnrollmentStepModel.enrollment_id,
-                FollowupEnrollmentStepModel.status,
-                func.count(FollowupEnrollmentStepModel.id),
+                OnboardingEnrollmentStepModel.enrollment_id,
+                OnboardingEnrollmentStepModel.status,
+                func.count(OnboardingEnrollmentStepModel.id),
             )
-            .where(FollowupEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
+            .where(OnboardingEnrollmentStepModel.enrollment_id.in_(enrollment_ids))
             .group_by(
-                FollowupEnrollmentStepModel.enrollment_id,
-                FollowupEnrollmentStepModel.status,
+                OnboardingEnrollmentStepModel.enrollment_id,
+                OnboardingEnrollmentStepModel.status,
             )
         )
         out: dict[uuid.UUID, dict[str, int]] = {}
@@ -454,29 +454,29 @@ class FollowupEnrollmentRepository:
         """
         result = await self.session.execute(
             select(
-                FollowupEnrollmentStepModel.id,
-                FollowupEnrollmentStepModel.position,
-                FollowupEnrollmentStepModel.delay_from_purchase_minutes,
-                FollowupEnrollmentStepModel.meta_template_name,
-                FollowupEnrollmentStepModel.message_text,
-                FollowupEnrollmentStepModel.status,
-                FollowupEnrollmentStepModel.sent_at,
+                OnboardingEnrollmentStepModel.id,
+                OnboardingEnrollmentStepModel.position,
+                OnboardingEnrollmentStepModel.delay_from_purchase_minutes,
+                OnboardingEnrollmentStepModel.meta_template_name,
+                OnboardingEnrollmentStepModel.message_text,
+                OnboardingEnrollmentStepModel.status,
+                OnboardingEnrollmentStepModel.sent_at,
                 ScheduledJobModel.run_at.label("scheduled_for"),
-                FollowupEnrollmentStepModel.failure_reason,
+                OnboardingEnrollmentStepModel.failure_reason,
             )
             .join(
-                FollowupEnrollmentModel,
-                FollowupEnrollmentModel.id == FollowupEnrollmentStepModel.enrollment_id,
+                OnboardingEnrollmentModel,
+                OnboardingEnrollmentModel.id == OnboardingEnrollmentStepModel.enrollment_id,
             )
             .outerjoin(
                 ScheduledJobModel,
-                ScheduledJobModel.id == FollowupEnrollmentStepModel.scheduled_job_id,
+                ScheduledJobModel.id == OnboardingEnrollmentStepModel.scheduled_job_id,
             )
             .where(
-                FollowupEnrollmentStepModel.enrollment_id == enrollment_id,
-                FollowupEnrollmentModel.account_id == account_id,
+                OnboardingEnrollmentStepModel.enrollment_id == enrollment_id,
+                OnboardingEnrollmentModel.account_id == account_id,
             )
-            .order_by(FollowupEnrollmentStepModel.position)
+            .order_by(OnboardingEnrollmentStepModel.position)
         )
         return [
             EnrollmentStepRow(

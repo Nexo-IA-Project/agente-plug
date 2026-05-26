@@ -1,15 +1,17 @@
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 from uuid import UUID
+
+import pytest
 
 
 @pytest.mark.asyncio
 async def test_set_last_onboarding_agent_id_updates_model():
     from sqlalchemy.ext.asyncio import AsyncSession
-    from shared.adapters.db.repositories.conversation import ConversationRepository
+
     from shared.adapters.db.models import ConversationModel
+    from shared.adapters.db.repositories.conversation import ConversationRepository
 
     mock_session = AsyncMock(spec=AsyncSession)
     conv_model = MagicMock(spec=ConversationModel)
@@ -34,8 +36,9 @@ async def test_set_last_onboarding_agent_id_updates_model():
 @pytest.mark.asyncio
 async def test_get_last_onboarding_agent_id_returns_value():
     from sqlalchemy.ext.asyncio import AsyncSession
-    from shared.adapters.db.repositories.conversation import ConversationRepository
+
     from shared.adapters.db.models import ConversationModel
+    from shared.adapters.db.repositories.conversation import ConversationRepository
 
     mock_session = AsyncMock(spec=AsyncSession)
     agent_id = UUID("aaaaaaaa-0000-0000-0000-000000000001")
@@ -58,6 +61,7 @@ async def test_get_last_onboarding_agent_id_returns_value():
 @pytest.mark.asyncio
 async def test_get_last_onboarding_agent_id_returns_none_when_not_found():
     from sqlalchemy.ext.asyncio import AsyncSession
+
     from shared.adapters.db.repositories.conversation import ConversationRepository
 
     mock_session = AsyncMock(spec=AsyncSession)

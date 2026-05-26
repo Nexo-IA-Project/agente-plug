@@ -7,10 +7,12 @@ from shared.adapters.chatnexo.client import ChatNexoClient
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.contact import ContactRepository
-from shared.adapters.db.repositories.onboarding_enrollment_repo import OnboardingEnrollmentRepository
-from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.repositories.hubla_event_repo import SqlHublaEventRepository
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
+from shared.adapters.db.repositories.onboarding_enrollment_repo import (
+    OnboardingEnrollmentRepository,
+)
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope

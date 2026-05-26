@@ -38,15 +38,15 @@ async def handle_scheduled(payload: dict) -> None:
         from cryptography.fernet import Fernet
 
         from agent.history import ConversationHistory
-        from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
         from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+        from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
         from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
         from shared.adapters.db.repositories.contact import ContactRepository
         from shared.adapters.db.repositories.conversation import ConversationRepository
+        from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
         from shared.adapters.db.repositories.onboarding_enrollment_repo import (
             OnboardingEnrollmentRepository,
         )
-        from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
         from shared.adapters.db.session import session_scope
         from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
             DispatchOnboardingStep,

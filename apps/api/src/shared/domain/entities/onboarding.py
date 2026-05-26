@@ -20,7 +20,7 @@ class EnrollmentStepStatus(StrEnum):
 
 
 @dataclass(slots=True)
-class FollowupFlow:
+class OnboardingFlow:
     id: UUID
     account_id: UUID
     product_id: UUID
@@ -32,7 +32,7 @@ class FollowupFlow:
 
 
 @dataclass(slots=True)
-class FollowupStep:
+class OnboardingStep:
     id: UUID
     flow_id: UUID
     position: int
@@ -44,7 +44,7 @@ class FollowupStep:
 
 
 @dataclass(slots=True)
-class FollowupEnrollment:
+class OnboardingEnrollment:
     account_id: UUID
     flow_id: UUID | None
     contact_id: UUID
@@ -61,7 +61,7 @@ class FollowupEnrollment:
 
 
 @dataclass(slots=True)
-class FollowupEnrollmentStep:
+class OnboardingEnrollmentStep:
     enrollment_id: UUID
     position: int
     delay_from_purchase_minutes: int

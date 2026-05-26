@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pytest
 from uuid import UUID
+
+import pytest
 
 from shared.domain.entities.chatnexo_agent import ChatNexoAgent
 
@@ -33,8 +34,8 @@ def test_random_selection_raises_if_empty():
 
 
 def test_build_returns_agent_client_when_agents_available():
-    from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
     from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+    from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 
     agents = [_agent("Ana", "key-ana")]
     client, agent_id = build_chatnexo_client(
@@ -48,8 +49,8 @@ def test_build_returns_agent_client_when_agents_available():
 
 
 def test_build_returns_fallback_client_when_no_agents():
-    from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
     from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+    from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
 
     client, agent_id = build_chatnexo_client(
         base_url="https://chat.example.com",

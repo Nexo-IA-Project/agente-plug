@@ -237,7 +237,9 @@ class SqlLeadRepository:
         # 1. Busca enrollments do lead (purchase_id = hubla_subscription_id)
         enr_stmt = (
             select(OnboardingEnrollmentModel, OnboardingFlowModel.name)
-            .outerjoin(OnboardingFlowModel, OnboardingFlowModel.id == OnboardingEnrollmentModel.flow_id)
+            .outerjoin(
+                OnboardingFlowModel, OnboardingFlowModel.id == OnboardingEnrollmentModel.flow_id
+            )
             .where(
                 OnboardingEnrollmentModel.account_id == account_id,
                 OnboardingEnrollmentModel.purchase_id == hubla_subscription_id,

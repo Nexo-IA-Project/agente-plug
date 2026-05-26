@@ -8,12 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
-from interface.http.schemas.followup import (
+from interface.http.schemas.onboarding import (
     CreateFlowRequest,
     CreateStepRequest,
-    FollowupFlowResponse,
-    FollowupFlowStats,
-    FollowupStepResponse,
+    OnboardingFlowResponse,
+    OnboardingFlowStats,
+    OnboardingStepResponse,
     ProductSummary,
     ReorderStepsRequest,
     StepVariableBindingDto,
@@ -21,12 +21,12 @@ from interface.http.schemas.followup import (
     UpdateStepRequest,
 )
 from shared.adapters.db.models import AccountModel, JobQueueModel
-from shared.adapters.db.repositories.followup_flow_repo import FollowupFlowRepository
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
 from shared.domain.value_objects.priority import Priority
 
-router = APIRouter(tags=["admin-followup"])
+router = APIRouter(tags=["admin-onboarding"])
 
 
 async def _get_account_uuid(session, auth: AdminAuth) -> _uuid_module.UUID:
@@ -70,8 +70,8 @@ async def _enqueue_resync_in_session(
     )
 
 
-def _step_to_resp(s) -> FollowupStepResponse:
-    return FollowupStepResponse(
+def _step_to_resp(s) -> OnboardingStepResponse:
+    return OnboardingStepResponse(
         id=s.id,
         flow_id=s.flow_id,
         position=s.position,
@@ -91,20 +91,20 @@ def _bindings_to_dict(
     return {k: v.model_dump(exclude_none=True) for k, v in bindings.items()}
 
 
-@router.get("/followup/flows", response_model=list[FollowupFlowResponse])
+@router.get("/onboarding/flows", response_model=list[OnboardingFlowResponse])
 async def list_flows(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> list[FollowupFlowResponse]:
+) -> list[OnboardingFlowResponse]:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        flow_repo = FollowupFlowRepository(session=session)
+        flow_repo = OnboardingFlowRepository(session=session)
         product_repo = SqlProductRepository(session=session)
         flows = await flow_repo.list_flows(account_id=account_uuid)
         stats = await flow_repo.stats_by_flows(
             account_id=account_uuid,
             flow_ids=[f.id for f in flows],
         )
-        out: list[FollowupFlowResponse] = []
+        out: list[OnboardingFlowResponse] = []
         for f in flows:
             product = await product_repo.find_by_id(f.product_id)
             steps = await flow_repo.get_steps(f.id)
@@ -113,7 +113,7 @@ async def list_flows(
                 continue
             s = stats.get(f.id, {})
             out.append(
-                FollowupFlowResponse(
+                OnboardingFlowResponse(
                     id=f.id,
                     name=f.name,
                     is_active=f.is_active,
@@ -124,7 +124,7 @@ async def list_flows(
                     steps_count=len(steps),
                     created_at=f.created_at,
                     updated_at=f.updated_at,
-                    stats=FollowupFlowStats(
+                    stats=OnboardingFlowStats(
                         enrollments_active=s.get("active", 0),
                         enrollments_completed=s.get("completed", 0),
                     ),
@@ -134,14 +134,14 @@ async def list_flows(
 
 
 @router.post(
-    "/followup/flows",
-    response_model=FollowupFlowResponse,
+    "/onboarding/flows",
+    response_model=OnboardingFlowResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_flow(
     body: CreateFlowRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> FollowupFlowResponse:
+) -> OnboardingFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
@@ -151,7 +151,7 @@ async def create_flow(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="product not found",
             )
-        flow_repo = FollowupFlowRepository(session=session)
+        flow_repo = OnboardingFlowRepository(session=session)
         flow = await flow_repo.create_flow(
             account_id=account_uuid,
             product_id=body.product_id,
@@ -159,7 +159,7 @@ async def create_flow(
             is_active=body.is_active,
             trigger_event_type=body.trigger_event_type,
         )
-    return FollowupFlowResponse(
+    return OnboardingFlowResponse(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
@@ -171,12 +171,12 @@ async def create_flow(
     )
 
 
-@router.put("/followup/flows/{flow_id}", response_model=FollowupFlowResponse)
+@router.put("/onboarding/flows/{flow_id}", response_model=OnboardingFlowResponse)
 async def update_flow(
     flow_id: UUID,
     body: UpdateFlowRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> FollowupFlowResponse:
+) -> OnboardingFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
         product_repo = SqlProductRepository(session=session)
@@ -187,7 +187,7 @@ async def update_flow(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="product not found",
                 )
-        flow_repo = FollowupFlowRepository(session=session)
+        flow_repo = OnboardingFlowRepository(session=session)
         flow = await flow_repo.update_flow(
             flow_id,
             name=body.name,
@@ -201,7 +201,7 @@ async def update_flow(
         steps = await flow_repo.get_steps(flow.id)
         if product is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="product not found")
-    return FollowupFlowResponse(
+    return OnboardingFlowResponse(
         id=flow.id,
         name=flow.name,
         is_active=flow.is_active,
@@ -213,42 +213,42 @@ async def update_flow(
     )
 
 
-@router.delete("/followup/flows/{flow_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/onboarding/flows/{flow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_flow(
     flow_id: UUID,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
     async with session_scope() as session:
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         deleted = await repo.delete_flow(flow_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Flow não encontrado")
 
 
-@router.get("/followup/flows/{flow_id}/steps", response_model=list[FollowupStepResponse])
+@router.get("/onboarding/flows/{flow_id}/steps", response_model=list[OnboardingStepResponse])
 async def list_steps(
     flow_id: UUID,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> list[FollowupStepResponse]:
+) -> list[OnboardingStepResponse]:
     async with session_scope() as session:
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         steps = await repo.get_steps(flow_id)
     return [_step_to_resp(s) for s in steps]
 
 
 @router.post(
-    "/followup/flows/{flow_id}/steps",
-    response_model=FollowupStepResponse,
+    "/onboarding/flows/{flow_id}/steps",
+    response_model=OnboardingStepResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def create_step(
     flow_id: UUID,
     body: CreateStepRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> FollowupStepResponse:
+) -> OnboardingStepResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         existing = await repo.get_steps(flow_id)
         position = body.position if body.position is not None else len(existing)
         step = await repo.create_step(
@@ -263,16 +263,16 @@ async def create_step(
     return _step_to_resp(step)
 
 
-@router.put("/followup/flows/{flow_id}/steps/{step_id}", response_model=FollowupStepResponse)
+@router.put("/onboarding/flows/{flow_id}/steps/{step_id}", response_model=OnboardingStepResponse)
 async def update_step(
     flow_id: UUID,
     step_id: UUID,
     body: UpdateStepRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
-) -> FollowupStepResponse:
+) -> OnboardingStepResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         template_vars = (
             _bindings_to_dict(body.template_variables)
             if body.template_variables is not None
@@ -294,7 +294,9 @@ async def update_step(
     return _step_to_resp(step)
 
 
-@router.delete("/followup/flows/{flow_id}/steps/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/onboarding/flows/{flow_id}/steps/{step_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 async def delete_step(
     flow_id: UUID,
     step_id: UUID,
@@ -302,14 +304,14 @@ async def delete_step(
 ) -> None:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         deleted = await repo.delete_step(step_id)
         if not deleted:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step não encontrado")
         await _enqueue_resync_in_session(session, flow_id=flow_id, account_id=account_uuid)
 
 
-@router.patch("/followup/flows/{flow_id}/steps/reorder", status_code=status.HTTP_204_NO_CONTENT)
+@router.patch("/onboarding/flows/{flow_id}/steps/reorder", status_code=status.HTTP_204_NO_CONTENT)
 async def reorder_steps(
     flow_id: UUID,
     body: ReorderStepsRequest,
@@ -317,7 +319,7 @@ async def reorder_steps(
 ) -> None:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
-        repo = FollowupFlowRepository(session=session)
+        repo = OnboardingFlowRepository(session=session)
         for item in body.steps:
             await repo.update_step(item.id, position=item.position)
         await _enqueue_resync_in_session(session, flow_id=flow_id, account_id=account_uuid)
