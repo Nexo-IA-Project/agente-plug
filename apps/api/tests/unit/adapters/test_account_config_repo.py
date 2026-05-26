@@ -183,6 +183,36 @@ def test_mask_hides_sensitive_values():
 
 
 @pytest.mark.asyncio
+async def test_update_persists_chatnexo_account_and_inbox_ids():
+    """update() deve persistir chatnexo_account_id e chatnexo_inbox_id no JSONB."""
+    fernet = _make_fernet()
+    account = _mock_account({})
+    session = _mock_session_with_account(account)
+    repo = _make_repo(session, fernet)
+
+    patch_obj = AccountConfigPatch(chatnexo_account_id=99, chatnexo_inbox_id=3)
+
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
+        _setup_default_settings(mock_s)
+        mock_s.return_value.chatnexo_account_id = 1
+        mock_s.return_value.chatnexo_inbox_id = 1
+        config = await repo.update(account_id=1, patch=patch_obj)
+
+    assert config.integration.chatnexo_account_id == 99
+    assert config.integration.chatnexo_inbox_id == 3
+
+
+@pytest.mark.asyncio
 async def test_get_chatnexo_account_and_inbox_ids_fallback_to_env():
     """Quando settings={}, usa os defaults do Settings (chatnexo_account_id=1, inbox_id=1)."""
     session = _mock_session_with_account(_mock_account({}))

@@ -158,6 +158,11 @@ class AccountConfigRepository:
             assert val is not None
             i[key] = _encrypt(self.fernet, val) if key in _SENSITIVE else val
 
+        if patch.chatnexo_account_id is not None:
+            i["chatnexo_account_id"] = patch.chatnexo_account_id
+        if patch.chatnexo_inbox_id is not None:
+            i["chatnexo_inbox_id"] = patch.chatnexo_inbox_id
+
         for key in (
             "idle_ping_minutes",
             "idle_close_minutes",
