@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from shared.domain.entities.chatnexo_agent import ChatNexoAgent
+
 
 @dataclass(frozen=True)
 class IntegrationConfig:
@@ -17,6 +19,7 @@ class IntegrationConfig:
     meta_api_key: str
     meta_waba_id: str
     meta_app_id: str
+    chatnexo_agents: list[ChatNexoAgent] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
