@@ -477,8 +477,8 @@ class ApiTokenModel(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
 
 
-class FollowupFlowModel(Base):
-    __tablename__ = "followup_flows"
+class OnboardingFlowModel(Base):
+    __tablename__ = "onboarding_flows"
     id: Mapped[uuid.UUID] = _pk()
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
@@ -508,11 +508,11 @@ class FollowupFlowModel(Base):
     )
 
 
-class FollowupStepModel(Base):
-    __tablename__ = "followup_steps"
+class OnboardingStepModel(Base):
+    __tablename__ = "onboarding_steps"
     id: Mapped[uuid.UUID] = _pk()
     flow_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("followup_flows.id"), nullable=False, index=True
+        UUID(as_uuid=True), ForeignKey("onboarding_flows.id"), nullable=False, index=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -522,18 +522,18 @@ class FollowupStepModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
-    __table_args__ = (Index("ix_followup_steps_flow_position", "flow_id", "position"),)
+    __table_args__ = (Index("ix_onboarding_steps_flow_position", "flow_id", "position"),)
 
 
-class FollowupEnrollmentModel(Base):
-    __tablename__ = "followup_enrollments"
+class OnboardingEnrollmentModel(Base):
+    __tablename__ = "onboarding_enrollments"
     id: Mapped[uuid.UUID] = _pk()
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
     )
     flow_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("followup_flows.id", ondelete="SET NULL"),
+        ForeignKey("onboarding_flows.id", ondelete="SET NULL"),
         nullable=True,
     )
     contact_id: Mapped[uuid.UUID] = mapped_column(
@@ -550,11 +550,11 @@ class FollowupEnrollmentModel(Base):
     )
 
 
-class FollowupEnrollmentStepModel(Base):
-    __tablename__ = "followup_enrollment_steps"
+class OnboardingEnrollmentStepModel(Base):
+    __tablename__ = "onboarding_enrollment_steps"
     id: Mapped[uuid.UUID] = _pk()
     enrollment_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("followup_enrollments.id"), nullable=False, index=True
+        UUID(as_uuid=True), ForeignKey("onboarding_enrollments.id"), nullable=False, index=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
