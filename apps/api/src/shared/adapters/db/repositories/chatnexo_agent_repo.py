@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from cryptography.fernet import Fernet
-from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -91,7 +90,7 @@ class ChatNexoAgentRepository:
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if model is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado")
+            raise KeyError(f"ChatNexoAgent {id} not found for account {account_id}")
         if name is not None:
             model.name = name
         if api_key is not None:
@@ -109,6 +108,6 @@ class ChatNexoAgentRepository:
         result = await self.session.execute(stmt)
         model = result.scalar_one_or_none()
         if model is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Agente não encontrado")
+            raise KeyError(f"ChatNexoAgent {id} not found for account {account_id}")
         await self.session.delete(model)
         await self.session.flush()

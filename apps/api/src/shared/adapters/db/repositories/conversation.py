@@ -98,6 +98,7 @@ class ConversationRepository:
     async def get_last_onboarding_agent_id(
         self, *, account_id: UUID, chatnexo_conversation_id: int
     ) -> UUID | None:
+        require_account_id(account_id)
         stmt = select(ConversationModel).where(
             ConversationModel.account_id == account_id,
             ConversationModel.chatnexo_conversation_id == chatnexo_conversation_id,
@@ -115,6 +116,7 @@ class ConversationRepository:
         chatnexo_conversation_id: int,
         agent_id: UUID,
     ) -> None:
+        require_account_id(account_id)
         stmt = select(ConversationModel).where(
             ConversationModel.account_id == account_id,
             ConversationModel.chatnexo_conversation_id == chatnexo_conversation_id,
@@ -123,3 +125,4 @@ class ConversationRepository:
         model = result.scalar_one_or_none()
         if model is not None:
             model.last_onboarding_agent_id = agent_id
+            await self.session.flush()
