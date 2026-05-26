@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
 import {
   type AgentItem,
   listChatnexoAgents,
@@ -8,6 +9,11 @@ import {
   deleteChatnexoAgent,
 } from "@/lib/api";
 import { useToast } from "@/shared/hooks/useToast";
+
+interface AgentFormData {
+  name: string;
+  api_key: string;
+}
 
 function AgentListItem({
   agent,
@@ -80,9 +86,17 @@ export function ChatNexoAgentsSection() {
   const toast = useToast();
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    reset,
+  } = useForm<AgentFormData>({
+    mode: "onChange",
+    defaultValues: { name: "", api_key: "" },
+  });
 
   useEffect(() => {
     listChatnexoAgents()
@@ -92,14 +106,15 @@ export function ChatNexoAgentsSection() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleAdd() {
-    if (!name.trim() || !apiKey.trim()) return;
+  async function onSubmit(data: AgentFormData) {
     setSaving(true);
     try {
-      const agent = await createChatnexoAgent({ name: name.trim(), api_key: apiKey.trim() });
+      const agent = await createChatnexoAgent({
+        name: data.name.trim(),
+        api_key: data.api_key.trim(),
+      });
       setAgents((prev) => [...prev, agent]);
-      setName("");
-      setApiKey("");
+      reset();
       toast.success(`Atendente "${agent.name}" adicionado.`);
     } catch {
       toast.error("Erro ao adicionar atendente.");
@@ -110,10 +125,6 @@ export function ChatNexoAgentsSection() {
 
   function handleDeleted(id: string) {
     setAgents((prev) => prev.filter((a) => a.id !== id));
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") handleAdd();
   }
 
   return (
@@ -156,37 +167,75 @@ export function ChatNexoAgentsSection() {
         </div>
 
         {/* Add agent form */}
-        <div className="border-t border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="border-t border-outline-variant/60 bg-white dark:bg-surface-container px-5 py-4"
+        >
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
             Adicionar atendente
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-xs font-medium text-on-surface-variant">Nome</label>
+              <label htmlFor="agent-name" className="text-xs font-medium text-on-surface-variant">
+                Nome
+              </label>
               <input
+                id="agent-name"
                 type="text"
                 placeholder="Ex: Sofia"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                aria-invalid={errors.name ? "true" : "false"}
+                {...register("name", {
+                  required: "Nome é obrigatório.",
+                  maxLength: { value: 120, message: "Máximo de 120 caracteres." },
+                  validate: (v) => v.trim().length > 0 || "Nome não pode estar vazio.",
+                })}
+                className={[
+                  "w-full rounded-xl border px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 transition-colors focus:outline-none focus:ring-2",
+                  errors.name
+                    ? "border-error bg-error/5 focus:border-error focus:ring-error/20"
+                    : "border-outline-variant bg-surface-container-low focus:border-primary focus:ring-primary/20",
+                ].join(" ")}
               />
+              {errors.name && (
+                <span className="flex items-center gap-1 text-xs text-error">
+                  <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>error</span>
+                  {errors.name.message}
+                </span>
+              )}
             </div>
             <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-xs font-medium text-on-surface-variant">API Key</label>
+              <label htmlFor="agent-api-key" className="text-xs font-medium text-on-surface-variant">
+                API Key
+              </label>
               <input
+                id="agent-api-key"
                 type="password"
                 placeholder="nxia_..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="w-full rounded-xl border border-outline-variant bg-surface-container-low px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                aria-invalid={errors.api_key ? "true" : "false"}
+                {...register("api_key", {
+                  required: "API Key é obrigatória.",
+                  minLength: { value: 8, message: "Mínimo de 8 caracteres." },
+                  validate: (v) => v.trim().length > 0 || "API Key não pode estar vazia.",
+                })}
+                className={[
+                  "w-full rounded-xl border px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 transition-colors focus:outline-none focus:ring-2",
+                  errors.api_key
+                    ? "border-error bg-error/5 focus:border-error focus:ring-error/20"
+                    : "border-outline-variant bg-surface-container-low focus:border-primary focus:ring-primary/20",
+                ].join(" ")}
               />
+              {errors.api_key && (
+                <span className="flex items-center gap-1 text-xs text-error">
+                  <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>error</span>
+                  {errors.api_key.message}
+                </span>
+              )}
             </div>
-            <div className="flex items-end">
+            <div className="flex sm:pt-[26px]">
               <button
-                onClick={handleAdd}
-                disabled={saving || !name.trim() || !apiKey.trim()}
+                type="submit"
+                disabled={saving || !isValid}
                 className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {saving ? (
@@ -198,7 +247,7 @@ export function ChatNexoAgentsSection() {
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </section>
   );

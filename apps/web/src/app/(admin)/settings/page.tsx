@@ -40,14 +40,31 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-12 p-6">
+    <div className="space-y-10 p-6">
       {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-on-surface">Configurações</h1>
-        <p className="mt-1 text-sm text-on-surface-variant">
-          Gerencie as integrações e o comportamento do agente de IA.
-        </p>
-      </div>
+      <header className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
+        <div className="flex items-center gap-5 px-7 py-6">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-container">
+            <span
+              className="material-symbols-outlined text-on-primary-container"
+              style={{ fontSize: "28px", fontVariationSettings: "'FILL' 1" }}
+            >
+              tune
+            </span>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-on-surface">Configurações</h1>
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                Painel
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-on-surface-variant">
+              Gerencie as integrações, atendentes e o comportamento do agente de IA.
+            </p>
+          </div>
+        </div>
+      </header>
 
       {/* Integrations */}
       <IntegrationSection initial={settings} onSaved={setSettings} />
