@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import UUID
 
 import pytest
 from cryptography.fernet import Fernet
@@ -11,6 +12,8 @@ from shared.adapters.db.repositories.account_config_repo import (
     _mask,
 )
 from shared.domain.entities.account_config import AccountConfigPatch
+
+_FAKE_UUID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 def _make_fernet() -> Fernet:
@@ -60,7 +63,17 @@ async def test_get_returns_env_defaults_when_jsonb_empty():
     fernet = _make_fernet()
     repo = _make_repo(session, fernet)
 
-    with patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s:
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
         _setup_default_settings(mock_s)
         config = await repo.get(account_id=1)
 
@@ -88,7 +101,17 @@ async def test_get_uses_db_values_over_env_defaults():
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 
-    with patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s:
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
         _setup_default_settings(mock_s)
         config = await repo.get(account_id=1)
 
@@ -107,7 +130,17 @@ async def test_update_encrypts_sensitive_fields():
 
     patch_obj = AccountConfigPatch(openai_api_key="sk-new-key")
 
-    with patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s:
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
         _setup_default_settings(mock_s)
         await repo.update(account_id=1, patch=patch_obj)
 
@@ -128,7 +161,17 @@ async def test_update_ignores_masked_values():
     # Valor mascarado real produzido por _mask() — termina em "****".
     patch_obj = AccountConfigPatch(openai_api_key="sk-proj-****")
 
-    with patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s:
+    with (
+        patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.get_default_account_uuid",
+            new=AsyncMock(return_value=_FAKE_UUID),
+        ),
+        patch(
+            "shared.adapters.db.repositories.account_config_repo.ChatNexoAgentRepository"
+        ) as mock_agent_repo_cls,
+    ):
+        mock_agent_repo_cls.return_value.list_active = AsyncMock(return_value=[])
         _setup_default_settings(mock_s)
         await repo.update(account_id=1, patch=patch_obj)
 

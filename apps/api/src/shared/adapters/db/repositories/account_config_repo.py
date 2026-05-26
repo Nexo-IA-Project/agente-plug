@@ -8,7 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import AccountModel
+from shared.adapters.db.repositories.chatnexo_agent_repo import ChatNexoAgentRepository
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.account_config import (
     AccountConfig,
     AccountConfigPatch,
@@ -98,6 +100,11 @@ class AccountConfigRepository:
             v = b.get(key)
             return float(v) if v is not None else default
 
+        # Carregar agentes ativos do ChatNexo
+        agent_repo = ChatNexoAgentRepository(session=self.session, fernet=self.fernet)
+        account_uuid = await get_default_account_uuid(self.session)
+        agents = await agent_repo.list_active(account_uuid)
+
         return AccountConfig(
             integration=IntegrationConfig(
                 chatnexo_base_url=gs("chatnexo_base_url", s.chatnexo_base_url),
@@ -113,6 +120,7 @@ class AccountConfigRepository:
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
                 meta_waba_id=i.get("meta_waba_id") or s.meta_waba_id,
                 meta_app_id=i.get("meta_app_id") or (s.meta_app_id or ""),
+                chatnexo_agents=agents,
             ),
             behavior=BehaviorConfig(
                 idle_ping_minutes=gi("idle_ping_minutes", s.idle_ping_minutes),
