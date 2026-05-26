@@ -12,7 +12,6 @@ from shared.application.use_cases.onboarding.variable_resolver import (
     ResolutionContext,
     VariableResolver,
 )
-from shared.config.settings import get_settings
 from shared.domain.entities.onboarding import EnrollmentStatus, EnrollmentStepStatus
 
 log = structlog.get_logger(__name__)
@@ -58,6 +57,7 @@ class DispatchOnboardingStep:
         account_id: UUID,
         conversation_id: str,
         contact_phone: str,
+        chatnexo_account_id: int = 1,
     ) -> DispatchResult:
         step = await self._enrollment_repo.find_step_by_id(enrollment_step_id)
         if step is None:
@@ -75,7 +75,7 @@ class DispatchOnboardingStep:
         if step.message_text:
             try:
                 await self._chatnexo.send_message(
-                    account_id=str(get_settings().chatnexo_account_id),
+                    account_id=str(chatnexo_account_id),
                     conversation_id=str(conversation_id),
                     text=step.message_text,
                 )
@@ -128,7 +128,7 @@ class DispatchOnboardingStep:
                     log.warning(
                         "followup_step_template_not_found",
                         template_name=step.meta_template_name,
-                        account_id=str(get_settings().chatnexo_account_id),
+                        account_id=str(chatnexo_account_id),
                     )
 
             enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
@@ -184,7 +184,7 @@ class DispatchOnboardingStep:
 
             try:
                 await self._chatnexo.send_template(
-                    account_id=str(get_settings().chatnexo_account_id),
+                    account_id=str(chatnexo_account_id),
                     conversation_id=str(conversation_id),
                     template_name=step.meta_template_name,
                     language=language,
