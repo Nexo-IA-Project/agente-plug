@@ -8,6 +8,10 @@ RUN npm ci --omit=dev --ignore-scripts
 # -----------------------------
 FROM node:20-alpine AS builder
 
+# NEXT_PUBLIC_* precisa estar disponível em build time (inlined no JS do client).
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
