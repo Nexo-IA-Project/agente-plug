@@ -23,6 +23,7 @@ from interface.http.routers.admin import onboarding as admin_onboarding
 from interface.http.routers.admin import (
     onboarding_enrollments as admin_onboarding_enrollments,
 )
+from interface.http.routers.admin import chatnexo_agents as admin_chatnexo_agents
 from interface.http.routers.admin import leads as admin_leads
 from interface.http.routers.admin import meta_templates as admin_meta_templates
 from interface.http.routers.admin import products as admin_products
@@ -113,6 +114,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_meta_templates.router, prefix="/admin")
     app.include_router(admin_products.router, prefix="/admin")
     app.include_router(admin_leads.router, prefix="/admin")
+    app.include_router(admin_chatnexo_agents.router, prefix="/admin")
     return app
 
 
