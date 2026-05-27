@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
@@ -19,7 +19,7 @@ class _Config:
     dedup: object | None = None
     event_repo_factory: Callable[[], object] | None = None
     queue: object | None = None
-    expected_token: str = ""
+    token_resolver: Callable[[], Awaitable[str]] | None = None
 
 
 _cfg = _Config()
@@ -30,18 +30,22 @@ def configure(
     dedup,
     event_repo_factory: Callable[[], object],
     queue,
-    expected_token: str,
+    token_resolver: Callable[[], Awaitable[str]],
 ) -> None:
     _cfg.dedup = dedup
     _cfg.event_repo_factory = event_repo_factory
     _cfg.queue = queue
-    _cfg.expected_token = expected_token
+    _cfg.token_resolver = token_resolver
 
 
 async def _verify_token(request: Request) -> None:
-    # Hubla não envia headers de autenticação; usamos token na query string.
+    # Hubla não envia headers; token vai na query string.
+    # token_resolver lê do IntegrationConfig (UI Settings) com fallback pro .env.
+    if _cfg.token_resolver is None:
+        raise RuntimeError("webhook_hubla router not configured; call configure() before serving")
+    expected = await _cfg.token_resolver()
     token = request.query_params.get("token", "")
-    if not secrets.compare_digest(token, _cfg.expected_token):
+    if not secrets.compare_digest(token, expected):
         WEBHOOK_RECEIVED.labels(source="hubla-unified", status="401").inc()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
 

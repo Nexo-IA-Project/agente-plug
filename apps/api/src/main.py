@@ -62,17 +62,34 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             repo = ApiTokenRepository(session)
             return await repo.validate(raw_token=raw_token)
 
+    async def _resolve_hubla_token() -> str:
+        # Lê o secret do IntegrationConfig (tela de Settings); fallback pro .env.
+        # AccountConfigRepository.get() já implementa esse fallback internamente.
+        from cryptography.fernet import Fernet
+
+        from shared.adapters.db.repositories.account_config_repo import (
+            AccountConfigRepository,
+        )
+
+        async with get_sessionmaker()() as session:
+            repo = AccountConfigRepository(
+                session=session,
+                fernet=Fernet(settings.integration_credentials_key.encode()),
+            )
+            config = await repo.get(account_id=0)  # single-tenant: ignora id
+            return config.integration.hubla_webhook_secret or settings.hubla_webhook_secret
+
     webhook_purchase.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
         queue=queue,
-        expected_token=settings.hubla_webhook_secret,
+        token_resolver=_resolve_hubla_token,
     )
     webhook_hubla.configure(
         dedup=dedup,
         event_repo_factory=_event_repo_factory,
         queue=queue,
-        expected_token=settings.hubla_webhook_secret,
+        token_resolver=_resolve_hubla_token,
     )
     webhook_message.configure(
         dedup=dedup,

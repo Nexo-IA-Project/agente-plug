@@ -18,6 +18,10 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_purchase
 
 
+async def _token_resolver_secret() -> str:
+    return "secret-token"
+
+
 def _v2_payload(
     *,
     purchase_id: str = "sub-uuid-1",
@@ -63,7 +67,7 @@ def app_and_deps():
         dedup=deps["dedup"],
         event_repo_factory=lambda: deps["event_repo"],
         queue=deps["queue"],
-        expected_token="secret-token",
+        token_resolver=_token_resolver_secret,
     )
     app.include_router(webhook_purchase.router)
     return app, deps
