@@ -7,11 +7,12 @@ from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-# Limites de tamanho por kind (em bytes). Conforme Spec B (mais conservador que a Meta).
+# Limites de tamanho por kind (em bytes). Valores oficiais da Meta WhatsApp Cloud API.
+# Fonte: https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media
 _SIZE_LIMITS: dict[str, int] = {
-    "IMAGE": 5 * 1024 * 1024,  # 5 MB
-    "VIDEO": 16 * 1024 * 1024,  # 16 MB
-    "DOCUMENT": 16 * 1024 * 1024,  # 16 MB
+    "IMAGE": 5 * 1024 * 1024,  # 5 MB (JPEG, PNG)
+    "VIDEO": 16 * 1024 * 1024,  # 16 MB (MP4, 3GPP)
+    "DOCUMENT": 100 * 1024 * 1024,  # 100 MB (PDF, DOC, etc.)
 }
 
 MediaKind = Literal["IMAGE", "VIDEO", "DOCUMENT"]
