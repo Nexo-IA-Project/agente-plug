@@ -18,6 +18,10 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_purchase
 
 
+async def _token_resolver_secret() -> str:
+    return "secret-token"
+
+
 def _v2_payload(
     *,
     purchase_id: str = "sub-uuid-1",
@@ -63,7 +67,7 @@ def app_and_deps():
         dedup=deps["dedup"],
         event_repo_factory=lambda: deps["event_repo"],
         queue=deps["queue"],
-        expected_token="secret-token",
+        token_resolver=_token_resolver_secret,
     )
     app.include_router(webhook_purchase.router)
     return app, deps
@@ -80,7 +84,7 @@ def test_webhook_subscription_activated_enqueues_job(app_and_deps):
     r = client.post(
         "/webhook/purchase",
         json=payload,
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202, r.text
     assert r.json()["accepted"] is True
@@ -107,7 +111,7 @@ def test_webhook_duplicate_subscription_returns_202_duplicate(app_and_deps):
     r1 = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="dup-1"),
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r1.status_code == 202
     assert r1.json()["duplicate"] is True
@@ -120,6 +124,6 @@ def test_webhook_invalid_token_returns_401(app_and_deps):
     r = client.post(
         "/webhook/purchase",
         json={"type": "subscription.activated", "event": {}},
-        headers={"x-hubla-token": "wrong"},
+        params={"token": "wrong"},
     )
     assert r.status_code == 401

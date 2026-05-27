@@ -20,9 +20,8 @@ echo "5. Healthcheck..."
 curl -f http://localhost:8000/health
 
 echo "6. POST webhook..."
-curl -f -X POST http://localhost:8000/webhook/purchase \
+curl -f -X POST "http://localhost:8000/webhook/purchase?token=${HUBLA_WEBHOOK_SECRET}" \
   -H "Content-Type: application/json" \
-  -H "X-Hubla-Token: ${HUBLA_WEBHOOK_SECRET}" \
   -d '{
     "purchase_id":"smoke-1","account_id":1,"name":"Smoke",
     "email":"s@t.com","phone":"11987654321","product":"X",

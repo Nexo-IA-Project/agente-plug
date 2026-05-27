@@ -17,6 +17,10 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_hubla
 
 
+async def _token_resolver_secret() -> str:
+    return "secret-token"
+
+
 def _activated_payload(
     *,
     subscription_id: str = "sub-uuid-1",
@@ -86,7 +90,7 @@ def app_and_deps():
         dedup=deps["dedup"],
         event_repo_factory=lambda: deps["event_repo"],
         queue=deps["queue"],
-        expected_token="secret-token",
+        token_resolver=_token_resolver_secret,
     )
     app.include_router(webhook_hubla.router)
     return app, deps
@@ -105,7 +109,7 @@ def test_invalid_token_returns_401(app_and_deps):
     r = client.post(
         "/webhook/hubla",
         json=_activated_payload(),
-        headers={"x-hubla-token": "wrong-token"},
+        params={"token": "wrong-token"},
     )
     assert r.status_code == 401
 
@@ -121,7 +125,7 @@ def test_valid_token_and_payload_enqueues_job(app_and_deps):
     r = client.post(
         "/webhook/hubla",
         json=payload,
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
 
     assert r.status_code == 202, r.text
@@ -150,7 +154,7 @@ def test_duplicate_payload_returns_202_duplicate_no_enqueue(app_and_deps):
     r = client.post(
         "/webhook/hubla",
         json=_activated_payload(subscription_id="dup-sub-1"),
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
 
     assert r.status_code == 202
@@ -173,7 +177,7 @@ def test_non_purchase_event_enqueues_with_different_namespace(app_and_deps):
     r = client.post(
         "/webhook/hubla",
         json=payload,
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
 
     assert r.status_code == 202, r.text

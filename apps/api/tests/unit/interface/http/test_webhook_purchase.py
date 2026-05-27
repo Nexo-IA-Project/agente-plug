@@ -9,6 +9,10 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_purchase
 
 
+async def _token_resolver_secret() -> str:
+    return "secret-token"
+
+
 @pytest.fixture
 def deps():
     return {
@@ -26,7 +30,7 @@ def _make_app(deps) -> FastAPI:
         dedup=deps["dedup"],
         event_repo_factory=lambda: deps["event_repo"],
         queue=deps["queue"],
-        expected_token="secret-token",
+        token_resolver=_token_resolver_secret,
     )
     app.include_router(webhook_purchase.router)
     return app
@@ -70,7 +74,7 @@ def test_returns_202_on_first_valid_call(deps):
     r = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="p-1", product_id="prod-x"),
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202, r.text
     deps["queue"].enqueue.assert_awaited_once()
@@ -83,7 +87,7 @@ def test_returns_202_but_skips_enqueue_on_duplicate(deps):
     r = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="p-dup", product_id="prod-y"),
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202
     assert r.json()["duplicate"] is True
@@ -97,6 +101,6 @@ def test_returns_422_on_invalid_payload(deps):
     r = client.post(
         "/webhook/purchase",
         json={"type": "subscription.canceled", "event": {}},
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 422
