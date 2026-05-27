@@ -58,6 +58,23 @@ async def get_settings_endpoint(
     return _to_response(config)
 
 
+@router.get("/settings/hubla-webhook-token")
+async def get_hubla_webhook_token(
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> dict[str, str]:
+    """Retorna o secret real (não mascarado) usado pra autenticar webhooks da Hubla.
+
+    Usado pelo card de configuração no painel pra montar a URL completa
+    com ?token=... que o operador cola na Hubla.
+    """
+    s = get_settings()
+    fernet = Fernet(s.integration_credentials_key.encode())
+    async with session_scope() as session:
+        repo = AccountConfigRepository(session=session, fernet=fernet)
+        config = await repo.get(account_id=auth.account_id)
+    return {"token": config.integration.hubla_webhook_secret or ""}
+
+
 @router.put("/settings", response_model=AccountSettingsResponse)
 async def update_settings_endpoint(
     body: AccountSettingsUpdateRequest,

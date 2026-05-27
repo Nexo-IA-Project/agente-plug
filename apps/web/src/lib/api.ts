@@ -143,6 +143,10 @@ export async function updateAccountSettings(patch: AccountSettingsPatch): Promis
   });
 }
 
+export async function getHublaWebhookToken(): Promise<{ token: string }> {
+  return apiFetch<{ token: string }>("/admin/settings/hubla-webhook-token");
+}
+
 // ─── Onboarding Flows ────────────────────────────────────────────────────────
 
 export async function listOnboardingFlows(): Promise<OnboardingFlow[]> {
