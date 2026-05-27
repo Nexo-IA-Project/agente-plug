@@ -11,6 +11,7 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import (
     health,
     metrics,
+    public_media,
     webhook_hubla,
     webhook_message,
     webhook_purchase,
@@ -112,6 +113,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_onboarding.router, prefix="/admin")
     app.include_router(admin_onboarding_enrollments.router, prefix="/admin")
     app.include_router(admin_meta_templates.router, prefix="/admin")
+    app.include_router(public_media.router)
     app.include_router(admin_products.router, prefix="/admin")
     app.include_router(admin_leads.router, prefix="/admin")
     app.include_router(admin_chatnexo_agents.router, prefix="/admin")
