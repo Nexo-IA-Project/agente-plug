@@ -130,6 +130,7 @@ export function FlowDrawer({ open, flow, onClose, onCreate, onUpdate }: Props) {
         setActiveFlow(created);
         toast.success("Fluxo de onboarding criado.");
       }
+      onClose();
     } catch {
       toast.error("Erro ao salvar fluxo.");
     } finally {
