@@ -9,7 +9,7 @@ def _flow_step(id_, position=1, delay=24, template="t", text=None, vars=None):
     return SimpleNamespace(
         id=id_,
         position=position,
-        delay_from_purchase_minutes=delay,
+        delay_from_previous_minutes=delay,
         meta_template_name=template,
         message_text=text,
         template_variables=vars or {},
@@ -29,7 +29,7 @@ def _enr_step(
         id=uuid.uuid4(),
         flow_step_id=flow_step_id,
         position=position,
-        delay_from_purchase_minutes=delay,
+        delay_from_previous_minutes=delay,
         status=status,
         meta_template_name=template,
         message_text=text,
