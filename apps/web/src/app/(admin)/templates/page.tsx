@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { TemplateList } from "@/features/templates/components/TemplateList";
 import { TemplateModal } from "@/features/templates/components/TemplateModal";
+import { SyncSummaryView } from "@/features/templates/components/SyncSummaryView";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { useToast } from "@/shared/hooks/useToast";
+import { syncMetaTemplates } from "@/lib/api";
 import type { MetaTemplate } from "@/features/templates/types";
 
 interface FlowUsage {
@@ -17,8 +19,47 @@ interface FlowUsage {
 export default function TemplatesPage() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const preview = await syncMetaTemplates({ dryRun: true });
+      const noop =
+        preview.templates_to_delete.length === 0 &&
+        preview.templates_to_insert.length === 0 &&
+        preview.steps_to_delete.length === 0;
+      if (noop) {
+        toast.info("Já está sincronizado — Meta e banco batem.");
+        return;
+      }
+      const ok = await confirm({
+        title: "Sincronizar templates com a Meta?",
+        description: <SyncSummaryView summary={preview} />,
+        confirmLabel: "Sincronizar e apagar",
+        cancelLabel: "Cancelar",
+        variant: preview.steps_to_delete.length > 0 ? "danger" : "warning",
+      });
+      if (!ok) return;
+      const applied = await syncMetaTemplates({ dryRun: false });
+      const parts: string[] = [];
+      if (applied.templates_to_delete.length)
+        parts.push(`${applied.templates_to_delete.length} apagado(s)`);
+      if (applied.templates_to_insert.length)
+        parts.push(`${applied.templates_to_insert.length} importado(s)`);
+      if (applied.steps_to_delete.length)
+        parts.push(`${applied.steps_to_delete.length} step(s) removido(s)`);
+      toast.success(`Sincronização concluída: ${parts.join(" · ") || "sem mudanças"}.`);
+      await reload();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`Falha ao sincronizar: ${msg}`);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function handleDelete(template: MetaTemplate) {
     const ok = await confirm({
@@ -84,6 +125,8 @@ export default function TemplatesPage() {
       <TemplateList
         templates={templates}
         onRefresh={reload}
+        onSync={handleSync}
+        syncing={syncing}
         onNew={() => setModalOpen(true)}
         onDelete={handleDelete}
       />
