@@ -46,9 +46,7 @@ def test_categories_complete() -> None:
     }
     for cat, count in expected_per_category.items():
         matching = [t for t in ALL_HUBLA_EVENT_TYPES if t.startswith(cat + ".")]
-        assert len(matching) == count, (
-            f"categoria {cat}: esperava {count}, achei {len(matching)}"
-        )
+        assert len(matching) == count, f"categoria {cat}: esperava {count}, achei {len(matching)}"
 
 
 def test_normalize_event_type_maps_legacy_to_canonical() -> None:
