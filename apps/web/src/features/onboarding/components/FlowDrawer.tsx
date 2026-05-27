@@ -10,11 +10,7 @@ import type {
   UpdateFlowInput,
 } from "../types";
 import type { HublaEventType } from "../lib/triggerEvents";
-import {
-  StepRail,
-  type StepIndex,
-  type StepDescriptor,
-} from "./steps/StepRail";
+import type { StepDescriptor, StepIndex } from "./steps/StepRail";
 import { StepProductPicker } from "./steps/StepProductPicker";
 import { StepEventPicker } from "./steps/StepEventPicker";
 import { StepMessageBuilder } from "./steps/StepMessageBuilder";
@@ -68,7 +64,7 @@ export function FlowDrawer({
     if (!open) return;
     if (flow) {
       setState({
-        current: 1,
+        current: 3, // editar abre direto no passo 3 (Mensagens)
         direction: "forward",
         productId: flow.product.id,
         triggerEventType:
@@ -225,19 +221,27 @@ export function FlowDrawer({
         />
       }
     >
-      <div className="flex gap-6">
-        {/* Rail lateral */}
-        <div className="shrink-0">
-          <StepRail
+      <div className="-mx-6 -my-6 flex min-h-full">
+        {/* Sidebar — navegação por step */}
+        <aside className="w-[260px] shrink-0 border-r border-outline-variant bg-surface-container-low px-4 py-6">
+          <div className="mb-5 px-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant">
+              Configurando flow
+            </p>
+            <p className="mt-1 text-sm font-semibold text-on-surface">
+              {isEditing ? "Editar fluxo" : "Novo fluxo de onboarding"}
+            </p>
+          </div>
+          <SidebarSteps
             steps={stepDescriptors}
             onNavigate={(idx) => {
               if (canNavigateTo(idx)) goTo(idx);
             }}
           />
-        </div>
+        </aside>
 
-        {/* Painel do step ativo com animação */}
-        <div className="min-w-0 flex-1">
+        {/* Conteúdo — fundo branco com padding */}
+        <div className="min-w-0 flex-1 overflow-auto bg-surface px-8 py-7">
           <div
             key={state.current}
             className={
@@ -279,6 +283,75 @@ export function FlowDrawer({
         </div>
       </div>
     </Drawer>
+  );
+}
+
+function SidebarSteps({
+  steps,
+  onNavigate,
+}: {
+  steps: StepDescriptor[];
+  onNavigate: (idx: StepIndex) => void;
+}) {
+  return (
+    <ol className="flex flex-col gap-1">
+      {steps.map((step) => {
+        const locked = step.status === "locked";
+        const current = step.status === "current";
+        const done = step.status === "done";
+        const baseRow =
+          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors";
+        const rowState = locked
+          ? "cursor-not-allowed text-on-surface-variant opacity-60"
+          : current
+            ? "bg-primary/10 text-primary"
+            : done
+              ? "text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300"
+              : "text-on-surface-variant hover:bg-surface-container-high";
+        const circleState = current
+          ? "bg-primary text-on-primary ring-2 ring-primary/30"
+          : done
+            ? "bg-emerald-500 text-white"
+            : locked
+              ? "border border-outline-variant bg-surface text-on-surface-variant"
+              : "border border-outline-variant bg-surface text-on-surface-variant";
+        return (
+          <li key={step.index}>
+            <button
+              type="button"
+              onClick={() => onNavigate(step.index)}
+              disabled={locked}
+              aria-current={current ? "step" : undefined}
+              className={`${baseRow} ${rowState}`}
+            >
+              <div
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${circleState}`}
+              >
+                {done ? (
+                  <span className="material-symbols-outlined text-sm">
+                    check
+                  </span>
+                ) : (
+                  step.index
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`text-sm ${current ? "font-semibold" : "font-medium"}`}
+                >
+                  {step.label}
+                </p>
+                {step.hint && (
+                  <p className="truncate text-[11px] text-on-surface-variant">
+                    {step.hint}
+                  </p>
+                )}
+              </div>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 

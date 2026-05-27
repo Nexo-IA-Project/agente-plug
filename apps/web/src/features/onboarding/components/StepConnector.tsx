@@ -8,7 +8,7 @@ export function StepConnector() {
   return (
     <div
       aria-hidden
-      className="flex h-7 items-center justify-center text-outline-variant"
+      className="flex h-7 items-center justify-center text-on-surface-variant"
     >
       <svg width="22" height="28" viewBox="0 0 22 28">
         <line
