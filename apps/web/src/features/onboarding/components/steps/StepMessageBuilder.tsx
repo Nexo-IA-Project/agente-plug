@@ -5,9 +5,13 @@ import { useOnboardingSteps } from "../../hooks/useOnboardingSteps";
 
 interface StepMessageBuilderProps {
   flowId: string;
+  triggerEventType: string;
 }
 
-export function StepMessageBuilder({ flowId }: StepMessageBuilderProps) {
+export function StepMessageBuilder({
+  flowId,
+  triggerEventType,
+}: StepMessageBuilderProps) {
   const { steps, loading, create, update, remove, reorder } =
     useOnboardingSteps(flowId);
 
@@ -32,6 +36,7 @@ export function StepMessageBuilder({ flowId }: StepMessageBuilderProps) {
       </div>
       <StepList
         steps={steps}
+        triggerEventType={triggerEventType}
         onCreate={create}
         onUpdate={update}
         onDelete={remove}

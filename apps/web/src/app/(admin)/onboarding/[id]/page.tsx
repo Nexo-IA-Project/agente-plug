@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { use } from "react";
 import { useOnboardingSteps } from "@/features/onboarding/hooks/useOnboardingSteps";
+import { useOnboardingFlows } from "@/features/onboarding/hooks/useOnboardingFlows";
 import { StepList } from "@/features/onboarding/components/StepList";
 import { useToast } from "@/shared/hooks/useToast";
 
@@ -13,6 +14,9 @@ export default function OnboardingFlowDetailPage({
 }) {
   const { id } = use(params);
   const { steps, loading, error, create, update, remove, reorder } = useOnboardingSteps(id);
+  const { flows } = useOnboardingFlows();
+  const triggerEventType =
+    flows.find((f) => f.id === id)?.trigger_event_type ?? "subscription.activated";
   const toast = useToast();
 
   if (loading)
@@ -36,6 +40,7 @@ export default function OnboardingFlowDetailPage({
 
       <StepList
         steps={steps}
+        triggerEventType={triggerEventType}
         onReorder={async (items) => {
           try {
             await reorder(items);

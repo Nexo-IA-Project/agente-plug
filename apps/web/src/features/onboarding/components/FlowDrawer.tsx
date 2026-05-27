@@ -270,7 +270,10 @@ export function FlowDrawer({
               />
             )}
             {state.current === 3 && state.flowId && (
-              <StepMessageBuilder flowId={state.flowId} />
+              <StepMessageBuilder
+                flowId={state.flowId}
+                triggerEventType={state.triggerEventType}
+              />
             )}
           </div>
         </div>
