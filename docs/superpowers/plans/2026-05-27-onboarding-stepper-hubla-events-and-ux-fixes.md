@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reformular o `FlowDrawer` de `/onboarding` em stepper vertical de 3 passos (Produto → Eventos → Mensagens), expandir o catálogo de eventos Hubla de 6 para 24 tipos oficiais, habilitar edição de templates Meta não-aprovados, e corrigir 3 issues de UX (confirmação em produtos, drawer backdrop, fechar após salvar).
+**Goal:** Reformular o `FlowDrawer` de `/onboarding` em stepper vertical de 3 passos (Produto → Eventos → Mensagens), expandir o catálogo de eventos Hubla de 6 para 25 tipos oficiais, habilitar edição de templates Meta não-aprovados, e corrigir 3 issues de UX (confirmação em produtos, drawer backdrop, fechar após salvar).
 
-**Architecture:** 5 fases independentes commitáveis. Fase 1 ajusta o `Drawer` compartilhado e produtos (baixo risco). Fase 2 expande backend Hubla para os 24 eventos com migration. Fase 3 expande o catálogo de eventos no frontend (`triggerEvents.ts`). Fase 4 implementa edit template vertical slice (backend + frontend). Fase 5 reescreve o `FlowDrawer` em stepper de 3 passos com animação suave entre transições. Ordem importa: Fase 5 depende de Fase 3 (catálogo expandido).
+**Architecture:** 5 fases independentes commitáveis. Fase 1 ajusta o `Drawer` compartilhado e produtos (baixo risco). Fase 2 expande backend Hubla para os 25 eventos com migration. Fase 3 expande o catálogo de eventos no frontend (`triggerEvents.ts`). Fase 4 implementa edit template vertical slice (backend + frontend). Fase 5 reescreve o `FlowDrawer` em stepper de 3 passos com animação suave entre transições. Ordem importa: Fase 5 depende de Fase 3 (catálogo expandido).
 
 **Tech Stack:** Next.js 15 App Router, Tailwind, `@dnd-kit/*` (já no projeto), React Hook Form, FastAPI, SQLAlchemy 2.0, Alembic, pytest.
 
@@ -176,9 +176,9 @@ git commit -m "fix(onboarding): FlowDrawer fecha automaticamente após salvar"
 
 ---
 
-## Fase 2 — Backend Hubla 24 eventos + migration
+## Fase 2 — Backend Hubla 25 eventos + migration
 
-### Task 4: `HublaEventType` value object (24 valores)
+### Task 4: `HublaEventType` value object (25 valores)
 
 **Files:**
 - Create: `apps/api/src/shared/domain/value_objects/hubla_event_type.py`
@@ -239,7 +239,7 @@ Esperado: ImportError ou ModuleNotFoundError em `shared.domain.value_objects.hub
 
 ```python
 # apps/api/src/shared/domain/value_objects/hubla_event_type.py
-"""Eventos Hubla v2 — catálogo oficial dos 24 tipos."""
+"""Eventos Hubla v2 — catálogo oficial dos 25 tipos."""
 
 from typing import Literal, get_args
 
@@ -299,12 +299,12 @@ Esperado: 5 passed.
 
 ```bash
 git add apps/api/src/shared/domain/value_objects/hubla_event_type.py apps/api/tests/unit/domain/value_objects/test_hubla_event_type.py
-git commit -m "feat(hubla): HublaEventType value object com 24 eventos oficiais v2"
+git commit -m "feat(hubla): HublaEventType value object com 25 eventos oficiais v2"
 ```
 
 ---
 
-### Task 5: `HublaEventHandler` aceita 24 eventos + warn unknown
+### Task 5: `HublaEventHandler` aceita 25 eventos + warn unknown
 
 **Files:**
 - Modify: `apps/api/src/shared/application/hubla_event_handler.py:14,57`
@@ -323,7 +323,7 @@ from shared.domain.value_objects.hubla_event_type import ALL_HUBLA_EVENT_TYPES
 
 @pytest.mark.parametrize("event_type", sorted(ALL_HUBLA_EVENT_TYPES))
 async def test_handler_accepts_all_24_types(event_type: str) -> None:
-    """Cada um dos 24 eventos deve ser persistido em hubla_events sem erro."""
+    """Cada um dos 25 eventos deve ser persistido em hubla_events sem erro."""
     handler = _make_handler()
     payload = _make_payload(event_type=event_type)
     await handler.handle(payload)
@@ -428,7 +428,7 @@ Esperado: todos passam.
 
 ```bash
 git add apps/api/src/shared/application/hubla_event_handler.py apps/api/tests/unit/application/test_hubla_event_handler_24_types.py
-git commit -m "feat(hubla): handler aceita os 24 event types + log warn em desconhecidos"
+git commit -m "feat(hubla): handler aceita os 25 event types + log warn em desconhecidos"
 ```
 
 ---
@@ -579,7 +579,7 @@ git commit -m "feat(hubla): migration renomeia lead.abandoned→abandoned_cart e
 
 ## Fase 3 — Frontend triggerEvents.ts expandido
 
-### Task 7: Expandir `triggerEvents.ts` para 24 entries + categorias + alias
+### Task 7: Expandir `triggerEvents.ts` para 25 entries + categorias + alias
 
 **Files:**
 - Modify: `apps/web/src/features/onboarding/lib/triggerEvents.ts`
@@ -1044,15 +1044,15 @@ cd apps/web && npm run dev
 
 Em `/leads`, abrir um lead que tem `event_type = "lead.abandoned"` ou `"subscription.expiring"` (eventos antigos). A timeline deve renderizar com a label nova ("Carrinho abandonado" / "Assinatura expirada"). Em `/onboarding`, os flows existentes continuam mostrando trigger pill correto.
 
-> **Atenção:** o `FlowDrawer` atual ainda referencia `TRIGGER_EVENTS` no radio-grid 2×3. Após esta task ele vai mostrar 24 entries naquele grid, o que **fica visualmente quebrado**. Aceitável temporariamente — Task 17 reescreve esse drawer e resolve. Anotar no commit.
+> **Atenção:** o `FlowDrawer` atual ainda referencia `TRIGGER_EVENTS` no radio-grid 2×3. Após esta task ele vai mostrar 25 entries naquele grid, o que **fica visualmente quebrado**. Aceitável temporariamente — Task 17 reescreve esse drawer e resolve. Anotar no commit.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add apps/web/src/features/onboarding/lib/triggerEvents.ts
-git commit -m "feat(onboarding): catalog de 24 eventos hubla + categorias + alias deprecated
+git commit -m "feat(onboarding): catalog de 25 eventos hubla + categorias + alias deprecated
 
-UI do FlowDrawer atual fica visualmente quebrada (mostra 24 cards em grid 2x3) até
+UI do FlowDrawer atual fica visualmente quebrada (mostra 25 cards em grid 2x3) até
 a reescrita da Task 17."
 ```
 
@@ -2493,7 +2493,7 @@ Clicar "Configurar" em um flow existente:
 3. Clicar "2" volta com animação backward.
 4. Trocar evento → "Salvar e continuar" → toast atualiza → fecha drawer.
 
-- [ ] **Step 6: Testar visualmente: 24 eventos nas 6 tabs**
+- [ ] **Step 6: Testar visualmente: 25 eventos nas 6 tabs**
 
 No step 2:
 - Tab "Lead" (1 card)
@@ -2516,7 +2516,7 @@ git add apps/web/src/features/onboarding/components/FlowDrawer.tsx
 git commit -m "feat(onboarding): reescrita do FlowDrawer em stepper vertical de 3 passos
 
 - Rail lateral com 3 círculos numerados conectados
-- Step 1 Produto, Step 2 Evento (tabs por categoria com 24 eventos), Step 3 Mensagens
+- Step 1 Produto, Step 2 Evento (tabs por categoria com 25 eventos), Step 3 Mensagens
 - Animação slide+fade entre steps (200ms)
 - Sequencial ao criar com gating; livre ao editar (rail clicável)
 - Drawer fecha após Concluir/salvar
@@ -2614,11 +2614,11 @@ Esperado: todos passam, 0 erros.
 
 ```bash
 git push -u origin feat/onboarding-stepper-hubla-events-and-ux-fixes
-gh pr create --title "feat: onboarding stepper + 24 eventos hubla + ux fixes" --body "$(cat <<'EOF'
+gh pr create --title "feat: onboarding stepper + 25 eventos hubla + ux fixes" --body "$(cat <<'EOF'
 ## Summary
 
 - Reformula `/onboarding` FlowDrawer em stepper vertical de 3 passos (Produto → Eventos → Mensagens)
-- Expande catálogo Hubla de 6 para 24 eventos oficiais v2, agrupados em 6 categorias (tabs)
+- Expande catálogo Hubla de 6 para 25 eventos oficiais v2, agrupados em 6 categorias (tabs)
 - Migration renomeia 2 nomes divergentes em flows existentes (lead.abandoned, subscription.expiring)
 - Adiciona edição de templates Meta em status não-aprovado (PATCH /admin/meta-templates/{id})
 - Drawer compartilhado: click na sidebar fecha (backdrop a inset-0)
@@ -2630,7 +2630,7 @@ Plan: `docs/superpowers/plans/2026-05-27-onboarding-stepper-hubla-events-and-ux-
 
 ## Test plan
 
-- [ ] Webhook Hubla recebe e persiste cada um dos 24 event types sem erro
+- [ ] Webhook Hubla recebe e persiste cada um dos 25 event types sem erro
 - [ ] Webhook com event type desconhecido: 202 + log warning + persistido em hubla_events
 - [ ] Criar flow novo via UI completando os 3 steps
 - [ ] Editar flow existente: rail clicável livre, animação slide+fade
@@ -2661,9 +2661,9 @@ Após escrever este plano, foi feito review com fresh eyes:
 | Item 3: Click fora fecha (sidebar) | Task 1 |
 | Item 4: Fecha após salvar | Tasks 3 (fix mínimo) + 17 (definitivo) |
 | Item 5a: Stepper UI 3 passos | Tasks 11, 12, 13, 14, 15, 16, 17 |
-| Item 5b: 24 eventos Hubla backend | Tasks 4, 5 |
+| Item 5b: 25 eventos Hubla backend | Tasks 4, 5 |
 | Item 5c: Migration nomes divergentes | Task 6 |
-| Item 5d: Frontend catalog 24 eventos | Task 7 |
+| Item 5d: Frontend catalog 25 eventos | Task 7 |
 | Animação slide+fade entre steps | Task 16 + integração Task 17 |
 | Drag-reorder mensagens preservado | Task 15 (wrapper de StepList existente) |
 | Alias deprecated p/ eventos antigos no LeadDrawer | Task 7 (`DEPRECATED_ALIASES`) |

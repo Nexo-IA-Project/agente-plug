@@ -14,9 +14,9 @@ Cinco demandas relacionadas que tocam os mesmos módulos (`/onboarding`, `/produ
 2. **Editar template** Meta direto no modal de criação.
 3. Click fora do drawer (inclusive sidebar) fecha o modal de `/onboarding`.
 4. Salvar fecha o drawer automaticamente.
-5. **Reformulação completa do FlowDrawer** em stepper vertical de 3 passos + suporte aos **24 eventos** oficiais da Hubla v2 (atualmente apenas 6).
+5. **Reformulação completa do FlowDrawer** em stepper vertical de 3 passos + suporte aos **25 eventos** oficiais da Hubla v2 (atualmente apenas 6).
 
-Optamos por entregar tudo em uma spec única porque (a) compartilham o `Drawer` e o `TemplateModal`, (b) os ajustes UX são pré-requisito para a reformulação ficar coesa, e (c) a expansão dos eventos exige que o stepper já esteja redesenhado pra acomodar 24 cards agrupados por categoria.
+Optamos por entregar tudo em uma spec única porque (a) compartilham o `Drawer` e o `TemplateModal`, (b) os ajustes UX são pré-requisito para a reformulação ficar coesa, e (c) a expansão dos eventos exige que o stepper já esteja redesenhado pra acomodar 25 cards agrupados por categoria.
 
 Este documento substitui (avança) a parte 1 da spec `2026-05-26-hubla-events-expansion-and-meta-template-autosync.md`. A parte 2 daquela spec (auto-sync Meta) **permanece backlog** e fica fora desta entrega.
 
@@ -26,7 +26,7 @@ Este documento substitui (avança) a parte 1 da spec `2026-05-26-hubla-events-ex
 
 ### Objetivos
 - Reescrever `FlowDrawer` em stepper vertical de 3 passos (Produto → Eventos → Mensagens) com rail lateral de círculos numerados e transição animada.
-- Suportar os 24 eventos Hubla v2 como `trigger_event_type` válido em flows, com agrupamento por categoria via tabs.
+- Suportar os 25 eventos Hubla v2 como `trigger_event_type` válido em flows, com agrupamento por categoria via tabs.
 - Corrigir 2 nomes divergentes via migration (`lead.abandoned` → `lead.abandoned_cart`, `subscription.expiring` → `subscription.expired`).
 - Trocar `confirm()` nativo por `useConfirm()` na exclusão de produtos.
 - Habilitar edição de templates Meta **em status não-aprovado** reutilizando o `TemplateModal`.
@@ -65,7 +65,7 @@ apps/web/src/
 │   │   │   ├── StepVariableEditor.tsx   ← mantido
 │   │   │   └── DelayBadge.tsx           ← mantido
 │   │   └── lib/
-│   │       └── triggerEvents.ts         ← expandido de 6 → 24 entries + agrupamento
+│   │       └── triggerEvents.ts         ← expandido de 6 → 25 entries + agrupamento
 │   ├── products/
 │   │   └── components/                  ← inalterado
 │   └── templates/
@@ -86,9 +86,9 @@ apps/api/src/
 ├── shared/
 │   ├── domain/
 │   │   └── value_objects/
-│   │       └── hubla_event_type.py      ← NOVO: Literal de 24 valores + helpers
+│   │       └── hubla_event_type.py      ← NOVO: Literal de 25 valores + helpers
 │   ├── application/
-│   │   ├── hubla_event_handler.py       ← aceita 24 tipos; só activated chama PurchaseHandler
+│   │   ├── hubla_event_handler.py       ← aceita 25 tipos; só activated chama PurchaseHandler
 │   │   └── use_cases/
 │   │       └── admin/
 │   │           └── meta_templates/
@@ -182,7 +182,7 @@ Mesma regra aplica ao novo botão "Concluir" do step 3 (fecha sem necessariament
 
 `ProductDrawer` já fecha após sucesso (linha 37) — sem mudança.
 
-### 5. Stepper de 3 passos + 24 eventos Hubla
+### 5. Stepper de 3 passos + 25 eventos Hubla
 
 #### Stepper
 
@@ -333,7 +333,7 @@ export interface TriggerEventMeta {
   tone: TriggerEventTone; // mantido — usado pelo LeadDrawer
 }
 
-export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [ /* 24 entries */ ];
+export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [ /* 25 entries */ ];
 export const TRIGGER_EVENT_CATEGORIES: readonly HublaEventCategory[] = [
   "lead", "member", "subscription", "invoice", "installment", "refund",
 ];
@@ -353,7 +353,7 @@ export function getEventsByCategory(cat: HublaEventCategory): TriggerEventMeta[]
 from typing import Literal, get_args
 
 HublaEventType = Literal[
-    # ... 24 valores idênticos ao frontend ...
+    # ... 25 valores idênticos ao frontend ...
 ]
 
 ALL_HUBLA_EVENT_TYPES: frozenset[str] = frozenset(get_args(HublaEventType))
@@ -465,7 +465,7 @@ Hubla → POST /webhook/hubla (x-hubla-token validado)
 ## Testing
 
 ### Backend
-- **Unit tests `HublaEventHandler`** parametrizados nos 24 tipos: cada caso garante `hubla_events` persistido + lookup de flows. Caso especial `subscription.activated` valida chamada a `PurchaseHandler`.
+- **Unit tests `HublaEventHandler`** parametrizados nos 25 tipos: cada caso garante `hubla_events` persistido + lookup de flows. Caso especial `subscription.activated` valida chamada a `PurchaseHandler`.
 - **Migration test:** seed `followup_flows` com `lead.abandoned` e `subscription.expiring` → `alembic upgrade head` → assert valores renomeados.
 - **Unit test `EditMetaTemplate` use case:** mock `MetaClient`, assert 409 em `APPROVED`, assert PATCH em outros status.
 
@@ -492,7 +492,7 @@ Hubla → POST /webhook/hubla (x-hubla-token validado)
 |---|---|---|
 | `MetaClient.edit_template` ainda não existe | Média | Verificar em plan-time antes de implementar o use case. Se não existe, adicionar (rota Graph `POST /{template_id}`). |
 | Sidebar escurecida sob backdrop pode confundir usuário | Baixa | `cursor-pointer` no backdrop + animação curta. Validação visual no review. |
-| 24 cards no step 2 podem cansar visualmente | Baixa | Tabs reduzem o que aparece de uma vez (~6 cards por tab). Validar UX após implementar. |
+| 25 cards no step 2 podem cansar visualmente | Baixa | Tabs reduzem o que aparece de uma vez (~6 cards por tab). Validar UX após implementar. |
 | Eventos antigos em `hubla_events` (`lead.abandoned`, `subscription.expiring`) podem aparecer no LeadDrawer | Baixa | `triggerEvents.ts` mantém entries alias internas com label nova. |
 | Reordenação de steps quebrar com nova estrutura | Baixa | Step 3 (`StepMessageBuilder`) reusa `StepList` sem mudança — drag-reorder permanece igual. Adicionar smoke test. |
 | Animação CSS conflitar com transição do Drawer (translateX) | Média | Animação aplicada ao container interno do step (`<div key={current}>`), não no `<aside>` raiz — não interfere com `translate-x-full` do drawer. |
@@ -522,14 +522,14 @@ Hubla → POST /webhook/hubla (x-hubla-token validado)
 - [ ] FlowDrawer fecha após "Salvar alterações" / "Salvar e continuar" / "Concluir" com sucesso.
 - [ ] TemplateModal fecha após "Criar" / "Salvar alterações" com sucesso (criar já fecha).
 
-### Item 5 — Stepper + 24 eventos
+### Item 5 — Stepper + 25 eventos
 - [ ] FlowDrawer renderiza rail lateral com 3 círculos numerados conectados.
 - [ ] Novo flow: navegação sequencial (1→2→3 com gating).
 - [ ] Editar flow: rail clicável livre.
 - [ ] Transição entre steps com slide+fade (~200ms).
 - [ ] Step 2: tabs por categoria (Lead 1, Membro 2, Assinatura 6, Fatura 6, Parcelamento 6, Reembolso 4).
-- [ ] Cada um dos 24 eventos selecionável como `trigger_event_type`.
-- [ ] Webhook `/webhook/hubla` aceita qualquer um dos 24 tipos sem erro.
+- [ ] Cada um dos 25 eventos selecionável como `trigger_event_type`.
+- [ ] Webhook `/webhook/hubla` aceita qualquer um dos 25 tipos sem erro.
 - [ ] Flow com trigger novo (ex: `member.access_granted`) é encontrado e enrollado quando o evento chega.
 - [ ] Migration renomeia `lead.abandoned` → `lead.abandoned_cart` e `subscription.expiring` → `subscription.expired` em flows existentes (idempotente).
 - [ ] LeadDrawer mantém timeline visual funcionando (com alias para eventos antigos).
@@ -540,7 +540,7 @@ Hubla → POST /webhook/hubla (x-hubla-token validado)
 ## Plano de plan-time (próximos passos após aprovação)
 
 1. Verificar se `MetaClient.edit_template` existe; se não, adicionar.
-2. Confirmar mapeamento de ícones Material Symbols pros 24 eventos.
+2. Confirmar mapeamento de ícones Material Symbols pros 25 eventos.
 3. Definir exatamente o que entra em `leads` para eventos `invoice.*` / `installment.*` (campo `subscription_id` pode não existir nesses payloads — pode precisar fallback ou skip do upsert de `leads` pra esses tipos).
 4. Decidir entre `aside` com `left: SIDEBAR_WIDTH` vs `left: 0` (visual a confirmar no Drawer fix).
 
