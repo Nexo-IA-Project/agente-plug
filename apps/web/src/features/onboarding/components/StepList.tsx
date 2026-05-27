@@ -81,6 +81,7 @@ export function StepList({
 
   async function handleSaveExisting(stepId: string, dto: UpdateStepInput) {
     await onUpdate(stepId, dto);
+    toast.success("Mensagem atualizada");
     const idx = steps.findIndex((s) => s.id === stepId);
     const next = steps[idx + 1];
     if (next) {
@@ -93,6 +94,7 @@ export function StepList({
 
   async function handleSaveNew(dto: CreateStepInput) {
     await onCreate(dto);
+    toast.success("Mensagem adicionada à sequência");
     setAddingAfter(false);
   }
 

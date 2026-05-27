@@ -3,6 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
+import { useToast } from "@/shared/hooks/useToast";
 import { DelayBadge } from "./DelayBadge";
 import { useMetaTemplateDetail } from "../hooks/useMetaTemplateDetail";
 import {
@@ -43,6 +44,8 @@ export function StepItem({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id });
 
+  const toast = useToast();
+
   async function handleDelete() {
     const ok = await confirm({
       title: "Excluir step",
@@ -50,7 +53,15 @@ export function StepItem({
       confirmLabel: "Excluir",
       variant: "danger",
     });
-    if (ok) await onDelete();
+    if (!ok) return;
+    try {
+      await onDelete();
+      toast.success("Mensagem removida");
+    } catch (err) {
+      toast.error(
+        `Erro ao remover: ${err instanceof Error ? err.message : "desconhecido"}`,
+      );
+    }
   }
 
   const style = {

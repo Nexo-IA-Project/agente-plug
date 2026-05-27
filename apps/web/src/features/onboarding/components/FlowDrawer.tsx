@@ -157,6 +157,7 @@ export function FlowDrawer({
   }
 
   function finish() {
+    toast.success("Fluxo configurado com sucesso!");
     onClose();
   }
 
