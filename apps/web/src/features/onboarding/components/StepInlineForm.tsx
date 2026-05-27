@@ -12,7 +12,7 @@ import type {
 } from "../types";
 import { useMetaTemplateDetail } from "../hooks/useMetaTemplateDetail";
 import { StepVariableEditor } from "./StepVariableEditor";
-import { TemplatePreview } from "./TemplatePreview";
+import { IPhonePreview } from "@/features/templates/components/IPhonePreview";
 import { TimeInputGroup } from "./TimeInputGroup";
 
 type StepMode = "template" | "text";
@@ -229,16 +229,14 @@ export function StepInlineForm({
               )}
             </div>
 
-            <Collapse open={!!currentTemplate && !!templateBody} durationMs={380}>
-              <div className="mt-1 border border-outline-variant bg-surface-container-high p-3 text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
-                {templateBody}
-              </div>
+            {/* Preview da mensagem no celular */}
+            <Collapse open={!!detailedTemplate} durationMs={380}>
+              {detailedTemplate && (
+                <div className="mt-3 flex justify-center rounded-lg bg-surface-container-low py-4">
+                  <IPhonePreview template={detailedTemplate} />
+                </div>
+              )}
             </Collapse>
-
-            {/* Preview da mensagem (mídia + body + footer + botões) */}
-            {detailedTemplate && (
-              <TemplatePreview template={detailedTemplate} />
-            )}
 
             <Collapse open={!!currentTemplate} durationMs={380}>
               <div className="mt-3 space-y-2">
