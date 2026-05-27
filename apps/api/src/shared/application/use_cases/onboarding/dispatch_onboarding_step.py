@@ -121,13 +121,28 @@ class DispatchOnboardingStep:
                         None,
                     )
                     body_text = body_node.get("text") if body_node else None
-                    # Detecta parameter_format pelo formato do example.
-                    # body_text_named_params → NAMED; body_text → POSITIONAL.
+                    # Detecta parameter_format em duas etapas:
+                    #   1) `example` do componente (sinal primário, populado quando o
+                    #      template é syncado com a Meta);
+                    #   2) Fallback: inspecionar o próprio texto — `{{1}}`, `{{2}}` →
+                    #      POSITIONAL; `{{customer_name}}` → NAMED. Necessário pra
+                    #      templates importados via dump sem `example`.
+                    detected: str | None = None
                     if body_node and isinstance(body_node.get("example"), dict):
                         if "body_text_named_params" in body_node["example"]:
-                            parameter_format = "NAMED"
+                            detected = "NAMED"
                         elif "body_text" in body_node["example"]:
-                            parameter_format = "POSITIONAL"
+                            detected = "POSITIONAL"
+                    if detected is None and body_text:
+                        placeholders = _re.findall(r"\{\{(\w+)\}\}", body_text)
+                        if placeholders:
+                            detected = (
+                                "POSITIONAL"
+                                if all(p.isdigit() for p in placeholders)
+                                else "NAMED"
+                            )
+                    if detected is not None:
+                        parameter_format = detected
                     log.debug(
                         "followup_step_template_loaded",
                         template_name=step.meta_template_name,

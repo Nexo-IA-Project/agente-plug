@@ -219,6 +219,72 @@ async def test_dispatch_resolves_dynamic_variables():
 
 
 @pytest.mark.asyncio
+async def test_dispatch_detects_positional_from_body_text():
+    """Template sem `example` mas com {{1}} no body → POSITIONAL via fallback."""
+    step = _make_step(template_variables={"1": {"source": "static", "value": "Fabio"}})
+    enrollment_repo = _make_enrollment_repo_with_step(step)
+    chatnexo = AsyncMock()
+    template_repo = AsyncMock()
+    template_repo.get_by_name.return_value = SimpleNamespace(
+        media_url=None,
+        media_kind=None,
+        language="pt_BR",
+        components=[{"type": "BODY", "text": "Olá {{1}}, tudo bem?"}],
+    )
+
+    uc = DispatchOnboardingStep(
+        enrollment_repo=enrollment_repo,
+        contact_repo=_make_contact_repo(),
+        chatnexo=chatnexo,
+        conversation_history=AsyncMock(load=AsyncMock(return_value=[])),
+        meta_template_repo=template_repo,
+    )
+    await uc.execute(
+        enrollment_step_id=step.id,
+        account_id=uuid4(),
+        conversation_id="conv1",
+        contact_phone="+5511",
+    )
+
+    sent_kwargs = chatnexo.send_template.call_args.kwargs
+    assert sent_kwargs["parameter_format"] == "POSITIONAL"
+
+
+@pytest.mark.asyncio
+async def test_dispatch_detects_named_from_body_text():
+    """Template sem `example` mas com {{customer_name}} no body → NAMED via fallback."""
+    step = _make_step(
+        template_variables={"customer_name": {"source": "static", "value": "Fabio"}}
+    )
+    enrollment_repo = _make_enrollment_repo_with_step(step)
+    chatnexo = AsyncMock()
+    template_repo = AsyncMock()
+    template_repo.get_by_name.return_value = SimpleNamespace(
+        media_url=None,
+        media_kind=None,
+        language="pt_BR",
+        components=[{"type": "BODY", "text": "Olá {{customer_name}}, bem-vindo!"}],
+    )
+
+    uc = DispatchOnboardingStep(
+        enrollment_repo=enrollment_repo,
+        contact_repo=_make_contact_repo(),
+        chatnexo=chatnexo,
+        conversation_history=AsyncMock(load=AsyncMock(return_value=[])),
+        meta_template_repo=template_repo,
+    )
+    await uc.execute(
+        enrollment_step_id=step.id,
+        account_id=uuid4(),
+        conversation_id="conv1",
+        contact_phone="+5511",
+    )
+
+    sent_kwargs = chatnexo.send_template.call_args.kwargs
+    assert sent_kwargs["parameter_format"] == "NAMED"
+
+
+@pytest.mark.asyncio
 async def test_dispatch_resolves_static_binding():
     """Step com binding static usa o `value` literal."""
     step = _make_step(template_variables={"1": {"source": "static", "value": "Promo Black Friday"}})

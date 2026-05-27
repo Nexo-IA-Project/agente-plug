@@ -7,6 +7,8 @@ import { TemplateStatusBadge } from "./TemplateStatusBadge";
 interface Props {
   templates: MetaTemplate[];
   onRefresh: () => void;
+  onSync: () => void;
+  syncing: boolean;
   onNew: () => void;
   onDelete: (template: MetaTemplate) => void;
 }
@@ -59,7 +61,14 @@ function buttonsCount(template: MetaTemplate): number {
   return btns?.buttons?.length ?? 0;
 }
 
-export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
+export function TemplateList({
+  templates,
+  onRefresh,
+  onSync,
+  syncing,
+  onNew,
+  onDelete,
+}: Props) {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -81,6 +90,20 @@ export function TemplateList({ templates, onRefresh, onNew, onDelete }: Props) {
               refresh
             </span>
             Atualizar
+          </button>
+          <button
+            onClick={onSync}
+            disabled={syncing}
+            title="Re-sincroniza componentes (incluindo parameter_format) com a Meta. Apaga templates que sumiram da WABA."
+            className="flex items-center gap-2 rounded-xl border border-outline-variant px-4 py-2.5 text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span
+              className={`material-symbols-outlined ${syncing ? "animate-spin" : ""}`}
+              style={{ fontSize: "18px" }}
+            >
+              {syncing ? "progress_activity" : "cloud_sync"}
+            </span>
+            {syncing ? "Sincronizando..." : "Sincronizar com Meta"}
           </button>
           <button
             onClick={onNew}
