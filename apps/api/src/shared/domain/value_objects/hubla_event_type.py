@@ -1,4 +1,4 @@
-"""Eventos Hubla v2 — catálogo oficial dos 24 tipos."""
+"""Eventos Hubla v2 — catálogo oficial dos 25 tipos."""
 
 from __future__ import annotations
 
