@@ -4,6 +4,7 @@ UUID gera entropia suficiente pra evitar enumeração. SHA256 garante imutabilid
 do conteúdo, então Cache-Control longo é seguro. Acessível por Meta, ChatNexo e
 frontend pra preview no painel.
 """
+
 from __future__ import annotations
 
 from uuid import UUID

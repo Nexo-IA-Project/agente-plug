@@ -124,9 +124,7 @@ async def upload_media(
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateMediaRepository(session=session)
-        use_case = UploadTemplateMedia(
-            repo=repo, public_base_url=settings.public_base_url
-        )
+        use_case = UploadTemplateMedia(repo=repo, public_base_url=settings.public_base_url)
         try:
             out = await use_case.execute(
                 UploadTemplateMediaInput(

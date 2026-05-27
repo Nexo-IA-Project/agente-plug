@@ -1,4 +1,5 @@
 """Repository para meta_template_media — storage de mídia de template no Postgres."""
+
 from __future__ import annotations
 
 from uuid import UUID
@@ -19,9 +20,7 @@ class MetaTemplateMediaRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_sha(
-        self, *, account_id: UUID, sha256: str
-    ) -> MetaTemplateMediaModel | None:
+    async def get_by_sha(self, *, account_id: UUID, sha256: str) -> MetaTemplateMediaModel | None:
         result = await self._session.execute(
             select(MetaTemplateMediaModel)
             .where(MetaTemplateMediaModel.account_id == account_id)

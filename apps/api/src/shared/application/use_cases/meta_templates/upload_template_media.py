@@ -1,4 +1,5 @@
 """Use case: upload de mídia de template — agora salva no Postgres (BYTEA) com dedup por sha256."""
+
 from __future__ import annotations
 
 import hashlib
@@ -8,9 +9,9 @@ from uuid import UUID
 
 # Limites de tamanho por kind (em bytes). Conforme Spec B (mais conservador que a Meta).
 _SIZE_LIMITS: dict[str, int] = {
-    "IMAGE": 5 * 1024 * 1024,        # 5 MB
-    "VIDEO": 16 * 1024 * 1024,       # 16 MB
-    "DOCUMENT": 16 * 1024 * 1024,    # 16 MB
+    "IMAGE": 5 * 1024 * 1024,  # 5 MB
+    "VIDEO": 16 * 1024 * 1024,  # 16 MB
+    "DOCUMENT": 16 * 1024 * 1024,  # 16 MB
 }
 
 MediaKind = Literal["IMAGE", "VIDEO", "DOCUMENT"]
@@ -20,9 +21,7 @@ class MediaTooLargeError(Exception):
     """Lançado quando o arquivo excede o limite do `kind`."""
 
     def __init__(self, kind: str, size: int, limit: int) -> None:
-        super().__init__(
-            f"{kind} de {size} bytes excede o limite de {limit} bytes"
-        )
+        super().__init__(f"{kind} de {size} bytes excede o limite de {limit} bytes")
         self.kind = kind
         self.size = size
         self.limit = limit
@@ -54,17 +53,13 @@ class UploadTemplateMedia:
         self._repo = repo
         self._public_base_url = public_base_url.rstrip("/")
 
-    async def execute(
-        self, payload: UploadTemplateMediaInput
-    ) -> UploadTemplateMediaOutput:
+    async def execute(self, payload: UploadTemplateMediaInput) -> UploadTemplateMediaOutput:
         limit = _SIZE_LIMITS[payload.kind]
         if len(payload.data) > limit:
             raise MediaTooLargeError(payload.kind, len(payload.data), limit)
 
         sha256 = hashlib.sha256(payload.data).hexdigest()
-        existing = await self._repo.get_by_sha(
-            account_id=payload.account_id, sha256=sha256
-        )
+        existing = await self._repo.get_by_sha(account_id=payload.account_id, sha256=sha256)
         if existing is not None:
             return self._to_output(existing)
 

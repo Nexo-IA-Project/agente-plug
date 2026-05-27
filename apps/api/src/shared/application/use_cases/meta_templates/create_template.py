@@ -72,9 +72,7 @@ class CreateTemplate:
             try:
                 media_uuid = UUID(payload.media_object_key)
             except ValueError as exc:
-                raise ValueError(
-                    f"MEDIA_OBJECT_KEY_INVALID: {payload.media_object_key}"
-                ) from exc
+                raise ValueError(f"MEDIA_OBJECT_KEY_INVALID: {payload.media_object_key}") from exc
 
             media_record = await self._media_repo.get_by_id(media_uuid)
             if media_record is None:
