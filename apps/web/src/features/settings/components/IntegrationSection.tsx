@@ -1,5 +1,6 @@
 "use client";
 
+import { HublaWebhookCard } from "./HublaWebhookCard";
 import { InlineEditField } from "@/features/settings/components/InlineEditField";
 import { useFieldSave } from "@/features/settings/hooks/useIntegrationForm";
 import type { AccountSettings } from "@/features/settings/types";
@@ -155,6 +156,7 @@ function SectionCard({ section, settings, onSaved }: {
             onSave={(val) => saveField(field.key, val)}
           />
         ))}
+        {section.id === "hubla" && <HublaWebhookCard />}
       </div>
     </div>
   );
