@@ -259,6 +259,27 @@ export async function deleteMetaTemplate(id: string): Promise<void> {
   await apiFetch<void>(`/admin/meta-templates/${id}`, { method: "DELETE" });
 }
 
+export interface MetaSyncStepImpact {
+  flow_id: string;
+  flow_name: string;
+  step_id: string;
+  position: number;
+  template_name: string;
+}
+
+export interface MetaSyncSummary {
+  templates_to_delete: string[];
+  templates_to_insert: string[];
+  templates_to_update: string[];
+  steps_to_delete: MetaSyncStepImpact[];
+  applied: boolean;
+}
+
+export async function syncMetaTemplates(options: { dryRun: boolean }): Promise<MetaSyncSummary> {
+  const qs = options.dryRun ? "?dry_run=true" : "?dry_run=false";
+  return apiFetch(`/admin/meta-templates/sync${qs}`, { method: "POST" });
+}
+
 export interface UploadMediaResponse {
   media_url: string;
   media_object_key: string;

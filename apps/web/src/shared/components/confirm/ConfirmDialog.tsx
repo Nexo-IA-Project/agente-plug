@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 
 export type ConfirmVariant = "danger" | "warning" | "info";
 
 export interface ConfirmOptions {
   title: string;
-  description?: string;
+  description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: ConfirmVariant;
@@ -135,9 +135,9 @@ export function ConfirmDialog({
                 {title}
               </h3>
               {description && (
-                <p className="mt-1.5 text-body-sm leading-relaxed text-on-surface-variant">
+                <div className="mt-1.5 text-body-sm leading-relaxed text-on-surface-variant">
                   {description}
-                </p>
+                </div>
               )}
             </div>
           </div>
