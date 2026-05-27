@@ -2,14 +2,28 @@
 
 import { useToast } from "@/shared/hooks/useToast";
 
-const HUBLA_WEBHOOK_URL = "https://api-iag2.ianexo.com.br/webhook/hubla";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const HUBLA_WEBHOOK_URL = `${API_BASE_URL.replace(/\/$/, "")}/webhook/hubla`;
 
 export function HublaWebhookCard() {
   const toast = useToast();
 
   async function copy(value: string, label: string) {
     try {
-      await navigator.clipboard.writeText(value);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        // Fallback para HTTP/browsers antigos sem Clipboard API
+        const ta = document.createElement("textarea");
+        ta.value = value;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
       toast.success(`${label} copiado`);
     } catch {
       toast.error("Falha ao copiar");

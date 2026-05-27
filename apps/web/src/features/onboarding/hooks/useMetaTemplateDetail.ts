@@ -14,7 +14,12 @@ let _allCachePromise: Promise<MetaTemplate[]> | null = null;
 
 async function _fetchAll(): Promise<MetaTemplate[]> {
   if (_allCachePromise === null) {
-    _allCachePromise = listMetaTemplates();
+    // Reset on failure to allow retry — sem isso, uma falha de rede transitória
+    // travaria todos os StepItem em "sem mídia" até reload da página.
+    _allCachePromise = listMetaTemplates().catch((err) => {
+      _allCachePromise = null;
+      throw err;
+    });
   }
   return _allCachePromise;
 }
