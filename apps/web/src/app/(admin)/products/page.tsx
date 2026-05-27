@@ -5,6 +5,7 @@ import { useProducts } from "@/features/products/hooks/useProducts";
 import { ProductCard } from "@/features/products/components/ProductCard";
 import { ProductDrawer } from "@/features/products/components/ProductDrawer";
 import { useToast } from "@/shared/hooks/useToast";
+import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import type { Product, CreateProductInput } from "@/features/products/types";
 
 export default function ProductsPage() {
@@ -12,6 +13,7 @@ export default function ProductsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const toast = useToast();
+  const confirm = useConfirm();
 
   const openCreate = () => {
     setEditing(null);
@@ -43,7 +45,13 @@ export default function ProductsPage() {
   };
 
   const handleDelete = async (p: Product) => {
-    if (!confirm(`Remover o produto "${p.name}"?`)) return;
+    const ok = await confirm({
+      title: "Excluir produto",
+      description: `Tem certeza que deseja remover "${p.name}"? Esta ação não pode ser desfeita.`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!ok) return;
     try {
       await remove(p.id);
       toast.success("Produto removido");
