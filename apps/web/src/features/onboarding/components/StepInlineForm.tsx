@@ -10,7 +10,9 @@ import type {
   StepVariableBinding,
   UpdateStepInput,
 } from "../types";
+import { useMetaTemplateDetail } from "../hooks/useMetaTemplateDetail";
 import { StepVariableEditor } from "./StepVariableEditor";
+import { TemplatePreview } from "./TemplatePreview";
 import { TimeInputGroup } from "./TimeInputGroup";
 
 type StepMode = "template" | "text";
@@ -73,6 +75,10 @@ export function StepInlineForm({
   >(step?.template_variables ?? {});
   const [messageText, setMessageText] = useState(step?.message_text ?? "");
   const [saving, setSaving] = useState(false);
+
+  const { template: detailedTemplate } = useMetaTemplateDetail(
+    selectedTemplate || null,
+  );
 
   useEffect(() => {
     if (mode === "template") {
@@ -228,6 +234,11 @@ export function StepInlineForm({
                 {templateBody}
               </div>
             </Collapse>
+
+            {/* Preview da mensagem (mídia + body + footer + botões) */}
+            {detailedTemplate && (
+              <TemplatePreview template={detailedTemplate} />
+            )}
 
             <Collapse open={!!currentTemplate} durationMs={380}>
               <div className="mt-3 space-y-2">
