@@ -1,15 +1,23 @@
 "use client";
 
 import { TemplateForm } from "./TemplateForm";
-import type { CreateTemplateDto } from "../types";
+import type { CreateTemplateDto, EditTemplateDto, MetaTemplate } from "../types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreate: (dto: CreateTemplateDto) => Promise<void>;
+  onCreate?: (dto: CreateTemplateDto) => Promise<void>;
+  onEdit?: (id: string, dto: EditTemplateDto) => Promise<void>;
+  template?: MetaTemplate;
 }
 
-export function TemplateModal({ open, onClose, onCreate }: Props) {
+export function TemplateModal({ open, onClose, onCreate, onEdit, template }: Props) {
+  const isEditing = !!template;
+  const title = isEditing ? `Editar template — ${template!.name}` : "Novo Template";
+  const subtitle = isEditing
+    ? "Edite o template Meta (apenas templates não-aprovados)"
+    : "Crie um template para envio via WhatsApp Business";
+
   return (
     <div
       className="fixed z-40"
@@ -51,10 +59,8 @@ export function TemplateModal({ open, onClose, onCreate }: Props) {
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-outline-variant/40 px-6 py-5">
           <div>
-            <h2 className="text-title-md font-semibold text-on-surface">Novo Template</h2>
-            <p className="mt-0.5 text-label-sm text-on-surface-variant">
-              Crie um template para envio via WhatsApp Business
-            </p>
+            <h2 className="text-title-md font-semibold text-on-surface">{title}</h2>
+            <p className="mt-0.5 text-label-sm text-on-surface-variant">{subtitle}</p>
           </div>
           <button
             onClick={onClose}
@@ -71,10 +77,23 @@ export function TemplateModal({ open, onClose, onCreate }: Props) {
         <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
           <div className="p-6">
             <TemplateForm
-              onCreate={async (dto) => {
-                await onCreate(dto);
-                onClose();
-              }}
+              initialTemplate={template}
+              onCreate={
+                onCreate
+                  ? async (dto) => {
+                      await onCreate(dto);
+                      onClose();
+                    }
+                  : undefined
+              }
+              onEdit={
+                onEdit
+                  ? async (id, dto) => {
+                      await onEdit(id, dto);
+                      onClose();
+                    }
+                  : undefined
+              }
             />
           </div>
         </div>

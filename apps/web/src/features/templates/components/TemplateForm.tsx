@@ -1,7 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { CreateTemplateDto, MediaKind, TemplateButton, UploadedMedia } from "../types";
+import type {
+  CreateTemplateDto,
+  EditTemplateDto,
+  MediaKind,
+  MetaTemplate,
+  TemplateButton,
+  UploadedMedia,
+} from "../types";
 import { TemplatePreview } from "./TemplatePreview";
 import { MediaUploadField } from "./MediaUploadField";
 import { VariablesEditor } from "./VariablesEditor";
@@ -22,7 +29,53 @@ import { useToast } from "@/shared/hooks/useToast";
 type HeaderType = "NONE" | "TEXT" | "IMAGE" | "VIDEO" | "DOCUMENT";
 
 interface Props {
-  onCreate: (dto: CreateTemplateDto) => Promise<void>;
+  onCreate?: (dto: CreateTemplateDto) => Promise<void>;
+  onEdit?: (id: string, dto: EditTemplateDto) => Promise<void>;
+  initialTemplate?: MetaTemplate;
+}
+
+interface TemplateComponentLike {
+  type: string;
+  format?: string;
+  text?: string;
+  buttons?: TemplateButton[];
+  example?: {
+    header_text?: string[];
+    header_handle?: string[];
+    body_text?: string[][];
+  };
+}
+
+function deriveFormStateFromTemplate(template: MetaTemplate) {
+  const components = (template.components ?? []) as TemplateComponentLike[];
+  const header = components.find((c) => c.type === "HEADER");
+  const body = components.find((c) => c.type === "BODY");
+  const footer = components.find((c) => c.type === "FOOTER");
+  const buttonsComp = components.find((c) => c.type === "BUTTONS");
+
+  const headerType: HeaderType = !header
+    ? "NONE"
+    : header.format === "TEXT"
+      ? "TEXT"
+      : header.format === "IMAGE"
+        ? "IMAGE"
+        : header.format === "VIDEO"
+          ? "VIDEO"
+          : header.format === "DOCUMENT"
+            ? "DOCUMENT"
+            : "NONE";
+
+  return {
+    name: template.name,
+    category: (template.category as "MARKETING" | "UTILITY") ?? "MARKETING",
+    language: template.language ?? "pt_BR",
+    headerType,
+    headerText: headerType === "TEXT" ? (header?.text ?? "") : "",
+    bodyText: body?.text ?? "",
+    bodyExamples: body?.example?.body_text?.[0] ?? [],
+    footerText: footer?.text ?? "",
+    buttons: buttonsComp?.buttons ?? [],
+  };
 }
 
 const HEADER_OPTS: { value: HeaderType; label: string; icon: string }[] = [
@@ -52,20 +105,24 @@ function slugifyFinal(input: string): string {
   return slugifyLive(input).replace(/_+$/, "");
 }
 
-export function TemplateForm({ onCreate }: Props) {
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState<"MARKETING" | "UTILITY">("MARKETING");
-  const [language, setLanguage] = useState("pt_BR");
-  const [headerType, setHeaderType] = useState<HeaderType>("NONE");
-  const [headerText, setHeaderText] = useState("");
+export function TemplateForm({ onCreate, onEdit, initialTemplate }: Props) {
+  const initial = initialTemplate ? deriveFormStateFromTemplate(initialTemplate) : null;
+  const [name, setName] = useState(initial?.name ?? "");
+  const [category, setCategory] = useState<"MARKETING" | "UTILITY">(
+    initial?.category ?? "MARKETING",
+  );
+  const [language, setLanguage] = useState(initial?.language ?? "pt_BR");
+  const [headerType, setHeaderType] = useState<HeaderType>(initial?.headerType ?? "NONE");
+  const [headerText, setHeaderText] = useState(initial?.headerText ?? "");
   const [media, setMedia] = useState<UploadedMedia | null>(null);
-  const [bodyText, setBodyText] = useState("");
-  const [bodyExamples, setBodyExamples] = useState<string[]>([]);
-  const [footerText, setFooterText] = useState("");
-  const [buttons, setButtons] = useState<TemplateButton[]>([]);
+  const [bodyText, setBodyText] = useState(initial?.bodyText ?? "");
+  const [bodyExamples, setBodyExamples] = useState<string[]>(initial?.bodyExamples ?? []);
+  const [footerText, setFooterText] = useState(initial?.footerText ?? "");
+  const [buttons, setButtons] = useState<TemplateButton[]>(initial?.buttons ?? []);
   const [saving, setSaving] = useState(false);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const toast = useToast();
+  const isEditing = !!initialTemplate;
 
   function insertVariable() {
     const vars = [...bodyText.matchAll(/\{\{(\d+)\}\}/g)];
@@ -150,9 +207,25 @@ export function TemplateForm({ onCreate }: Props) {
     }
     setSaving(true);
     try {
-      await onCreate(buildDto());
+      const dto = buildDto();
+      if (initialTemplate && onEdit) {
+        await onEdit(initialTemplate.id, {
+          components: dto.components,
+          category: dto.category,
+          media_url: dto.media_url ?? undefined,
+          media_kind: dto.media_kind ?? undefined,
+        });
+      } else if (onCreate) {
+        await onCreate(dto);
+      }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar template na Meta.");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : isEditing
+            ? "Erro ao editar template na Meta."
+            : "Erro ao criar template na Meta.",
+      );
       setSaving(false);
     }
   }
@@ -180,11 +253,14 @@ export function TemplateForm({ onCreate }: Props) {
                 value={name}
                 onChange={(e) => setName(slugifyLive(e.target.value))}
                 required
+                disabled={isEditing}
                 placeholder="ex: welcome_message"
                 className={inputCls}
               />
               <p className="mt-1 text-xs text-on-surface-variant">
-                Convertido em tempo real para snake_case (a-z, 0-9, _).
+                {isEditing
+                  ? "Nome do template não pode ser alterado após criação na Meta."
+                  : "Convertido em tempo real para snake_case (a-z, 0-9, _)."}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -348,9 +424,15 @@ export function TemplateForm({ onCreate }: Props) {
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-            send
+            {isEditing ? "save" : "send"}
           </span>
-          {saving ? "Enviando para aprovação..." : "Enviar para aprovação"}
+          {saving
+            ? isEditing
+              ? "Salvando alterações..."
+              : "Enviando para aprovação..."
+            : isEditing
+              ? "Salvar alterações"
+              : "Enviar para aprovação"}
         </button>
       </form>
 
