@@ -161,10 +161,10 @@ export function StepList({
             setExpandedStepId(null);
             setAddingAfter(true);
           }}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant px-4 py-3 text-label-sm text-on-surface-variant transition-colors hover:border-primary hover:text-primary"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/30 transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-            add
+          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+            add_circle
           </span>
           Adicionar mensagem
         </button>
