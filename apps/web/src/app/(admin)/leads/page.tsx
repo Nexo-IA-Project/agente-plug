@@ -6,6 +6,7 @@ import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
 import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
 import { useToast } from "@/shared/hooks/useToast";
 import { useProducts } from "@/features/products/hooks/useProducts";
+import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
 import type { Lead, LeadFilters } from "@/features/leads/types";
 
 const STATUS_OPTIONS = [
@@ -231,6 +232,7 @@ export default function LeadsPage() {
                 "Produto",
                 "Valor",
                 "Status",
+                "Evento",
                 "UTM",
                 "Último evento",
               ].map((h) => (
@@ -261,7 +263,7 @@ export default function LeadsPage() {
             ) : leads.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-10 text-center text-sm text-on-surface-variant"
                 >
                   Nenhum lead encontrado com esses filtros.
@@ -270,6 +272,7 @@ export default function LeadsPage() {
             ) : (
               leads.map((lead) => {
                 const badge = getLeadStatusBadge(lead.subscription_status);
+                const eventMeta = getTriggerEventMeta(lead.last_event_type);
                 return (
                   <tr
                     key={lead.id}
@@ -297,6 +300,26 @@ export default function LeadsPage() {
                       >
                         {badge.label}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {eventMeta ? (
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium ${eventMeta.tone.bg} ${eventMeta.tone.text} ${eventMeta.tone.border}`}
+                          title={eventMeta.description}
+                        >
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: "12px" }}
+                          >
+                            {eventMeta.icon}
+                          </span>
+                          {eventMeta.label}
+                        </span>
+                      ) : (
+                        <span className="text-on-surface-variant">
+                          {lead.last_event_type || "—"}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-on-surface-variant">
                       {lead.utm_source ?? "—"}
