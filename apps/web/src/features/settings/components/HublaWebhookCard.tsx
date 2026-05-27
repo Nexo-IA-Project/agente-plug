@@ -94,7 +94,7 @@ export function HublaWebhookCard() {
         <li>
           Selecione os eventos que quer disparar fluxos de onboarding (ex:{" "}
           <code>subscription.activated</code>,{" "}
-          <code>lead.abandoned_cart</code>, etc).
+          <code>lead.abandoned_checkout</code>, etc).
         </li>
         <li>
           Salve. A partir daí, qualquer evento dispara automaticamente os

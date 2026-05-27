@@ -116,5 +116,5 @@ async def test_handler_calls_purchase_handler_only_for_subscription_activated() 
 @pytest.mark.asyncio
 async def test_handler_does_not_call_purchase_for_other_events() -> None:
     handler = _make_handler()
-    await handler.handle(_make_payload(event_type="member.access_granted"))
+    await handler.handle(_make_payload(event_type="customer.member_added"))
     handler._purchase_handler.handle_one.assert_not_called()

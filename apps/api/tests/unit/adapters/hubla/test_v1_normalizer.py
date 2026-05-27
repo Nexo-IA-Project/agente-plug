@@ -98,7 +98,7 @@ def test_v1_expired_maps_to_expired() -> None:
     payload = _v1_new_sale_payload()
     payload["type"] = "Expired"
     out = normalize_v1_payload(payload)
-    assert out["type"] == "subscription.expired"
+    assert out["type"] == "subscription.expiring"
     assert out["event"]["subscription"]["status"] == "expired"
 
 
@@ -122,7 +122,7 @@ def test_v1_abandoned_cart_maps_to_lead() -> None:
     payload = _v1_new_sale_payload()
     payload["type"] = "AbandonedCart"
     out = normalize_v1_payload(payload)
-    assert out["type"] == "lead.abandoned_cart"
+    assert out["type"] == "lead.abandoned_checkout"
     assert out["event"]["subscription"]["status"] == "abandoned"
 
 
