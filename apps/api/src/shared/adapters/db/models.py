@@ -523,7 +523,7 @@ class OnboardingStepModel(Base):
         index=True,
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    delay_from_previous_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -565,7 +565,7 @@ class OnboardingEnrollmentStepModel(Base):
         UUID(as_uuid=True), ForeignKey("onboarding_enrollments.id"), nullable=False, index=True
     )
     position: Mapped[int] = mapped_column(Integer, nullable=False)
-    delay_from_purchase_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    delay_from_previous_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     meta_template_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     template_variables: Mapped[dict] = mapped_column(JSONB, default=dict, nullable=False)
     message_text: Mapped[str | None] = mapped_column(Text, nullable=True)
