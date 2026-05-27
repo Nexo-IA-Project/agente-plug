@@ -202,7 +202,8 @@ async def dispatch_step_now(
     from sqlalchemy import update
 
     from agent.history import ConversationHistory
-    from shared.adapters.chatnexo.client import ChatNexoClient
+    from shared.adapters.agent_selection.random_selection import RandomAgentSelection
+    from shared.adapters.chatnexo.agent_picker import build_chatnexo_client
     from shared.adapters.db.models import (
         OnboardingEnrollmentStepModel,
         ScheduledJobModel,
@@ -254,12 +255,21 @@ async def dispatch_step_now(
 
         await session.flush()
 
-        # 5. Despacha síncrono
+        # 5. Despacha síncrono — usa o MESMO picker do worker automático
+        # (build_chatnexo_client com agents+fallback). Antes usávamos
+        # ChatNexoClient.from_account_config(config) que pega só a master
+        # key — se ela estivesse vencida, o manual falhava com 401 mesmo
+        # com agents válidos cadastrados.
         settings_obj = get_settings()
         fernet = Fernet(settings_obj.integration_credentials_key.encode())
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
         config = await config_repo.get(account_id=1)
-        chatnexo = ChatNexoClient.from_account_config(config)
+        chatnexo, _chosen_agent_id = build_chatnexo_client(
+            base_url=config.integration.chatnexo_base_url,
+            agents=config.integration.chatnexo_agents,
+            strategy=RandomAgentSelection(),
+            fallback_api_key=config.integration.chatnexo_api_key,
+        )
         dispatch = DispatchOnboardingStep(
             enrollment_repo=repo,
             contact_repo=ContactRepository(session=session),
@@ -272,6 +282,7 @@ async def dispatch_step_now(
             account_id=account_uuid,
             conversation_id=str(enrollment.conversation_id),
             contact_phone=enrollment.contact_phone,
+            chatnexo_account_id=config.integration.chatnexo_account_id,
         )
 
         # 6. Recarrega step pra pegar sent_at atualizado

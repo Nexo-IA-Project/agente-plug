@@ -68,6 +68,11 @@ class ChatNexoClient:
     @_retry
     async def _post(self, path: str, json: dict[str, Any]) -> httpx.Response:
         response = await self.http.post(f"{_API_PREFIX}{path}", json=json)
+        if response.status_code in (401, 403):
+            raise ChatNexoError(
+                "ChatNexo recusou a credencial (HTTP "
+                f"{response.status_code}). Verifique CHATNEXO_API_KEY em /settings."
+            )
         response.raise_for_status()
         return response
 
