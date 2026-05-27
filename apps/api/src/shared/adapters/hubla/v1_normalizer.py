@@ -16,10 +16,10 @@ Eventos suportados (todos os types v1 conhecidos):
 | `NewSale`             | `subscription.activated`        |
 | `Renewal`             | `subscription.activated`        |
 | `Canceled`            | `subscription.deactivated`      |
-| `Expired`             | `subscription.expired`          |
+| `Expired`             | `subscription.expiring`         |
 | `ChargedBack`         | `invoice.refunded`              |
 | `Refund`              | `invoice.refunded`              |
-| `AbandonedCart`       | `lead.abandoned_cart`           |
+| `AbandonedCart`       | `lead.abandoned_checkout`       |
 
 Eventos v1 com `type` não mapeado passam adiante inalterados — o handler
 loga como `hubla_unknown_event` e persiste em `hubla_events` para auditoria.
@@ -34,10 +34,10 @@ _V1_TO_V2_EVENT_MAP: dict[str, str] = {
     "NewSale": "subscription.activated",
     "Renewal": "subscription.activated",
     "Canceled": "subscription.deactivated",
-    "Expired": "subscription.expired",
+    "Expired": "subscription.expiring",
     "ChargedBack": "invoice.refunded",
     "Refund": "invoice.refunded",
-    "AbandonedCart": "lead.abandoned_cart",
+    "AbandonedCart": "lead.abandoned_checkout",
 }
 
 

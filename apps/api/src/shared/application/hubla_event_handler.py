@@ -11,6 +11,7 @@ from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.value_objects.hubla_event_type import (
     PURCHASE_EVENT_TYPES,
     is_valid_hubla_event_type,
+    normalize_event_type,
 )
 from shared.domain.value_objects.phone import Phone
 
@@ -69,7 +70,10 @@ class HublaEventHandler:
             )
             payload = normalize_v1_payload(payload)
 
-        event_type: str = payload.get("type", "")
+        # Normaliza nomes de eventos legados (ex: member.access_granted → customer.member_added).
+        # Defesa em profundidade: caso algum payload chegue com o nome velho do enum
+        # antigo, mapeia pro nome correto da Hubla v2 antes de prosseguir.
+        event_type: str = normalize_event_type(payload.get("type", ""))
         if event_type and not is_valid_hubla_event_type(event_type):
             log.warning(
                 "hubla_unknown_event",

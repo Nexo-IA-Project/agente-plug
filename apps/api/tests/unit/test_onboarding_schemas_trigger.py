@@ -9,19 +9,23 @@ from interface.http.schemas.onboarding import (
 
 
 def test_hubla_event_types_constant_has_25_values():
-    """Após Hubla v2 (Task 4): catálogo expandido para 25 eventos oficiais.
+    """Catálogo deve refletir os 25 eventos da doc oficial Hubla v2.
 
-    Inclui renomes: lead.abandoned → lead.abandoned_cart,
-    subscription.expiring → subscription.expired.
+    https://hubla.gitbook.io/docs/webhooks/eventos-v2
     """
     assert len(HUBLA_EVENT_TYPES) == 25
+    # Nomes técnicos oficiais Hubla v2
     assert "subscription.activated" in HUBLA_EVENT_TYPES
-    assert "lead.abandoned_cart" in HUBLA_EVENT_TYPES
-    assert "subscription.expired" in HUBLA_EVENT_TYPES
-    assert "member.access_granted" in HUBLA_EVENT_TYPES
-    # nomes antigos NÃO devem mais aparecer
-    assert "lead.abandoned" not in HUBLA_EVENT_TYPES
-    assert "subscription.expiring" not in HUBLA_EVENT_TYPES
+    assert "lead.abandoned_checkout" in HUBLA_EVENT_TYPES
+    assert "subscription.expiring" in HUBLA_EVENT_TYPES
+    assert "customer.member_added" in HUBLA_EVENT_TYPES
+    assert "invoice.payment_succeeded" in HUBLA_EVENT_TYPES
+    assert "smart_installment.aborted" in HUBLA_EVENT_TYPES
+    # Nomes legados (errados) NÃO devem mais aparecer
+    assert "lead.abandoned_cart" not in HUBLA_EVENT_TYPES
+    assert "subscription.expired" not in HUBLA_EVENT_TYPES
+    assert "member.access_granted" not in HUBLA_EVENT_TYPES
+    assert "invoice.payment_completed" not in HUBLA_EVENT_TYPES
 
 
 def test_create_flow_request_accepts_valid_trigger():

@@ -10,35 +10,35 @@ export type HublaEventCategory =
 
 export type HublaEventType =
   // Lead
-  | "lead.abandoned_cart"
+  | "lead.abandoned_checkout"
   // Member
-  | "member.access_granted"
-  | "member.access_removed"
+  | "customer.member_added"
+  | "customer.member_removed"
   // Subscription
   | "subscription.created"
   | "subscription.activated"
-  | "subscription.expired"
+  | "subscription.expiring"
   | "subscription.deactivated"
-  | "subscription.auto_renewal_disabled"
-  | "subscription.auto_renewal_enabled"
+  | "subscription.renewal_disabled"
+  | "subscription.renewal_enabled"
   // Invoice
   | "invoice.created"
   | "invoice.status_updated"
-  | "invoice.payment_completed"
+  | "invoice.payment_succeeded"
   | "invoice.payment_failed"
   | "invoice.expired"
   | "invoice.refunded"
   // Installment
-  | "installment.created"
-  | "installment.failed"
-  | "installment.in_progress"
-  | "installment.overdue"
-  | "installment.cancelled"
-  | "installment.completed"
+  | "smart_installment.created"
+  | "smart_installment.aborted"
+  | "smart_installment.on_schedule"
+  | "smart_installment.off_schedule"
+  | "smart_installment.canceled"
+  | "smart_installment.completed"
   // Refund Request
   | "refund_request.created"
   | "refund_request.accepted"
-  | "refund_request.cancelled"
+  | "refund_request.canceled"
   | "refund_request.rejected";
 
 export interface TriggerEventTone {
@@ -137,10 +137,10 @@ export const TRIGGER_EVENT_CATEGORIES: readonly HublaEventCategory[] = [
 export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
   // Lead
   {
-    value: "lead.abandoned_cart",
+    value: "lead.abandoned_checkout",
     label: "Carrinho abandonado",
     pillLabel: "Carrinho abandonado",
-    technical: "lead.abandoned_cart",
+    technical: "lead.abandoned_checkout",
     description:
       "Cliente preencheu e-mail/telefone no checkout mas não concluiu compra em 20 minutos.",
     category: "lead",
@@ -151,10 +151,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
   },
   // Member
   {
-    value: "member.access_granted",
+    value: "customer.member_added",
     label: "Acesso concedido",
     pillLabel: "Acesso concedido",
-    technical: "member.access_granted",
+    technical: "customer.member_added",
     description: "Cliente recebeu acesso ao produto ou área de membros.",
     category: "member",
     categoryLabel: "Membro",
@@ -163,10 +163,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o acesso for concedido",
   },
   {
-    value: "member.access_removed",
+    value: "customer.member_removed",
     label: "Acesso removido",
     pillLabel: "Acesso removido",
-    technical: "member.access_removed",
+    technical: "customer.member_removed",
     description:
       "Acesso foi revogado (cancelamento, banimento, expiração).",
     category: "member",
@@ -202,10 +202,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "a venda for ativada",
   },
   {
-    value: "subscription.expired",
+    value: "subscription.expiring",
     label: "Assinatura expirada",
     pillLabel: "Assinatura expirada",
-    technical: "subscription.expired",
+    technical: "subscription.expiring",
     description: "Data de fim atingida sem renovação.",
     category: "subscription",
     categoryLabel: "Assinatura",
@@ -227,10 +227,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "a assinatura for cancelada",
   },
   {
-    value: "subscription.auto_renewal_disabled",
+    value: "subscription.renewal_disabled",
     label: "Renovação automática desligada",
     pillLabel: "Auto-renovação OFF",
-    technical: "subscription.auto_renewal_disabled",
+    technical: "subscription.renewal_disabled",
     description:
       "Cliente desabilitou renovação automática — risco de churn, janela de retenção.",
     category: "subscription",
@@ -240,10 +240,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "a renovação automática for desligada",
   },
   {
-    value: "subscription.auto_renewal_enabled",
+    value: "subscription.renewal_enabled",
     label: "Renovação automática ligada",
     pillLabel: "Auto-renovação ON",
-    technical: "subscription.auto_renewal_enabled",
+    technical: "subscription.renewal_enabled",
     description: "Cliente reativou renovação automática.",
     category: "subscription",
     categoryLabel: "Assinatura",
@@ -277,10 +277,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o status da fatura mudar",
   },
   {
-    value: "invoice.payment_completed",
+    value: "invoice.payment_succeeded",
     label: "Pagamento confirmado",
     pillLabel: "Pagamento OK",
-    technical: "invoice.payment_completed",
+    technical: "invoice.payment_succeeded",
     description: "Fatura paga com sucesso.",
     category: "invoice",
     categoryLabel: "Fatura",
@@ -326,10 +326,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
   },
   // Installment
   {
-    value: "installment.created",
+    value: "smart_installment.created",
     label: "Parcelamento criado",
     pillLabel: "Parcelamento criado",
-    technical: "installment.created",
+    technical: "smart_installment.created",
     description: "Parcelamento inteligente iniciado.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -338,10 +338,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o parcelamento for criado",
   },
   {
-    value: "installment.failed",
+    value: "smart_installment.aborted",
     label: "Cobrança de parcela falhou",
     pillLabel: "Parcela falhou",
-    technical: "installment.failed",
+    technical: "smart_installment.aborted",
     description: "Tentativa de cobrança de uma parcela falhou.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -350,10 +350,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "a cobrança de parcela falhar",
   },
   {
-    value: "installment.in_progress",
+    value: "smart_installment.on_schedule",
     label: "Parcelamento em andamento",
     pillLabel: "Em andamento",
-    technical: "installment.in_progress",
+    technical: "smart_installment.on_schedule",
     description: "Parcelamento ativo, sem problemas.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -362,10 +362,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o parcelamento estiver em andamento",
   },
   {
-    value: "installment.overdue",
+    value: "smart_installment.off_schedule",
     label: "Parcela em atraso",
     pillLabel: "Em atraso",
-    technical: "installment.overdue",
+    technical: "smart_installment.off_schedule",
     description: "Uma ou mais parcelas estão atrasadas.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -374,10 +374,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "uma parcela atrasar",
   },
   {
-    value: "installment.cancelled",
+    value: "smart_installment.canceled",
     label: "Parcelamento cancelado",
     pillLabel: "Cancelado",
-    technical: "installment.cancelled",
+    technical: "smart_installment.canceled",
     description: "Parcelamento foi cancelado.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -386,10 +386,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o parcelamento for cancelado",
   },
   {
-    value: "installment.completed",
+    value: "smart_installment.completed",
     label: "Parcelamento concluído",
     pillLabel: "Concluído",
-    technical: "installment.completed",
+    technical: "smart_installment.completed",
     description: "Todas as parcelas foram pagas.",
     category: "installment",
     categoryLabel: "Parcelamento",
@@ -424,10 +424,10 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     triggerVerb: "o reembolso for aprovado",
   },
   {
-    value: "refund_request.cancelled",
+    value: "refund_request.canceled",
     label: "Pedido de reembolso cancelado",
     pillLabel: "Cancelado pelo cliente",
-    technical: "refund_request.cancelled",
+    technical: "refund_request.canceled",
     description: "Cliente cancelou a solicitação.",
     category: "refund",
     categoryLabel: "Reembolso",
@@ -455,8 +455,8 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
  * Usado pelo getTriggerEventMeta para que o LeadDrawer renderize timeline corretamente.
  */
 const DEPRECATED_ALIASES: Record<string, HublaEventType> = {
-  "lead.abandoned": "lead.abandoned_cart",
-  "subscription.expiring": "subscription.expired",
+  "lead.abandoned": "lead.abandoned_checkout",
+  "subscription.expiring": "subscription.expiring",
 };
 
 export function getTriggerEventMeta(
