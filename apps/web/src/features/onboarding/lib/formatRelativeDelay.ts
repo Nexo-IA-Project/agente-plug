@@ -4,14 +4,16 @@ import { getTriggerEventMeta } from "./triggerEvents";
 /**
  * Gera o texto contextual do badge de delay de um step.
  *
- * Para o 1º step (isFirst=true), usa o `triggerVerb` do evento.
- * Para os demais, fala "após a mensagem anterior".
+ * Para o 1º step (isFirst=true), usa o `triggerVerb` do evento (oração no
+ * futuro do subjuntivo, ex: "a venda for ativada"). Por isso usa "depois que"
+ * como conector (gramaticalmente correto), nunca "após" (que pede substantivo).
+ * Para os demais steps, fala "após a mensagem anterior".
  *
  * Exemplos:
  *   formatRelativeDelay(0, "subscription.activated", true)
  *     → "Assim que a venda for ativada"
  *   formatRelativeDelay(120, "subscription.activated", true)
- *     → "2 horas após a venda for ativada"
+ *     → "2 horas depois que a venda for ativada"
  *   formatRelativeDelay(0, "subscription.activated", false)
  *     → "Junto com a mensagem anterior"
  *   formatRelativeDelay(2880, "subscription.activated", false)
@@ -29,7 +31,7 @@ export function formatRelativeDelay(
     if (delayMinutes === 0) {
       return `Assim que ${triggerVerb}`;
     }
-    return `${formatDuration(delayMinutes)} após ${triggerVerb}`;
+    return `${formatDuration(delayMinutes)} depois que ${triggerVerb}`;
   }
 
   if (delayMinutes === 0) {
