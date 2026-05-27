@@ -35,7 +35,6 @@ class EditTemplateRequest(BaseModel):
     components: list[dict[str, Any]] | None = None
     category: TemplateCategory | None = None
     media_url: str | None = None
-    media_object_key: str | None = None
     media_kind: MediaKind | None = None
 
 
