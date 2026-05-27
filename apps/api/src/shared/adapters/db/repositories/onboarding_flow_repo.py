@@ -205,6 +205,25 @@ class OnboardingFlowRepository:
         await self.session.flush()
         return True
 
+    async def find_steps_by_template_name(
+        self, *, account_id: uuid.UUID, template_name: str
+    ) -> list[tuple[OnboardingStep, OnboardingFlowModel]]:
+        """Retorna steps que usam o template + o flow correspondente.
+
+        Filtra por account_id pra tenant isolation (mesmo single-tenant).
+        Usado pelo SyncMetaTemplates pra avisar/limpar quando um template
+        é removido.
+        """
+        result = await self.session.execute(
+            select(OnboardingStepModel, OnboardingFlowModel)
+            .join(OnboardingFlowModel, OnboardingFlowModel.id == OnboardingStepModel.flow_id)
+            .where(
+                OnboardingFlowModel.account_id == account_id,
+                OnboardingStepModel.meta_template_name == template_name,
+            )
+        )
+        return [(_step_to_entity(step), flow) for step, flow in result.all()]
+
     async def get_step(self, step_id: uuid.UUID) -> OnboardingStep | None:
         model = await self.session.get(OnboardingStepModel, step_id)
         return None if model is None else _step_to_entity(model)

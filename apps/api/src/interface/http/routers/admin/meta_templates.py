@@ -18,6 +18,7 @@ from interface.http.schemas.meta_templates import (
 from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
+from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.meta.template_client import MetaTemplateClient
 from shared.adapters.storage.r2 import R2Storage
@@ -30,6 +31,7 @@ from shared.application.use_cases.meta_templates.delete_template import (
     MetaTemplateInUseError,
 )
 from shared.application.use_cases.meta_templates.list_templates import ListTemplates
+from shared.application.use_cases.meta_templates.sync_templates import SyncMetaTemplates
 from shared.application.use_cases.meta_templates.upload_template_media import (
     UploadTemplateMedia,
     UploadTemplateMediaInput,
@@ -252,3 +254,37 @@ async def delete_template(
                 status_code=409,
                 detail={"code": "META_TEMPLATE_IN_USE", "flows": exc.flows},
             ) from exc
+
+
+@router.post("/meta-templates/sync")
+async def sync_templates(
+    dry_run: bool = False,
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> dict[str, Any]:
+    """Full re-sync de templates Meta com a WABA atual.
+
+    - dry_run=true → retorna diff (templates_to_delete/insert/update + steps_to_delete) sem aplicar
+    - dry_run=false → aplica em transação atômica
+    """
+    client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
+    async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
+        use_case = SyncMetaTemplates(
+            repo=MetaTemplateRepository(session=session),
+            flow_repo=OnboardingFlowRepository(session=session),
+            meta_client=client,
+        )
+        try:
+            summary = await use_case.execute(
+                account_id=account_uuid,
+                waba_id=waba_id,
+                dry_run=dry_run,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail={"code": "META_SYNC_FAILED", "detail": str(exc)},
+            ) from exc
+    return summary.to_dict()
