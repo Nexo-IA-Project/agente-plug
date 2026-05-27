@@ -11,29 +11,18 @@ import type {
   UpdateStepInput,
 } from "../types";
 import { StepVariableEditor } from "./StepVariableEditor";
+import { TimeInputGroup } from "./TimeInputGroup";
 
 type StepMode = "template" | "text";
-type DelayUnit = "minutos" | "horas" | "dias";
 
 interface Props {
   step?: OnboardingStep;
   /** Mantido para compatibilidade com StepList; não é mais usado no form (server resolve posição). */
   nextPosition?: number;
+  isFirstStep: boolean;
+  defaultDelayMinutes: number;
   onSave: (dto: CreateStepInput | UpdateStepInput) => Promise<void>;
   onCancel: () => void;
-}
-
-function minutesToDisplay(minutes: number): { value: number; unit: DelayUnit } {
-  if (minutes === 0) return { value: 0, unit: "minutos" };
-  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "dias" };
-  if (minutes % 60 === 0) return { value: minutes / 60, unit: "horas" };
-  return { value: minutes, unit: "minutos" };
-}
-
-function toMinutes(value: number, unit: DelayUnit): number {
-  if (unit === "minutos") return value;
-  if (unit === "horas") return value * 60;
-  return value * 1440;
 }
 
 function getTemplateBody(template: MetaTemplate | undefined): string | null {
@@ -46,7 +35,13 @@ const labelCls = "field-label";
 
 const EXIT_DURATION_MS = 320;
 
-export function StepInlineForm({ step, onSave, onCancel }: Props) {
+export function StepInlineForm({
+  step,
+  isFirstStep,
+  defaultDelayMinutes,
+  onSave,
+  onCancel,
+}: Props) {
   // Fade in/out controlado: visible começa false, vira true no mount.
   // Ao cancelar/salvar, exiting vira true e esperamos EXIT_DURATION_MS antes
   // de chamar o callback do pai (que vai unmontar o componente).
@@ -63,12 +58,12 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
     setTimeout(onCancel, EXIT_DURATION_MS);
   };
 
-  const initialDisplay = minutesToDisplay(step?.delay_from_previous_minutes ?? 0);
   const [mode, setMode] = useState<StepMode>(
     step ? (step.message_text ? "text" : "template") : "template"
   );
-  const [delayValue, setDelayValue] = useState(initialDisplay.value);
-  const [delayUnit, setDelayUnit] = useState<DelayUnit>(initialDisplay.unit);
+  const [totalMinutes, setTotalMinutes] = useState<number>(
+    step?.delay_from_previous_minutes ?? defaultDelayMinutes,
+  );
 
   const [templates, setTemplates] = useState<MetaTemplate[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -107,11 +102,10 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    const minutes = toMinutes(delayValue, delayUnit);
     try {
       if (mode === "template") {
         const dto: UpdateStepInput = {
-          delay_from_previous_minutes: minutes,
+          delay_from_previous_minutes: totalMinutes,
           meta_template_name: selectedTemplate || null,
           template_variables: templateVariables,
           message_text: null,
@@ -119,7 +113,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         await onSave(dto);
       } else {
         const dto: UpdateStepInput = {
-          delay_from_previous_minutes: minutes,
+          delay_from_previous_minutes: totalMinutes,
           meta_template_name: null,
           template_variables: {},
           message_text: messageText,
@@ -184,30 +178,16 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
 
         {/* Timing */}
         <div>
-          <label className={labelCls}>Enviar após a compra</label>
-          <div className="flex gap-2">
-            <input
-              type="number"
-              min={0}
-              value={delayValue}
-              onChange={(e) => setDelayValue(Number(e.target.value))}
-              className="field-input !w-24"
-            />
-            <select
-              value={delayUnit}
-              onChange={(e) => setDelayUnit(e.target.value as DelayUnit)}
-              className="field-select flex-1"
-            >
-              <option value="minutos">Minutos</option>
-              <option value="horas">Horas</option>
-              <option value="dias">Dias</option>
-            </select>
-          </div>
-          <p className="mt-1 text-xs text-on-surface-variant">
-            {delayValue === 0
-              ? "Imediato — dispara assim que a compra é registrada"
-              : `${toMinutes(delayValue, delayUnit)} minuto(s) após a compra`}
-          </p>
+          <label className={labelCls}>
+            {isFirstStep
+              ? "Tempo de espera após o gatilho"
+              : "Tempo de espera após a mensagem anterior"}
+          </label>
+          <TimeInputGroup
+            totalMinutes={totalMinutes}
+            onChange={setTotalMinutes}
+            isFirstStep={isFirstStep}
+          />
         </div>
 
         {/* Template mode */}
