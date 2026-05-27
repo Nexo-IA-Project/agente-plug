@@ -6,6 +6,7 @@ from uuid import UUID
 
 import structlog
 
+from shared.adapters.hubla.v1_normalizer import is_v1_payload, normalize_v1_payload
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.value_objects.hubla_event_type import (
     PURCHASE_EVENT_TYPES,
@@ -56,6 +57,18 @@ class HublaEventHandler:
         self._chatnexo_inbox_id = chatnexo_inbox_id
 
     async def handle(self, payload: dict[str, Any]) -> None:
+        # Hubla mantém 2 versões de webhook coexistindo (v1.0.0 legacy + v2.0.0 atual).
+        # Se vier v1 (ex: type=NewSale), converte pro formato v2 antes do pipeline ler
+        # os campos. Caso contrário avisa o cliente pra atualizar a regra no painel
+        # pra (v2) — mas processamos mesmo assim.
+        if is_v1_payload(payload):
+            log.warning(
+                "hubla_v1_payload_normalized",
+                original_type=payload.get("type"),
+                hint="atualize a regra no painel Hubla para eventos (v2)",
+            )
+            payload = normalize_v1_payload(payload)
+
         event_type: str = payload.get("type", "")
         if event_type and not is_valid_hubla_event_type(event_type):
             log.warning(
