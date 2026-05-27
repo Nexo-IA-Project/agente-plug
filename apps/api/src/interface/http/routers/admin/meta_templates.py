@@ -25,7 +25,6 @@ from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepos
 from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.meta.template_client import MetaTemplateClient
-from shared.adapters.storage.r2 import R2Storage
 from shared.application.use_cases.meta_templates.create_template import (
     CreateTemplate,
     CreateTemplateInput,
@@ -47,7 +46,6 @@ from shared.application.use_cases.meta_templates.upload_template_media import (
     UploadTemplateMediaInput,
 )
 from shared.config.settings import get_settings
-from shared.domain.ports.storage import StoragePort
 
 router = APIRouter(tags=["admin-meta-templates"])
 
@@ -171,21 +169,11 @@ async def create_template(
             detail="META_APP_ID não configurado em Settings (necessário p/ template com mídia)",
         )
 
-    settings = get_settings()
-    # Quando há mídia, R2 real é obrigatório (resumable upload exige bytes acessíveis).
-    # Sem mídia, qualquer StoragePort serve — usamos NullStorage via from_settings_or_null.
-    storage: StoragePort
-    if body.media_url:
-        try:
-            storage = R2Storage.from_settings(settings)
-        except RuntimeError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
-    else:
-        storage = R2Storage.from_settings_or_null(settings)
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
-        use_case = CreateTemplate(repo=repo, meta_client=client, storage=storage)
+        media_repo = MetaTemplateMediaRepository(session=session)
+        use_case = CreateTemplate(repo=repo, meta_client=client, media_repo=media_repo)
         try:
             record = await use_case.execute(
                 CreateTemplateInput(
@@ -244,14 +232,12 @@ async def delete_template(
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> None:
     client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
-    storage = R2Storage.from_settings_or_null(get_settings())
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         use_case = DeleteTemplate(
             repo=repo,
             meta_client=client,
-            storage=storage,
             flow_usage_check=_flow_usage_check,
         )
         try:

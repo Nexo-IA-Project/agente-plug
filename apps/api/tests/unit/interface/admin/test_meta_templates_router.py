@@ -75,7 +75,7 @@ def test_create_template_duplicate_name_returns_409(client):
             "interface.http.routers.admin.meta_templates.CreateTemplate",
         ) as mock_create_cls,
         patch(
-            "interface.http.routers.admin.meta_templates.R2Storage",
+            "interface.http.routers.admin.meta_templates.MetaTemplateMediaRepository",
         ),
         patch(
             "interface.http.routers.admin.meta_templates.get_settings",
