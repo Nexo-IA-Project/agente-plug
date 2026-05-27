@@ -137,9 +137,7 @@ class DispatchOnboardingStep:
                         placeholders = _re.findall(r"\{\{(\w+)\}\}", body_text)
                         if placeholders:
                             detected = (
-                                "POSITIONAL"
-                                if all(p.isdigit() for p in placeholders)
-                                else "NAMED"
+                                "POSITIONAL" if all(p.isdigit() for p in placeholders) else "NAMED"
                             )
                     if detected is not None:
                         parameter_format = detected

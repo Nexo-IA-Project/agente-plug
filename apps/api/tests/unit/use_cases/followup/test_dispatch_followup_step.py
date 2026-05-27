@@ -253,9 +253,7 @@ async def test_dispatch_detects_positional_from_body_text():
 @pytest.mark.asyncio
 async def test_dispatch_detects_named_from_body_text():
     """Template sem `example` mas com {{customer_name}} no body → NAMED via fallback."""
-    step = _make_step(
-        template_variables={"customer_name": {"source": "static", "value": "Fabio"}}
-    )
+    step = _make_step(template_variables={"customer_name": {"source": "static", "value": "Fabio"}})
     enrollment_repo = _make_enrollment_repo_with_step(step)
     chatnexo = AsyncMock()
     template_repo = AsyncMock()
