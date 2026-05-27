@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import structlog
@@ -44,6 +44,14 @@ class ResyncEnrollmentUseCase:
         flow_steps = await self._flow_step_repo.get_steps(flow_id)
         diff = compute_diff(flow_steps, enrollment.steps)
 
+        # Cálculo cumulativo dos run_at por position (semântica relativa).
+        # Calcula UMA vez para todo o flow ordenado; cada run_at depende do anterior.
+        run_at_by_position: dict[int, datetime] = {}
+        base_time = enrollment.purchase_time
+        for fs in sorted(flow_steps, key=lambda s: s.position):
+            base_time = base_time + timedelta(minutes=fs.delay_from_previous_minutes)
+            run_at_by_position[fs.position] = base_time
+
         audit = {
             "steps_added": 0,
             "steps_rescheduled": 0,
@@ -56,13 +64,13 @@ class ResyncEnrollmentUseCase:
                 enrollment_id=enrollment.id,
                 flow_step_id=fs.id,
                 position=fs.position,
-                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
+                delay_from_previous_minutes=fs.delay_from_previous_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,
                 status=EnrollmentStepStatus.PENDING,
             )
-            run_at = enrollment.purchase_time + timedelta(minutes=fs.delay_from_purchase_minutes)
+            run_at = run_at_by_position[fs.position]
             job = await self._scheduled_job_repo.schedule(
                 account_id=account_id,
                 conversation_id=None,
@@ -82,7 +90,7 @@ class ResyncEnrollmentUseCase:
         for enr_step, fs in diff.to_reschedule:
             if enr_step.scheduled_job_id is not None:
                 await self._scheduled_job_repo.cancel(enr_step.scheduled_job_id)
-            run_at = enrollment.purchase_time + timedelta(minutes=fs.delay_from_purchase_minutes)
+            run_at = run_at_by_position[fs.position]
             new_job = await self._scheduled_job_repo.schedule(
                 account_id=account_id,
                 conversation_id=None,
@@ -97,7 +105,7 @@ class ResyncEnrollmentUseCase:
             )
             await self._enrollment_repo.apply_step_update(
                 step_id=enr_step.id,
-                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
+                delay_from_previous_minutes=fs.delay_from_previous_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,
@@ -108,7 +116,7 @@ class ResyncEnrollmentUseCase:
         for enr_step, fs in diff.to_update_content:
             await self._enrollment_repo.apply_step_update(
                 step_id=enr_step.id,
-                delay_from_purchase_minutes=fs.delay_from_purchase_minutes,
+                delay_from_previous_minutes=fs.delay_from_previous_minutes,
                 meta_template_name=fs.meta_template_name,
                 message_text=fs.message_text,
                 template_variables=fs.template_variables,

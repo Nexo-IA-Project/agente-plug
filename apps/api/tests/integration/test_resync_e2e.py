@@ -228,7 +228,7 @@ async def test_step_creation_enqueues_resync_job(
     response = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 24,
+            "delay_from_previous_minutes": 24,
             "meta_template_name": "t",
             "template_variables": {},
         },

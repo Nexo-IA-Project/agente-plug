@@ -60,7 +60,7 @@ class OnboardingStepDetailResponse(BaseModel):
     template_name: str | None
     message_text: str | None
     status: str  # "sent" | "pending" | "failed" | "cancelled"
-    delay_from_purchase_minutes: int
+    delay_from_previous_minutes: int
     scheduled_for: datetime | None
     sent_at: datetime | None
     failure_reason: str | None

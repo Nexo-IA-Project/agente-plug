@@ -12,6 +12,7 @@ interface Props {
   onNew: () => void;
   onDelete: (template: MetaTemplate) => void;
   onEdit: (template: MetaTemplate) => void;
+  onPreview?: (template: MetaTemplate) => void;
 }
 
 function getCategoryIcon(category: string): string {
@@ -70,6 +71,7 @@ export function TemplateList({
   onNew,
   onDelete,
   onEdit,
+  onPreview,
 }: Props) {
   return (
     <div className="flex h-full flex-col">
@@ -336,6 +338,19 @@ export function TemplateList({
 
                   {/* Ações */}
                   <div className="relative flex shrink-0 items-center gap-1 self-center">
+                    {onPreview && (
+                      <button
+                        type="button"
+                        onClick={() => onPreview(t)}
+                        title="Visualizar template"
+                        aria-label={`Visualizar template ${t.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                          visibility
+                        </span>
+                      </button>
+                    )}
                     {isApproved ? (
                       <button
                         type="button"

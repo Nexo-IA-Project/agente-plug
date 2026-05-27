@@ -37,7 +37,7 @@ def compute_diff(flow_steps, enrollment_steps) -> Diff:
         if enr.status != EnrollmentStepStatus.PENDING:
             continue
 
-        delay_changed = enr.delay_from_purchase_minutes != fs.delay_from_purchase_minutes
+        delay_changed = enr.delay_from_previous_minutes != fs.delay_from_previous_minutes
         content_changed = (
             enr.meta_template_name != fs.meta_template_name
             or enr.message_text != fs.message_text

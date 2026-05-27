@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     redis_url: str
     openai_api_key: str
     chatnexo_base_url: str
+    public_base_url: str = "http://localhost:8000"
     chatnexo_api_key: str
     chatnexo_account_id: int = 1  # ID da conta no ChatNexo (Chatwoot fork usa int, default 1)
     chatnexo_inbox_id: int = (
@@ -82,13 +83,6 @@ class Settings(BaseSettings):
     # JWT — deve ser configurado via JWT_SECRET no ambiente (sem valor padrão)
     jwt_secret: str
     jwt_expire_minutes: int = 480
-
-    # Cloudflare R2 (template media storage)
-    r2_account_id: str | None = None
-    r2_access_key_id: str | None = None
-    r2_secret_access_key: str | None = None
-    r2_bucket_name: str | None = None
-    r2_public_base_url: str | None = None
 
     # Meta WhatsApp App ID (resumable upload)
     meta_app_id: str | None = None

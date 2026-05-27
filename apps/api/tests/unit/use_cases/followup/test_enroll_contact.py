@@ -48,7 +48,7 @@ def _make_step(position: int, delay: int) -> OnboardingStep:
         id=uuid4(),
         flow_id=_FLOW_ID,
         position=position,
-        delay_from_purchase_minutes=delay,
+        delay_from_previous_minutes=delay,
         meta_template_name=f"mv_template_{position}",
         template_variables={},
         created_at=datetime.now(UTC),

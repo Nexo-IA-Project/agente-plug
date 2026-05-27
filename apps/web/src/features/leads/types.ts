@@ -35,7 +35,7 @@ export interface FollowupStepDetail {
   template_name: string | null;
   message_text: string | null;
   status: FollowupStepStatus;
-  delay_from_purchase_minutes: number;
+  delay_from_previous_minutes: number;
   scheduled_for: string | null;   // ISO datetime, quando vai disparar
   sent_at: string | null;          // ISO datetime, quando foi enviado
   failure_reason: string | null;

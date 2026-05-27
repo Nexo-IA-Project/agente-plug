@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { TemplateList } from "@/features/templates/components/TemplateList";
 import { TemplateModal } from "@/features/templates/components/TemplateModal";
+import { TemplatePreviewModal } from "@/features/templates/components/TemplatePreviewModal";
 import { SyncSummaryView } from "@/features/templates/components/SyncSummaryView";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { useToast } from "@/shared/hooks/useToast";
@@ -20,6 +21,7 @@ export default function TemplatesPage() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MetaTemplate | null>(null);
+  const [previewingTemplate, setPreviewingTemplate] = useState<MetaTemplate | null>(null);
   const [syncing, setSyncing] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
@@ -150,6 +152,7 @@ export default function TemplatesPage() {
         onNew={() => setModalOpen(true)}
         onDelete={handleDelete}
         onEdit={(t) => setEditingTemplate(t)}
+        onPreview={(t) => setPreviewingTemplate(t)}
       />
 
       <TemplateModal
@@ -165,6 +168,11 @@ export default function TemplatesPage() {
         }}
         onEdit={handleEdit}
         template={editingTemplate ?? undefined}
+      />
+
+      <TemplatePreviewModal
+        template={previewingTemplate}
+        onClose={() => setPreviewingTemplate(null)}
       />
     </div>
   );

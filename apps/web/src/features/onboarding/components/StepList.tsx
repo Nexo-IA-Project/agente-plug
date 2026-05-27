@@ -19,24 +19,33 @@ import {
 import { useToast } from "@/shared/hooks/useToast";
 import { StepItem } from "./StepItem";
 import { StepInlineForm } from "./StepInlineForm";
+import { StepConnector } from "./StepConnector";
 import type { CreateStepInput, OnboardingStep, UpdateStepInput } from "../types";
 
 interface Props {
   steps: OnboardingStep[];
+  triggerEventType: string;
   onReorder: (items: { id: string; position: number }[]) => Promise<void>;
   onCreate: (dto: CreateStepInput) => Promise<void>;
   onUpdate: (stepId: string, dto: UpdateStepInput) => Promise<void>;
   onDelete: (stepId: string) => Promise<void>;
 }
 
-export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Props) {
+export function StepList({
+  steps,
+  triggerEventType,
+  onReorder,
+  onCreate,
+  onUpdate,
+  onDelete,
+}: Props) {
   const toast = useToast();
-  const [editingStep, setEditingStep] = useState<OnboardingStep | null>(null);
-  const [addingStep, setAddingStep] = useState(false);
+  const [expandedStepId, setExpandedStepId] = useState<string | null>(null);
+  const [addingAfter, setAddingAfter] = useState<boolean>(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   async function reorderAndToast(reordered: OnboardingStep[]) {
@@ -70,61 +79,92 @@ export function StepList({ steps, onReorder, onCreate, onUpdate, onDelete }: Pro
     await reorderAndToast(reordered);
   }
 
+  async function handleSaveExisting(stepId: string, dto: UpdateStepInput) {
+    await onUpdate(stepId, dto);
+    toast.success("Mensagem atualizada");
+    const idx = steps.findIndex((s) => s.id === stepId);
+    const next = steps[idx + 1];
+    if (next) {
+      setExpandedStepId(next.id);
+    } else {
+      setExpandedStepId(null);
+      setAddingAfter(true);
+    }
+  }
+
+  async function handleSaveNew(dto: CreateStepInput) {
+    await onCreate(dto);
+    toast.success("Mensagem adicionada à sequência");
+    setAddingAfter(false);
+  }
+
+  // Auto-fill: o tempo default para um NOVO card é o tempo do step imediatamente anterior.
+  function defaultDelayForNew(): number {
+    if (steps.length === 0) return 0;
+    return steps[steps.length - 1].delay_from_previous_minutes;
+  }
+
   return (
-    <div className="space-y-2">
+    <div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-          {steps.map((step, index) =>
-            editingStep?.id === step.id ? (
-              <StepInlineForm
-                key={step.id}
-                step={step}
-                nextPosition={step.position}
-                onSave={async (dto) => {
-                  await onUpdate(step.id, dto as UpdateStepInput);
-                  setEditingStep(null);
-                }}
-                onCancel={() => setEditingStep(null)}
-              />
-            ) : (
-              <StepItem
-                key={step.id}
-                step={step}
-                isFirst={index === 0}
-                isLast={index === steps.length - 1}
-                onEdit={() => {
-                  setAddingStep(false);
-                  setEditingStep(step);
-                }}
-                onDelete={() => onDelete(step.id)}
-                onMoveUp={() => void handleMoveUp(index)}
-                onMoveDown={() => void handleMoveDown(index)}
-              />
-            )
-          )}
+          {steps.map((step, index) => (
+            <div key={step.id}>
+              {expandedStepId === step.id ? (
+                <StepInlineForm
+                  step={step}
+                  isFirstStep={index === 0}
+                  defaultDelayMinutes={step.delay_from_previous_minutes}
+                  onSave={async (dto) => {
+                    await handleSaveExisting(step.id, dto as UpdateStepInput);
+                  }}
+                  onCancel={() => setExpandedStepId(null)}
+                />
+              ) : (
+                <StepItem
+                  step={step}
+                  triggerEventType={triggerEventType}
+                  isFirst={index === 0}
+                  isLast={index === steps.length - 1}
+                  onEdit={() => {
+                    setAddingAfter(false);
+                    setExpandedStepId(step.id);
+                  }}
+                  onDelete={() => onDelete(step.id)}
+                  onMoveUp={() => void handleMoveUp(index)}
+                  onMoveDown={() => void handleMoveDown(index)}
+                />
+              )}
+              {index < steps.length - 1 && <StepConnector />}
+            </div>
+          ))}
         </SortableContext>
       </DndContext>
 
       {/* Formulário inline de novo step */}
-      {addingStep ? (
-        <StepInlineForm
-          nextPosition={steps.length + 1}
-          onSave={async (dto) => {
-            await onCreate(dto as CreateStepInput);
-            setAddingStep(false);
-          }}
-          onCancel={() => setAddingStep(false)}
-        />
+      {addingAfter ? (
+        <>
+          {steps.length > 0 && <StepConnector />}
+          <StepInlineForm
+            isFirstStep={steps.length === 0}
+            defaultDelayMinutes={defaultDelayForNew()}
+            onSave={async (dto) => {
+              await handleSaveNew(dto as CreateStepInput);
+            }}
+            onCancel={() => setAddingAfter(false)}
+          />
+        </>
       ) : (
         <button
+          type="button"
           onClick={() => {
-            setEditingStep(null);
-            setAddingStep(true);
+            setExpandedStepId(null);
+            setAddingAfter(true);
           }}
-          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant px-4 py-3 text-label-sm text-on-surface-variant transition-colors hover:border-primary hover:text-primary"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-on-primary shadow-md shadow-primary/30 transition-all hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
-            add
+          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+            add_circle
           </span>
           Adicionar mensagem
         </button>

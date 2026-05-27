@@ -59,6 +59,11 @@ export interface TriggerEventMeta {
   categoryLabel: string;
   icon: string;
   tone: TriggerEventTone;
+  /**
+   * Frase que completa "Assim que [triggerVerb]" — usada no DelayBadge do 1º step.
+   * Exemplo: "a venda for ativada", "o carrinho for abandonado".
+   */
+  triggerVerb: string;
 }
 
 const TONE_LEAD: TriggerEventTone = {
@@ -142,6 +147,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Lead",
     icon: "remove_shopping_cart",
     tone: TONE_LEAD,
+    triggerVerb: "o carrinho for abandonado",
   },
   // Member
   {
@@ -154,6 +160,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Membro",
     icon: "lock_open",
     tone: TONE_MEMBER,
+    triggerVerb: "o acesso for concedido",
   },
   {
     value: "member.access_removed",
@@ -166,6 +173,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Membro",
     icon: "lock",
     tone: TONE_MEMBER,
+    triggerVerb: "o acesso for removido",
   },
   // Subscription
   {
@@ -179,6 +187,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "hourglass_top",
     tone: TONE_SUB,
+    triggerVerb: "a venda for criada",
   },
   {
     value: "subscription.activated",
@@ -190,6 +199,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "shopping_cart_checkout",
     tone: TONE_SUB,
+    triggerVerb: "a venda for ativada",
   },
   {
     value: "subscription.expired",
@@ -201,6 +211,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "schedule",
     tone: TONE_SUB,
+    triggerVerb: "a assinatura expirar",
   },
   {
     value: "subscription.deactivated",
@@ -213,6 +224,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "block",
     tone: TONE_SUB,
+    triggerVerb: "a assinatura for cancelada",
   },
   {
     value: "subscription.auto_renewal_disabled",
@@ -225,6 +237,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "toggle_off",
     tone: TONE_SUB,
+    triggerVerb: "a renovação automática for desligada",
   },
   {
     value: "subscription.auto_renewal_enabled",
@@ -236,6 +249,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Assinatura",
     icon: "toggle_on",
     tone: TONE_SUB,
+    triggerVerb: "a renovação automática for reativada",
   },
   // Invoice
   {
@@ -248,6 +262,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "receipt",
     tone: TONE_INVOICE,
+    triggerVerb: "a fatura for emitida",
   },
   {
     value: "invoice.status_updated",
@@ -259,6 +274,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "sync",
     tone: TONE_INVOICE,
+    triggerVerb: "o status da fatura mudar",
   },
   {
     value: "invoice.payment_completed",
@@ -270,6 +286,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "task_alt",
     tone: TONE_INVOICE,
+    triggerVerb: "o pagamento for confirmado",
   },
   {
     value: "invoice.payment_failed",
@@ -281,6 +298,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "money_off",
     tone: TONE_INVOICE,
+    triggerVerb: "o pagamento falhar",
   },
   {
     value: "invoice.expired",
@@ -292,6 +310,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "event_busy",
     tone: TONE_INVOICE,
+    triggerVerb: "a fatura vencer",
   },
   {
     value: "invoice.refunded",
@@ -303,6 +322,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Fatura",
     icon: "currency_exchange",
     tone: TONE_INVOICE,
+    triggerVerb: "a fatura for reembolsada",
   },
   // Installment
   {
@@ -315,6 +335,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "splitscreen",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "o parcelamento for criado",
   },
   {
     value: "installment.failed",
@@ -326,6 +347,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "warning",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "a cobrança de parcela falhar",
   },
   {
     value: "installment.in_progress",
@@ -337,6 +359,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "trending_up",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "o parcelamento estiver em andamento",
   },
   {
     value: "installment.overdue",
@@ -348,6 +371,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "running_with_errors",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "uma parcela atrasar",
   },
   {
     value: "installment.cancelled",
@@ -359,6 +383,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "cancel",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "o parcelamento for cancelado",
   },
   {
     value: "installment.completed",
@@ -370,6 +395,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Parcelamento",
     icon: "check_circle",
     tone: TONE_INSTALLMENT,
+    triggerVerb: "o parcelamento for concluído",
   },
   // Refund Request
   {
@@ -383,6 +409,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Reembolso",
     icon: "help",
     tone: TONE_REFUND,
+    triggerVerb: "o cliente pedir reembolso",
   },
   {
     value: "refund_request.accepted",
@@ -394,6 +421,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Reembolso",
     icon: "thumb_up",
     tone: TONE_REFUND,
+    triggerVerb: "o reembolso for aprovado",
   },
   {
     value: "refund_request.cancelled",
@@ -405,6 +433,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Reembolso",
     icon: "undo",
     tone: TONE_REFUND,
+    triggerVerb: "o pedido de reembolso for cancelado",
   },
   {
     value: "refund_request.rejected",
@@ -416,6 +445,7 @@ export const TRIGGER_EVENTS: readonly TriggerEventMeta[] = [
     categoryLabel: "Reembolso",
     icon: "thumb_down",
     tone: TONE_REFUND,
+    triggerVerb: "o reembolso for negado",
   },
 ];
 

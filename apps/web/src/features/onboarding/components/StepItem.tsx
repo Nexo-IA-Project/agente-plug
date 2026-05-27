@@ -3,11 +3,19 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
+import { useToast } from "@/shared/hooks/useToast";
 import { DelayBadge } from "./DelayBadge";
+import { useMetaTemplateDetail } from "../hooks/useMetaTemplateDetail";
+import {
+  getMediaKind,
+  getMediaUrl,
+  hasMedia,
+} from "../lib/templateMediaHelpers";
 import type { OnboardingStep } from "../types";
 
 interface Props {
   step: OnboardingStep;
+  triggerEventType: string;
   isFirst: boolean;
   isLast: boolean;
   onEdit: () => void;
@@ -16,10 +24,27 @@ interface Props {
   onMoveDown: () => void;
 }
 
-export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown }: Props) {
+export function StepItem({
+  step,
+  triggerEventType,
+  isFirst,
+  isLast,
+  onEdit,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+}: Props) {
   const confirm = useConfirm();
+  const { template: detail } = useMetaTemplateDetail(
+    step.meta_template_name ?? null,
+  );
+  const showThumb = hasMedia(detail);
+  const thumbUrl = getMediaUrl(detail);
+  const thumbKind = getMediaKind(detail);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id });
+
+  const toast = useToast();
 
   async function handleDelete() {
     const ok = await confirm({
@@ -28,7 +53,15 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
       confirmLabel: "Excluir",
       variant: "danger",
     });
-    if (ok) await onDelete();
+    if (!ok) return;
+    try {
+      await onDelete();
+      toast.success("Mensagem removida");
+    } catch (err) {
+      toast.error(
+        `Erro ao remover: ${err instanceof Error ? err.message : "desconhecido"}`,
+      );
+    }
   }
 
   const style = {
@@ -53,15 +86,31 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
       {/* Conteúdo central */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span
-            className={[
-              "material-symbols-outlined",
-              isTemplate ? "text-primary/70" : "text-on-surface-variant",
-            ].join(" ")}
-            style={{ fontSize: "14px" }}
-          >
-            {isTemplate ? "receipt_long" : "chat"}
-          </span>
+          {showThumb && thumbUrl && thumbKind === "IMAGE" ? (
+            <img
+              src={thumbUrl}
+              alt=""
+              className="h-10 w-10 shrink-0 rounded object-cover"
+            />
+          ) : showThumb && thumbKind === "VIDEO" ? (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-container-high text-on-surface-variant">
+              <span className="material-symbols-outlined text-base">play_circle</span>
+            </div>
+          ) : showThumb && thumbKind === "DOCUMENT" ? (
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-container-high text-on-surface-variant">
+              <span className="material-symbols-outlined text-base">description</span>
+            </div>
+          ) : (
+            <span
+              className={[
+                "material-symbols-outlined",
+                isTemplate ? "text-primary/70" : "text-on-surface-variant",
+              ].join(" ")}
+              style={{ fontSize: "14px" }}
+            >
+              {isTemplate ? "receipt_long" : "chat"}
+            </span>
+          )}
           <span
             className={[
               "truncate text-sm",
@@ -82,10 +131,14 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
       </div>
 
       {/* Delay badge */}
-      <DelayBadge minutes={step.delay_from_purchase_minutes} />
+      <DelayBadge
+        delayMinutes={step.delay_from_previous_minutes}
+        triggerEventType={triggerEventType}
+        isFirst={isFirst}
+      />
 
       {/* Reordenar — setas + drag */}
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
           onClick={onMoveUp}

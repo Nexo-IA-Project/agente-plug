@@ -94,13 +94,16 @@ class EnrollContact:
             # enrollments do mesmo handle_one) permanece intacta.
             async with self._session.begin_nested():
                 enrollment_steps: list[OnboardingEnrollmentStep] = []
-                for step in steps:
-                    run_at = purchase_time + timedelta(minutes=step.delay_from_purchase_minutes)
+                base_time = purchase_time
+                ordered_steps = sorted(steps, key=lambda s: s.position)
+                for step in ordered_steps:
+                    base_time = base_time + timedelta(minutes=step.delay_from_previous_minutes)
+                    run_at = base_time
                     enrollment_step = OnboardingEnrollmentStep(
                         enrollment_id=enrollment.id,
                         flow_step_id=step.id,
                         position=step.position,
-                        delay_from_purchase_minutes=step.delay_from_purchase_minutes,
+                        delay_from_previous_minutes=step.delay_from_previous_minutes,
                         meta_template_name=step.meta_template_name,
                         template_variables=step.template_variables,
                         message_text=step.message_text,

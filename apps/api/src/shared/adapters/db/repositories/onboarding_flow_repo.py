@@ -33,7 +33,7 @@ def _step_to_entity(m: OnboardingStepModel) -> OnboardingStep:
         id=m.id,
         flow_id=m.flow_id,
         position=m.position,
-        delay_from_purchase_minutes=m.delay_from_purchase_minutes,
+        delay_from_previous_minutes=m.delay_from_previous_minutes,
         meta_template_name=m.meta_template_name,
         template_variables=dict(m.template_variables or {}),
         created_at=m.created_at,
@@ -145,7 +145,7 @@ class OnboardingFlowRepository:
         *,
         flow_id: uuid.UUID,
         position: int,
-        delay_from_purchase_minutes: int,
+        delay_from_previous_minutes: int,
         meta_template_name: str | None,
         template_variables: dict,
         message_text: str | None = None,
@@ -154,7 +154,7 @@ class OnboardingFlowRepository:
             id=uuid.uuid4(),
             flow_id=flow_id,
             position=position,
-            delay_from_purchase_minutes=delay_from_purchase_minutes,
+            delay_from_previous_minutes=delay_from_previous_minutes,
             meta_template_name=meta_template_name,
             template_variables=template_variables,
             message_text=message_text,
@@ -168,7 +168,7 @@ class OnboardingFlowRepository:
         self,
         step_id: uuid.UUID,
         *,
-        delay_from_purchase_minutes: int | None = None,
+        delay_from_previous_minutes: int | None = None,
         meta_template_name: str | None = None,
         template_variables: dict | None = None,
         position: int | None = None,
@@ -179,8 +179,8 @@ class OnboardingFlowRepository:
         model = await self.session.get(OnboardingStepModel, step_id)
         if model is None:
             return None
-        if delay_from_purchase_minutes is not None:
-            model.delay_from_purchase_minutes = delay_from_purchase_minutes
+        if delay_from_previous_minutes is not None:
+            model.delay_from_previous_minutes = delay_from_previous_minutes
         if meta_template_name is not None:
             model.meta_template_name = meta_template_name
         if clear_template:

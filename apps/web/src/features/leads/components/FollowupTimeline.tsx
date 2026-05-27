@@ -219,7 +219,7 @@ function StepNode({ step, isLast, onDispatch }: StepNodeProps) {
               : "—"}
           </span>
           <span className="opacity-50">·</span>
-          <span className="lowercase">{formatDelay(step.delay_from_purchase_minutes)}</span>
+          <span className="lowercase">{formatDelay(step.delay_from_previous_minutes)}</span>
         </div>
 
         {/* Linha 3: preview do body renderizado (só sent/failed) */}

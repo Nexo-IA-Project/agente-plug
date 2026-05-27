@@ -55,7 +55,7 @@ class EnrollmentListResponse(BaseModel):
 class EnrollmentStepItem(BaseModel):
     id: str
     position: int
-    delay_from_purchase_minutes: int
+    delay_from_previous_minutes: int
     template_name: str | None
     message_text_preview: str | None
     status: str
@@ -161,7 +161,7 @@ async def list_enrollment_steps(
         EnrollmentStepItem(
             id=str(s.id),
             position=s.position,
-            delay_from_purchase_minutes=s.delay_from_purchase_minutes,
+            delay_from_previous_minutes=s.delay_from_previous_minutes,
             template_name=s.meta_template_name,
             message_text_preview=(s.message_text[:80] if s.message_text else None),
             status=s.status,

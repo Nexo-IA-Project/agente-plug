@@ -409,7 +409,7 @@ async def test_create_step_with_meta_template(
     resp = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 24,
+            "delay_from_previous_minutes": 24,
             "meta_template_name": "welcome_v1",
             "template_variables": {
                 "1": {"source": "customer_name"},
@@ -437,7 +437,7 @@ async def test_create_step_with_message_text(
     resp = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 0,
+            "delay_from_previous_minutes": 0,
             "message_text": "Olá! Obrigado pela compra.",
         },
         headers=admin_headers,
@@ -457,7 +457,7 @@ async def test_create_step_with_both_template_and_text_returns_422(
     resp = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 0,
+            "delay_from_previous_minutes": 0,
             "meta_template_name": "x",
             "message_text": "y",
         },
@@ -474,7 +474,7 @@ async def test_create_step_with_neither_template_nor_text_returns_422(
 ) -> None:
     resp = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
-        json={"delay_from_purchase_minutes": 0},
+        json={"delay_from_previous_minutes": 0},
         headers=admin_headers,
     )
     assert resp.status_code == 422, resp.text
@@ -489,7 +489,7 @@ async def test_create_step_with_invalid_static_binding_returns_422(
     resp = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 0,
+            "delay_from_previous_minutes": 0,
             "meta_template_name": "x",
             "template_variables": {"1": {"source": "static"}},  # falta value
         },
@@ -507,7 +507,7 @@ async def test_update_step(
     create = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
         json={
-            "delay_from_purchase_minutes": 1,
+            "delay_from_previous_minutes": 1,
             "meta_template_name": "x",
         },
         headers=admin_headers,
@@ -518,14 +518,14 @@ async def test_update_step(
     resp = await client.put(
         f"/admin/followup/flows/{seeded_flow.id}/steps/{sid}",
         json={
-            "delay_from_purchase_minutes": 2,
+            "delay_from_previous_minutes": 2,
             "template_variables": {"1": {"source": "product_name"}},
         },
         headers=admin_headers,
     )
     assert resp.status_code == 200, resp.text
     data = resp.json()
-    assert data["delay_from_purchase_minutes"] == 2
+    assert data["delay_from_previous_minutes"] == 2
     assert data["template_variables"] == {"1": {"source": "product_name"}}
 
 
@@ -537,7 +537,7 @@ async def test_list_and_delete_step(
 ) -> None:
     create = await client.post(
         f"/admin/followup/flows/{seeded_flow.id}/steps",
-        json={"delay_from_purchase_minutes": 0, "message_text": "oi"},
+        json={"delay_from_previous_minutes": 0, "message_text": "oi"},
         headers=admin_headers,
     )
     assert create.status_code == 201, create.text
