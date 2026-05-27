@@ -75,7 +75,7 @@ def _step_to_resp(s) -> OnboardingStepResponse:
         id=s.id,
         flow_id=s.flow_id,
         position=s.position,
-        delay_from_purchase_minutes=s.delay_from_purchase_minutes,
+        delay_from_previous_minutes=s.delay_from_previous_minutes,
         meta_template_name=s.meta_template_name,
         template_variables=s.template_variables,
         message_text=s.message_text,
@@ -250,11 +250,11 @@ async def create_step(
         account_uuid = await _get_account_uuid(session, auth)
         repo = OnboardingFlowRepository(session=session)
         existing = await repo.get_steps(flow_id)
-        position = body.position if body.position is not None else len(existing)
+        position = body.position if body.position is not None else len(existing) + 1
         step = await repo.create_step(
             flow_id=flow_id,
             position=position,
-            delay_from_purchase_minutes=body.delay_from_purchase_minutes,
+            delay_from_previous_minutes=body.delay_from_previous_minutes,
             meta_template_name=body.meta_template_name,
             template_variables=_bindings_to_dict(body.template_variables),
             message_text=body.message_text,
@@ -281,7 +281,7 @@ async def update_step(
         step = await repo.update_step(
             step_id,
             position=body.position,
-            delay_from_purchase_minutes=body.delay_from_purchase_minutes,
+            delay_from_previous_minutes=body.delay_from_previous_minutes,
             meta_template_name=body.meta_template_name,
             template_variables=template_vars,
             message_text=body.message_text,
