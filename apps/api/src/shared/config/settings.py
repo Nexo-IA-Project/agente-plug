@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     redis_url: str
     openai_api_key: str
     chatnexo_base_url: str
+    public_base_url: str = "http://localhost:8000"
     chatnexo_api_key: str
     chatnexo_account_id: int = 1  # ID da conta no ChatNexo (Chatwoot fork usa int, default 1)
     chatnexo_inbox_id: int = (
