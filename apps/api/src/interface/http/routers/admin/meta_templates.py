@@ -18,6 +18,9 @@ from interface.http.schemas.meta_templates import (
 )
 from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
+from shared.adapters.db.repositories.meta_template_media_repo import (
+    MetaTemplateMediaRepository,
+)
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
 from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.session import session_scope
@@ -39,6 +42,7 @@ from shared.application.use_cases.meta_templates.edit_template import (
 from shared.application.use_cases.meta_templates.list_templates import ListTemplates
 from shared.application.use_cases.meta_templates.sync_templates import SyncMetaTemplates
 from shared.application.use_cases.meta_templates.upload_template_media import (
+    MediaTooLargeError,
     UploadTemplateMedia,
     UploadTemplateMediaInput,
 )
@@ -115,30 +119,33 @@ async def upload_media(
 ) -> UploadMediaResponse:
     if kind not in {"IMAGE", "VIDEO", "DOCUMENT"}:
         raise HTTPException(status_code=422, detail={"code": "MEDIA_KIND_INVALID"})
+
     data = await file.read()
-    try:
-        storage = R2Storage.from_settings(get_settings())
-    except RuntimeError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    use_case = UploadTemplateMedia(storage=storage)
+    settings = get_settings()
+
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
-    try:
-        out = await use_case.execute(
-            UploadTemplateMediaInput(
-                account_id=account_uuid,
-                kind=kind,  # type: ignore[arg-type]
-                data=data,
-                mime=file.content_type or "application/octet-stream",
-                original_filename=file.filename or "upload",
-            )
+        repo = MetaTemplateMediaRepository(session=session)
+        use_case = UploadTemplateMedia(
+            repo=repo, public_base_url=settings.public_base_url
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail={"code": str(exc)}) from exc
+        try:
+            out = await use_case.execute(
+                UploadTemplateMediaInput(
+                    account_id=account_uuid,
+                    kind=kind,  # type: ignore[arg-type]
+                    data=data,
+                    mime=file.content_type or "application/octet-stream",
+                    original_filename=file.filename or "upload",
+                )
+            )
+        except MediaTooLargeError as exc:
+            raise HTTPException(status_code=413, detail=str(exc)) from exc
+
     return UploadMediaResponse(
         media_url=out.media_url,
         media_object_key=out.media_object_key,
-        media_kind=out.media_kind,
+        media_kind=out.media_kind,  # type: ignore[arg-type]
         sha256=out.sha256,
         size=out.size,
     )
