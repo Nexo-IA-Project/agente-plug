@@ -163,3 +163,47 @@ class MetaTemplateClient:
         if resp.status_code not in (200, 204):
             log.warning("meta_delete_template_error", status=resp.status_code, body=resp.text[:200])
             resp.raise_for_status()
+
+    async def edit_template(
+        self,
+        *,
+        template_id: str,
+        components: list[dict] | None = None,
+        category: str | None = None,
+    ) -> None:
+        """Edita um template Meta existente (rota Graph: POST /{template_id}).
+
+        A Meta só aceita edição de templates em status PENDING/REJECTED — para
+        APPROVED só `category` pode ser alterado. Validação de status fica no
+        use case que chama este método.
+        """
+        url = f"{_BASE_URL}/{template_id}"
+        body: dict[str, Any] = {}
+        if components is not None:
+            body["components"] = components
+        if category is not None:
+            body["category"] = category
+        async with httpx.AsyncClient() as http:
+            resp = await http.post(
+                url,
+                json=body,
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=15,
+            )
+        if resp.status_code not in (200, 201):
+            content_type = resp.headers.get("content-type", "")
+            error_body = (
+                resp.json()
+                if content_type.startswith("application/json")
+                else {"message": resp.text[:200]}
+            )
+            log.warning(
+                "meta_edit_template_error",
+                status=resp.status_code,
+                template_id=template_id,
+                body=error_body,
+            )
+            resp.raise_for_status()
