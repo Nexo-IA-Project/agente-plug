@@ -1,4 +1,5 @@
 """Testes do UploadTemplateMedia use case (Postgres + dedup)."""
+
 from __future__ import annotations
 
 import hashlib

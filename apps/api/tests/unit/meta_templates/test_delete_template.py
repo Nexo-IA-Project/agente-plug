@@ -27,9 +27,7 @@ async def test_delete_blocked_when_in_use():
     template = _template()
     repo.get.return_value = template
 
-    use_case = DeleteTemplate(
-        repo=repo, meta_client=meta, flow_usage_check=flow_check
-    )
+    use_case = DeleteTemplate(repo=repo, meta_client=meta, flow_usage_check=flow_check)
 
     with pytest.raises(MetaTemplateInUseError) as info:
         await use_case.execute(account_id=uuid4(), template_id=template.id, waba_id="w")
@@ -45,9 +43,7 @@ async def test_delete_full_path():
     repo.get.return_value = template
     flow_check = AsyncMock(return_value=[])
 
-    use_case = DeleteTemplate(
-        repo=repo, meta_client=meta, flow_usage_check=flow_check
-    )
+    use_case = DeleteTemplate(repo=repo, meta_client=meta, flow_usage_check=flow_check)
     await use_case.execute(account_id=uuid4(), template_id=template.id, waba_id="w")
 
     meta.delete_template.assert_awaited_once_with(waba_id="w", name="t")
@@ -62,9 +58,7 @@ async def test_delete_without_media():
     repo.get.return_value = template
     flow_check = AsyncMock(return_value=[])
 
-    use_case = DeleteTemplate(
-        repo=repo, meta_client=meta, flow_usage_check=flow_check
-    )
+    use_case = DeleteTemplate(repo=repo, meta_client=meta, flow_usage_check=flow_check)
     await use_case.execute(account_id=uuid4(), template_id=template.id, waba_id="w")
 
     meta.delete_template.assert_awaited_once()
