@@ -12,6 +12,7 @@ interface Props {
   onNew: () => void;
   onDelete: (template: MetaTemplate) => void;
   onEdit: (template: MetaTemplate) => void;
+  onPreview?: (template: MetaTemplate) => void;
 }
 
 function getCategoryIcon(category: string): string {
@@ -70,6 +71,7 @@ export function TemplateList({
   onNew,
   onDelete,
   onEdit,
+  onPreview,
 }: Props) {
   return (
     <div className="flex h-full flex-col">
