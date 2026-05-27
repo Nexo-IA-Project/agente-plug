@@ -6,23 +6,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, model_validator
 
-HUBLA_EVENT_TYPES: tuple[str, ...] = (
-    "subscription.activated",
-    "subscription.created",
-    "lead.abandoned",
-    "subscription.deactivated",
-    "subscription.expiring",
-    "invoice.refunded",
+from shared.domain.value_objects.hubla_event_type import (
+    ALL_HUBLA_EVENT_TYPES,
+    HublaEventType,
 )
 
-HublaEventType = Literal[
-    "subscription.activated",
-    "subscription.created",
-    "lead.abandoned",
-    "subscription.deactivated",
-    "subscription.expiring",
-    "invoice.refunded",
-]
+# Mantido para retro-compatibilidade — agora reflete os 25 valores oficiais Hubla v2
+HUBLA_EVENT_TYPES: tuple[str, ...] = tuple(sorted(ALL_HUBLA_EVENT_TYPES))
 
 
 class StepVariableBindingDto(BaseModel):
