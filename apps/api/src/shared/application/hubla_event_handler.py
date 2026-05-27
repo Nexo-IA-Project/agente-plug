@@ -90,14 +90,30 @@ class HublaEventHandler:
 
         # === PR 4 review fix #6: resolve Contact FIRST so contact_id is available
         # when persisting hubla_events and leads (FK must be populated for known contacts).
+        # Normaliza telefone uma vez — usado em TODOS os calls downstream pra evitar
+        # divergência entre o que está no DB e o que é passado ao ChatNexo/PurchaseHandler.
         contact: Any | None = None
+        payer_phone_e164: str = ""
         if payer_phone:
-            contact = await self._contact_repo.upsert(
-                account_id=account_uuid,
-                phone=Phone.parse(payer_phone),
-                name=payer_full_name,
-                email=payer_email,
-            )
+            try:
+                parsed_phone = Phone.parse(payer_phone)
+                payer_phone_e164 = str(parsed_phone)
+                contact = await self._contact_repo.upsert(
+                    account_id=account_uuid,
+                    phone=parsed_phone,
+                    name=payer_full_name,
+                    email=payer_email,
+                )
+            except Exception as exc:
+                # Phone inválido: log e segue sem contact — event/lead ainda são persistidos
+                # com o phone raw pra análise posterior.
+                log.warning(
+                    "hubla_event_invalid_phone",
+                    event_type=event_type,
+                    purchase_id=purchase_id,
+                    raw_phone=payer_phone,
+                    error=str(exc),
+                )
 
         contact_id_uuid: UUID | None = None
         if contact is not None:
@@ -175,7 +191,7 @@ class HublaEventHandler:
                 account_uuid=account_uuid,
                 account_id_str=account_id_str,
                 contact=contact,
-                payer_phone=payer_phone,
+                payer_phone=payer_phone_e164,
                 payer_email=payer_email,
                 payer_full_name=payer_full_name,
                 payer_document=payer_document,
@@ -260,7 +276,7 @@ class HublaEventHandler:
                 account_id=account_uuid,
                 contact_id=UUID(str(contact.id)),
                 conversation_id=str(conversation_id),
-                contact_phone=payer_phone,
+                contact_phone=str(contact.phone),
                 purchase_id=purchase_id,
                 flow_id=flow.id,
                 customer_name=payer_full_name,
