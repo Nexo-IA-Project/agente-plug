@@ -4,7 +4,8 @@ import uuid
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import ContactModel
@@ -45,30 +46,53 @@ class ContactRepository:
         return _to_entity(model) if model else None
 
     async def upsert(self, *, account_id: UUID, phone: Phone, **attrs: object) -> Contact:
-        require_account_id(account_id)
-        existing = await self.get_by_phone(account_id=account_id, phone=phone)
-        if existing:
-            model_stmt = select(ContactModel).where(ContactModel.id == existing.id)
-            model = (await self.session.execute(model_stmt)).scalar_one()
-            for k, v in attrs.items():
-                if v is not None and hasattr(model, k):
-                    setattr(model, k, v)
-            await self.session.flush()
-            # Atributos com onupdate/server_default precisam de refresh
-            # explícito senão o acesso lazy crasha com greenlet_spawn em async.
-            await self.session.refresh(model)
-            return _to_entity(model)
+        """Insere ou atualiza contato de forma atômica via INSERT ... ON CONFLICT.
 
-        new_model = ContactModel(
+        Resolve race condition quando múltiplos jobs paralelos (ex: rajada de
+        webhooks Hubla — subscription.created + activated + customer.member_added)
+        tentam criar o mesmo contato.
+
+        Atualiza apenas as colunas passadas com valor não-None — colunas omitidas
+        preservam o valor existente em conflito.
+        """
+        require_account_id(account_id)
+        clean_attrs = {k: v for k, v in attrs.items() if v is not None}
+
+        stmt = pg_insert(ContactModel).values(
             id=uuid.uuid4(),
             account_id=account_id,
             phone=phone.e164,
-            **{k: v for k, v in attrs.items() if v is not None},
+            **clean_attrs,
         )
-        self.session.add(new_model)
+
+        update_cols = {k: stmt.excluded[k] for k in clean_attrs if hasattr(ContactModel, k)}
+        if update_cols:
+            update_cols["updated_at"] = func.now()
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["account_id", "phone"],
+                set_=update_cols,
+            )
+        else:
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["account_id", "phone"],
+            )
+        stmt = stmt.returning(ContactModel)
+
+        result = await self.session.execute(stmt)
+        model = result.scalar_one_or_none()
+
+        # ON CONFLICT DO NOTHING não retorna linha quando há conflito — refetch.
+        if model is None:
+            model = await self._fetch_model_by_phone(account_id=account_id, phone=phone)
+            if model is None:
+                raise RuntimeError("contact upsert returned no row and refetch failed")
+
         await self.session.flush()
-        # server_default columns (created_at/updated_at) só são populadas
-        # após refresh — sem isso, _to_entity dispara lazy load síncrono
-        # e crasha em contexto async (greenlet_spawn error).
-        await self.session.refresh(new_model)
-        return _to_entity(new_model)
+        return _to_entity(model)
+
+    async def _fetch_model_by_phone(self, *, account_id: UUID, phone: Phone) -> ContactModel | None:
+        stmt = select(ContactModel).where(
+            ContactModel.account_id == account_id,
+            ContactModel.phone == phone.e164,
+        )
+        return (await self.session.execute(stmt)).scalar_one_or_none()
