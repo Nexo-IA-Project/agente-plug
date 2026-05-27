@@ -63,7 +63,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
     setTimeout(onCancel, EXIT_DURATION_MS);
   };
 
-  const initialDisplay = minutesToDisplay(step?.delay_from_purchase_minutes ?? 0);
+  const initialDisplay = minutesToDisplay(step?.delay_from_previous_minutes ?? 0);
   const [mode, setMode] = useState<StepMode>(
     step ? (step.message_text ? "text" : "template") : "template"
   );
@@ -111,7 +111,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
     try {
       if (mode === "template") {
         const dto: UpdateStepInput = {
-          delay_from_purchase_minutes: minutes,
+          delay_from_previous_minutes: minutes,
           meta_template_name: selectedTemplate || null,
           template_variables: templateVariables,
           message_text: null,
@@ -119,7 +119,7 @@ export function StepInlineForm({ step, onSave, onCancel }: Props) {
         await onSave(dto);
       } else {
         const dto: UpdateStepInput = {
-          delay_from_purchase_minutes: minutes,
+          delay_from_previous_minutes: minutes,
           meta_template_name: null,
           template_variables: {},
           message_text: messageText,

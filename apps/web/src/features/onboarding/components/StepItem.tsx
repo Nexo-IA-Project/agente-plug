@@ -8,6 +8,7 @@ import type { OnboardingStep } from "../types";
 
 interface Props {
   step: OnboardingStep;
+  triggerEventType: string;
   isFirst: boolean;
   isLast: boolean;
   onEdit: () => void;
@@ -16,7 +17,16 @@ interface Props {
   onMoveDown: () => void;
 }
 
-export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, onMoveDown }: Props) {
+export function StepItem({
+  step,
+  triggerEventType,
+  isFirst,
+  isLast,
+  onEdit,
+  onDelete,
+  onMoveUp,
+  onMoveDown,
+}: Props) {
   const confirm = useConfirm();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: step.id });
@@ -82,10 +92,14 @@ export function StepItem({ step, isFirst, isLast, onEdit, onDelete, onMoveUp, on
       </div>
 
       {/* Delay badge */}
-      <DelayBadge minutes={step.delay_from_purchase_minutes} />
+      <DelayBadge
+        delayMinutes={step.delay_from_previous_minutes}
+        triggerEventType={triggerEventType}
+        isFirst={isFirst}
+      />
 
       {/* Reordenar — setas + drag */}
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
           onClick={onMoveUp}

@@ -14,7 +14,7 @@ export interface OnboardingStep {
   id: string;
   flow_id: string;
   position: number;
-  delay_from_purchase_minutes: number;
+  delay_from_previous_minutes: number;
   meta_template_name: string | null;
   template_variables: Record<string, StepVariableBinding>;
   message_text: string | null;
@@ -52,14 +52,14 @@ export interface UpdateFlowInput {
 }
 
 export interface CreateStepInput {
-  delay_from_purchase_minutes: number;
+  delay_from_previous_minutes: number;
   meta_template_name?: string;
   template_variables?: Record<string, StepVariableBinding>;
   message_text?: string;
 }
 
 export interface UpdateStepInput {
-  delay_from_purchase_minutes?: number;
+  delay_from_previous_minutes?: number;
   meta_template_name?: string | null;
   template_variables?: Record<string, StepVariableBinding>;
   message_text?: string | null;
