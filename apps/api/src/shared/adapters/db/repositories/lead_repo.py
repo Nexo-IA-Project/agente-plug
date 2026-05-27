@@ -281,7 +281,7 @@ class SqlLeadRepository:
                     "template_name": step_model.meta_template_name,
                     "message_text": step_model.message_text,
                     "status": step_model.status,
-                    "delay_from_purchase_minutes": step_model.delay_from_purchase_minutes,
+                    "delay_from_previous_minutes": step_model.delay_from_previous_minutes,
                     "scheduled_for": run_at,
                     "sent_at": step_model.sent_at,
                     "failure_reason": step_model.failure_reason,

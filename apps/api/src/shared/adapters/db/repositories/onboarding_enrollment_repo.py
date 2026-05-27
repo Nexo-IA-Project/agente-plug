@@ -43,7 +43,7 @@ class EnrollmentStepRow:
 
     id: uuid.UUID
     position: int
-    delay_from_purchase_minutes: int
+    delay_from_previous_minutes: int
     meta_template_name: str | None
     message_text: str | None
     status: str
@@ -74,7 +74,7 @@ def _step_to_entity(m: OnboardingEnrollmentStepModel) -> OnboardingEnrollmentSte
         id=m.id,
         enrollment_id=m.enrollment_id,
         position=m.position,
-        delay_from_purchase_minutes=m.delay_from_purchase_minutes,
+        delay_from_previous_minutes=m.delay_from_previous_minutes,
         meta_template_name=m.meta_template_name,
         template_variables=dict(m.template_variables or {}),
         scheduled_job_id=m.scheduled_job_id,
@@ -115,7 +115,7 @@ class OnboardingEnrollmentRepository:
                 id=step.id,
                 enrollment_id=step.enrollment_id,
                 position=step.position,
-                delay_from_purchase_minutes=step.delay_from_purchase_minutes,
+                delay_from_previous_minutes=step.delay_from_previous_minutes,
                 meta_template_name=step.meta_template_name,
                 template_variables=step.template_variables,
                 message_text=step.message_text,
@@ -272,7 +272,7 @@ class OnboardingEnrollmentRepository:
             enrollment_id=step.enrollment_id,
             flow_step_id=step.flow_step_id,
             position=step.position,
-            delay_from_purchase_minutes=step.delay_from_purchase_minutes,
+            delay_from_previous_minutes=step.delay_from_previous_minutes,
             meta_template_name=step.meta_template_name,
             message_text=step.message_text,
             template_variables=step.template_variables,
@@ -286,7 +286,7 @@ class OnboardingEnrollmentRepository:
         self,
         *,
         step_id: uuid.UUID,
-        delay_from_purchase_minutes: int,
+        delay_from_previous_minutes: int,
         meta_template_name: str | None,
         message_text: str | None,
         template_variables: dict,
@@ -297,7 +297,7 @@ class OnboardingEnrollmentRepository:
         Se scheduled_job_id=None, mantém o atual. Caso contrário, sobrescreve.
         """
         values: dict = {
-            "delay_from_purchase_minutes": delay_from_purchase_minutes,
+            "delay_from_previous_minutes": delay_from_previous_minutes,
             "meta_template_name": meta_template_name,
             "message_text": message_text,
             "template_variables": template_variables,
@@ -456,7 +456,7 @@ class OnboardingEnrollmentRepository:
             select(
                 OnboardingEnrollmentStepModel.id,
                 OnboardingEnrollmentStepModel.position,
-                OnboardingEnrollmentStepModel.delay_from_purchase_minutes,
+                OnboardingEnrollmentStepModel.delay_from_previous_minutes,
                 OnboardingEnrollmentStepModel.meta_template_name,
                 OnboardingEnrollmentStepModel.message_text,
                 OnboardingEnrollmentStepModel.status,
@@ -482,7 +482,7 @@ class OnboardingEnrollmentRepository:
             EnrollmentStepRow(
                 id=r.id,
                 position=r.position,
-                delay_from_purchase_minutes=r.delay_from_purchase_minutes,
+                delay_from_previous_minutes=r.delay_from_previous_minutes,
                 meta_template_name=r.meta_template_name,
                 message_text=r.message_text,
                 status=r.status,
