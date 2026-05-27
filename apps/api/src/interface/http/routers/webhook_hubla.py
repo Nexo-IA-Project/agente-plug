@@ -39,7 +39,8 @@ def configure(
 
 
 async def _verify_token(request: Request) -> None:
-    token = request.headers.get("x-hubla-token", "")
+    # Hubla não envia headers de autenticação; usamos token na query string.
+    token = request.query_params.get("token", "")
     if not secrets.compare_digest(token, _cfg.expected_token):
         WEBHOOK_RECEIVED.labels(source="hubla-unified", status="401").inc()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")

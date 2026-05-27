@@ -80,7 +80,7 @@ def test_webhook_subscription_activated_enqueues_job(app_and_deps):
     r = client.post(
         "/webhook/purchase",
         json=payload,
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202, r.text
     assert r.json()["accepted"] is True
@@ -107,7 +107,7 @@ def test_webhook_duplicate_subscription_returns_202_duplicate(app_and_deps):
     r1 = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="dup-1"),
-        headers={"x-hubla-token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r1.status_code == 202
     assert r1.json()["duplicate"] is True
@@ -120,6 +120,6 @@ def test_webhook_invalid_token_returns_401(app_and_deps):
     r = client.post(
         "/webhook/purchase",
         json={"type": "subscription.activated", "event": {}},
-        headers={"x-hubla-token": "wrong"},
+        params={"token": "wrong"},
     )
     assert r.status_code == 401

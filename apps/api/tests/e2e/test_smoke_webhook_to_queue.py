@@ -95,7 +95,7 @@ def test_purchase_webhook_enqueues_job(
             },
         },
     }
-    r = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"})
+    r = client.post("/webhook/purchase", json=body, params={"token": "hubla-secret"})
     assert r.status_code == 202
     assert r.json()["duplicate"] is False
 
@@ -111,7 +111,7 @@ def test_purchase_webhook_enqueues_job(
     assert asyncio.run(_depth()) == 1
 
     # Duplicate call should be accepted but not enqueue
-    r2 = client.post("/webhook/purchase", json=body, headers={"X-Hubla-Token": "hubla-secret"})
+    r2 = client.post("/webhook/purchase", json=body, params={"token": "hubla-secret"})
     assert r2.status_code == 202
     assert r2.json()["duplicate"] is True
     assert asyncio.run(_depth()) == 1

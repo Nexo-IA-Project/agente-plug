@@ -93,7 +93,7 @@ def main() -> None:
     print(f"→ POST {url}")
     print(f"  payload: {args.payload} | telefone: {args.phone} | produto: {args.product_id}")
 
-    response = httpx.post(url, json=payload, headers={"x-hubla-token": token})
+    response = httpx.post(url, json=payload, params={"token": token})
     print(f"  status: {response.status_code}")
     print(f"  body:   {response.text}")
 

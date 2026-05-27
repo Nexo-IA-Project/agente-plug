@@ -291,8 +291,8 @@ GET    /admin/leads/export      → CSV download (UTF-8 com BOM, Content-Disposi
 **Webhooks**
 ```
 POST /webhook/message           → 202 (ChatNexo, Bearer token)
-POST /webhook/hubla             → 202 (Hubla, x-hubla-token) — endpoint unificado, qualquer event type
-POST /webhook/purchase          → 202 (Hubla, x-hubla-token) — alias legado, delega para handle_hubla_event
+POST /webhook/hubla             → 202 (Hubla, token query string) — endpoint unificado, qualquer event type
+POST /webhook/purchase          → 202 (Hubla, token query string) — alias legado, delega para handle_hubla_event
 ```
 
 **Infra**

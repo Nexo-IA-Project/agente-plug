@@ -70,7 +70,7 @@ def test_returns_202_on_first_valid_call(deps):
     r = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="p-1", product_id="prod-x"),
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202, r.text
     deps["queue"].enqueue.assert_awaited_once()
@@ -83,7 +83,7 @@ def test_returns_202_but_skips_enqueue_on_duplicate(deps):
     r = client.post(
         "/webhook/purchase",
         json=_v2_payload(purchase_id="p-dup", product_id="prod-y"),
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 202
     assert r.json()["duplicate"] is True
@@ -97,6 +97,6 @@ def test_returns_422_on_invalid_payload(deps):
     r = client.post(
         "/webhook/purchase",
         json={"type": "subscription.canceled", "event": {}},
-        headers={"X-Hubla-Token": "secret-token"},
+        params={"token": "secret-token"},
     )
     assert r.status_code == 422

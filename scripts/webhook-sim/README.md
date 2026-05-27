@@ -55,7 +55,7 @@ uv run python scripts/webhook-sim/fire_webhook.py --url http://staging.example.c
 ## O que acontece ao disparar
 
 1. Script lê `HUBLA_WEBHOOK_SECRET` do `.env.local`
-2. Envia `POST /webhook/purchase` com `x-hubla-token: {secret}`
+2. Envia `POST /webhook/purchase?token={secret}` (token via query string — Hubla não envia headers)
 3. API enfileira job `purchase` no worker
 4. Worker processa: cria/atualiza contato, abre conversa no ChatNexo (inbox 113), enrolla em flows do curso
 5. Mensagem de boas-vindas é enviada para o `TEST_CONTACT_PHONE` via WhatsApp
