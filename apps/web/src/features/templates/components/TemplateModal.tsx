@@ -77,6 +77,7 @@ export function TemplateModal({ open, onClose, onCreate, onEdit, template }: Pro
         <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
           <div className="p-6">
             <TemplateForm
+              key={template?.id ?? "new"}
               initialTemplate={template}
               onCreate={
                 onCreate

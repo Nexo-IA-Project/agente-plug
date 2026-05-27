@@ -56,8 +56,8 @@ export interface CreateTemplateDto {
 }
 
 export interface EditTemplateDto {
-  components?: unknown[];
-  category?: string;
+  components?: Record<string, unknown>[];
+  category?: TemplateCategory;
   media_url?: string;
-  media_kind?: string;
+  media_kind?: MediaKind;
 }
