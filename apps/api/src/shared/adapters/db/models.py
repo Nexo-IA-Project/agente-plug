@@ -8,6 +8,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
@@ -698,4 +699,36 @@ class ChatNexoAgentModel(Base):
         server_default=sa_text("NOW()"),
         onupdate=sa_text("NOW()"),
         nullable=False,
+    )
+
+
+class MetaTemplateMediaModel(Base):
+    """Storage de bytes de mídia (imagem/vídeo/documento) usada em templates Meta.
+
+    BYTEA + dedup por sha256. Servido publicamente via GET /public/media/{id}.
+    """
+
+    __tablename__ = "meta_template_media"
+    __table_args__ = (
+        UniqueConstraint("account_id", "sha256", name="uq_meta_template_media_account_sha"),
+        CheckConstraint(
+            "kind IN ('IMAGE', 'VIDEO', 'DOCUMENT')",
+            name="ck_meta_template_media_kind",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = _pk()
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    mime: Mapped[str] = mapped_column(String(128), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
