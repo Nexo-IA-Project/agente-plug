@@ -237,7 +237,7 @@ export async function deleteProduct(id: string): Promise<void> {
 
 // ─── Meta Templates ──────────────────────────────────────────────────────────
 
-import type { CreateTemplateDto, MetaTemplate } from "@/features/templates/types";
+import type { CreateTemplateDto, EditTemplateDto, MetaTemplate } from "@/features/templates/types";
 import type {
   LeadDetail,
   LeadFilters,
@@ -251,6 +251,16 @@ export async function listMetaTemplates(): Promise<MetaTemplate[]> {
 export async function createMetaTemplate(dto: CreateTemplateDto): Promise<MetaTemplate> {
   return apiFetch("/admin/meta-templates", {
     method: "POST",
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function editMetaTemplate(
+  id: string,
+  dto: EditTemplateDto,
+): Promise<MetaTemplate> {
+  return apiFetch<MetaTemplate>(`/admin/meta-templates/${id}`, {
+    method: "PATCH",
     body: JSON.stringify(dto),
   });
 }

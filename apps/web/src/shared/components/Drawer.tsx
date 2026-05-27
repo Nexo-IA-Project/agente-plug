@@ -35,10 +35,9 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
       <div
         aria-hidden
         onClick={onClose}
-        className={`fixed inset-y-0 right-0 z-40 bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-40 cursor-pointer bg-black/40 transition-opacity duration-200 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
-        style={{ left: SIDEBAR_WIDTH }}
       />
 
       {/* Painel */}

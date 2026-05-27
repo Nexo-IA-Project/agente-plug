@@ -2,7 +2,7 @@
 
 **Fonte oficial:** [Documentação Hubla — Eventos v2](https://hubla.gitbook.io/docs/webhooks/eventos-v2)
 
-**Total:** 24 eventos em 6 categorias.
+**Total:** 25 eventos em 6 categorias.
 
 ---
 

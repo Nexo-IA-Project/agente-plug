@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 from interface.http.schemas.meta_templates import (
     CreateTemplateRequest,
+    EditTemplateRequest,
     MetaTemplateResponse,
     UploadMediaResponse,
 )
@@ -29,6 +30,11 @@ from shared.application.use_cases.meta_templates.create_template import (
 from shared.application.use_cases.meta_templates.delete_template import (
     DeleteTemplate,
     MetaTemplateInUseError,
+)
+from shared.application.use_cases.meta_templates.edit_template import (
+    EditMetaTemplate,
+    EditMetaTemplateInput,
+    MetaTemplateApprovedError,
 )
 from shared.application.use_cases.meta_templates.list_templates import ListTemplates
 from shared.application.use_cases.meta_templates.sync_templates import SyncMetaTemplates
@@ -254,6 +260,49 @@ async def delete_template(
                 status_code=409,
                 detail={"code": "META_TEMPLATE_IN_USE", "flows": exc.flows},
             ) from exc
+
+
+@router.patch(
+    "/meta-templates/{template_id}",
+    response_model=MetaTemplateResponse,
+)
+async def edit_template(
+    template_id: UUID,
+    body: EditTemplateRequest,
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> MetaTemplateResponse:
+    client, _waba_id, _app_id = await _get_meta_client_and_waba(auth)
+    async with session_scope() as session:
+        account_uuid = await _get_account_uuid(session)
+        repo = MetaTemplateRepository(session=session)
+        use_case = EditMetaTemplate(repo=repo, meta_client=client)
+        try:
+            record = await use_case.execute(
+                EditMetaTemplateInput(
+                    template_id=template_id,
+                    account_id=account_uuid,
+                    components=body.components,
+                    category=body.category,
+                    media_url=body.media_url,
+                    media_kind=body.media_kind,
+                )
+            )
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail="META_TEMPLATE_NOT_FOUND") from exc
+        except MetaTemplateApprovedError as exc:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "template_approved_immutable",
+                    "message": "Templates aprovados pela Meta não podem ser editados.",
+                },
+            ) from exc
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail={"code": "META_API_ERROR", "detail": str(exc)},
+            ) from exc
+        return _to_response(record)
 
 
 @router.post("/meta-templates/sync")

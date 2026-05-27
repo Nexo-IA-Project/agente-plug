@@ -59,6 +59,30 @@ class MetaTemplateRepository:
         model.last_synced_at = datetime.now(UTC)
         await self._session.flush()
 
+    async def update(
+        self,
+        *,
+        template_id: UUID,
+        components: list[dict[str, Any]] | None = None,
+        category: str | None = None,
+        media_url: str | None = None,
+        media_kind: str | None = None,
+    ) -> None:
+        """Atualiza campos do template no banco. Apenas campos não-None são alterados."""
+        model = await self._session.get(MetaTemplateModel, template_id)
+        if model is None:
+            return
+        if components is not None:
+            model.components = components
+        if category is not None:
+            model.category = category
+        if media_url is not None:
+            model.media_url = media_url
+        if media_kind is not None:
+            model.media_kind = media_kind
+        model.updated_at = datetime.now(UTC)
+        await self._session.flush()
+
     async def delete(self, template_id: UUID) -> None:
         model = await self._session.get(MetaTemplateModel, template_id)
         if model:

@@ -54,3 +54,10 @@ export interface CreateTemplateDto {
   media_object_key?: string | null;
   media_kind?: MediaKind | null;
 }
+
+export interface EditTemplateDto {
+  components?: Record<string, unknown>[];
+  category?: TemplateCategory;
+  media_url?: string;
+  media_kind?: MediaKind;
+}

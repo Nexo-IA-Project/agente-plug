@@ -8,15 +8,20 @@ from interface.http.schemas.onboarding import (
 )
 
 
-def test_hubla_event_types_constant_has_6_values():
-    assert set(HUBLA_EVENT_TYPES) == {
-        "subscription.activated",
-        "subscription.created",
-        "lead.abandoned",
-        "subscription.deactivated",
-        "subscription.expiring",
-        "invoice.refunded",
-    }
+def test_hubla_event_types_constant_has_25_values():
+    """Após Hubla v2 (Task 4): catálogo expandido para 25 eventos oficiais.
+
+    Inclui renomes: lead.abandoned → lead.abandoned_cart,
+    subscription.expiring → subscription.expired.
+    """
+    assert len(HUBLA_EVENT_TYPES) == 25
+    assert "subscription.activated" in HUBLA_EVENT_TYPES
+    assert "lead.abandoned_cart" in HUBLA_EVENT_TYPES
+    assert "subscription.expired" in HUBLA_EVENT_TYPES
+    assert "member.access_granted" in HUBLA_EVENT_TYPES
+    # nomes antigos NÃO devem mais aparecer
+    assert "lead.abandoned" not in HUBLA_EVENT_TYPES
+    assert "subscription.expiring" not in HUBLA_EVENT_TYPES
 
 
 def test_create_flow_request_accepts_valid_trigger():

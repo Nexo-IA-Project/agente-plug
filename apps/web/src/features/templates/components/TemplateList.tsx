@@ -11,6 +11,7 @@ interface Props {
   syncing: boolean;
   onNew: () => void;
   onDelete: (template: MetaTemplate) => void;
+  onEdit: (template: MetaTemplate) => void;
 }
 
 function getCategoryIcon(category: string): string {
@@ -68,6 +69,7 @@ export function TemplateList({
   syncing,
   onNew,
   onDelete,
+  onEdit,
 }: Props) {
   return (
     <div className="flex h-full flex-col">
@@ -333,7 +335,32 @@ export function TemplateList({
                   </div>
 
                   {/* Ações */}
-                  <div className="relative flex shrink-0 items-center self-center">
+                  <div className="relative flex shrink-0 items-center gap-1 self-center">
+                    {isApproved ? (
+                      <button
+                        type="button"
+                        disabled
+                        title="Templates aprovados pela Meta não podem ser editados. Crie um novo com nome diferente."
+                        aria-label="Template aprovado — não editável"
+                        className="flex h-10 w-10 cursor-not-allowed items-center justify-center rounded-xl text-on-surface-variant opacity-60"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                          lock
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onEdit(t)}
+                        title="Editar template"
+                        aria-label={`Editar template ${t.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-primary/10 hover:text-primary focus-visible:bg-primary/10 focus-visible:text-primary"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                          edit
+                        </span>
+                      </button>
+                    )}
                     <button
                       onClick={() => onDelete(t)}
                       title="Excluir template"

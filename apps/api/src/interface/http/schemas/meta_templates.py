@@ -29,6 +29,15 @@ class CreateTemplateRequest(BaseModel):
     media_kind: MediaKind | None = None
 
 
+class EditTemplateRequest(BaseModel):
+    """Edita campos de um template não-aprovado. Todos opcionais — só atualiza o que vier."""
+
+    components: list[dict[str, Any]] | None = None
+    category: TemplateCategory | None = None
+    media_url: str | None = None
+    media_kind: MediaKind | None = None
+
+
 class TemplateComponentResponse(BaseModel):
     type: str
     format: str | None = None

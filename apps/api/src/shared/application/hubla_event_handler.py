@@ -7,11 +7,13 @@ from uuid import UUID
 import structlog
 
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.domain.value_objects.hubla_event_type import (
+    PURCHASE_EVENT_TYPES,
+    is_valid_hubla_event_type,
+)
 from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
-
-_PURCHASE_EVENT_TYPES = frozenset({"subscription.activated"})
 
 
 class HublaEventHandler:
@@ -55,6 +57,13 @@ class HublaEventHandler:
 
     async def handle(self, payload: dict[str, Any]) -> None:
         event_type: str = payload.get("type", "")
+        if event_type and not is_valid_hubla_event_type(event_type):
+            log.warning(
+                "hubla_unknown_event",
+                event_type=event_type,
+                payload_id=payload.get("id"),
+            )
+        # Continuar pipeline mesmo em evento desconhecido — persistir em hubla_events para análise.
         event = payload.get("event", {})
         subscription = event.get("subscription", {})
         payer = subscription.get("payer", {})
@@ -210,7 +219,7 @@ class HublaEventHandler:
             )
             # Para subscription.activated, mantém comportamento legado (welcome + access case)
             # mesmo sem curso cadastrado no catálogo — garante que nenhuma compra seja ignorada.
-            if event_type in _PURCHASE_EVENT_TYPES:
+            if event_type in PURCHASE_EVENT_TYPES:
                 await self._purchase_handler.handle_one(
                     hubla_product_id=hubla_product_id,
                     product_name=product_name,
@@ -268,7 +277,7 @@ class HublaEventHandler:
         )
 
         # For subscription.activated, also run the legacy PurchaseHandler (welcome + access case).
-        if event_type in _PURCHASE_EVENT_TYPES:
+        if event_type in PURCHASE_EVENT_TYPES:
             await self._purchase_handler.handle_one(
                 hubla_product_id=hubla_product_id,
                 product_name=product_name,

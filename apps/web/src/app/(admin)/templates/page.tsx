@@ -7,8 +7,8 @@ import { TemplateModal } from "@/features/templates/components/TemplateModal";
 import { SyncSummaryView } from "@/features/templates/components/SyncSummaryView";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import { useToast } from "@/shared/hooks/useToast";
-import { syncMetaTemplates } from "@/lib/api";
-import type { MetaTemplate } from "@/features/templates/types";
+import { editMetaTemplate, syncMetaTemplates } from "@/lib/api";
+import type { EditTemplateDto, MetaTemplate } from "@/features/templates/types";
 
 interface FlowUsage {
   id: string;
@@ -19,9 +19,29 @@ interface FlowUsage {
 export default function TemplatesPage() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<MetaTemplate | null>(null);
   const [syncing, setSyncing] = useState(false);
   const confirm = useConfirm();
   const toast = useToast();
+
+  async function handleEdit(id: string, dto: EditTemplateDto) {
+    try {
+      await editMetaTemplate(id, dto);
+      toast.success("Template atualizado");
+      setEditingTemplate(null);
+      await reload();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("409")) {
+        toast.error(
+          "Não foi possível editar: template aprovado pela Meta é imutável.",
+        );
+      } else {
+        toast.error(`Falha ao editar: ${msg}`);
+      }
+      throw err;
+    }
+  }
 
   async function handleSync() {
     setSyncing(true);
@@ -129,16 +149,22 @@ export default function TemplatesPage() {
         syncing={syncing}
         onNew={() => setModalOpen(true)}
         onDelete={handleDelete}
+        onEdit={(t) => setEditingTemplate(t)}
       />
 
       <TemplateModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={modalOpen || !!editingTemplate}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingTemplate(null);
+        }}
         onCreate={async (dto) => {
           await create(dto);
           toast.success("Template enviado para aprovação da Meta");
           await reload();
         }}
+        onEdit={handleEdit}
+        template={editingTemplate ?? undefined}
       />
     </div>
   );
