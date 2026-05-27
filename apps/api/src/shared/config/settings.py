@@ -84,13 +84,6 @@ class Settings(BaseSettings):
     jwt_secret: str
     jwt_expire_minutes: int = 480
 
-    # Cloudflare R2 (template media storage)
-    r2_account_id: str | None = None
-    r2_access_key_id: str | None = None
-    r2_secret_access_key: str | None = None
-    r2_bucket_name: str | None = None
-    r2_public_base_url: str | None = None
-
     # Meta WhatsApp App ID (resumable upload)
     meta_app_id: str | None = None
 
