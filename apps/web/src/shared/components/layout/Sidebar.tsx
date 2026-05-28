@@ -23,7 +23,6 @@ const NAV_ITEMS = [
 
 const FOOTER_ITEMS = [
   { label: "Tokens de API", href: "/settings/tokens", icon: "key" },
-  { label: "Suporte", href: "/support", icon: "contact_support" },
 ] as const;
 
 function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
