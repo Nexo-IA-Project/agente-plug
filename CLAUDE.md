@@ -178,7 +178,8 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 | `job_dlq` | Dead-letter queue |
 | `capability_executions` | Log de execuções de skills |
 | `audit_events` | Auditoria de ações admin |
-| `admin_users` | Usuários do painel (JWT login) |
+| `users` | Usuários do painel — roles `admin`/`operator`, avatar bytea, `must_change_password`, `is_active`, `last_login_at` |
+| `smtp_config` | Configuração SMTP por conta — senha criptografada Fernet, 1 registro por conta |
 | `integration_configs` | Credenciais de integrações (Fernet encrypted) |
 | `knowledge_documents` | Metadados de documentos KB |
 | `knowledge_chunks` | Chunks com embedding pgvector (1536 dims) |
@@ -217,8 +218,30 @@ Cada skill: `src/agent/skills/<nome>/skill.py` (definição), `use_case.py` (ló
 
 **Auth Admin (`/admin`)**
 ```
-POST /admin/auth/login          → JWT cookie (HttpOnly)
+POST /admin/auth/login          → JWT cookie (HttpOnly) + payload inclui role, user_id, must_change_password
 POST /admin/auth/logout         → deleta cookie
+```
+
+**Usuários (`/admin`) — require_admin_role para ações de gestão**
+```
+GET    /admin/users                    → UserListResponse (paginado)
+POST   /admin/users                    → UserResponse (201) — gera senha, envia email
+PUT    /admin/users/{id}               → UserResponse — edita name/role/is_active
+DELETE /admin/users/{id}               → 204 — não pode deletar si mesmo nem último admin
+POST   /admin/users/{id}/reset-password → 204 — gera nova senha, envia email
+
+GET    /admin/me                → perfil do usuário logado
+PUT    /admin/me                → atualiza nome (email imutável)
+PUT    /admin/me/avatar         → recebe base64 JPEG → salva bytea
+GET    /admin/me/avatar         → serve bytea como image/jpeg
+PUT    /admin/me/password       → troca senha (requer senha atual)
+```
+
+**SMTP Config (`/admin`) — require_admin_role**
+```
+GET    /admin/smtp-config        → config (sem senha) ou null
+PUT    /admin/smtp-config        → upsert — senha criptografada Fernet
+POST   /admin/smtp-config/test   → envia email de teste
 ```
 
 **Account Settings (`/admin`)**
@@ -396,8 +419,11 @@ npm run lint     # ESLint
 /(admin)/leads                   → leads paginados com 5 filtros, CSV export, drawer com timeline visual
 /(admin)/followup                → lista de followup flows (filtrável por produto)
 /(admin)/followup/[id]           → editor de flow + steps inline
-/(admin)/settings                → configurações da conta (OPENAI_API_KEY, ChatNexo, etc)
+/(admin)/settings                → configurações da conta (OPENAI_API_KEY, ChatNexo, etc) + SMTP (só admin)
 /(admin)/settings/tokens         → gerenciar API tokens (criar, listar, revogar)
+/(admin)/users                   → lista de usuários (só admin) com CRUD, reset de senha e toggle ativo/inativo
+/(admin)/profile                 → perfil do usuário logado: nome, avatar com crop, troca de senha
+/(admin)/change-password         → troca obrigatória de senha no primeiro login (bloqueio até concluir)
 /(admin)/templates               → lista de Meta templates
 /(admin)/templates/new           → criar novo template
 ```

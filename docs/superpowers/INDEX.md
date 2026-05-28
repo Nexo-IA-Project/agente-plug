@@ -18,6 +18,7 @@
 | ⑨ | **Follow-up Engine** — motor de sequências pós-compra dinâmicas (backend + API) | [spec](specs/2026-05-07-nexoia-followup-engine-design.md) | [plano](plans/2026-05-07-nexoia-followup-engine.md) | ✅ Concluído |
 | ⑩ | **Follow-up Flow Manager** — tela de gestão de flows e steps no painel admin | [spec](specs/2026-05-07-nexoia-followup-flow-manager-design.md) | [plano](plans/2026-05-07-nexoia-followup-flow-manager.md) | ✅ Concluído |
 | ⑪ | **Meta Template Manager** — criação e gestão de templates WhatsApp via Meta API | [spec](specs/2026-05-07-nexoia-meta-template-manager-design.md) | [plano](plans/2026-05-07-nexoia-meta-template-manager.md) | ✅ Concluído |
+| ⑫ | **User Management** — usuários com roles admin/operator, perfil+avatar, SMTP, troca obrigatória de senha | [spec](specs/2026-05-28-user-management-design.md) | [plano](plans/2026-05-28-user-management.md) | ✅ Concluído |
 
 ## Legenda
 
