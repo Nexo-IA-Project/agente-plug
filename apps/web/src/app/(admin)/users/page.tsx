@@ -33,11 +33,12 @@ export default function UsersPage() {
       const res = await listUsers();
       setUsers(res.items);
     } catch {
-      toast.error("Falha ao carregar usuários");
+      // toast não entra na dep array para não causar loop infinito
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     load();
