@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { downloadLeadsCsv, listLeads } from "@/lib/api";
 import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
 import { LeadFiltersModal } from "@/features/leads/components/LeadFiltersModal";
@@ -9,7 +9,7 @@ import { useToast } from "@/shared/hooks/useToast";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
 import { useLeadsStream } from "@/features/leads/hooks/useLeadsStream";
-import type { Lead, LeadFilters } from "@/features/leads/types";
+import type { Lead, LeadEvent, LeadFilters } from "@/features/leads/types";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Todos os status" },
@@ -49,6 +49,16 @@ export default function LeadsPage() {
 
   const { products } = useProducts();
 
+  const drawerHandlersRef = useRef<{
+    onEvent?: (event: LeadEvent) => void;
+    onEnrollment?: (enrollment: {
+      id: string;
+      status: string;
+      step_id: string;
+      step_status: string;
+    }) => void;
+  }>({});
+
   const { status: streamStatus } = useLeadsStream(filters, {
     onLeadUpserted: (lead, isNew) => {
       setLeads((prev) => {
@@ -66,6 +76,16 @@ export default function LeadsPage() {
       });
       setHighlightId(lead.id);
       setTimeout(() => setHighlightId(null), 600);
+    },
+    onEventAppended: (leadId, event) => {
+      if (selectedLead?.id === leadId) {
+        drawerHandlersRef.current.onEvent?.(event);
+      }
+    },
+    onEnrollmentUpdated: (leadId, enrollment) => {
+      if (selectedLead?.id === leadId) {
+        drawerHandlersRef.current.onEnrollment?.(enrollment);
+      }
     },
   });
 
@@ -383,6 +403,9 @@ export default function LeadsPage() {
         lead={selectedLead}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onRegisterStreamHandlers={(h) => {
+          drawerHandlersRef.current = h;
+        }}
       />
 
       <LeadFiltersModal
