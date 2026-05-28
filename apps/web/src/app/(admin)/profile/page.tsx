@@ -80,71 +80,113 @@ export default function ProfilePage() {
 
       {/* Avatar + identidade */}
       <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
-        <div className="flex items-center gap-3 border-b border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container">
-            <span
-              className="material-symbols-outlined text-on-primary-container"
-              style={{ fontSize: "20px", fontVariationSettings: "'FILL' 1" }}
+
+        {/* Banner com mesh gradient */}
+        <div
+          className="relative flex flex-col items-center pb-5 pt-8"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--color-primary) 14%, transparent) 0%, transparent 70%), " +
+              "radial-gradient(ellipse 50% 40% at 10% 100%, color-mix(in srgb, var(--color-tertiary, var(--color-primary)) 8%, transparent) 0%, transparent 60%)",
+          }}
+        >
+          {/* Anel gradiente animado ao redor do avatar */}
+          <div className="relative">
+            {/* Anel externo */}
+            <div
+              className="absolute -inset-[3px] rounded-full"
+              style={{
+                background: "conic-gradient(from 0deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 40%, transparent), var(--color-primary) 60%, color-mix(in srgb, var(--color-primary) 20%, transparent), var(--color-primary))",
+                animation: "avatarRingSpin 4s linear infinite",
+                opacity: avatarBlobUrl ? 1 : 0.45,
+              }}
+            />
+            <style>{`
+              @keyframes avatarRingSpin {
+                from { transform: rotate(0deg); }
+                to   { transform: rotate(360deg); }
+              }
+            `}</style>
+
+            {/* Anel branco separador */}
+            <div className="absolute -inset-[3px] rounded-full" style={{ margin: "3px", background: "var(--color-surface, white)" }} />
+
+            {/* Avatar */}
+            <button
+              onClick={() => setAvatarOpen(true)}
+              className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-full focus:outline-none"
+              title="Trocar foto"
             >
-              badge
-            </span>
+              {avatarBlobUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarBlobUrl} alt={me.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-primary text-3xl font-bold text-on-primary select-none">
+                  {me.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              {/* Overlay câmera */}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 rounded-full">
+                <span className="material-symbols-outlined text-white" style={{ fontSize: "22px", fontVariationSettings: "'FILL' 1" }}>
+                  photo_camera
+                </span>
+              </div>
+            </button>
+
+            {/* Botão câmera pequeno no canto */}
+            <button
+              onClick={() => setAvatarOpen(true)}
+              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-on-primary shadow-md ring-2 ring-white dark:ring-surface-container transition hover:scale-110"
+              title="Trocar foto"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "14px", fontVariationSettings: "'FILL' 1" }}>
+                edit
+              </span>
+            </button>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-on-surface">Identidade</p>
-            <p className="text-xs text-on-surface-variant">Foto e nome de exibição</p>
+
+          {/* Nome e email abaixo do avatar */}
+          <div className="mt-4 flex flex-col items-center gap-1">
+            <p className="text-lg font-bold text-on-surface">{me.name}</p>
+            <p className="text-sm text-on-surface-variant">{me.email}</p>
+            <span
+              className="mt-1 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{ background: "color-mix(in srgb, var(--color-primary) 12%, transparent)", color: "var(--color-primary)" }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "12px", fontVariationSettings: "'FILL' 1" }}>
+                {me.role === "admin" ? "admin_panel_settings" : "person"}
+              </span>
+              {me.role === "admin" ? "Administrador" : "Operador"}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 px-5 py-5">
-          {/* Avatar clicável */}
-          <button
-            onClick={() => setAvatarOpen(true)}
-            className="group relative h-20 w-20 shrink-0 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-            title="Trocar foto"
-          >
-            {avatarBlobUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarBlobUrl}
-                alt={me.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary text-3xl font-bold text-on-primary">
-                {me.name.charAt(0).toUpperCase()}
-              </div>
-            )}
-            {/* Overlay no hover */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <span className="material-symbols-outlined text-white" style={{ fontSize: "20px" }}>
-                photo_camera
-              </span>
-            </div>
-          </button>
-
-          <div className="flex flex-1 flex-col gap-3">
-            {/* Nome editável */}
+        {/* Campos editáveis */}
+        <div className="border-t border-outline-variant/60 px-5 py-5">
+          <div className="flex flex-col gap-4">
+            {/* Nome */}
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-on-surface-variant">Nome</span>
+              <span className="text-xs font-medium text-on-surface-variant">Nome de exibição</span>
               <div className="flex gap-2">
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="flex-1 rounded-xl border border-outline-variant bg-surface px-3.5 py-2 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="flex-1 rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
                 <button
                   onClick={onSaveName}
                   disabled={savingName || name === me.name}
-                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:opacity-90 disabled:opacity-40"
+                  className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition hover:opacity-90 disabled:opacity-40"
                 >
-                  Salvar
+                  {savingName ? "..." : "Salvar"}
                 </button>
               </div>
             </div>
-            {/* Email (readonly) */}
+            {/* Email readonly */}
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-on-surface-variant">Email</span>
-              <div className="flex items-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-low px-3.5 py-2">
+              <div className="flex items-center gap-2 rounded-xl border border-outline-variant/50 bg-surface-container-low px-3.5 py-2.5">
+                <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "15px" }}>mail</span>
                 <span className="text-sm text-on-surface">{me.email}</span>
                 <span className="ml-auto rounded-full bg-surface-container px-2 py-0.5 text-xs text-on-surface-variant">
                   imutável
@@ -152,19 +194,6 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Role badge */}
-        <div className="flex items-center gap-2 border-t border-outline-variant/60 bg-surface-container-low/50 px-5 py-3">
-          <span className="material-symbols-outlined text-on-surface-variant" style={{ fontSize: "16px" }}>
-            {me.role === "admin" ? "admin_panel_settings" : "person"}
-          </span>
-          <span className="text-xs text-on-surface-variant">
-            Papel:{" "}
-            <strong className="text-on-surface">
-              {me.role === "admin" ? "Administrador" : "Operador"}
-            </strong>
-          </span>
         </div>
       </div>
 
