@@ -6,6 +6,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { usePermission } from "@/features/auth/hooks/usePermission";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { myAvatarUrl } from "@/lib/api";
 
 const NAV_ITEMS = [
   { label: "Painel", href: "/dashboard", icon: "dashboard" },
@@ -15,8 +18,9 @@ const NAV_ITEMS = [
   { label: "Leads", href: "/leads", icon: "person_search" },
   { label: "Onboarding", href: "/onboarding", icon: "schedule_send" },
   { label: "Templates", href: "/templates", icon: "sms" },
+  { label: "Usuários", href: "/users", icon: "manage_accounts", adminOnly: true },
   { label: "Configurações", href: "/settings", icon: "settings", exact: true },
-] as const;
+];
 
 const FOOTER_ITEMS = [
   { label: "Tokens de API", href: "/settings/tokens", icon: "key" },
@@ -49,6 +53,12 @@ export function Sidebar() {
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const { isAdmin } = usePermission();
+  const { user } = useAuth();
+
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !(item as { adminOnly?: boolean }).adminOnly || isAdmin
+  );
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[240px] flex-col border-r border-outline-variant bg-surface-container-lowest">
@@ -64,7 +74,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-4">
-        {NAV_ITEMS.map((item) => (
+        {visibleItems.map((item) => (
           <NavItem
             key={item.href}
             {...item}
@@ -77,6 +87,26 @@ export function Sidebar() {
         {FOOTER_ITEMS.map((item) => (
           <NavItem key={item.href} {...item} active={pathname === item.href} />
         ))}
+      </div>
+
+      <div className="mt-auto border-t border-outline-variant p-3">
+        <Link href="/profile" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-container">
+          <div className="h-8 w-8 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center flex-shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={myAvatarUrl()}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+          </div>
+          <div className="flex flex-col text-body-sm overflow-hidden min-w-0">
+            <span className="truncate">{user?.email ?? ""}</span>
+            <span className="text-label-sm text-on-surface-variant">
+              {user?.role === "admin" ? "Admin" : "Operador"}
+            </span>
+          </div>
+        </Link>
       </div>
     </aside>
   );

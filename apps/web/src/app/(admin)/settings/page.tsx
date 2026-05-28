@@ -5,9 +5,12 @@ import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
 import { ChatNexoAgentsSection } from "@/features/settings/components/ChatNexoAgentsSection";
 import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
+import { SmtpConfigForm } from "@/features/settings/components/SmtpConfigForm";
+import { usePermission } from "@/features/auth/hooks/usePermission";
 import type { AccountSettings } from "@/features/settings/types";
 
 export default function SettingsPage() {
+  const { isAdmin } = usePermission();
   const [settings, setSettings] = useState<AccountSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,11 +69,18 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      {/* Integrations */}
-      <IntegrationSection initial={settings} onSaved={setSettings} />
+      {isAdmin && (
+        <>
+          {/* Integrations */}
+          <IntegrationSection initial={settings} onSaved={setSettings} />
 
-      {/* ChatNexo agents */}
-      <ChatNexoAgentsSection />
+          {/* ChatNexo agents */}
+          <ChatNexoAgentsSection />
+
+          {/* SMTP */}
+          <SmtpConfigForm />
+        </>
+      )}
 
       {/* Behavior */}
       {settings && <BehaviorSection initial={settings} onSaved={setSettings} />}
