@@ -71,18 +71,18 @@ export default function SettingsPage() {
 
       {isAdmin && (
         <>
+          {/* SMTP — primeiro para facilitar o onboarding */}
+          <SmtpConfigForm />
+
           {/* Integrations */}
           <IntegrationSection initial={settings} onSaved={setSettings} />
 
           {/* ChatNexo agents */}
           <ChatNexoAgentsSection />
-
-          {/* SMTP */}
-          <SmtpConfigForm />
         </>
       )}
 
-      {/* Behavior */}
+      {/* Behavior — visível para todos */}
       {settings && <BehaviorSection initial={settings} onSaved={setSettings} />}
     </div>
   );
