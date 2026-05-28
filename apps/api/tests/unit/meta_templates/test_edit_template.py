@@ -98,9 +98,7 @@ async def test_pending_template_does_delete_and_recreate() -> None:
     # Não tentou edit direto
     meta_client.edit_template.assert_not_called()
     # Deletou na Meta + local
-    meta_client.delete_template.assert_called_once_with(
-        waba_id="waba-1", name=template.name
-    )
+    meta_client.delete_template.assert_called_once_with(waba_id="waba-1", name=template.name)
     repo.delete.assert_called_once_with(template.id)
     # Recriou (via CreateTemplate use case)
     meta_client.create_template.assert_called_once()
