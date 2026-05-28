@@ -37,6 +37,7 @@ class LeadResponse(BaseModel):
     activated_at: datetime | None
     last_event_at: datetime
     last_event_type: str
+    chatnexo_conversation_url: str | None = None
 
 
 class LeadListResponse(BaseModel):
@@ -102,6 +103,7 @@ def _to_response(m: Lead) -> LeadResponse:
         activated_at=m.activated_at,
         last_event_at=m.last_event_at,
         last_event_type=m.last_event_type,
+        chatnexo_conversation_url=m.chatnexo_conversation_url,
     )
 
 
