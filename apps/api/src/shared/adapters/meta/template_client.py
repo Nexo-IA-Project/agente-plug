@@ -16,6 +16,61 @@ log = structlog.get_logger(__name__)
 _BASE_URL = "https://graph.facebook.com/v19.0"
 
 
+class MetaTemplateApiError(Exception):
+    """Erro estruturado da Graph API ao manipular templates (rejeição da Meta).
+
+    Carrega o `user_msg` amigável que a Meta retorna (em PT-BR quando disponível)
+    + subcode para que o router consiga mapear pra HTTP correto sem 500 ASGI cru.
+    """
+
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        message: str,
+        user_msg: str | None = None,
+        subcode: int | None = None,
+        code: int | None = None,
+    ) -> None:
+        super().__init__(user_msg or message)
+        self.status_code = status_code
+        self.message = message
+        self.user_msg = user_msg or message
+        self.subcode = subcode
+        self.code = code
+
+
+def _raise_meta_error(resp: httpx.Response, *, log_event: str, **log_extras: Any) -> None:
+    """Extrai erro estruturado da Meta e lança MetaTemplateApiError.
+
+    Esperado: `resp.status_code` já é não-OK quando chamado.
+    """
+    content_type = resp.headers.get("content-type", "")
+    error_body: dict[str, Any]
+    if content_type.startswith("application/json"):
+        try:
+            error_body = resp.json() or {}
+        except ValueError:
+            error_body = {"message": resp.text[:200]}
+    else:
+        error_body = {"message": resp.text[:200]}
+
+    err = error_body.get("error") or {}
+    message: str = err.get("message") or error_body.get("message") or "Meta API error"
+    user_msg: str | None = err.get("error_user_msg") or err.get("error_user_title")
+    subcode = err.get("error_subcode")
+    code = err.get("code")
+
+    log.warning(log_event, status=resp.status_code, body=error_body, **log_extras)
+    raise MetaTemplateApiError(
+        status_code=resp.status_code,
+        message=message,
+        user_msg=user_msg,
+        subcode=subcode,
+        code=code,
+    )
+
+
 def _parse_component(raw: dict[str, Any]) -> MetaTemplateComponent:
     return MetaTemplateComponent(
         type=raw.get("type", ""),
@@ -90,14 +145,9 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code not in (200, 201):
-            content_type = resp.headers.get("content-type", "")
-            error_body = (
-                resp.json()
-                if content_type.startswith("application/json")
-                else {"message": resp.text}
+            _raise_meta_error(
+                resp, log_event="meta_create_template_error", name=payload.name
             )
-            log.warning("meta_create_template_error", status=resp.status_code, body=error_body)
-            resp.raise_for_status()
         raw = resp.json()
         return MetaTemplate(
             id=raw.get("id", ""),
@@ -161,8 +211,7 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code not in (200, 204):
-            log.warning("meta_delete_template_error", status=resp.status_code, body=resp.text[:200])
-            resp.raise_for_status()
+            _raise_meta_error(resp, log_event="meta_delete_template_error", name=name)
 
     async def edit_template(
         self,
@@ -194,16 +243,6 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code not in (200, 201):
-            content_type = resp.headers.get("content-type", "")
-            error_body = (
-                resp.json()
-                if content_type.startswith("application/json")
-                else {"message": resp.text[:200]}
+            _raise_meta_error(
+                resp, log_event="meta_edit_template_error", template_id=template_id
             )
-            log.warning(
-                "meta_edit_template_error",
-                status=resp.status_code,
-                template_id=template_id,
-                body=error_body,
-            )
-            resp.raise_for_status()
