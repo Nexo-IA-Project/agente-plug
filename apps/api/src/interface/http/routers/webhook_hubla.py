@@ -55,7 +55,7 @@ async def _verify_token(request: Request) -> None:
     status_code=status.HTTP_202_ACCEPTED,
     dependencies=[Depends(_verify_token)],
 )
-async def receive(payload: dict = Body(...)) -> dict:  # noqa: B008
+async def receive(payload: dict = Body(...)) -> dict:
     if _cfg.dedup is None or _cfg.event_repo_factory is None or _cfg.queue is None:
         raise RuntimeError("webhook_hubla router not configured; call configure() before serving")
 

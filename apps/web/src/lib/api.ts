@@ -20,6 +20,17 @@ import type {
   CreateProductInput,
   UpdateProductInput,
 } from "@/features/products/types";
+import type {
+  User,
+  UserListResponse,
+  CreateUserInput,
+  UpdateUserInput,
+} from "@/features/users/types";
+import type {
+  MeResponse,
+  SmtpConfig,
+  SmtpConfigInput,
+} from "@/features/profile/types";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -477,5 +488,88 @@ export function uploadTemplateMedia(
     };
     xhr.onerror = () => reject(new Error("Network error"));
     xhr.send(fd);
+  });
+}
+
+// ============================================================
+// Users (admin only)
+// ============================================================
+
+export async function listUsers(page = 1, pageSize = 50): Promise<UserListResponse> {
+  return apiFetch<UserListResponse>(`/admin/users?page=${page}&page_size=${pageSize}`);
+}
+
+export async function createUser(input: CreateUserInput): Promise<User> {
+  return apiFetch<User>("/admin/users", { method: "POST", body: JSON.stringify(input) });
+}
+
+export async function updateUser(id: string, input: UpdateUserInput): Promise<User> {
+  return apiFetch<User>(`/admin/users/${id}`, { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await apiFetch<void>(`/admin/users/${id}`, { method: "DELETE" });
+}
+
+export async function resetUserPassword(id: string): Promise<void> {
+  await apiFetch<void>(`/admin/users/${id}/reset-password`, { method: "POST" });
+}
+
+// ============================================================
+// Me (perfil próprio)
+// ============================================================
+
+export async function getMe(): Promise<MeResponse> {
+  return apiFetch<MeResponse>("/admin/me");
+}
+
+export async function updateMe(name: string): Promise<MeResponse> {
+  return apiFetch<MeResponse>("/admin/me", { method: "PUT", body: JSON.stringify({ name }) });
+}
+
+export async function updateMyAvatar(base64Data: string): Promise<void> {
+  await apiFetch<void>("/admin/me/avatar", {
+    method: "PUT",
+    body: JSON.stringify({ data: base64Data }),
+  });
+}
+
+export async function changeMyPassword(current_password: string, new_password: string): Promise<void> {
+  await apiFetch<void>("/admin/me/password", {
+    method: "PUT",
+    body: JSON.stringify({ current_password, new_password }),
+  });
+}
+
+export const myAvatarUrl = (version?: number): string =>
+  `${API_URL}/admin/me/avatar${version ? `?v=${version}` : ""}`;
+
+/** Busca o avatar via fetch autenticado e retorna um blob URL (cross-origin safe). */
+export async function fetchMyAvatarBlob(): Promise<string | null> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/me/avatar`, {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) return null;
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+// ============================================================
+// SMTP Config (admin only)
+// ============================================================
+
+export async function getSmtpConfig(): Promise<SmtpConfig | null> {
+  return apiFetch<SmtpConfig | null>("/admin/smtp-config");
+}
+
+export async function saveSmtpConfig(input: SmtpConfigInput): Promise<SmtpConfig> {
+  return apiFetch<SmtpConfig>("/admin/smtp-config", { method: "PUT", body: JSON.stringify(input) });
+}
+
+export async function testSmtpConfig(to: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/admin/smtp-config/test", {
+    method: "POST", body: JSON.stringify({ to }),
   });
 }

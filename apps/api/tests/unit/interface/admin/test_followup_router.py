@@ -22,7 +22,13 @@ def client():
     app = _make_app()
     from interface.http.deps.admin_auth import AdminAuth, require_admin
 
-    auth = AdminAuth(account_id=1, user_email="a@b.com", user_role="admin")
+    auth = AdminAuth(
+        account_id=1,
+        user_email="a@b.com",
+        user_role="admin",
+        user_id="test-id",
+        must_change_password=False,
+    )
     app.dependency_overrides[require_admin] = lambda: auth
     return TestClient(app)
 

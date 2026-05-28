@@ -84,6 +84,9 @@ async def main() -> None:
     )
     for t in pending:
         t.cancel()
+    # Aguarda tasks canceladas terminarem seus finally blocks (fecham sessions abertas)
+    # antes de dispor o engine — evita "non-checked-in connection" no GC
+    await asyncio.gather(*pending, return_exceptions=True)
     await get_engine().dispose()
     await redis.aclose()
     log.info("worker_stopped")

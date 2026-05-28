@@ -93,7 +93,7 @@ def _bindings_to_dict(
 
 @router.get("/onboarding/flows", response_model=list[OnboardingFlowResponse])
 async def list_flows(
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> list[OnboardingFlowResponse]:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -140,7 +140,7 @@ async def list_flows(
 )
 async def create_flow(
     body: CreateFlowRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> OnboardingFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -175,7 +175,7 @@ async def create_flow(
 async def update_flow(
     flow_id: UUID,
     body: UpdateFlowRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> OnboardingFlowResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -216,7 +216,7 @@ async def update_flow(
 @router.delete("/onboarding/flows/{flow_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_flow(
     flow_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> None:
     async with session_scope() as session:
         repo = OnboardingFlowRepository(session=session)
@@ -228,7 +228,7 @@ async def delete_flow(
 @router.get("/onboarding/flows/{flow_id}/steps", response_model=list[OnboardingStepResponse])
 async def list_steps(
     flow_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> list[OnboardingStepResponse]:
     async with session_scope() as session:
         repo = OnboardingFlowRepository(session=session)
@@ -244,7 +244,7 @@ async def list_steps(
 async def create_step(
     flow_id: UUID,
     body: CreateStepRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> OnboardingStepResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -268,7 +268,7 @@ async def update_step(
     flow_id: UUID,
     step_id: UUID,
     body: UpdateStepRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> OnboardingStepResponse:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -300,7 +300,7 @@ async def update_step(
 async def delete_step(
     flow_id: UUID,
     step_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> None:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -315,7 +315,7 @@ async def delete_step(
 async def reorder_steps(
     flow_id: UUID,
     body: ReorderStepsRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> None:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)

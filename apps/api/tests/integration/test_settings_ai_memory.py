@@ -27,7 +27,13 @@ def _make_app() -> FastAPI:
 
 
 def _auth_override() -> AdminAuth:
-    return AdminAuth(account_id=1, user_email="admin@test.com", user_role="admin")
+    return AdminAuth(
+        account_id=1,
+        user_email="admin@test.com",
+        user_role="admin",
+        user_id="test-id",
+        must_change_password=False,
+    )
 
 
 def _make_config(ai_memory_messages: int = 20) -> AccountConfig:

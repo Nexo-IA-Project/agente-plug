@@ -38,3 +38,36 @@ async def test_get_admin_deps_raises_401_on_bad_token():
             async for _ in gen:
                 pass
         assert exc_info.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_require_admin_role_passes_for_admin():
+    from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+
+    auth = AdminAuth(
+        account_id=1,
+        user_email="a@x.com",
+        user_role="admin",
+        user_id="u1",
+        must_change_password=False,
+    )
+    result = await require_admin_role(auth=auth)
+    assert result is auth
+
+
+@pytest.mark.asyncio
+async def test_require_admin_role_blocks_operator():
+    from fastapi import HTTPException
+
+    from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+
+    auth = AdminAuth(
+        account_id=1,
+        user_email="a@x.com",
+        user_role="operator",
+        user_id="u1",
+        must_change_password=False,
+    )
+    with pytest.raises(HTTPException) as exc:
+        await require_admin_role(auth=auth)
+    assert exc.value.status_code == 403

@@ -20,7 +20,13 @@ def _make_app():
 def _mock_auth_override():
     from interface.http.deps.admin_auth import AdminAuth
 
-    auth = AdminAuth(account_id=1, user_email="a@b.com", user_role="admin")
+    auth = AdminAuth(
+        account_id=1,
+        user_email="a@b.com",
+        user_role="admin",
+        user_id="test-id",
+        must_change_password=False,
+    )
 
     def _override():
         return auth

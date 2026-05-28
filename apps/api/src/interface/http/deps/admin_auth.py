@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Cookie, Header, HTTPException, Query, status
+from fastapi import Cookie, Depends, Header, HTTPException, Query, status
 from jose import JWTError
 
 from shared.adapters.kb.jwt_handler import verify_token
@@ -14,6 +14,27 @@ class AdminAuth:
     account_id: int
     user_email: str
     user_role: str
+    user_id: str
+    must_change_password: bool
+
+
+def _decode(token: str) -> AdminAuth:
+    settings = get_settings()
+    try:
+        payload = verify_token(token, secret=settings.jwt_secret)
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    return AdminAuth(
+        account_id=payload["account_id"],
+        user_email=payload["sub"],
+        user_role=payload.get("role", "operator"),
+        user_id=payload.get("user_id", ""),
+        must_change_password=payload.get("must_change_password", False),
+    )
 
 
 async def require_admin(
@@ -31,20 +52,19 @@ async def require_admin(
             detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    settings = get_settings()
-    try:
-        payload = verify_token(token, secret=settings.jwt_secret)
-    except JWTError as exc:
+    return _decode(token)
+
+
+async def require_admin_role(
+    auth: AdminAuth = Depends(require_admin),
+) -> AdminAuth:
+    """Strict admin role. 403 for operator users."""
+    if auth.user_role != "admin":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
-    return AdminAuth(
-        account_id=payload["account_id"],
-        user_email=payload["sub"],
-        user_role=payload.get("role", "viewer"),
-    )
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin role required",
+        )
+    return auth
 
 
 async def require_admin_sse(
@@ -72,17 +92,4 @@ async def require_admin_sse(
             detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    settings = get_settings()
-    try:
-        payload = verify_token(actual, secret=settings.jwt_secret)
-    except JWTError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
-    return AdminAuth(
-        account_id=payload["account_id"],
-        user_email=payload["sub"],
-        user_role=payload.get("role", "viewer"),
-    )
+    return _decode(actual)
