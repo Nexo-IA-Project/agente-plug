@@ -544,6 +544,18 @@ export async function changeMyPassword(current_password: string, new_password: s
 export const myAvatarUrl = (version?: number): string =>
   `${API_URL}/admin/me/avatar${version ? `?v=${version}` : ""}`;
 
+/** Busca o avatar via fetch autenticado e retorna um blob URL (cross-origin safe). */
+export async function fetchMyAvatarBlob(): Promise<string | null> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/me/avatar`, {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) return null;
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 // ============================================================
 // SMTP Config (admin only)
 // ============================================================
