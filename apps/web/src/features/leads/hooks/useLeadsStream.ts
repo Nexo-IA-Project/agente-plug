@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { API_URL } from "@/lib/api";
 import type { Lead, LeadEvent, LeadFilters } from "../types";
 
 type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -29,7 +30,7 @@ function buildUrl(filters: LeadFilters): string {
   if (filters.utm_source) qs.set("utm_source", filters.utm_source);
   if (filters.date_from) qs.set("date_from", filters.date_from);
   if (filters.date_to) qs.set("date_to", filters.date_to);
-  return `/admin/leads/stream?${qs.toString()}`;
+  return `${API_URL}/admin/leads/stream?${qs.toString()}`;
 }
 
 export function useLeadsStream(filters: LeadFilters, handlers: Handlers) {
@@ -38,7 +39,7 @@ export function useLeadsStream(filters: LeadFilters, handlers: Handlers) {
   handlersRef.current = handlers;
 
   useEffect(() => {
-    const es = new EventSource(buildUrl(filters));
+    const es = new EventSource(buildUrl(filters), { withCredentials: true });
     setStatus("connecting");
 
     es.onopen = () => setStatus("open");
@@ -70,7 +71,6 @@ export function useLeadsStream(filters: LeadFilters, handlers: Handlers) {
 
     return () => {
       es.close();
-      setStatus("closed");
     };
   }, [
     filters.product_id,

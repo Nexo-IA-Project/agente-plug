@@ -279,7 +279,7 @@ export default function LeadsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center">
+                <td colSpan={8} className="px-4 py-10 text-center">
                   <div className="inline-flex items-center gap-2 text-sm text-on-surface-variant">
                     <span
                       className="material-symbols-outlined animate-spin"
