@@ -19,9 +19,11 @@ from interface.http.routers import (
 from interface.http.routers.admin import api_tokens as admin_api_tokens
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import chatnexo_agents as admin_chatnexo_agents
+from interface.http.routers.admin import users as admin_users
 from interface.http.routers.admin import dlq as admin_dlq
 from interface.http.routers.admin import documents as admin_documents
 from interface.http.routers.admin import leads as admin_leads
+from interface.http.routers.admin import me as admin_me
 from interface.http.routers.admin import meta_templates as admin_meta_templates
 from interface.http.routers.admin import onboarding as admin_onboarding
 from interface.http.routers.admin import (
@@ -30,6 +32,7 @@ from interface.http.routers.admin import (
 from interface.http.routers.admin import products as admin_products
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
+from interface.http.routers.admin import smtp_config as admin_smtp
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
 from shared.adapters.db.session import get_sessionmaker
@@ -134,6 +137,9 @@ def create_app() -> FastAPI:
     app.include_router(admin_products.router, prefix="/admin")
     app.include_router(admin_leads.router, prefix="/admin")
     app.include_router(admin_chatnexo_agents.router, prefix="/admin")
+    app.include_router(admin_users.router, prefix="/admin")
+    app.include_router(admin_me.router, prefix="/admin")
+    app.include_router(admin_smtp.router, prefix="/admin")
     return app
 
 
