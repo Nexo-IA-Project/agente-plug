@@ -5,16 +5,18 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from cryptography.fernet import Fernet
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import (
-    AccountModel,
     ConversationModel,
     HublaEventModel,
     LeadModel,
 )
+from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
+from shared.config.settings import get_settings
 from shared.domain.entities.hubla_event import HublaEvent
 from shared.domain.entities.lead import Lead
 
@@ -229,20 +231,28 @@ class SqlLeadRepository:
         if conv is None:
             return entity
 
-        acc = (
-            await self.session.execute(select(AccountModel).where(AccountModel.id == account_id))
-        ).scalar_one_or_none()
-        settings_dict = (acc.settings if acc else None) or {}
-        integration = settings_dict.get("integration") or {}
-        base = integration.get("chatnexo_base_url")
-        acc_chatnexo_id = integration.get("chatnexo_account_id")
-        inbox_id = integration.get("chatnexo_inbox_id")
-        if not (base and acc_chatnexo_id and inbox_id):
+        # Carrega IntegrationConfig tipado via AccountConfigRepository — evita
+        # duplicar a leitura crua de accounts.settings.integration aqui.
+        # Obs.: o repo aplica defaults vindos do settings/env, então
+        # chatnexo_account_id/inbox_id nunca virão None na prática;
+        # a guarda `is None` segue como defesa em profundidade. O único
+        # cenário em que a URL fica None é se `chatnexo_base_url` for vazia
+        # (string vazia tanto no settings da conta quanto no env default).
+        settings = get_settings()
+        fernet = Fernet(settings.integration_credentials_key.encode())
+        config_repo = AccountConfigRepository(session=self.session, fernet=fernet)
+        config = await config_repo.get(account_id=1)
+        integration = config.integration
+        if not integration.chatnexo_base_url:
+            return entity
+        if integration.chatnexo_account_id is None or integration.chatnexo_inbox_id is None:
             return entity
 
         url = (
-            f"{str(base).rstrip('/')}/app/accounts/{acc_chatnexo_id}"
-            f"/inbox/{inbox_id}/conversations/{conv.chatnexo_conversation_id}"
+            f"{integration.chatnexo_base_url.rstrip('/')}"
+            f"/app/accounts/{integration.chatnexo_account_id}"
+            f"/inbox/{integration.chatnexo_inbox_id}"
+            f"/conversations/{conv.chatnexo_conversation_id}"
         )
         return replace(entity, chatnexo_conversation_url=url)
 
