@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { downloadLeadsCsv, listLeads } from "@/lib/api";
 import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
+import { LeadFiltersModal } from "@/features/leads/components/LeadFiltersModal";
 import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
 import { useToast } from "@/shared/hooks/useToast";
 import { useProducts } from "@/features/products/hooks/useProducts";
@@ -33,30 +34,18 @@ function formatDateTime(d: string): string {
   });
 }
 
-function toIsoStartOfDay(dateStr: string): string | undefined {
-  if (!dateStr) return undefined;
-  return new Date(dateStr + "T00:00:00-03:00").toISOString();
-}
-
-function toIsoEndOfDay(dateStr: string): string | undefined {
-  if (!dateStr) return undefined;
-  return new Date(dateStr + "T23:59:59.999-03:00").toISOString();
-}
-
 export default function LeadsPage() {
   const toast = useToast();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<LeadFilters>({ page: 1, page_size: 25 });
-  const [utmInput, setUtmInput] = useState("");
-  const [dateFromInput, setDateFromInput] = useState("");
-  const [dateToInput, setDateToInput] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const { products, loading: productsLoading } = useProducts();
+  const { products } = useProducts();
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +75,14 @@ export default function LeadsPage() {
     setFilters((prev) => ({ ...prev, ...patch, page: 1 }));
   };
 
+  const activeFilterCount = [
+    filters.product_id,
+    filters.status,
+    filters.utm_source,
+    filters.date_from,
+    filters.date_to,
+  ].filter(Boolean).length;
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -109,9 +106,6 @@ export default function LeadsPage() {
   );
 
   const clearFilters = () => {
-    setUtmInput("");
-    setDateFromInput("");
-    setDateToInput("");
     setFilters({ page: 1, page_size: 25 });
   };
 
@@ -142,87 +136,55 @@ export default function LeadsPage() {
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+      {/* Filter trigger + chips */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface hover:bg-surface-container"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+            filter_list
+          </span>
           Filtros
-        </span>
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-on-primary">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
 
-        {/* Produto */}
-        <select
-          value={filters.product_id ?? ""}
-          onChange={(e) => updateFilter({ product_id: e.target.value || undefined })}
-          disabled={productsLoading || products.length === 0}
-          className="field-select !w-auto min-w-[180px] disabled:opacity-60"
-        >
-          <option value="">Todos os produtos</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.hubla_id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Status */}
-        <select
-          value={filters.status ?? ""}
-          onChange={(e) => updateFilter({ status: e.target.value || undefined })}
-          className="field-select !w-auto min-w-[180px]"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Date range */}
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={dateFromInput}
-            onChange={(e) => {
-              setDateFromInput(e.target.value);
-              updateFilter({ date_from: toIsoStartOfDay(e.target.value) });
-            }}
-            className="field-input !w-auto"
-            title="Data de início"
+        {filters.product_id && (
+          <FilterChip
+            label={`Produto: ${products.find((p) => p.hubla_id === filters.product_id)?.name ?? filters.product_id}`}
+            onRemove={() => updateFilter({ product_id: undefined })}
           />
-          <span className="text-on-surface-variant">—</span>
-          <input
-            type="date"
-            value={dateToInput}
-            onChange={(e) => {
-              setDateToInput(e.target.value);
-              updateFilter({ date_to: toIsoEndOfDay(e.target.value) });
-            }}
-            className="field-input !w-auto"
-            title="Data de fim"
+        )}
+        {filters.status && (
+          <FilterChip
+            label={`Status: ${STATUS_OPTIONS.find((s) => s.value === filters.status)?.label ?? filters.status}`}
+            onRemove={() => updateFilter({ status: undefined })}
           />
-        </div>
-
-        {/* UTM source */}
-        <input
-          type="text"
-          placeholder="Filtrar por UTM source..."
-          value={utmInput}
-          onChange={(e) => setUtmInput(e.target.value)}
-          onBlur={() => updateFilter({ utm_source: utmInput || undefined })}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              updateFilter({ utm_source: utmInput || undefined });
-            }
-          }}
-          className="field-input !w-56"
-        />
+        )}
+        {(filters.date_from || filters.date_to) && (
+          <FilterChip
+            label={`Período: ${filters.date_from ? new Date(filters.date_from).toLocaleDateString("pt-BR") : "..."} → ${filters.date_to ? new Date(filters.date_to).toLocaleDateString("pt-BR") : "..."}`}
+            onRemove={() => updateFilter({ date_from: undefined, date_to: undefined })}
+          />
+        )}
+        {filters.utm_source && (
+          <FilterChip
+            label={`UTM: ${filters.utm_source}`}
+            onRemove={() => updateFilter({ utm_source: undefined })}
+          />
+        )}
 
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
             className="ml-auto text-xs text-primary hover:underline"
           >
-            Limpar filtros
+            Limpar todos
           </button>
         )}
       </div>
@@ -375,6 +337,36 @@ export default function LeadsPage() {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       />
+
+      <LeadFiltersModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        initial={filters}
+        onApply={(f) => setFilters(f)}
+      />
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-outline-variant bg-surface-container-low px-2.5 py-0.5 text-xs text-on-surface">
+      {label}
+      <button
+        onClick={onRemove}
+        className="text-on-surface-variant hover:text-on-surface"
+        aria-label="Remover filtro"
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
+          close
+        </span>
+      </button>
+    </span>
   );
 }
