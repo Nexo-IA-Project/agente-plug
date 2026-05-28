@@ -23,8 +23,14 @@ function formatCents(c: number | null): string {
   return `R$ ${(c / 100).toFixed(2).replace(".", ",")}`;
 }
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("pt-BR");
+function formatDateTime(d: string): string {
+  return new Date(d).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function toIsoStartOfDay(dateStr: string): string | undefined {
@@ -325,7 +331,7 @@ export default function LeadsPage() {
                       {lead.utm_source ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-on-surface-variant">
-                      {formatDate(lead.last_event_at)}
+                      {formatDateTime(lead.last_event_at)}
                     </td>
                   </tr>
                 );
