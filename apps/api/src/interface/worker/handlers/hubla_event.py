@@ -17,6 +17,7 @@ from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowR
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
 from shared.adapters.db.session import session_scope
+from shared.adapters.redis.leads_pubsub import LeadsPubSub
 from shared.application.hubla_event_handler import HublaEventHandler
 from shared.application.purchase_handler import PurchaseHandler
 from shared.application.use_cases.onboarding.enroll_contact import EnrollContact
@@ -84,6 +85,7 @@ async def handle_hubla_event(payload: dict) -> None:
             purchase_handler=purchase_handler,
             lead_repo=lead_repo,
             hubla_event_repo=hubla_event_repo,
+            leads_pubsub=LeadsPubSub(),
             account_id=account_uuid,
             chatnexo_account_id=account_config.integration.chatnexo_account_id,
             chatnexo_inbox_id=account_config.integration.chatnexo_inbox_id,

@@ -8,6 +8,8 @@ import structlog
 
 from shared.adapters.hubla.v1_normalizer import is_v1_payload, normalize_v1_payload
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
+from shared.domain.entities.hubla_event import HublaEvent
+from shared.domain.entities.lead import Lead
 from shared.domain.value_objects.hubla_event_type import (
     PURCHASE_EVENT_TYPES,
     is_valid_hubla_event_type,
@@ -16,6 +18,41 @@ from shared.domain.value_objects.hubla_event_type import (
 from shared.domain.value_objects.phone import Phone
 
 log = structlog.get_logger(__name__)
+
+
+def _lead_to_dict(lead: Lead) -> dict[str, Any]:
+    """Serializa Lead pro envelope SSE — mesmo shape do LeadResponse no router."""
+    return {
+        "id": str(lead.id),
+        "hubla_subscription_id": lead.hubla_subscription_id,
+        "payer_phone": lead.payer_phone,
+        "payer_name": lead.payer_name,
+        "payer_email": lead.payer_email,
+        "payer_document": lead.payer_document,
+        "hubla_product_id": lead.hubla_product_id,
+        "product_name": lead.product_name,
+        "offer_name": lead.offer_name,
+        "amount_total_cents": lead.amount_total_cents,
+        "payment_method": lead.payment_method,
+        "subscription_status": lead.subscription_status,
+        "utm_source": lead.utm_source,
+        "utm_campaign": lead.utm_campaign,
+        "first_seen_at": lead.first_seen_at.isoformat() if lead.first_seen_at else None,
+        "activated_at": lead.activated_at.isoformat() if lead.activated_at else None,
+        "last_event_at": lead.last_event_at.isoformat() if lead.last_event_at else None,
+        "last_event_type": lead.last_event_type,
+        "chatnexo_conversation_url": lead.chatnexo_conversation_url,
+    }
+
+
+def _hubla_event_to_dict(event: HublaEvent) -> dict[str, Any]:
+    return {
+        "id": str(event.id),
+        "event_type": event.event_type,
+        "received_at": event.received_at.isoformat() if event.received_at else None,
+        "payer_phone": event.payer_phone,
+        "product_name": event.product_name,
+    }
 
 
 class HublaEventHandler:
@@ -41,6 +78,7 @@ class HublaEventHandler:
         purchase_handler: Any,
         lead_repo: Any | None = None,
         hubla_event_repo: Any | None = None,
+        leads_pubsub: Any | None = None,
         account_id: UUID | None = None,
         chatnexo_account_id: int = 1,
         chatnexo_inbox_id: int = 1,
@@ -53,6 +91,7 @@ class HublaEventHandler:
         self._purchase_handler = purchase_handler
         self._lead_repo = lead_repo
         self._hubla_event_repo = hubla_event_repo
+        self._leads_pubsub = leads_pubsub
         self._account_id = account_id or DEFAULT_ACCOUNT_UUID
         self._chatnexo_account_id = chatnexo_account_id
         self._chatnexo_inbox_id = chatnexo_inbox_id
@@ -170,8 +209,9 @@ class HublaEventHandler:
         # Upsert Lead (visão materializada com UTMs, valor, sessão).
         # Chave natural é (account_id, hubla_subscription_id) — não depende de phone.
         # PR 4 review fix #6: contact_id populated when contact was resolved above.
+        lead_entity: Lead | None = None
         if self._lead_repo is not None and purchase_id:
-            await self._lead_repo.upsert(
+            lead_entity = await self._lead_repo.upsert(
                 account_id=account_uuid,
                 hubla_subscription_id=purchase_id,
                 event_type=event_type,
@@ -198,6 +238,21 @@ class HublaEventHandler:
                 fbp=cookies.get("fbp") or None,
                 event_at=activated_at,
             )
+
+        # Real-time: publica lead.upserted no canal Redis pro stream SSE.
+        # is_new é heurística: insert novo tem created_at == updated_at; updates
+        # subsequentes só mexem em updated_at. Suficiente pro frontend decidir
+        # "prepend nova linha" vs "atualizar linha existente".
+        if self._leads_pubsub is not None and lead_entity is not None:
+            is_new = lead_entity.created_at == lead_entity.updated_at
+            envelope: dict[str, Any] = {
+                "type": "lead.upserted",
+                "is_new": is_new,
+                "lead": _lead_to_dict(lead_entity),
+            }
+            if event_model is not None:
+                envelope["event"] = _hubla_event_to_dict(event_model)
+            await self._leads_pubsub.publish(account_uuid, envelope)
 
         # === End PR 4 early persistence ===
 
