@@ -116,6 +116,39 @@ export function LeadDrawer({ lead, open, onClose }: Props) {
           </div>
         </div>
 
+        {/* CTA: abrir conversa no ChatNexo */}
+        {detail?.chatnexo_conversation_url ? (
+          <a
+            href={detail.chatnexo_conversation_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 transition-colors hover:bg-surface-container"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-on-surface">
+              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                chat
+              </span>
+              Abrir conversa no ChatNexo
+            </span>
+            <span
+              className="material-symbols-outlined text-on-surface-variant"
+              style={{ fontSize: "16px" }}
+            >
+              open_in_new
+            </span>
+          </a>
+        ) : (
+          <div
+            className="flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant/60"
+            title="Aguardando primeira mensagem"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+              chat
+            </span>
+            Aguardando primeira mensagem
+          </div>
+        )}
+
         {/* Info grid */}
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">

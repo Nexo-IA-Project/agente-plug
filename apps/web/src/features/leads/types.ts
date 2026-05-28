@@ -55,6 +55,7 @@ export interface FollowupEnrollmentDetail {
 export interface LeadDetail extends Lead {
   events: LeadEvent[];
   enrollments: FollowupEnrollmentDetail[];
+  chatnexo_conversation_url: string | null;
 }
 
 export interface LeadListResponse {
