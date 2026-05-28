@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/features/auth/hooks/usePermission";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAvatarBlob } from "@/features/profile/hooks/useAvatarBlob";
 
 const NAV_ITEMS = [
   { label: "Painel", href: "/dashboard", icon: "dashboard" },
@@ -53,6 +54,7 @@ export function Sidebar() {
   const isDark = resolvedTheme === "dark";
   const { isAdmin } = usePermission();
   const { user } = useAuth();
+  const { blobUrl: avatarUrl } = useAvatarBlob(!!user);
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !(item as { adminOnly?: boolean }).adminOnly || isAdmin
@@ -89,8 +91,19 @@ export function Sidebar() {
 
       <div className="mt-auto border-t border-outline-variant p-3">
         <Link href="/profile" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-container">
-          <div className="h-8 w-8 rounded-full overflow-hidden bg-primary flex items-center justify-center flex-shrink-0 text-on-primary text-sm font-semibold select-none">
-            {user?.email?.charAt(0).toUpperCase() ?? "?"}
+          <div className="relative h-8 w-8 shrink-0">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt=""
+                className="h-8 w-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-semibold text-on-primary select-none">
+                {user?.email?.charAt(0).toUpperCase() ?? "?"}
+              </div>
+            )}
           </div>
           <div className="flex flex-col text-body-sm overflow-hidden min-w-0">
             <span className="truncate">{user?.email ?? ""}</span>
