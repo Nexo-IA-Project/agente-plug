@@ -13,14 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const accountId = Number(process.env.NEXT_PUBLIC_ACCOUNT_ID ?? "1");
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const token = await loginRequest(email, password, accountId);
+      const token = await loginRequest(email, password);
       setToken(token);
       window.location.href = "/dashboard";
     } catch (err) {
