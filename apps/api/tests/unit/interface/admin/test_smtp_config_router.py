@@ -9,12 +9,18 @@ from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
 
 def _auth():
-    return AdminAuth(account_id=1, user_email="x@x.com", user_role="admin",
-                     user_id="uid", must_change_password=False)
+    return AdminAuth(
+        account_id=1,
+        user_email="x@x.com",
+        user_role="admin",
+        user_id="uid",
+        must_change_password=False,
+    )
 
 
 def _make_app(auth):
     from interface.http.routers.admin.smtp_config import router
+
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     app.dependency_overrides[require_admin_role] = lambda: auth
@@ -48,18 +54,31 @@ def test_put_creates_new_config():
         with patch("interface.http.routers.admin.smtp_config.SmtpConfigRepository") as MockRepo:
             instance = MagicMock()
             instance.get = AsyncMock(return_value=None)
-            saved = MagicMock(host="smtp.test", port=587, username="u", use_tls=True,
-                              from_name="N", from_email="from@x.com")
+            saved = MagicMock(
+                host="smtp.test",
+                port=587,
+                username="u",
+                use_tls=True,
+                from_name="N",
+                from_email="from@x.com",
+            )
             instance.upsert = AsyncMock(return_value=saved)
             MockRepo.return_value = instance
 
             app = _make_app(_auth())
             client = TestClient(app)
-            r = client.put("/admin/smtp-config", json={
-                "host": "smtp.test", "port": 587, "username": "u",
-                "password": "secret", "use_tls": True,
-                "from_name": "N", "from_email": "from@x.com",
-            })
+            r = client.put(
+                "/admin/smtp-config",
+                json={
+                    "host": "smtp.test",
+                    "port": 587,
+                    "username": "u",
+                    "password": "secret",
+                    "use_tls": True,
+                    "from_name": "N",
+                    "from_email": "from@x.com",
+                },
+            )
             assert r.status_code == 200
             assert r.json()["host"] == "smtp.test"
 
@@ -74,8 +93,15 @@ def test_put_rejects_missing_password_on_first_config():
 
             app = _make_app(_auth())
             client = TestClient(app)
-            r = client.put("/admin/smtp-config", json={
-                "host": "h", "port": 587, "username": "u",
-                "use_tls": True, "from_name": "N", "from_email": "f@x.com",
-            })
+            r = client.put(
+                "/admin/smtp-config",
+                json={
+                    "host": "h",
+                    "port": 587,
+                    "username": "u",
+                    "use_tls": True,
+                    "from_name": "N",
+                    "from_email": "f@x.com",
+                },
+            )
             assert r.status_code == 422

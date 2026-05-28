@@ -117,13 +117,14 @@ async def update_user(
         if user is None or user.account_id != auth.account_id:
             raise HTTPException(status_code=404, detail="User not found")
 
-        if (
-            (user.role == UserRole.ADMIN and body.role != "admin")
-            or (user.role == UserRole.ADMIN and not body.is_active)
+        if (user.role == UserRole.ADMIN and body.role != "admin") or (
+            user.role == UserRole.ADMIN and not body.is_active
         ):
             admin_count = await repo.count_active_admins(auth.account_id)
             if admin_count <= 1:
-                raise HTTPException(status_code=409, detail="Cannot demote/deactivate the last admin")
+                raise HTTPException(
+                    status_code=409, detail="Cannot demote/deactivate the last admin"
+                )
 
         await repo.update_admin_fields(
             user_id=user_id, name=body.name, role=UserRole(body.role), is_active=body.is_active

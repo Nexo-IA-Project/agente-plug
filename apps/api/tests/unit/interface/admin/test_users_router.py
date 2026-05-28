@@ -12,12 +12,18 @@ from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
 
 def _admin_auth():
-    return AdminAuth(account_id=1, user_email="a@x.com", user_role="admin",
-                     user_id="self-id", must_change_password=False)
+    return AdminAuth(
+        account_id=1,
+        user_email="a@x.com",
+        user_role="admin",
+        user_id="self-id",
+        must_change_password=False,
+    )
 
 
 def _make_app(auth_override):
     from interface.http.routers.admin.users import router
+
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     app.dependency_overrides[require_admin_role] = lambda: auth_override
@@ -27,6 +33,7 @@ def _make_app(auth_override):
 @pytest.mark.asyncio
 async def test_create_user_201():
     from datetime import datetime
+
     fake_user = MagicMock()
     fake_user.id = "u1"
     fake_user.name = "X"

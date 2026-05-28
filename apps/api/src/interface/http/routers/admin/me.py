@@ -66,7 +66,10 @@ async def update_me(
         await s.commit()
         user = await repo.get_by_id(auth.user_id)
         return MeResponse(
-            id=user.id, name=user.name, email=user.email, role=user.role.value,
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            role=user.role.value,
             must_change_password=user.must_change_password,
             has_avatar=user.avatar is not None,
         )

@@ -47,9 +47,7 @@ class UserRepository:
         await self._session.flush()
 
     async def get_by_id(self, user_id: str) -> User | None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         row = result.scalar_one_or_none()
         return _to_entity(row) if row else None
 
@@ -66,9 +64,7 @@ class UserRepository:
         self, account_id: int, page: int, page_size: int
     ) -> tuple[list[User], int]:
         total_result = await self._session.execute(
-            select(func.count())
-            .select_from(UserModel)
-            .where(UserModel.account_id == account_id)
+            select(func.count()).select_from(UserModel).where(UserModel.account_id == account_id)
         )
         total = total_result.scalar_one()
 
@@ -85,26 +81,20 @@ class UserRepository:
     async def update_password(
         self, user_id: str, new_hash: str, must_change_password: bool
     ) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.password_hash = new_hash
         m.must_change_password = must_change_password
         await self._session.flush()
 
     async def update_profile(self, user_id: str, name: str) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.name = name
         await self._session.flush()
 
     async def update_avatar(self, user_id: str, avatar: bytes) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.avatar = avatar
         await self._session.flush()
@@ -112,9 +102,7 @@ class UserRepository:
     async def update_admin_fields(
         self, user_id: str, name: str, role: UserRole, is_active: bool
     ) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.name = name
         m.role = role.value
@@ -122,17 +110,13 @@ class UserRepository:
         await self._session.flush()
 
     async def touch_last_login(self, user_id: str) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.last_login_at = datetime.now(UTC)
         await self._session.flush()
 
     async def delete(self, user_id: str) -> None:
-        result = await self._session.execute(
-            select(UserModel).where(UserModel.id == user_id)
-        )
+        result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         await self._session.delete(m)
         await self._session.flush()

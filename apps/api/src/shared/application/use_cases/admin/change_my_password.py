@@ -14,9 +14,7 @@ class InvalidCurrentPasswordError(Exception):
 class ChangeMyPasswordUseCase:
     user_repo: UserRepository
 
-    async def execute(
-        self, user_id: str, current_password: str, new_password: str
-    ) -> None:
+    async def execute(self, user_id: str, current_password: str, new_password: str) -> None:
         if len(new_password) < 8:
             raise ValueError("New password must be at least 8 characters")
 

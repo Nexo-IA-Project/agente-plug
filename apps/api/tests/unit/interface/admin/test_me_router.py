@@ -10,12 +10,18 @@ from interface.http.deps.admin_auth import AdminAuth, require_admin
 
 
 def _auth(role="admin"):
-    return AdminAuth(account_id=1, user_email="x@x.com", user_role=role,
-                     user_id="uid", must_change_password=False)
+    return AdminAuth(
+        account_id=1,
+        user_email="x@x.com",
+        user_role=role,
+        user_id="uid",
+        must_change_password=False,
+    )
 
 
 def _make_app(auth):
     from interface.http.routers.admin.me import router
+
     app = FastAPI()
     app.include_router(router, prefix="/admin")
     app.dependency_overrides[require_admin] = lambda: auth

@@ -47,8 +47,12 @@ async def get_config(
         if cfg is None:
             return None
         return SmtpConfigResponse(
-            host=cfg.host, port=cfg.port, username=cfg.username,
-            use_tls=cfg.use_tls, from_name=cfg.from_name, from_email=cfg.from_email,
+            host=cfg.host,
+            port=cfg.port,
+            username=cfg.username,
+            use_tls=cfg.use_tls,
+            from_name=cfg.from_name,
+            from_email=cfg.from_email,
             has_password=True,
         )
 
@@ -81,8 +85,12 @@ async def upsert_config(
         )
         await s.commit()
         return SmtpConfigResponse(
-            host=cfg.host, port=cfg.port, username=cfg.username,
-            use_tls=cfg.use_tls, from_name=cfg.from_name, from_email=cfg.from_email,
+            host=cfg.host,
+            port=cfg.port,
+            username=cfg.username,
+            use_tls=cfg.use_tls,
+            from_name=cfg.from_name,
+            from_email=cfg.from_email,
             has_password=True,
         )
 

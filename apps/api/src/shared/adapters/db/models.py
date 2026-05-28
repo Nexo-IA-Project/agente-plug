@@ -427,7 +427,9 @@ class UserModel(Base):
     password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     avatar: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
-    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("TRUE")
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
