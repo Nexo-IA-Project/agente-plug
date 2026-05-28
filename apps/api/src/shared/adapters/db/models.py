@@ -417,6 +417,43 @@ class AdminUserModel(Base):
     __table_args__ = (UniqueConstraint("account_id", "email", name="uq_admin_users_account_email"),)
 
 
+class UserModel(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    email: Mapped[str] = mapped_column(String(200), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    avatar: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    __table_args__ = (UniqueConstraint("account_id", "email", name="uq_users_account_email"),)
+
+
+class SmtpConfigModel(Base):
+    __tablename__ = "smtp_config"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    account_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    host: Mapped[str] = mapped_column(String(200), nullable=False)
+    port: Mapped[int] = mapped_column(Integer, nullable=False)
+    username: Mapped[str] = mapped_column(String(200), nullable=False)
+    encrypted_password: Mapped[str] = mapped_column(Text, nullable=False)
+    use_tls: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    from_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    from_email: Mapped[str] = mapped_column(String(200), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+
 class ConversationMessageModel(Base):
     """Stores the full OpenAI message list for a thread (used by the new agent loop)."""
 
