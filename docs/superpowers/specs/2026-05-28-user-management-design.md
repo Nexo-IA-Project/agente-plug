@@ -34,7 +34,7 @@ A tabela `admin_users` é substituída pela tabela `users`. Os dados existentes 
 
 **Constraint:** `UNIQUE (account_id, email)`
 
-**Migration:** Copia `email`, `password_hash`, `role` e `created_at` de `admin_users` para `users`. Registros migrados recebem `must_change_password = FALSE` e `name` derivado da parte local do email (antes do `@`). A tabela `admin_users` é dropada após a cópia.
+**Migration:** Copia `email`, `password_hash` e `created_at` de `admin_users` para `users`. Registros migrados recebem `role = 'admin'` fixo (o valor existente `"viewer"` é descartado — todos os usuários do painel eram admins), `must_change_password = FALSE` e `name` derivado da parte local do email (antes do `@`). A tabela `admin_users` é dropada após a cópia bem-sucedida dentro da mesma transaction Alembic.
 
 ### Tabela `smtp_config` — nova
 
