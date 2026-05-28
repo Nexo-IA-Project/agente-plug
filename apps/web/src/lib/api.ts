@@ -337,6 +337,11 @@ export async function dispatchEnrollmentStep(
   );
 }
 
+export async function suggestUtmSources(q?: string): Promise<string[]> {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return apiFetch<string[]>(`/admin/leads/utm-sources/suggest${qs}`);
+}
+
 export async function downloadLeadsCsv(
   filters: LeadFilters = {},
 ): Promise<void> {
