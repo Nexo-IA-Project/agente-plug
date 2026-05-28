@@ -276,9 +276,7 @@ async def edit_template(
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
         media_repo = MetaTemplateMediaRepository(session=session)
-        use_case = EditMetaTemplate(
-            repo=repo, meta_client=client, media_repo=media_repo
-        )
+        use_case = EditMetaTemplate(repo=repo, meta_client=client, media_repo=media_repo)
         try:
             record = await use_case.execute(
                 EditMetaTemplateInput(

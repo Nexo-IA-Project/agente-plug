@@ -145,9 +145,7 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code not in (200, 201):
-            _raise_meta_error(
-                resp, log_event="meta_create_template_error", name=payload.name
-            )
+            _raise_meta_error(resp, log_event="meta_create_template_error", name=payload.name)
         raw = resp.json()
         return MetaTemplate(
             id=raw.get("id", ""),
@@ -243,6 +241,4 @@ class MetaTemplateClient:
                 timeout=15,
             )
         if resp.status_code not in (200, 201):
-            _raise_meta_error(
-                resp, log_event="meta_edit_template_error", template_id=template_id
-            )
+            _raise_meta_error(resp, log_event="meta_edit_template_error", template_id=template_id)

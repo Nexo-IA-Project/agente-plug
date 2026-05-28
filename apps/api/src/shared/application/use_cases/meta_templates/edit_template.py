@@ -92,20 +92,14 @@ class EditMetaTemplate:
             media_url=input_.media_url,
             media_kind=input_.media_kind,
         )
-        return await self._repo.get(
-            template_id=input_.template_id, account_id=input_.account_id
-        )
+        return await self._repo.get(template_id=input_.template_id, account_id=input_.account_id)
 
-    async def _delete_and_recreate(
-        self, template: Any, input_: EditMetaTemplateInput
-    ) -> Any:
+    async def _delete_and_recreate(self, template: Any, input_: EditMetaTemplateInput) -> Any:
         """PENDING e outros não-rejeitados: deleta na Meta + recria com mesmo nome."""
         assert input_.waba_id is not None
 
         # 1. Delete na Meta (pode lançar MetaTemplateApiError).
-        await self._meta_client.delete_template(
-            waba_id=input_.waba_id, name=template.name
-        )
+        await self._meta_client.delete_template(waba_id=input_.waba_id, name=template.name)
 
         # 2. Delete local (libera UNIQUE constraint do nome).
         await self._repo.delete(template.id)
