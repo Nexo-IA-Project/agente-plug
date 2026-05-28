@@ -4,7 +4,7 @@ from __future__ import annotations
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_role
 from interface.http.schemas.admin_settings import (
     AccountSettingsResponse,
     AccountSettingsUpdateRequest,
@@ -78,7 +78,7 @@ async def get_hubla_webhook_token(
 @router.put("/settings", response_model=AccountSettingsResponse)
 async def update_settings_endpoint(
     body: AccountSettingsUpdateRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin_role),  # noqa: B008
 ) -> AccountSettingsResponse:
     s = get_settings()
     fernet = Fernet(s.integration_credentials_key.encode())

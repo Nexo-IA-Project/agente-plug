@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from interface.http.deps.admin_auth import AdminAuth
 from interface.http.deps.admin_auth import require_admin as _require_admin
+from interface.http.deps.admin_auth import require_admin_role as _require_admin_role
 from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
 from shared.adapters.db.session import session_scope
 
@@ -78,7 +79,7 @@ async def list_tokens(
 @router.delete("/api-tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     token_id: uuid.UUID,
-    auth: AdminAuth = Depends(_require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(_require_admin_role),  # noqa: B008
 ) -> None:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)

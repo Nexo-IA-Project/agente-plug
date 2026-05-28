@@ -5,6 +5,7 @@ import asyncio
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
+from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
 from shared.domain.entities.knowledge_document import KnowledgeDocument
 
@@ -103,6 +104,7 @@ async def get_document(
 async def delete_document(
     doc_id: str,
     deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    _auth: AdminAuth = Depends(require_admin_role),  # noqa: B008
 ) -> None:
     await deps.deletar(doc_id=doc_id, account_id=deps.account_id)
 

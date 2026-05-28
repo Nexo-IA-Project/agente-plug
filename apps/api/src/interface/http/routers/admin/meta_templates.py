@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_role
 from interface.http.schemas.meta_templates import (
     CreateTemplateRequest,
     EditTemplateRequest,
@@ -227,7 +227,7 @@ async def list_templates(
 @router.delete("/meta-templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin_role),  # noqa: B008
 ) -> None:
     client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
