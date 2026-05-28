@@ -35,7 +35,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
       <div
         aria-hidden
         onClick={onClose}
-        className={`fixed inset-0 z-40 cursor-pointer bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[60] cursor-pointer bg-black/40 transition-opacity duration-200 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -47,7 +47,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-surface-container shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-[70] flex flex-col bg-surface-container shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ left: SIDEBAR_WIDTH }}
@@ -58,9 +58,9 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
             type="button"
             onClick={onClose}
             className="rounded-md p-2 text-on-surface-variant hover:bg-surface-container-high"
-            aria-label="Fechar"
+            aria-label="Voltar"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined">arrow_back</span>
           </button>
         </header>
 
