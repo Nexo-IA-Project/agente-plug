@@ -86,12 +86,12 @@ export default function ProfilePage() {
             {/* Avatar */}
             <button
               onClick={() => setAvatarOpen(true)}
-              className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-full focus:outline-none"
+              className="group relative block aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-full focus:outline-none"
               title="Trocar foto"
             >
               {avatarBlobUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarBlobUrl} alt={me.name} className="h-full w-full object-cover" />
+                <img src={avatarBlobUrl} alt={me.name} className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center bg-primary text-3xl font-bold text-on-primary select-none">
                   {me.name.charAt(0).toUpperCase()}
