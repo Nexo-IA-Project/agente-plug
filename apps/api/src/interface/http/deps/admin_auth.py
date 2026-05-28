@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Cookie, Header, HTTPException, status
+from fastapi import Cookie, Header, HTTPException, Query, status
 from jose import JWTError
 
 from shared.adapters.kb.jwt_handler import verify_token
@@ -19,12 +19,17 @@ class AdminAuth:
 async def require_admin(
     authorization: str | None = Header(default=None),
     nexoia_token: str | None = Cookie(default=None),
+    token_query: str | None = Query(default=None, alias="token"),
 ) -> AdminAuth:
+    # `token` via query string é usado por EventSource (SSE), que não pode enviar
+    # header Authorization nem sempre carrega cookie em cross-origin com SameSite=Lax.
     token: str | None = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization.removeprefix("Bearer ").strip()
     elif nexoia_token:
         token = nexoia_token
+    elif token_query:
+        token = token_query.strip()
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

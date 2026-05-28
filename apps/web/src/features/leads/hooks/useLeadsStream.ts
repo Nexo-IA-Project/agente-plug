@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { API_URL } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import type { Lead, LeadEvent, LeadFilters } from "../types";
 
 type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
@@ -30,6 +31,9 @@ function buildUrl(filters: LeadFilters): string {
   if (filters.utm_source) qs.set("utm_source", filters.utm_source);
   if (filters.date_from) qs.set("date_from", filters.date_from);
   if (filters.date_to) qs.set("date_to", filters.date_to);
+  // EventSource não consegue mandar header Authorization; passa JWT na query.
+  const token = getToken();
+  if (token) qs.set("token", token);
   return `${API_URL}/admin/leads/stream?${qs.toString()}`;
 }
 
