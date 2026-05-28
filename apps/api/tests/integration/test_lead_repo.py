@@ -214,3 +214,163 @@ async def test_find_by_id_url_is_none_when_chatnexo_base_url_is_empty(
         assert found.chatnexo_conversation_url is None
     finally:
         get_settings.cache_clear()  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+async def test_paginate_filters_by_product_id(db_session: AsyncSession):
+    """product_id filtra por hubla_product_id exato."""
+    account = AccountModel(id=uuid4(), name="T", settings={})
+    db_session.add(account)
+    await db_session.flush()
+
+    now = datetime.now(UTC)
+    base_lead_kwargs: dict = {
+        "account_id": account.id,
+        "payer_phone": "",
+        "payer_name": "",
+        "payer_email": "",
+        "product_name": "",
+        "subscription_status": "active",
+        "first_seen_at": now,
+        "last_event_at": now,
+        "last_event_type": "subscription.activated",
+        "created_at": now,
+        "updated_at": now,
+    }
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s1",
+            hubla_product_id="prod_abc",
+            **base_lead_kwargs,
+        )
+    )
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s2",
+            hubla_product_id="prod_xyz",
+            **base_lead_kwargs,
+        )
+    )
+    await db_session.commit()
+
+    repo = SqlLeadRepository(session=db_session)
+    items, total = await repo.paginate(account.id, product_id="prod_abc")
+    assert total == 1
+    assert items[0].hubla_product_id == "prod_abc"
+
+
+@pytest.mark.asyncio
+async def test_paginate_filters_utm_source_case_insensitive(db_session: AsyncSession):
+    """utm_source filtra com ILIKE %substring%."""
+    account = AccountModel(id=uuid4(), name="T", settings={})
+    db_session.add(account)
+    await db_session.flush()
+
+    now = datetime.now(UTC)
+    base_lead_kwargs: dict = {
+        "account_id": account.id,
+        "payer_phone": "",
+        "payer_name": "",
+        "payer_email": "",
+        "hubla_product_id": "",
+        "product_name": "",
+        "subscription_status": "active",
+        "first_seen_at": now,
+        "last_event_at": now,
+        "last_event_type": "subscription.activated",
+        "created_at": now,
+        "updated_at": now,
+    }
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s1",
+            utm_source="facebook",
+            **base_lead_kwargs,
+        )
+    )
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s2",
+            utm_source="Facebook Ads",
+            **base_lead_kwargs,
+        )
+    )
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s3",
+            utm_source="google",
+            **base_lead_kwargs,
+        )
+    )
+    await db_session.commit()
+
+    repo = SqlLeadRepository(session=db_session)
+    items, total = await repo.paginate(account.id, utm_source="FACEBOOK")
+    assert total == 2  # facebook + Facebook Ads (case-insensitive)
+    sources = sorted([i.utm_source for i in items if i.utm_source])
+    assert sources == ["Facebook Ads", "facebook"]
+
+
+@pytest.mark.asyncio
+async def test_paginate_filters_by_date_range(db_session: AsyncSession):
+    """date_from/date_to filtra por last_event_at."""
+    account = AccountModel(id=uuid4(), name="T", settings={})
+    db_session.add(account)
+    await db_session.flush()
+
+    now = datetime.now(UTC)
+    base: dict = {
+        "account_id": account.id,
+        "payer_phone": "",
+        "payer_name": "",
+        "payer_email": "",
+        "hubla_product_id": "",
+        "product_name": "",
+        "subscription_status": "active",
+        "last_event_type": "subscription.activated",
+        "created_at": now,
+        "updated_at": now,
+    }
+    d1 = datetime(2026, 5, 26, 12, 0, tzinfo=UTC)
+    d2 = datetime(2026, 5, 27, 12, 0, tzinfo=UTC)
+    d3 = datetime(2026, 5, 28, 12, 0, tzinfo=UTC)
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s1",
+            first_seen_at=d1,
+            last_event_at=d1,
+            **base,
+        )
+    )
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s2",
+            first_seen_at=d2,
+            last_event_at=d2,
+            **base,
+        )
+    )
+    db_session.add(
+        LeadModel(
+            id=uuid4(),
+            hubla_subscription_id="s3",
+            first_seen_at=d3,
+            last_event_at=d3,
+            **base,
+        )
+    )
+    await db_session.commit()
+
+    df = datetime(2026, 5, 27, 0, 0, tzinfo=UTC)
+    dt = datetime(2026, 5, 27, 23, 59, 59, tzinfo=UTC)
+    repo = SqlLeadRepository(session=db_session)
+    items, total = await repo.paginate(account.id, date_from=df, date_to=dt)
+    assert total == 1
+    assert items[0].hubla_subscription_id == "s2"

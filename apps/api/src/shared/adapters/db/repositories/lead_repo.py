@@ -191,7 +191,7 @@ class SqlLeadRepository:
         if status:
             stmt = stmt.where(LeadModel.subscription_status == status)
         if utm_source:
-            stmt = stmt.where(LeadModel.utm_source == utm_source)
+            stmt = stmt.where(LeadModel.utm_source.ilike(f"%{utm_source}%"))
         if date_from is not None:
             stmt = stmt.where(LeadModel.last_event_at >= date_from)
         if date_to is not None:

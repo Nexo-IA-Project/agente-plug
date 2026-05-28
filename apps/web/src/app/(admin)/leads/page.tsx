@@ -35,12 +35,12 @@ function formatDateTime(d: string): string {
 
 function toIsoStartOfDay(dateStr: string): string | undefined {
   if (!dateStr) return undefined;
-  return new Date(dateStr + "T00:00:00").toISOString();
+  return new Date(dateStr + "T00:00:00-03:00").toISOString();
 }
 
 function toIsoEndOfDay(dateStr: string): string | undefined {
   if (!dateStr) return undefined;
-  return new Date(dateStr + "T23:59:59.999").toISOString();
+  return new Date(dateStr + "T23:59:59.999-03:00").toISOString();
 }
 
 export default function LeadsPage() {
