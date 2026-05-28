@@ -4,36 +4,33 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchMyAvatarBlob } from "@/lib/api";
 
 /**
- * Busca o avatar via fetch autenticado (suporta cross-origin).
- * `enabled` controla o carregamento inicial.
- * `refreshAvatar` sempre busca, independente de `enabled` — usado após upload.
+ * Busca o avatar via fetch autenticado (cross-origin safe).
+ *
+ * O efeito depende de `enabled` — quando `me` carrega e `has_avatar` muda
+ * de false para true, o avatar é buscado automaticamente sem precisar
+ * recarregar a página.
  */
 export function useAvatarBlob(enabled: boolean) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const currentBlob = useRef<string | null>(null);
 
-  // Sempre busca, sem checar enabled — usado pelo caller após upload
   const refreshAvatar = useCallback(async () => {
-    setLoading(true);
-    try {
-      const url = await fetchMyAvatarBlob();
-      if (currentBlob.current) URL.revokeObjectURL(currentBlob.current);
-      currentBlob.current = url;
-      setBlobUrl(url);
-    } finally {
-      setLoading(false);
-    }
+    const url = await fetchMyAvatarBlob();
+    if (currentBlob.current) URL.revokeObjectURL(currentBlob.current);
+    currentBlob.current = url;
+    setBlobUrl(url);
   }, []);
 
-  // Carregamento inicial — só roda se já havia avatar salvo
   useEffect(() => {
-    if (enabled) refreshAvatar();
+    if (!enabled) return;
+    refreshAvatar();
     return () => {
-      if (currentBlob.current) URL.revokeObjectURL(currentBlob.current);
+      if (currentBlob.current) {
+        URL.revokeObjectURL(currentBlob.current);
+        currentBlob.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [enabled, refreshAvatar]); // re-executa quando enabled muda false→true
 
-  return { blobUrl, loading, refreshAvatar };
+  return { blobUrl, refreshAvatar };
 }
