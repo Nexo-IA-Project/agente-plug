@@ -349,6 +349,25 @@ class OnboardingEnrollmentRepository:
             )
         )
 
+    async def mark_cancelled(self, step_id: uuid.UUID, reason: str) -> None:
+        """Marca step como CANCELLED com a razão (truncada a 500 chars).
+
+        Só atua em steps PENDING — não sobrescreve SENT/FAILED.
+        Usado quando o flow é desativado entre o agendamento e a execução.
+        """
+        truncated = (reason or "")[:500]
+        await self.session.execute(
+            update(OnboardingEnrollmentStepModel)
+            .where(
+                OnboardingEnrollmentStepModel.id == step_id,
+                OnboardingEnrollmentStepModel.status == EnrollmentStepStatus.PENDING.value,
+            )
+            .values(
+                status=EnrollmentStepStatus.CANCELLED.value,
+                failure_reason=truncated,
+            )
+        )
+
     async def list_for_report(
         self,
         *,

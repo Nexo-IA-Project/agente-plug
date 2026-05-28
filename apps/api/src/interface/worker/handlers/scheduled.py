@@ -47,6 +47,9 @@ async def handle_scheduled(payload: dict) -> None:
         from shared.adapters.db.repositories.onboarding_enrollment_repo import (
             OnboardingEnrollmentRepository,
         )
+        from shared.adapters.db.repositories.onboarding_flow_repo import (
+            OnboardingFlowRepository,
+        )
         from shared.adapters.db.session import session_scope
         from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
             DispatchOnboardingStep,
@@ -77,6 +80,7 @@ async def handle_scheduled(payload: dict) -> None:
                 chatnexo=chatnexo,
                 conversation_history=ConversationHistory(session=session),
                 meta_template_repo=MetaTemplateRepository(session=session),
+                flow_repo=OnboardingFlowRepository(session=session),
             )
             result = await dispatch.execute(
                 enrollment_step_id=_UUID(payload["enrollment_step_id"]),
