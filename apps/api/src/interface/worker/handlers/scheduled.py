@@ -51,6 +51,7 @@ async def handle_scheduled(payload: dict) -> None:
             OnboardingFlowRepository,
         )
         from shared.adapters.db.session import session_scope
+        from shared.adapters.redis.leads_pubsub import LeadsPubSub
         from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
             DispatchOnboardingStep,
         )
@@ -81,6 +82,8 @@ async def handle_scheduled(payload: dict) -> None:
                 conversation_history=ConversationHistory(session=session),
                 meta_template_repo=MetaTemplateRepository(session=session),
                 flow_repo=OnboardingFlowRepository(session=session),
+                leads_pubsub=LeadsPubSub(),
+                session=session,
             )
             result = await dispatch.execute(
                 enrollment_step_id=_UUID(payload["enrollment_step_id"]),

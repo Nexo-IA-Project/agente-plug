@@ -68,6 +68,7 @@ async def test_handle_scheduled_followup_step_calls_dispatch():
             "shared.adapters.db.repositories.conversation.ConversationRepository",
             return_value=mock_conv_repo,
         ),
+        patch("shared.adapters.redis.leads_pubsub.LeadsPubSub", return_value=AsyncMock()),
     ):
         mock_repo_instance = AsyncMock()
         mock_repo_instance.get = AsyncMock(return_value=mock_config)
