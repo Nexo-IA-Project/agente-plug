@@ -3,6 +3,7 @@
 import type React from "react";
 import type { MetaTemplate } from "../types";
 import { TemplateStatusBadge } from "./TemplateStatusBadge";
+import { usePermission } from "@/features/auth/hooks/usePermission";
 
 interface Props {
   templates: MetaTemplate[];
@@ -73,6 +74,7 @@ export function TemplateList({
   onEdit,
   onPreview,
 }: Props) {
+  const { can } = usePermission();
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -376,16 +378,18 @@ export function TemplateList({
                         </span>
                       </button>
                     )}
-                    <button
-                      onClick={() => onDelete(t)}
-                      title="Excluir template"
-                      aria-label={`Excluir template ${t.name}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error focus-visible:bg-error/10 focus-visible:text-error"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
-                        delete
-                      </span>
-                    </button>
+                    {can("delete_template") && (
+                      <button
+                        onClick={() => onDelete(t)}
+                        title="Excluir template"
+                        aria-label={`Excluir template ${t.name}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-on-surface-variant transition-colors hover:bg-error/10 hover:text-error focus-visible:bg-error/10 focus-visible:text-error"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>
+                          delete
+                        </span>
+                      </button>
+                    )}
                   </div>
                 </article>
               );
