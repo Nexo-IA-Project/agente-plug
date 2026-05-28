@@ -24,7 +24,7 @@ from shared.adapters.db.repositories.meta_template_media_repo import (
 from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
 from shared.adapters.db.repositories.onboarding_flow_repo import OnboardingFlowRepository
 from shared.adapters.db.session import session_scope
-from shared.adapters.meta.template_client import MetaTemplateClient
+from shared.adapters.meta.template_client import MetaTemplateApiError, MetaTemplateClient
 from shared.application.use_cases.meta_templates.create_template import (
     CreateTemplate,
     CreateTemplateInput,
@@ -251,6 +251,15 @@ async def delete_template(
                 status_code=409,
                 detail={"code": "META_TEMPLATE_IN_USE", "flows": exc.flows},
             ) from exc
+        except MetaTemplateApiError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "META_API_REJECTED",
+                    "message": exc.user_msg,
+                    "subcode": exc.subcode,
+                },
+            ) from exc
 
 
 @router.patch(
@@ -262,11 +271,12 @@ async def edit_template(
     body: EditTemplateRequest,
     auth: AdminAuth = Depends(require_admin),  # noqa: B008
 ) -> MetaTemplateResponse:
-    client, _waba_id, _app_id = await _get_meta_client_and_waba(auth)
+    client, waba_id, app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session)
         repo = MetaTemplateRepository(session=session)
-        use_case = EditMetaTemplate(repo=repo, meta_client=client)
+        media_repo = MetaTemplateMediaRepository(session=session)
+        use_case = EditMetaTemplate(repo=repo, meta_client=client, media_repo=media_repo)
         try:
             record = await use_case.execute(
                 EditMetaTemplateInput(
@@ -276,6 +286,8 @@ async def edit_template(
                     category=body.category,
                     media_url=body.media_url,
                     media_kind=body.media_kind,
+                    waba_id=waba_id,
+                    app_id=app_id,
                 )
             )
         except LookupError as exc:
@@ -286,6 +298,15 @@ async def edit_template(
                 detail={
                     "code": "template_approved_immutable",
                     "message": "Templates aprovados pela Meta não podem ser editados.",
+                },
+            ) from exc
+        except MetaTemplateApiError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "META_API_REJECTED",
+                    "message": exc.user_msg,
+                    "subcode": exc.subcode,
                 },
             ) from exc
         except Exception as exc:

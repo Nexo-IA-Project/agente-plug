@@ -305,3 +305,94 @@ async def test_dispatch_resolves_static_binding():
 
     sent_kwargs = chatnexo.send_template.call_args.kwargs
     assert sent_kwargs["variables"] == {"1": "Promo Black Friday"}
+
+
+@pytest.mark.asyncio
+async def test_dispatch_cancels_step_when_flow_is_inactive():
+    """Flow desativado entre o agendamento e a execução: step vira CANCELLED
+    em vez de ser enviado. Garante que o toggle is_active=False realmente
+    interrompe disparos já agendados."""
+    step = _make_step()
+    enrollment_id = step.enrollment_id
+    flow_id = uuid4()
+
+    enrollment = SimpleNamespace(
+        id=enrollment_id,
+        flow_id=flow_id,
+        contact_id=uuid4(),
+        customer_name="Fabio",
+        product_name="Marketing 360",
+        contact_phone="+5511999990000",
+    )
+    enrollment_repo = _make_enrollment_repo_with_step(step, enrollment=enrollment)
+    enrollment_repo.mark_cancelled = AsyncMock()
+
+    flow_repo = AsyncMock()
+    flow_repo.find_by_id.return_value = SimpleNamespace(id=flow_id, is_active=False)
+
+    chatnexo = AsyncMock()
+    history = AsyncMock()
+
+    uc = DispatchOnboardingStep(
+        enrollment_repo=enrollment_repo,
+        contact_repo=_make_contact_repo(),
+        chatnexo=chatnexo,
+        conversation_history=history,
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
+        flow_repo=flow_repo,
+    )
+    result = await uc.execute(
+        enrollment_step_id=step.id,
+        account_id=uuid4(),
+        conversation_id=str(uuid4()),
+        contact_phone="5511999990000",
+    )
+
+    assert result.status == EnrollmentStepStatus.CANCELLED
+    assert result.failure_reason == "flow_inactive"
+    enrollment_repo.mark_cancelled.assert_called_once_with(step.id, "flow_inactive")
+    chatnexo.send_template.assert_not_called()
+    chatnexo.send_message.assert_not_called()
+    history.save.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_dispatch_sends_when_flow_is_active():
+    """Sanity check: com flow_repo presente e flow.is_active=True, o disparo
+    procede normalmente."""
+    step = _make_step()
+    flow_id = uuid4()
+    enrollment = SimpleNamespace(
+        id=step.enrollment_id,
+        flow_id=flow_id,
+        contact_id=uuid4(),
+        customer_name="Fabio",
+        product_name="Marketing 360",
+        contact_phone="+5511999990000",
+    )
+    enrollment_repo = _make_enrollment_repo_with_step(step, enrollment=enrollment)
+    enrollment_repo.mark_cancelled = AsyncMock()
+
+    flow_repo = AsyncMock()
+    flow_repo.find_by_id.return_value = SimpleNamespace(id=flow_id, is_active=True)
+
+    chatnexo = AsyncMock()
+
+    uc = DispatchOnboardingStep(
+        enrollment_repo=enrollment_repo,
+        contact_repo=_make_contact_repo(),
+        chatnexo=chatnexo,
+        conversation_history=AsyncMock(load=AsyncMock(return_value=[])),
+        meta_template_repo=AsyncMock(get_by_name=AsyncMock(return_value=None)),
+        flow_repo=flow_repo,
+    )
+    result = await uc.execute(
+        enrollment_step_id=step.id,
+        account_id=uuid4(),
+        conversation_id=str(uuid4()),
+        contact_phone="5511999990000",
+    )
+
+    assert result.status == EnrollmentStepStatus.SENT
+    enrollment_repo.mark_cancelled.assert_not_called()
+    chatnexo.send_template.assert_called_once()

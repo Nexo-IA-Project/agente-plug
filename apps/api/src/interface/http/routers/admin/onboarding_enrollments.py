@@ -211,6 +211,9 @@ async def dispatch_step_now(
     from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
     from shared.adapters.db.repositories.contact import ContactRepository
     from shared.adapters.db.repositories.meta_template_repo import MetaTemplateRepository
+    from shared.adapters.db.repositories.onboarding_flow_repo import (
+        OnboardingFlowRepository,
+    )
     from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
         DispatchOnboardingStep,
     )
@@ -276,6 +279,7 @@ async def dispatch_step_now(
             chatnexo=chatnexo,
             conversation_history=ConversationHistory(session=session),
             meta_template_repo=MetaTemplateRepository(session=session),
+            flow_repo=OnboardingFlowRepository(session=session),
         )
         result = await dispatch.execute(
             enrollment_step_id=step_id,

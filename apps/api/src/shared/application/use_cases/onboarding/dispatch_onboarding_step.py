@@ -43,12 +43,17 @@ class DispatchOnboardingStep:
         chatnexo: Any,
         conversation_history: Any,
         meta_template_repo: MetaTemplateRepository,
+        flow_repo: Any | None = None,
     ) -> None:
         self._enrollment_repo = enrollment_repo
         self._contact_repo = contact_repo
         self._chatnexo = chatnexo
         self._history = conversation_history
         self._template_repo = meta_template_repo
+        # flow_repo é opcional pra retro-compat com chamadas antigas; quando
+        # presente, o use case checa flow.is_active antes de disparar e cancela
+        # steps de flows pausados.
+        self._flow_repo = flow_repo
 
     async def execute(
         self,
@@ -71,6 +76,27 @@ class DispatchOnboardingStep:
         if step.status != EnrollmentStepStatus.PENDING:
             log.info("followup_step_skipped", step_id=str(step.id), status=step.status)
             return DispatchResult(status=step.status, label="IGNORADO")
+
+        # Bloqueia disparo se o flow do enrollment estiver desativado.
+        # Sem essa check, scheduled_jobs criados antes da desativação continuam
+        # enviando mesmo com flow.is_active=False.
+        if self._flow_repo is not None:
+            enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
+            if enrollment is not None and enrollment.flow_id is not None:
+                flow = await self._flow_repo.find_by_id(enrollment.flow_id)
+                if flow is None or not flow.is_active:
+                    reason = "flow_inactive"
+                    log.info(
+                        "followup_step_cancelled_flow_inactive",
+                        step_id=str(step.id),
+                        flow_id=str(enrollment.flow_id),
+                    )
+                    await self._enrollment_repo.mark_cancelled(step.id, reason)
+                    return DispatchResult(
+                        status=EnrollmentStepStatus.CANCELLED,
+                        label="CANCELADO: flow desativado",
+                        failure_reason=reason,
+                    )
 
         if step.message_text:
             try:
