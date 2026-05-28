@@ -58,26 +58,6 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
-      {/* Page header */}
-      <header className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
-        <div className="flex items-center gap-5 px-7 py-6">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-container">
-            <span
-              className="material-symbols-outlined text-on-primary-container"
-              style={{ fontSize: "28px", fontVariationSettings: "'FILL' 1" }}
-            >
-              account_circle
-            </span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-on-surface">Meu perfil</h1>
-            <p className="mt-1 text-sm text-on-surface-variant">
-              Foto, nome e senha da sua conta
-            </p>
-          </div>
-        </div>
-      </header>
-
       {/* Avatar + identidade */}
       <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
 
@@ -90,25 +70,17 @@ export default function ProfilePage() {
               "radial-gradient(ellipse 50% 40% at 10% 100%, color-mix(in srgb, var(--color-tertiary, var(--color-primary)) 8%, transparent) 0%, transparent 60%)",
           }}
         >
-          {/* Anel gradiente animado ao redor do avatar */}
+          {/* Anel estático ao redor do avatar */}
           <div className="relative">
-            {/* Anel externo */}
+            {/* Anel gradiente parado */}
             <div
               className="absolute -inset-[3px] rounded-full"
               style={{
-                background: "conic-gradient(from 0deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 40%, transparent), var(--color-primary) 60%, color-mix(in srgb, var(--color-primary) 20%, transparent), var(--color-primary))",
-                animation: "avatarRingSpin 4s linear infinite",
-                opacity: avatarBlobUrl ? 1 : 0.45,
+                background: "conic-gradient(from 45deg, var(--color-primary), color-mix(in srgb, var(--color-primary) 30%, transparent) 35%, color-mix(in srgb, var(--color-primary) 60%, transparent) 60%, var(--color-primary) 100%)",
+                opacity: 0.7,
               }}
             />
-            <style>{`
-              @keyframes avatarRingSpin {
-                from { transform: rotate(0deg); }
-                to   { transform: rotate(360deg); }
-              }
-            `}</style>
-
-            {/* Anel branco separador */}
+            {/* Separador */}
             <div className="absolute -inset-[3px] rounded-full" style={{ margin: "3px", background: "var(--color-surface, white)" }} />
 
             {/* Avatar */}
