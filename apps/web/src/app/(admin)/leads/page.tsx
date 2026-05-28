@@ -8,6 +8,7 @@ import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
 import { useToast } from "@/shared/hooks/useToast";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
+import { useLeadsStream } from "@/features/leads/hooks/useLeadsStream";
 import type { Lead, LeadFilters } from "@/features/leads/types";
 
 const STATUS_OPTIONS = [
@@ -44,8 +45,29 @@ export default function LeadsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const { products } = useProducts();
+
+  const { status: streamStatus } = useLeadsStream(filters, {
+    onLeadUpserted: (lead, isNew) => {
+      setLeads((prev) => {
+        const idx = prev.findIndex((l) => l.id === lead.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = lead;
+          return copy;
+        }
+        if (isNew) {
+          setTotal((t) => t + 1);
+          return [lead, ...prev];
+        }
+        return prev;
+      });
+      setHighlightId(lead.id);
+      setTimeout(() => setHighlightId(null), 600);
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -114,7 +136,28 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-h2 font-semibold text-on-surface">Leads</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-h2 font-semibold text-on-surface">Leads</h1>
+            <div
+              className="flex items-center gap-1.5 text-xs text-on-surface-variant"
+              title={streamStatus}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  streamStatus === "open"
+                    ? "animate-pulse bg-emerald-500"
+                    : streamStatus === "reconnecting"
+                      ? "bg-amber-500"
+                      : "bg-on-surface-variant/40"
+                }`}
+              />
+              {streamStatus === "open"
+                ? "Ao vivo"
+                : streamStatus === "reconnecting"
+                  ? "Reconectando..."
+                  : "Offline"}
+            </div>
+          </div>
           <p className="mt-1 text-sm text-on-surface-variant">
             {total > 0
               ? `${total.toLocaleString("pt-BR")} lead${total === 1 ? "" : "s"} registrado${total === 1 ? "" : "s"}`
@@ -248,7 +291,11 @@ export default function LeadsPage() {
                       setSelectedLead(lead);
                       setDrawerOpen(true);
                     }}
-                    className="cursor-pointer border-t border-outline-variant/50 transition-colors hover:bg-surface-container"
+                    className={`cursor-pointer border-t border-outline-variant/50 transition-colors ${
+                      highlightId === lead.id
+                        ? "bg-emerald-500/10"
+                        : "hover:bg-surface-container"
+                    }`}
                   >
                     <td className="px-4 py-3 font-medium text-on-surface">
                       {lead.payer_name || "—"}
