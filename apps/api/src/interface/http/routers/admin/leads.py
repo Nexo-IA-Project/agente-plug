@@ -220,6 +220,17 @@ async def export_leads(
     )
 
 
+@router.get("/leads/utm-sources/suggest", response_model=list[str])
+async def suggest_utm_sources(
+    q: str | None = Query(default=None),
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> list[str]:
+    async with session_scope() as session:
+        account_uuid = await get_default_account_uuid(session)
+        repo = SqlLeadRepository(session=session)
+        return await repo.suggest_utm_sources(account_uuid, q=q)
+
+
 @router.get("/leads/{lead_id}", response_model=LeadDetailResponse)
 async def get_lead(
     lead_id: UUID,

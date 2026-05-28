@@ -384,6 +384,54 @@ async def test_get_lead_builds_chatnexo_conversation_url_from_integration(
 
 
 @pytest.mark.integration
+async def test_utm_sources_suggest_returns_top_distinct(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """Retorna até 10 valores distintos ordenados por frequência."""
+    # facebook 3x, google 2x, tiktok 1x
+    for _ in range(3):
+        db_session.add(_make_lead(seeded_account.id, utm_source="facebook"))
+    for _ in range(2):
+        db_session.add(_make_lead(seeded_account.id, utm_source="google"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="tiktok"))
+    await db_session.flush()
+    await db_session.commit()
+
+    res = await client.get("/admin/leads/utm-sources/suggest", headers=admin_headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert isinstance(body, list)
+    assert body[0] == "facebook"  # mais frequente
+    assert "google" in body
+    assert "tiktok" in body
+    assert len(body) <= 10
+
+
+@pytest.mark.integration
+async def test_utm_sources_suggest_filters_by_q(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """Filtra por substring case-insensitive."""
+    db_session.add(_make_lead(seeded_account.id, utm_source="facebook"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="Facebook Ads"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="google"))
+    await db_session.flush()
+    await db_session.commit()
+
+    res = await client.get("/admin/leads/utm-sources/suggest?q=face", headers=admin_headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert all("face" in v.lower() for v in body)
+    assert len(body) == 2
+
+
+@pytest.mark.integration
 async def test_list_leads_pagination(
     client: AsyncClient,
     db_session: AsyncSession,

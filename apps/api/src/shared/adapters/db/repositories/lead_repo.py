@@ -208,6 +208,20 @@ class SqlLeadRepository:
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_lead_entity(m) for m in rows], total
 
+    async def suggest_utm_sources(
+        self, account_id: UUID, q: str | None = None, limit: int = 10
+    ) -> list[str]:
+        stmt = select(LeadModel.utm_source, func.count().label("c")).where(
+            LeadModel.account_id == account_id,
+            LeadModel.utm_source.isnot(None),
+            LeadModel.utm_source != "",
+        )
+        if q:
+            stmt = stmt.where(LeadModel.utm_source.ilike(f"%{q}%"))
+        stmt = stmt.group_by(LeadModel.utm_source).order_by(func.count().desc()).limit(limit)
+        rows = (await self.session.execute(stmt)).all()
+        return [r[0] for r in rows if r[0]]
+
     async def find_by_id(self, lead_id: UUID, account_id: UUID) -> Lead | None:
         m = await self.session.get(LeadModel, lead_id)
         if m is None or m.account_id != account_id:
