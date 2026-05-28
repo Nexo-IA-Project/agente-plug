@@ -89,12 +89,12 @@ async def _get_account_uuid(session, auth: AdminAuth) -> _uuid_module.UUID:
 
 @router.get("/onboarding/enrollments", response_model=EnrollmentListResponse)
 async def list_enrollments(
-    flow_id: UUID | None = Query(default=None),  # noqa: B008
+    flow_id: UUID | None = Query(default=None),
     contact_phone: str | None = Query(default=None),
     status: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> EnrollmentListResponse:
     status_enum: EnrollmentStatus | None = None
     if status:
@@ -148,7 +148,7 @@ async def list_enrollments(
 )
 async def list_enrollment_steps(
     enrollment_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> list[EnrollmentStepItem]:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -186,7 +186,7 @@ class DispatchNowResponse(BaseModel):
 async def dispatch_step_now(
     enrollment_id: UUID,
     step_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> DispatchNowResponse:
     """Força o disparo imediato de um step pending ou failed.
 

@@ -23,7 +23,7 @@ class SearchResponse(BaseModel):
 @router.post("/search/test", response_model=SearchResponse)
 async def test_search(
     body: SearchRequest,
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
 ) -> SearchResponse:
     results = await deps.buscar(
         account_id=deps.account_id,

@@ -39,7 +39,7 @@ class ProductResponse(BaseModel):
 
 @router.get("/products", response_model=list[ProductResponse])
 async def list_products(
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> list[ProductResponse]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -64,7 +64,7 @@ async def list_products(
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     body: CreateProductRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> ProductResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -97,7 +97,7 @@ async def create_product(
 async def update_product(
     product_id: UUID,
     body: UpdateProductRequest,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> ProductResponse:
     async with session_scope() as session:
         repo = SqlProductRepository(session=session)
@@ -131,7 +131,7 @@ async def update_product(
 @router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> None:
     async with session_scope() as session:
         repo = SqlProductRepository(session=session)

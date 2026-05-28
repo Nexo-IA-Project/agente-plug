@@ -60,7 +60,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "C4", "SIM", "TID", "RUF"]
-ignore = ["E501"]
+ignore = ["E501", "B008"]  # B008: Depends() em arg defaults é padrão FastAPI
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["N802", "N803", "N806"]

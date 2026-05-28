@@ -44,7 +44,7 @@ def _fernet() -> Fernet:
 
 
 @router.get("/chatnexo-agents", response_model=list[AgentItem])
-async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentItem]:  # noqa: B008
+async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentItem]:
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)
@@ -65,7 +65,7 @@ async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentIt
 @router.post("/chatnexo-agents", response_model=AgentItem, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     body: CreateAgentInput,
-    _auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    _auth: AdminAuth = Depends(require_admin),
 ) -> AgentItem:
     async with session_scope() as session:
         fernet = _fernet()
@@ -85,7 +85,7 @@ async def create_agent(
 async def update_agent(
     agent_id: UUID,
     body: UpdateAgentInput,
-    _auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    _auth: AdminAuth = Depends(require_admin),
 ) -> AgentItem:
     if body.name is None and body.api_key is None and body.is_active is None:
         raise HTTPException(
@@ -118,7 +118,7 @@ async def update_agent(
 
 
 @router.delete("/chatnexo-agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_agent(agent_id: UUID, _auth: AdminAuth = Depends(require_admin)) -> None:  # noqa: B008
+async def delete_agent(agent_id: UUID, _auth: AdminAuth = Depends(require_admin)) -> None:
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)

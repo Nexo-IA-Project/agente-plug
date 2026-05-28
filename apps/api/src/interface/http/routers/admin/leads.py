@@ -114,11 +114,11 @@ async def list_leads(
     product_id: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     utm_source: str | None = Query(default=None),
-    date_from: datetime | None = Query(default=None),  # noqa: B008
-    date_to: datetime | None = Query(default=None),  # noqa: B008
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=200),
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> LeadListResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -146,9 +146,9 @@ async def export_leads(
     product_id: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     utm_source: str | None = Query(default=None),
-    date_from: datetime | None = Query(default=None),  # noqa: B008
-    date_to: datetime | None = Query(default=None),  # noqa: B008
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+    auth: AdminAuth = Depends(require_admin),
 ) -> StreamingResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -225,7 +225,7 @@ async def export_leads(
 @router.get("/leads/utm-sources/suggest", response_model=list[str])
 async def suggest_utm_sources(
     q: str | None = Query(default=None),
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> list[str]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -270,9 +270,9 @@ async def stream_leads(
     product_id: str | None = Query(default=None),
     status_filter: str | None = Query(default=None, alias="status"),
     utm_source: str | None = Query(default=None),
-    date_from: datetime | None = Query(default=None),  # noqa: B008
-    date_to: datetime | None = Query(default=None),  # noqa: B008
-    auth: AdminAuth = Depends(require_admin_sse),  # noqa: B008
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+    auth: AdminAuth = Depends(require_admin_sse),
 ) -> StreamingResponse:
     from shared.adapters.redis.leads_pubsub import LeadsPubSub
 
@@ -315,7 +315,7 @@ async def stream_leads(
 @router.get("/leads/{lead_id}", response_model=LeadDetailResponse)
 async def get_lead(
     lead_id: UUID,
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin),
 ) -> LeadDetailResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)

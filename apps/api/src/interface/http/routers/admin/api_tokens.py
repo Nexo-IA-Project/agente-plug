@@ -41,7 +41,7 @@ class TokenListItem(BaseModel):
 )
 async def create_token(
     body: CreateTokenRequest,
-    auth: AdminAuth = Depends(_require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(_require_admin),
 ) -> TokenCreatedResponse:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)
@@ -58,7 +58,7 @@ async def create_token(
 
 @router.get("/api-tokens", response_model=list[TokenListItem])
 async def list_tokens(
-    auth: AdminAuth = Depends(_require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(_require_admin),
 ) -> list[TokenListItem]:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)
@@ -79,7 +79,7 @@ async def list_tokens(
 @router.delete("/api-tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     token_id: uuid.UUID,
-    auth: AdminAuth = Depends(_require_admin_role),  # noqa: B008
+    auth: AdminAuth = Depends(_require_admin_role),
 ) -> None:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)

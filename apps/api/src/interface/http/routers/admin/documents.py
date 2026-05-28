@@ -46,7 +46,7 @@ class DocumentOut(BaseModel):
 async def list_documents(
     offset: int = 0,
     limit: int = 20,
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
 ) -> list[DocumentOut]:
     docs = await deps.listar(account_id=deps.account_id, offset=offset, limit=limit)
     return [DocumentOut.from_entity(d) for d in docs]
@@ -54,9 +54,9 @@ async def list_documents(
 
 @router.post("/documents/upload", status_code=status.HTTP_202_ACCEPTED)
 async def upload_document(
-    file: UploadFile = File(...),  # noqa: B008
+    file: UploadFile = File(...),
     tags: str = Form(default=""),
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
 ) -> dict:
     content = await file.read()
     mime_type = file.content_type or "application/octet-stream"
@@ -92,7 +92,7 @@ async def upload_document(
 @router.get("/documents/{doc_id}", response_model=DocumentOut)
 async def get_document(
     doc_id: str,
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
 ) -> DocumentOut:
     doc = await deps.doc_repo.get(doc_id, deps.account_id)
     if doc is None:
@@ -103,8 +103,8 @@ async def get_document(
 @router.delete("/documents/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     doc_id: str,
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
-    _auth: AdminAuth = Depends(require_admin_role),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_admin_role),
 ) -> None:
     await deps.deletar(doc_id=doc_id, account_id=deps.account_id)
 
@@ -112,7 +112,7 @@ async def delete_document(
 @router.post("/documents/{doc_id}/reindex", status_code=status.HTTP_501_NOT_IMPLEMENTED)
 async def reindex_document(
     doc_id: str,
-    deps: AdminDeps = Depends(get_admin_deps),  # noqa: B008
+    deps: AdminDeps = Depends(get_admin_deps),
 ) -> dict:
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,
