@@ -53,6 +53,7 @@ async def test_require_admin_role_passes_for_admin():
 @pytest.mark.asyncio
 async def test_require_admin_role_blocks_operator():
     from fastapi import HTTPException
+
     from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
     auth = AdminAuth(account_id=1, user_email="a@x.com", user_role="operator",

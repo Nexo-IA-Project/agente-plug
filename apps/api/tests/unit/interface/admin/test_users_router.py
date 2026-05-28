@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import importlib
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
-
 # Ensure the module is imported so patch paths resolve correctly.
 import interface.http.routers.admin.users  # noqa: F401
+from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
 
 def _admin_auth():
