@@ -43,9 +43,6 @@ export function TopBar() {
           <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>help_outline</span>
         </button>
         <ThemeToggle />
-        <div className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary text-xs font-semibold select-none">
-          FD
-        </div>
         <button
           onClick={handleLogout}
           aria-label="Sair"

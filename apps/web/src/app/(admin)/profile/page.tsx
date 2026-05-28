@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { getMe, updateMe, myAvatarUrl } from "@/lib/api";
+import { getMe, updateMe } from "@/lib/api";
 import { useToast } from "@/shared/hooks/useToast";
 import { AvatarUploadModal } from "@/features/profile/components/AvatarUploadModal";
 import { ChangePasswordForm } from "@/features/profile/components/ChangePasswordForm";
@@ -14,7 +14,6 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
-  const [avatarVersion, setAvatarVersion] = useState(Date.now());
   const toast = useToast();
 
   useEffect(() => {
@@ -24,9 +23,11 @@ export default function ProfilePage() {
         setName(m.name);
       })
       .catch(() => {
-        toast.error("Falha ao carregar perfil");
+        // eslint-disable-next-line react-hooks/exhaustive-deps
       });
-  }, [toast]);
+    // toast não entra na dep array — causaria loop infinito
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onSaveName() {
     if (!name.trim()) return;
@@ -58,21 +59,12 @@ export default function ProfilePage() {
       <section className="flex items-center gap-6">
         <button
           onClick={() => setAvatarOpen(true)}
-          className="relative h-24 w-24 rounded-full overflow-hidden bg-surface-container hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary"
+          className="relative h-24 w-24 rounded-full overflow-hidden bg-primary hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-center"
           title="Trocar foto"
         >
-          {me.has_avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={myAvatarUrl(avatarVersion)}
-              alt={me.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-4xl text-on-surface-variant">
-              {me.name.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <span className="text-4xl text-on-primary font-semibold select-none">
+            {me.name.charAt(0).toUpperCase()}
+          </span>
         </button>
         <div className="flex flex-col gap-1">
           <span className="text-body-lg font-medium">{me.name}</span>
@@ -114,7 +106,6 @@ export default function ProfilePage() {
         open={avatarOpen}
         onClose={() => setAvatarOpen(false)}
         onSaved={() => {
-          setAvatarVersion(Date.now());
           setMe((prev) => (prev ? { ...prev, has_avatar: true } : prev));
         }}
       />
