@@ -21,7 +21,7 @@ import type {
   UpdateProductInput,
 } from "@/features/products/types";
 
-const API_URL =
+export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function apiFetch<T>(
@@ -335,6 +335,11 @@ export async function dispatchEnrollmentStep(
     `/admin/onboarding/enrollments/${enrollmentId}/steps/${stepId}/dispatch-now`,
     { method: "POST" },
   );
+}
+
+export async function suggestUtmSources(q?: string): Promise<string[]> {
+  const qs = q ? `?q=${encodeURIComponent(q)}` : "";
+  return apiFetch<string[]>(`/admin/leads/utm-sources/suggest${qs}`);
 }
 
 export async function downloadLeadsCsv(

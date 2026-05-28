@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { downloadLeadsCsv, listLeads } from "@/lib/api";
 import { LeadDrawer } from "@/features/leads/components/LeadDrawer";
+import { LeadFiltersModal } from "@/features/leads/components/LeadFiltersModal";
 import { getLeadStatusBadge } from "@/features/leads/lib/statusBadges";
 import { useToast } from "@/shared/hooks/useToast";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
-import type { Lead, LeadFilters } from "@/features/leads/types";
+import { useLeadsStream } from "@/features/leads/hooks/useLeadsStream";
+import type { Lead, LeadEvent, LeadFilters } from "@/features/leads/types";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Todos os status" },
@@ -23,18 +25,14 @@ function formatCents(c: number | null): string {
   return `R$ ${(c / 100).toFixed(2).replace(".", ",")}`;
 }
 
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("pt-BR");
-}
-
-function toIsoStartOfDay(dateStr: string): string | undefined {
-  if (!dateStr) return undefined;
-  return new Date(dateStr + "T00:00:00").toISOString();
-}
-
-function toIsoEndOfDay(dateStr: string): string | undefined {
-  if (!dateStr) return undefined;
-  return new Date(dateStr + "T23:59:59.999").toISOString();
+function formatDateTime(d: string): string {
+  return new Date(d).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function LeadsPage() {
@@ -43,14 +41,53 @@ export default function LeadsPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<LeadFilters>({ page: 1, page_size: 25 });
-  const [utmInput, setUtmInput] = useState("");
-  const [dateFromInput, setDateFromInput] = useState("");
-  const [dateToInput, setDateToInput] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
-  const { products, loading: productsLoading } = useProducts();
+  const { products } = useProducts();
+
+  const drawerHandlersRef = useRef<{
+    onEvent?: (event: LeadEvent) => void;
+    onEnrollment?: (enrollment: {
+      id: string;
+      status: string;
+      step_id: string;
+      step_status: string;
+    }) => void;
+  }>({});
+
+  const { status: streamStatus } = useLeadsStream(filters, {
+    onLeadUpserted: (lead, isNew) => {
+      setLeads((prev) => {
+        const idx = prev.findIndex((l) => l.id === lead.id);
+        if (idx >= 0) {
+          const copy = [...prev];
+          copy[idx] = lead;
+          return copy;
+        }
+        if (isNew) {
+          setTotal((t) => t + 1);
+          return [lead, ...prev];
+        }
+        return prev;
+      });
+      setHighlightId(lead.id);
+      setTimeout(() => setHighlightId(null), 600);
+    },
+    onEventAppended: (leadId, event) => {
+      if (selectedLead?.id === leadId) {
+        drawerHandlersRef.current.onEvent?.(event);
+      }
+    },
+    onEnrollmentUpdated: (leadId, enrollment) => {
+      if (selectedLead?.id === leadId) {
+        drawerHandlersRef.current.onEnrollment?.(enrollment);
+      }
+    },
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -80,6 +117,14 @@ export default function LeadsPage() {
     setFilters((prev) => ({ ...prev, ...patch, page: 1 }));
   };
 
+  const activeFilterCount = [
+    filters.product_id,
+    filters.status,
+    filters.utm_source,
+    filters.date_from,
+    filters.date_to,
+  ].filter(Boolean).length;
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -103,9 +148,6 @@ export default function LeadsPage() {
   );
 
   const clearFilters = () => {
-    setUtmInput("");
-    setDateFromInput("");
-    setDateToInput("");
     setFilters({ page: 1, page_size: 25 });
   };
 
@@ -114,7 +156,28 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-h2 font-semibold text-on-surface">Leads</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-h2 font-semibold text-on-surface">Leads</h1>
+            <div
+              className="flex items-center gap-1.5 text-xs text-on-surface-variant"
+              title={streamStatus}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  streamStatus === "open"
+                    ? "animate-pulse bg-emerald-500"
+                    : streamStatus === "reconnecting"
+                      ? "bg-amber-500"
+                      : "bg-on-surface-variant/40"
+                }`}
+              />
+              {streamStatus === "open"
+                ? "Ao vivo"
+                : streamStatus === "reconnecting"
+                  ? "Reconectando..."
+                  : "Offline"}
+            </div>
+          </div>
           <p className="mt-1 text-sm text-on-surface-variant">
             {total > 0
               ? `${total.toLocaleString("pt-BR")} lead${total === 1 ? "" : "s"} registrado${total === 1 ? "" : "s"}`
@@ -136,87 +199,55 @@ export default function LeadsPage() {
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3">
-        <span className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+      {/* Filter trigger + chips */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-3 py-2 text-sm text-on-surface hover:bg-surface-container"
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+            filter_list
+          </span>
           Filtros
-        </span>
+          {activeFilterCount > 0 && (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-on-primary">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
 
-        {/* Produto */}
-        <select
-          value={filters.product_id ?? ""}
-          onChange={(e) => updateFilter({ product_id: e.target.value || undefined })}
-          disabled={productsLoading || products.length === 0}
-          className="field-select !w-auto min-w-[180px] disabled:opacity-60"
-        >
-          <option value="">Todos os produtos</option>
-          {products.map((p) => (
-            <option key={p.id} value={p.hubla_id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-
-        {/* Status */}
-        <select
-          value={filters.status ?? ""}
-          onChange={(e) => updateFilter({ status: e.target.value || undefined })}
-          className="field-select !w-auto min-w-[180px]"
-        >
-          {STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Date range */}
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={dateFromInput}
-            onChange={(e) => {
-              setDateFromInput(e.target.value);
-              updateFilter({ date_from: toIsoStartOfDay(e.target.value) });
-            }}
-            className="field-input !w-auto"
-            title="Data de início"
+        {filters.product_id && (
+          <FilterChip
+            label={`Produto: ${products.find((p) => p.hubla_id === filters.product_id)?.name ?? filters.product_id}`}
+            onRemove={() => updateFilter({ product_id: undefined })}
           />
-          <span className="text-on-surface-variant">—</span>
-          <input
-            type="date"
-            value={dateToInput}
-            onChange={(e) => {
-              setDateToInput(e.target.value);
-              updateFilter({ date_to: toIsoEndOfDay(e.target.value) });
-            }}
-            className="field-input !w-auto"
-            title="Data de fim"
+        )}
+        {filters.status && (
+          <FilterChip
+            label={`Status: ${STATUS_OPTIONS.find((s) => s.value === filters.status)?.label ?? filters.status}`}
+            onRemove={() => updateFilter({ status: undefined })}
           />
-        </div>
-
-        {/* UTM source */}
-        <input
-          type="text"
-          placeholder="Filtrar por UTM source..."
-          value={utmInput}
-          onChange={(e) => setUtmInput(e.target.value)}
-          onBlur={() => updateFilter({ utm_source: utmInput || undefined })}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              updateFilter({ utm_source: utmInput || undefined });
-            }
-          }}
-          className="field-input !w-56"
-        />
+        )}
+        {(filters.date_from || filters.date_to) && (
+          <FilterChip
+            label={`Período: ${filters.date_from ? new Date(filters.date_from).toLocaleDateString("pt-BR") : "..."} → ${filters.date_to ? new Date(filters.date_to).toLocaleDateString("pt-BR") : "..."}`}
+            onRemove={() => updateFilter({ date_from: undefined, date_to: undefined })}
+          />
+        )}
+        {filters.utm_source && (
+          <FilterChip
+            label={`UTM: ${filters.utm_source}`}
+            onRemove={() => updateFilter({ utm_source: undefined })}
+          />
+        )}
 
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
             className="ml-auto text-xs text-primary hover:underline"
           >
-            Limpar filtros
+            Limpar todos
           </button>
         )}
       </div>
@@ -248,7 +279,7 @@ export default function LeadsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center">
+                <td colSpan={8} className="px-4 py-10 text-center">
                   <div className="inline-flex items-center gap-2 text-sm text-on-surface-variant">
                     <span
                       className="material-symbols-outlined animate-spin"
@@ -280,7 +311,11 @@ export default function LeadsPage() {
                       setSelectedLead(lead);
                       setDrawerOpen(true);
                     }}
-                    className="cursor-pointer border-t border-outline-variant/50 transition-colors hover:bg-surface-container"
+                    className={`cursor-pointer border-t border-outline-variant/50 transition-colors ${
+                      highlightId === lead.id
+                        ? "bg-emerald-500/10"
+                        : "hover:bg-surface-container"
+                    }`}
                   >
                     <td className="px-4 py-3 font-medium text-on-surface">
                       {lead.payer_name || "—"}
@@ -325,7 +360,7 @@ export default function LeadsPage() {
                       {lead.utm_source ?? "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-on-surface-variant">
-                      {formatDate(lead.last_event_at)}
+                      {formatDateTime(lead.last_event_at)}
                     </td>
                   </tr>
                 );
@@ -368,7 +403,40 @@ export default function LeadsPage() {
         lead={selectedLead}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
+        onRegisterStreamHandlers={(h) => {
+          drawerHandlersRef.current = h;
+        }}
+      />
+
+      <LeadFiltersModal
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        initial={filters}
+        onApply={(f) => setFilters(f)}
       />
     </div>
+  );
+}
+
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-outline-variant bg-surface-container-low px-2.5 py-0.5 text-xs text-on-surface">
+      {label}
+      <button
+        onClick={onRemove}
+        className="text-on-surface-variant hover:text-on-surface"
+        aria-label="Remover filtro"
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: "14px" }}>
+          close
+        </span>
+      </button>
+    </span>
   );
 }

@@ -5,13 +5,22 @@ import { Drawer } from "@/shared/components/Drawer";
 import { dispatchEnrollmentStep, getLead } from "@/lib/api";
 import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
 import { getLeadStatusBadge } from "../lib/statusBadges";
-import type { Lead, LeadDetail } from "../types";
+import type { FollowupStepStatus, Lead, LeadDetail, LeadEvent } from "../types";
 import { FollowupTimeline } from "./FollowupTimeline";
 
 interface Props {
   lead: Lead | null;
   open: boolean;
   onClose: () => void;
+  onRegisterStreamHandlers?: (h: {
+    onEvent: (event: LeadEvent) => void;
+    onEnrollment: (enrollment: {
+      id: string;
+      status: string;
+      step_id: string;
+      step_status: string;
+    }) => void;
+  }) => void;
 }
 
 function formatCents(c: number | null): string {
@@ -57,7 +66,12 @@ function InfoChip({ label, value, icon, mono = false }: InfoChipProps) {
   );
 }
 
-export function LeadDrawer({ lead, open, onClose }: Props) {
+export function LeadDrawer({
+  lead,
+  open,
+  onClose,
+  onRegisterStreamHandlers,
+}: Props) {
   const [detail, setDetail] = useState<LeadDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -72,6 +86,46 @@ export function LeadDrawer({ lead, open, onClose }: Props) {
       setDetail(null);
     }
   }, [open, lead?.id]);
+
+  useEffect(() => {
+    if (!open || !onRegisterStreamHandlers) return;
+    onRegisterStreamHandlers({
+      onEvent: (event) => {
+        setDetail((prev) =>
+          prev ? { ...prev, events: [event, ...prev.events] } : prev,
+        );
+      },
+      onEnrollment: (env) => {
+        setDetail((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            enrollments: prev.enrollments.map((e) =>
+              e.id !== env.id
+                ? e
+                : {
+                    ...e,
+                    steps: e.steps.map((s) =>
+                      s.id !== env.step_id
+                        ? s
+                        : {
+                            ...s,
+                            status: env.step_status as FollowupStepStatus,
+                          },
+                    ),
+                  },
+            ),
+          };
+        });
+      },
+    });
+    return () => {
+      onRegisterStreamHandlers({
+        onEvent: () => {},
+        onEnrollment: () => {},
+      });
+    };
+  }, [open, onRegisterStreamHandlers]);
 
   if (!lead) {
     return <Drawer open={open} onClose={onClose} title="Lead">{null}</Drawer>;
@@ -115,6 +169,39 @@ export function LeadDrawer({ lead, open, onClose }: Props) {
             )}
           </div>
         </div>
+
+        {/* CTA: abrir conversa no ChatNexo */}
+        {detail?.chatnexo_conversation_url ? (
+          <a
+            href={detail.chatnexo_conversation_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 transition-colors hover:bg-surface-container"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium text-on-surface">
+              <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+                chat
+              </span>
+              Abrir conversa no ChatNexo
+            </span>
+            <span
+              className="material-symbols-outlined text-on-surface-variant"
+              style={{ fontSize: "16px" }}
+            >
+              open_in_new
+            </span>
+          </a>
+        ) : (
+          <div
+            className="flex cursor-not-allowed items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-sm text-on-surface-variant/60"
+            title="Aguardando primeira mensagem"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "18px" }}>
+              chat
+            </span>
+            Aguardando primeira mensagem
+          </div>
+        )}
 
         {/* Info grid */}
         <div>

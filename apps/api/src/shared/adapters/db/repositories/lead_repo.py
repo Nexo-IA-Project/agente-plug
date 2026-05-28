@@ -1,15 +1,22 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
+from cryptography.fernet import Fernet
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import HublaEventModel, LeadModel
+from shared.adapters.db.models import (
+    ConversationModel,
+    HublaEventModel,
+    LeadModel,
+)
+from shared.adapters.db.repositories.account_config_repo import AccountConfigRepository
+from shared.config.settings import get_settings
 from shared.domain.entities.hubla_event import HublaEvent
 from shared.domain.entities.lead import Lead
 
@@ -184,7 +191,7 @@ class SqlLeadRepository:
         if status:
             stmt = stmt.where(LeadModel.subscription_status == status)
         if utm_source:
-            stmt = stmt.where(LeadModel.utm_source == utm_source)
+            stmt = stmt.where(LeadModel.utm_source.ilike(f"%{utm_source}%"))
         if date_from is not None:
             stmt = stmt.where(LeadModel.last_event_at >= date_from)
         if date_to is not None:
@@ -201,11 +208,67 @@ class SqlLeadRepository:
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_to_lead_entity(m) for m in rows], total
 
+    async def suggest_utm_sources(
+        self, account_id: UUID, q: str | None = None, limit: int = 10
+    ) -> list[str]:
+        stmt = select(LeadModel.utm_source, func.count().label("c")).where(
+            LeadModel.account_id == account_id,
+            LeadModel.utm_source.isnot(None),
+            LeadModel.utm_source != "",
+        )
+        if q:
+            stmt = stmt.where(LeadModel.utm_source.ilike(f"%{q}%"))
+        stmt = stmt.group_by(LeadModel.utm_source).order_by(func.count().desc()).limit(limit)
+        rows = (await self.session.execute(stmt)).all()
+        return [r[0] for r in rows if r[0]]
+
     async def find_by_id(self, lead_id: UUID, account_id: UUID) -> Lead | None:
         m = await self.session.get(LeadModel, lead_id)
         if m is None or m.account_id != account_id:
             return None
-        return _to_lead_entity(m)
+
+        entity = _to_lead_entity(m)
+
+        if m.contact_id is None:
+            return entity
+
+        conv_stmt = (
+            select(ConversationModel)
+            .where(
+                ConversationModel.account_id == account_id,
+                ConversationModel.contact_id == m.contact_id,
+            )
+            .order_by(ConversationModel.created_at.desc())
+            .limit(1)
+        )
+        conv = (await self.session.execute(conv_stmt)).scalar_one_or_none()
+        if conv is None:
+            return entity
+
+        # Carrega IntegrationConfig tipado via AccountConfigRepository — evita
+        # duplicar a leitura crua de accounts.settings.integration aqui.
+        # Obs.: o repo aplica defaults vindos do settings/env, então
+        # chatnexo_account_id/inbox_id nunca virão None na prática;
+        # a guarda `is None` segue como defesa em profundidade. O único
+        # cenário em que a URL fica None é se `chatnexo_base_url` for vazia
+        # (string vazia tanto no settings da conta quanto no env default).
+        settings = get_settings()
+        fernet = Fernet(settings.integration_credentials_key.encode())
+        config_repo = AccountConfigRepository(session=self.session, fernet=fernet)
+        config = await config_repo.get(account_id=1)
+        integration = config.integration
+        if not integration.chatnexo_base_url:
+            return entity
+        if integration.chatnexo_account_id is None or integration.chatnexo_inbox_id is None:
+            return entity
+
+        url = (
+            f"{integration.chatnexo_base_url.rstrip('/')}"
+            f"/app/accounts/{integration.chatnexo_account_id}"
+            f"/inbox/{integration.chatnexo_inbox_id}"
+            f"/conversations/{conv.chatnexo_conversation_id}"
+        )
+        return replace(entity, chatnexo_conversation_url=url)
 
     async def get_events(self, account_id: UUID, hubla_subscription_id: str) -> list[HublaEvent]:
         stmt = (

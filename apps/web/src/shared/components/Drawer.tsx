@@ -1,7 +1,8 @@
 // apps/web/src/shared/components/Drawer.tsx
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface DrawerProps {
   open: boolean;
@@ -15,6 +16,9 @@ const SIDEBAR_WIDTH = "var(--sidebar-width, 240px)";
 
 export function Drawer({ open, onClose, title, children, footer }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
@@ -29,13 +33,15 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
     if (open) panelRef.current?.focus();
   }, [open]);
 
-  return (
+  if (!mounted) return null;
+
+  const overlay = (
     <>
       {/* Backdrop */}
       <div
         aria-hidden
         onClick={onClose}
-        className={`fixed inset-0 z-40 cursor-pointer bg-black/40 transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[60] cursor-pointer bg-black/40 transition-opacity duration-200 ${
           open ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -47,21 +53,21 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`fixed inset-y-0 right-0 z-50 flex flex-col bg-surface-container shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed right-0 z-[70] flex flex-col bg-surface-container shadow-2xl transition-transform duration-300 ease-out ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
-        style={{ left: SIDEBAR_WIDTH }}
+        style={{ top: 0, bottom: 0, left: SIDEBAR_WIDTH }}
       >
-        <header className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
-          <h2 className="text-lg font-semibold text-on-surface">{title}</h2>
+        <header className="flex items-center gap-3 border-b border-outline-variant px-4 py-4">
           <button
             type="button"
             onClick={onClose}
             className="rounded-md p-2 text-on-surface-variant hover:bg-surface-container-high"
             aria-label="Fechar"
           >
-            <span className="material-symbols-outlined">close</span>
+            <span className="material-symbols-outlined">arrow_forward</span>
           </button>
+          <h2 className="text-lg font-semibold text-on-surface">{title}</h2>
         </header>
 
         <div className="flex-1 overflow-auto px-6 py-6">{children}</div>
@@ -74,4 +80,6 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
       </aside>
     </>
   );
+
+  return createPortal(overlay, document.body);
 }

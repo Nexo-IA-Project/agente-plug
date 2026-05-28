@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from fastapi import Cookie, Header, HTTPException, status
+from fastapi import Cookie, Header, HTTPException, Query, status
 from jose import JWTError
 
 from shared.adapters.kb.jwt_handler import verify_token
@@ -34,6 +34,47 @@ async def require_admin(
     settings = get_settings()
     try:
         payload = verify_token(token, secret=settings.jwt_secret)
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    return AdminAuth(
+        account_id=payload["account_id"],
+        user_email=payload["sub"],
+        user_role=payload.get("role", "viewer"),
+    )
+
+
+async def require_admin_sse(
+    token: str | None = Query(default=None),
+    authorization: str | None = Header(default=None),
+    nexoia_token: str | None = Cookie(default=None),
+) -> AdminAuth:
+    """Variante de require_admin específica pra SSE.
+
+    EventSource não suporta header `Authorization` e nem sempre carrega
+    cookies em cross-origin (SameSite=Lax). Esta dependência aceita o JWT
+    também via query string `?token=<jwt>` — passar token na URL é
+    aceitável aqui porque é só pra endpoint SSE de leitura.
+    """
+    actual: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        actual = authorization.removeprefix("Bearer ").strip()
+    elif nexoia_token:
+        actual = nexoia_token
+    elif token:
+        actual = token.strip()
+    if not actual:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    settings = get_settings()
+    try:
+        payload = verify_token(actual, secret=settings.jwt_secret)
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

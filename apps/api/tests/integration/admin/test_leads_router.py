@@ -19,7 +19,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import AccountModel, LeadModel
+from shared.adapters.db.models import (
+    AccountModel,
+    ContactModel,
+    ConversationModel,
+    LeadModel,
+)
 from shared.adapters.kb.jwt_handler import create_access_token
 
 # ──────────────────────────────────────────────────────────────
@@ -99,6 +104,22 @@ def mock_settings() -> Any:
 
 @pytest.fixture
 async def seeded_account(db_session: AsyncSession, admin_account_id: uuid.UUID) -> AccountModel:
+    # Reseta cache do resolver single-tenant para não reutilizar UUID de teste anterior
+    from sqlalchemy import delete
+
+    from shared.adapters.db.models import HublaEventModel
+    from shared.config import single_tenant
+
+    single_tenant.reset_cache()
+
+    # Limpa dados de testes anteriores (DB compartilhado entre testes da sessão)
+    await db_session.execute(delete(LeadModel))
+    await db_session.execute(delete(HublaEventModel))
+    await db_session.execute(delete(ConversationModel))
+    await db_session.execute(delete(ContactModel))
+    await db_session.execute(delete(AccountModel))
+    await db_session.commit()
+
     account = AccountModel(id=admin_account_id, name="T")
     db_session.add(account)
     await db_session.flush()
@@ -288,6 +309,129 @@ async def test_get_lead_returns_detail_with_events(
 
 
 @pytest.mark.integration
+async def test_get_lead_returns_chatnexo_conversation_url_field(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """O detail sempre expõe o campo chatnexo_conversation_url (mesmo None)."""
+    lead = _make_lead(seeded_account.id)
+    db_session.add(lead)
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get(f"/admin/leads/{lead.id}", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert "chatnexo_conversation_url" in body
+    # Sem contact_id vinculado: URL deve ser None
+    assert body["chatnexo_conversation_url"] is None
+
+
+@pytest.mark.integration
+async def test_get_lead_builds_chatnexo_conversation_url_from_integration(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """Quando há contact + conversation + integration completa, monta a URL."""
+    # Atualiza integration nas settings da account
+    seeded_account.settings = {
+        "integration": {
+            "chatnexo_base_url": "https://chatnexo.com.br",
+            "chatnexo_account_id": 5,
+            "chatnexo_inbox_id": 111,
+        }
+    }
+    await db_session.flush()
+
+    contact = ContactModel(
+        id=uuid.uuid4(),
+        account_id=seeded_account.id,
+        phone="+5511988887777",
+        name="Lead com Conversa",
+    )
+    db_session.add(contact)
+    await db_session.flush()
+
+    now = datetime.now(UTC)
+    conv = ConversationModel(
+        id=uuid.uuid4(),
+        account_id=seeded_account.id,
+        contact_id=contact.id,
+        chatnexo_conversation_id=16401,
+        status="open",
+        last_activity_at=now,
+        window_expires_at=now,
+        idle_state="none",
+    )
+    db_session.add(conv)
+    await db_session.flush()
+
+    lead = _make_lead(seeded_account.id, contact_id=contact.id, payer_phone=contact.phone)
+    db_session.add(lead)
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get(f"/admin/leads/{lead.id}", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["chatnexo_conversation_url"] == (
+        "https://chatnexo.com.br/app/accounts/5/inbox/111/conversations/16401"
+    )
+
+
+@pytest.mark.integration
+async def test_utm_sources_suggest_returns_top_distinct(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """Retorna até 10 valores distintos ordenados por frequência."""
+    # facebook 3x, google 2x, tiktok 1x
+    for _ in range(3):
+        db_session.add(_make_lead(seeded_account.id, utm_source="facebook"))
+    for _ in range(2):
+        db_session.add(_make_lead(seeded_account.id, utm_source="google"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="tiktok"))
+    await db_session.flush()
+    await db_session.commit()
+
+    res = await client.get("/admin/leads/utm-sources/suggest", headers=admin_headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert isinstance(body, list)
+    assert body[0] == "facebook"  # mais frequente
+    assert "google" in body
+    assert "tiktok" in body
+    assert len(body) <= 10
+
+
+@pytest.mark.integration
+async def test_utm_sources_suggest_filters_by_q(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """Filtra por substring case-insensitive."""
+    db_session.add(_make_lead(seeded_account.id, utm_source="facebook"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="Facebook Ads"))
+    db_session.add(_make_lead(seeded_account.id, utm_source="google"))
+    await db_session.flush()
+    await db_session.commit()
+
+    res = await client.get("/admin/leads/utm-sources/suggest?q=face", headers=admin_headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert all("face" in v.lower() for v in body)
+    assert len(body) == 2
+
+
+@pytest.mark.integration
 async def test_list_leads_pagination(
     client: AsyncClient,
     db_session: AsyncSession,
@@ -306,3 +450,72 @@ async def test_list_leads_pagination(
     assert body["page"] == 1
     assert body["page_size"] == 2
     assert body["total"] >= 5
+
+
+@pytest.mark.integration
+async def test_leads_stream_emits_events(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    seeded_account: AccountModel,
+    redis_container_session,
+    monkeypatch,
+) -> None:
+    """Endpoint SSE publica eventos que matcham filtros do query string."""
+    import asyncio
+    import json
+
+    host = redis_container_session.get_container_host_ip()
+    port = redis_container_session.get_exposed_port(6379)
+    monkeypatch.setenv("REDIS_URL", f"redis://{host}:{port}/0")
+    from shared.config.settings import get_settings
+
+    get_settings.cache_clear()  # type: ignore[attr-defined]
+
+    from shared.adapters.redis.leads_pubsub import LeadsPubSub
+
+    bus = LeadsPubSub()
+
+    async def publish_after_delay() -> None:
+        # Espera o subscriber estar pronto antes de publicar.
+        await asyncio.sleep(0.5)
+        for _ in range(5):
+            await bus.publish(
+                seeded_account.id,
+                {
+                    "type": "lead.upserted",
+                    "is_new": True,
+                    "lead": {
+                        "id": "abc",
+                        "subscription_status": "active",
+                        "utm_source": "facebook",
+                        "last_event_at": "2026-05-28T12:00:00Z",
+                        "hubla_product_id": "prod_x",
+                    },
+                },
+            )
+            await asyncio.sleep(0.1)
+
+    task = asyncio.create_task(publish_after_delay())
+
+    try:
+        async with client.stream("GET", "/admin/leads/stream", headers=admin_headers) as response:
+            assert response.status_code == 200
+            assert "text/event-stream" in response.headers.get("content-type", "")
+
+            received = False
+            async for line in response.aiter_lines():
+                stripped = line.strip()
+                if stripped.startswith("data:"):
+                    payload = json.loads(stripped[5:].strip())
+                    assert payload["lead"]["id"] == "abc"
+                    received = True
+                    break
+
+            assert received, "esperava receber pelo menos um evento SSE"
+    finally:
+        task.cancel()
+        import contextlib
+
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
+        await bus.close()

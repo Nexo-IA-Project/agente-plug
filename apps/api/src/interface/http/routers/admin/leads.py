@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import csv
 import io
+import json as _json
 from datetime import datetime
 from uuid import UUID
 
@@ -9,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
 from shared.config.single_tenant import get_default_account_uuid
@@ -37,6 +39,7 @@ class LeadResponse(BaseModel):
     activated_at: datetime | None
     last_event_at: datetime
     last_event_type: str
+    chatnexo_conversation_url: str | None = None
 
 
 class LeadListResponse(BaseModel):
@@ -102,6 +105,7 @@ def _to_response(m: Lead) -> LeadResponse:
         activated_at=m.activated_at,
         last_event_at=m.last_event_at,
         last_event_type=m.last_event_type,
+        chatnexo_conversation_url=m.chatnexo_conversation_url,
     )
 
 
@@ -216,6 +220,96 @@ async def export_leads(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="leads-{date_str}.csv"'},
     )
+
+
+@router.get("/leads/utm-sources/suggest", response_model=list[str])
+async def suggest_utm_sources(
+    q: str | None = Query(default=None),
+    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+) -> list[str]:
+    async with session_scope() as session:
+        account_uuid = await get_default_account_uuid(session)
+        repo = SqlLeadRepository(session=session)
+        return await repo.suggest_utm_sources(account_uuid, q=q)
+
+
+def _envelope_matches_filters(
+    envelope: dict,
+    *,
+    product_id: str | None,
+    status: str | None,
+    utm_source: str | None,
+    date_from: datetime | None,
+    date_to: datetime | None,
+) -> bool:
+    lead = envelope.get("lead") or {}
+    if product_id and lead.get("hubla_product_id") != product_id:
+        return False
+    if status and lead.get("subscription_status") != status:
+        return False
+    if utm_source:
+        src = (lead.get("utm_source") or "").lower()
+        if utm_source.lower() not in src:
+            return False
+    if date_from or date_to:
+        raw = lead.get("last_event_at")
+        if raw:
+            try:
+                ts = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                return False
+            if date_from and ts < date_from:
+                return False
+            if date_to and ts > date_to:
+                return False
+    return True
+
+
+@router.get("/leads/stream")
+async def stream_leads(
+    product_id: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    utm_source: str | None = Query(default=None),
+    date_from: datetime | None = Query(default=None),  # noqa: B008
+    date_to: datetime | None = Query(default=None),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin_sse),  # noqa: B008
+) -> StreamingResponse:
+    from shared.adapters.redis.leads_pubsub import LeadsPubSub
+
+    async def event_stream():
+        async with session_scope() as session:
+            account_uuid = await get_default_account_uuid(session)
+
+        bus = LeadsPubSub()
+        sub_iter = bus.subscribe(account_uuid).__aiter__()
+
+        try:
+            while True:
+                try:
+                    env = await asyncio.wait_for(sub_iter.__anext__(), timeout=25.0)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError:
+                    yield ": ping\n\n"
+                    continue
+
+                if not _envelope_matches_filters(
+                    env,
+                    product_id=product_id,
+                    status=status_filter,
+                    utm_source=utm_source,
+                    date_from=date_from,
+                    date_to=date_to,
+                ):
+                    continue
+
+                event_name = env.get("type", "message")
+                payload = _json.dumps(env, default=str)
+                yield f"event: {event_name}\ndata: {payload}\n\n"
+        finally:
+            await bus.close()
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.get("/leads/{lead_id}", response_model=LeadDetailResponse)

@@ -44,6 +44,8 @@ class DispatchOnboardingStep:
         conversation_history: Any,
         meta_template_repo: MetaTemplateRepository,
         flow_repo: Any | None = None,
+        leads_pubsub: Any | None = None,
+        session: Any | None = None,
     ) -> None:
         self._enrollment_repo = enrollment_repo
         self._contact_repo = contact_repo
@@ -54,6 +56,74 @@ class DispatchOnboardingStep:
         # presente, o use case checa flow.is_active antes de disparar e cancela
         # steps de flows pausados.
         self._flow_repo = flow_repo
+        # leads_pubsub + session são opcionais; quando presentes, o use case
+        # publica `lead.enrollment.updated` no Redis após cada mudança de status
+        # de step (sucesso, falha, cancelamento) — alimenta o SSE de leads.
+        self._leads_pubsub = leads_pubsub
+        self._session = session
+
+    async def _publish_enrollment_updated(
+        self,
+        *,
+        enrollment: Any,
+        step: Any,
+        step_status: EnrollmentStepStatus,
+        step_label: str,
+    ) -> None:
+        """Publica `lead.enrollment.updated` no Redis após mudança de status.
+
+        No-op quando `leads_pubsub` não foi injetado. Falhas no publish são
+        logadas mas nunca propagadas — pub/sub não pode quebrar o pipeline.
+        """
+        if self._leads_pubsub is None:
+            return
+        if enrollment is None:
+            return
+
+        lead_id: str | None = None
+        if self._session is not None and getattr(enrollment, "contact_id", None) is not None:
+            try:
+                from sqlalchemy import select
+
+                from shared.adapters.db.models import LeadModel
+
+                result = await self._session.execute(
+                    select(LeadModel.id)
+                    .where(
+                        LeadModel.account_id == enrollment.account_id,
+                        LeadModel.contact_id == enrollment.contact_id,
+                    )
+                    .order_by(LeadModel.last_event_at.desc())
+                    .limit(1)
+                )
+                row = result.scalar_one_or_none()
+                if row is not None:
+                    lead_id = str(row)
+            except Exception as exc:
+                log.warning("dispatch_lead_lookup_failed", error=str(exc))
+
+        enrollment_status = getattr(enrollment, "status", None)
+        envelope = {
+            "type": "lead.enrollment.updated",
+            "lead_id": lead_id,
+            "enrollment": {
+                "id": str(enrollment.id),
+                "status": enrollment_status.value
+                if hasattr(enrollment_status, "value")
+                else str(enrollment_status)
+                if enrollment_status is not None
+                else None,
+                "step_id": str(step.id),
+                "step_status": step_status.value
+                if hasattr(step_status, "value")
+                else str(step_status),
+                "step_label": step_label,
+            },
+        }
+        try:
+            await self._leads_pubsub.publish(enrollment.account_id, envelope)
+        except Exception as exc:
+            log.warning("dispatch_publish_failed", error=str(exc))
 
     async def execute(
         self,
@@ -77,11 +147,17 @@ class DispatchOnboardingStep:
             log.info("followup_step_skipped", step_id=str(step.id), status=step.status)
             return DispatchResult(status=step.status, label="IGNORADO")
 
+        # Cache do enrollment carregado durante a execute(); reaproveitado para
+        # publicar `lead.enrollment.updated` em cada caminho de saída sem
+        # bater no DB de novo.
+        cached_enrollment: Any = None
+
         # Bloqueia disparo se o flow do enrollment estiver desativado.
         # Sem essa check, scheduled_jobs criados antes da desativação continuam
         # enviando mesmo com flow.is_active=False.
         if self._flow_repo is not None:
             enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
+            cached_enrollment = enrollment
             if enrollment is not None and enrollment.flow_id is not None:
                 flow = await self._flow_repo.find_by_id(enrollment.flow_id)
                 if flow is None or not flow.is_active:
@@ -92,6 +168,13 @@ class DispatchOnboardingStep:
                         flow_id=str(enrollment.flow_id),
                     )
                     await self._enrollment_repo.mark_cancelled(step.id, reason)
+                    step.status = EnrollmentStepStatus.CANCELLED
+                    await self._publish_enrollment_updated(
+                        enrollment=enrollment,
+                        step=step,
+                        step_status=EnrollmentStepStatus.CANCELLED,
+                        step_label="CANCELADO: flow desativado",
+                    )
                     return DispatchResult(
                         status=EnrollmentStepStatus.CANCELLED,
                         label="CANCELADO: flow desativado",
@@ -114,6 +197,17 @@ class DispatchOnboardingStep:
                     kind="message",
                     reason=reason,
                     exc_info=True,
+                )
+                if cached_enrollment is None:
+                    cached_enrollment = await self._enrollment_repo.find_enrollment_by_id(
+                        step.enrollment_id
+                    )
+                step.status = EnrollmentStepStatus.FAILED
+                await self._publish_enrollment_updated(
+                    enrollment=cached_enrollment,
+                    step=step,
+                    step_status=EnrollmentStepStatus.FAILED,
+                    step_label="FAILED",
                 )
                 return DispatchResult(
                     status=EnrollmentStepStatus.FAILED,
@@ -180,6 +274,7 @@ class DispatchOnboardingStep:
                     )
 
             enrollment = await self._enrollment_repo.find_enrollment_by_id(step.enrollment_id)
+            cached_enrollment = enrollment
             contact_email: str | None = None
             customer_name = ""
             product_name = ""
@@ -253,6 +348,13 @@ class DispatchOnboardingStep:
                     reason=reason,
                     exc_info=True,
                 )
+                step.status = EnrollmentStepStatus.FAILED
+                await self._publish_enrollment_updated(
+                    enrollment=cached_enrollment,
+                    step=step,
+                    step_status=EnrollmentStepStatus.FAILED,
+                    step_label="FAILED",
+                )
                 return DispatchResult(
                     status=EnrollmentStepStatus.FAILED,
                     label="FAILED",
@@ -278,6 +380,24 @@ class DispatchOnboardingStep:
             await self._enrollment_repo.update_enrollment_status(
                 step.enrollment_id, EnrollmentStatus.COMPLETED
             )
+            # Atualiza o status do enrollment cached para que o envelope publicado
+            # reflita o estado pós-update (COMPLETED) ao invés do estado anterior.
+            if cached_enrollment is not None:
+                import contextlib
+
+                with contextlib.suppress(Exception):
+                    cached_enrollment.status = EnrollmentStatus.COMPLETED
+
+        if cached_enrollment is None:
+            cached_enrollment = await self._enrollment_repo.find_enrollment_by_id(
+                step.enrollment_id
+            )
+        await self._publish_enrollment_updated(
+            enrollment=cached_enrollment,
+            step=step,
+            step_status=EnrollmentStepStatus.SENT,
+            step_label=dispatch_label,
+        )
 
         log.info(
             "followup_step_dispatched",
