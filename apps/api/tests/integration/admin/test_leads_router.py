@@ -450,3 +450,72 @@ async def test_list_leads_pagination(
     assert body["page"] == 1
     assert body["page_size"] == 2
     assert body["total"] >= 5
+
+
+@pytest.mark.integration
+async def test_leads_stream_emits_events(
+    client: AsyncClient,
+    admin_headers: dict[str, str],
+    seeded_account: AccountModel,
+    redis_container_session,
+    monkeypatch,
+) -> None:
+    """Endpoint SSE publica eventos que matcham filtros do query string."""
+    import asyncio
+    import json
+
+    host = redis_container_session.get_container_host_ip()
+    port = redis_container_session.get_exposed_port(6379)
+    monkeypatch.setenv("REDIS_URL", f"redis://{host}:{port}/0")
+    from shared.config.settings import get_settings
+
+    get_settings.cache_clear()  # type: ignore[attr-defined]
+
+    from shared.adapters.redis.leads_pubsub import LeadsPubSub
+
+    bus = LeadsPubSub()
+
+    async def publish_after_delay() -> None:
+        # Espera o subscriber estar pronto antes de publicar.
+        await asyncio.sleep(0.5)
+        for _ in range(5):
+            await bus.publish(
+                seeded_account.id,
+                {
+                    "type": "lead.upserted",
+                    "is_new": True,
+                    "lead": {
+                        "id": "abc",
+                        "subscription_status": "active",
+                        "utm_source": "facebook",
+                        "last_event_at": "2026-05-28T12:00:00Z",
+                        "hubla_product_id": "prod_x",
+                    },
+                },
+            )
+            await asyncio.sleep(0.1)
+
+    task = asyncio.create_task(publish_after_delay())
+
+    try:
+        async with client.stream("GET", "/admin/leads/stream", headers=admin_headers) as response:
+            assert response.status_code == 200
+            assert "text/event-stream" in response.headers.get("content-type", "")
+
+            received = False
+            async for line in response.aiter_lines():
+                stripped = line.strip()
+                if stripped.startswith("data:"):
+                    payload = json.loads(stripped[5:].strip())
+                    assert payload["lead"]["id"] == "abc"
+                    received = True
+                    break
+
+            assert received, "esperava receber pelo menos um evento SSE"
+    finally:
+        task.cancel()
+        import contextlib
+
+        with contextlib.suppress(asyncio.CancelledError, Exception):
+            await task
+        await bus.close()
