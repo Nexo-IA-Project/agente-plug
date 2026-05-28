@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { usePermission } from "@/features/auth/hooks/usePermission";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { useAvatarBlob } from "@/features/profile/hooks/useAvatarBlob";
+import { useAvatar } from "@/features/profile/context/AvatarContext";
 
 const NAV_ITEMS = [
   { label: "Painel", href: "/dashboard", icon: "dashboard" },
@@ -54,7 +54,7 @@ export function Sidebar() {
   const isDark = resolvedTheme === "dark";
   const { isAdmin } = usePermission();
   const { user } = useAuth();
-  const { blobUrl: avatarUrl } = useAvatarBlob(!!user);
+  const { blobUrl: avatarUrl } = useAvatar();
 
   const visibleItems = NAV_ITEMS.filter(
     (item) => !(item as { adminOnly?: boolean }).adminOnly || isAdmin

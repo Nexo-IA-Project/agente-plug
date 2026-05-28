@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AuthProvider, useAuthContext } from "@/features/auth/context/AuthContext";
+import { AvatarProvider } from "@/features/profile/context/AvatarContext";
 
 function MustChangePasswordGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthContext();
@@ -23,7 +24,9 @@ function MustChangePasswordGate({ children }: { children: React.ReactNode }) {
 export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <MustChangePasswordGate>{children}</MustChangePasswordGate>
+      <AvatarProvider>
+        <MustChangePasswordGate>{children}</MustChangePasswordGate>
+      </AvatarProvider>
     </AuthProvider>
   );
 }

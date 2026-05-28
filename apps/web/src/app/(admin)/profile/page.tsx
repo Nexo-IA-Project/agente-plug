@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { getMe, updateMe } from "@/lib/api";
 import { useToast } from "@/shared/hooks/useToast";
-import { useAvatarBlob } from "@/features/profile/hooks/useAvatarBlob";
+import { useAvatar } from "@/features/profile/context/AvatarContext";
 import { AvatarUploadModal } from "@/features/profile/components/AvatarUploadModal";
 import { ChangePasswordForm } from "@/features/profile/components/ChangePasswordForm";
 import type { MeResponse } from "@/features/profile/types";
@@ -17,10 +17,8 @@ export default function ProfilePage() {
   const [avatarOpen, setAvatarOpen] = useState(false);
   const toast = useToast();
 
-  // Carrega avatar via fetch autenticado (cross-origin safe)
-  const { blobUrl: avatarBlobUrl, refreshAvatar } = useAvatarBlob(
-    me?.has_avatar ?? false
-  );
+  // Avatar compartilhado com a sidebar via contexto
+  const { blobUrl: avatarBlobUrl, refreshAvatar } = useAvatar();
 
   useEffect(() => {
     getMe()
