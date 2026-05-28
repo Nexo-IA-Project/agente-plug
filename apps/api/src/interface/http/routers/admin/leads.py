@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
 from shared.config.single_tenant import get_default_account_uuid
@@ -272,7 +272,7 @@ async def stream_leads(
     utm_source: str | None = Query(default=None),
     date_from: datetime | None = Query(default=None),  # noqa: B008
     date_to: datetime | None = Query(default=None),  # noqa: B008
-    auth: AdminAuth = Depends(require_admin),  # noqa: B008
+    auth: AdminAuth = Depends(require_admin_sse),  # noqa: B008
 ) -> StreamingResponse:
     from shared.adapters.redis.leads_pubsub import LeadsPubSub
 
