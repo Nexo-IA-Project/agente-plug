@@ -44,3 +44,4 @@ class Lead:
     session_url: str | None = None
     fbp: str | None = None
     activated_at: datetime | None = None
+    chatnexo_conversation_url: str | None = None

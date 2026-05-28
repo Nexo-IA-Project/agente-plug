@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID, uuid4
@@ -9,7 +9,12 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import HublaEventModel, LeadModel
+from shared.adapters.db.models import (
+    AccountModel,
+    ConversationModel,
+    HublaEventModel,
+    LeadModel,
+)
 from shared.domain.entities.hubla_event import HublaEvent
 from shared.domain.entities.lead import Lead
 
@@ -205,7 +210,41 @@ class SqlLeadRepository:
         m = await self.session.get(LeadModel, lead_id)
         if m is None or m.account_id != account_id:
             return None
-        return _to_lead_entity(m)
+
+        entity = _to_lead_entity(m)
+
+        if m.contact_id is None:
+            return entity
+
+        conv_stmt = (
+            select(ConversationModel)
+            .where(
+                ConversationModel.account_id == account_id,
+                ConversationModel.contact_id == m.contact_id,
+            )
+            .order_by(ConversationModel.created_at.desc())
+            .limit(1)
+        )
+        conv = (await self.session.execute(conv_stmt)).scalar_one_or_none()
+        if conv is None:
+            return entity
+
+        acc = (
+            await self.session.execute(select(AccountModel).where(AccountModel.id == account_id))
+        ).scalar_one_or_none()
+        settings_dict = (acc.settings if acc else None) or {}
+        integration = settings_dict.get("integration") or {}
+        base = integration.get("chatnexo_base_url")
+        acc_chatnexo_id = integration.get("chatnexo_account_id")
+        inbox_id = integration.get("chatnexo_inbox_id")
+        if not (base and acc_chatnexo_id and inbox_id):
+            return entity
+
+        url = (
+            f"{str(base).rstrip('/')}/app/accounts/{acc_chatnexo_id}"
+            f"/inbox/{inbox_id}/conversations/{conv.chatnexo_conversation_id}"
+        )
+        return replace(entity, chatnexo_conversation_url=url)
 
     async def get_events(self, account_id: UUID, hubla_subscription_id: str) -> list[HublaEvent]:
         stmt = (
