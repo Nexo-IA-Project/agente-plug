@@ -7,6 +7,7 @@ seria caro para validação de roteamento). Validam o contrato HTTP completo
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import pytest
@@ -16,6 +17,11 @@ from fastapi.testclient import TestClient
 from interface.http.errors import register_error_handlers
 from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_purchase
+
+
+@asynccontextmanager
+async def _repo_cm(repo):
+    yield repo
 
 
 async def _token_resolver_secret() -> str:
@@ -65,7 +71,7 @@ def app_and_deps():
     register_error_handlers(app)
     webhook_purchase.configure(
         dedup=deps["dedup"],
-        event_repo_factory=lambda: deps["event_repo"],
+        event_repo_factory=lambda: _repo_cm(deps["event_repo"]),
         queue=deps["queue"],
         token_resolver=_token_resolver_secret,
     )

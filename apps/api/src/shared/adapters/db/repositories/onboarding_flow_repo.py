@@ -64,6 +64,26 @@ class OnboardingFlowRepository:
         rows = (await self.session.execute(stmt)).scalars().all()
         return [_flow_to_entity(m) for m in rows]
 
+    async def list_active_by_product_and_events(
+        self, product_id: uuid.UUID, event_types: list[str]
+    ) -> list[OnboardingFlow]:
+        """Como ``list_active_by_product_and_event`` mas casa qualquer um dos
+        ``event_types`` (cláusula ``IN``).
+
+        Usado para o matching flexível de eventos de ativação: um evento do grupo
+        canônico (``ACTIVATION_EVENT_TYPES``) deve casar flows configurados para
+        qualquer outro evento do mesmo grupo.
+        """
+        if not event_types:
+            return []
+        stmt = select(OnboardingFlowModel).where(
+            OnboardingFlowModel.product_id == product_id,
+            OnboardingFlowModel.trigger_event_type.in_(event_types),
+            OnboardingFlowModel.is_active.is_(True),
+        )
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return [_flow_to_entity(m) for m in rows]
+
     async def find_by_id(self, flow_id: uuid.UUID) -> OnboardingFlow | None:
         model = await self.session.get(OnboardingFlowModel, flow_id)
         return None if model is None else _flow_to_entity(model)

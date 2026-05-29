@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock
 
 import pytest
@@ -8,12 +9,17 @@ from interface.http.middleware import CorrelationIdMiddleware
 from interface.http.routers import webhook_message
 
 
+@asynccontextmanager
+async def _repo_cm(repo):
+    yield repo
+
+
 def _make_app(deps, *, token: str = "nxia_test"):
     app = FastAPI()
     app.add_middleware(CorrelationIdMiddleware)
     webhook_message.configure(
         dedup=deps["dedup"],
-        event_repo_factory=lambda: deps["event_repo"],
+        event_repo_factory=lambda: _repo_cm(deps["event_repo"]),
         queue=deps["queue"],
         token_validator=deps["token_validator"],
     )

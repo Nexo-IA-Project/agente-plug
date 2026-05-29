@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -17,7 +18,7 @@ log = get_logger(__name__)
 @dataclass
 class _Config:
     dedup: object | None = None
-    event_repo_factory: Callable[[], object] | None = None
+    event_repo_factory: Callable[[], AbstractAsyncContextManager[object]] | None = None
     queue: object | None = None
     token_validator: Callable[[str], Awaitable[bool]] | None = None
 
@@ -28,7 +29,7 @@ _cfg = _Config()
 def configure(
     *,
     dedup,
-    event_repo_factory: Callable[[], object],
+    event_repo_factory: Callable[[], AbstractAsyncContextManager[object]],
     queue,
     token_validator: Callable[[str], Awaitable[bool]],
 ) -> None:
@@ -72,12 +73,12 @@ async def receive(
         WEBHOOK_RECEIVED.labels(source="chatnexo", status="202-dup").inc()
         return {"accepted": True, "duplicate": True}
 
-    repo = _cfg.event_repo_factory()
-    await repo.insert_if_new(
-        source=WebhookSource.CHATNEXO,
-        external_id=payload.message_id,
-        payload=payload.model_dump(),
-    )
+    async with _cfg.event_repo_factory() as repo:
+        await repo.insert_if_new(
+            source=WebhookSource.CHATNEXO,
+            external_id=payload.message_id,
+            payload=payload.model_dump(),
+        )
 
     job_id = await _cfg.queue.enqueue({"kind": "message", "payload": payload.model_dump()})
     WEBHOOK_RECEIVED.labels(source="chatnexo", status="202").inc()
