@@ -279,8 +279,7 @@ async def stream_leads(
     async def event_stream():
         # Flush imediato: faz o dado fluir em t=0 para o EventSource abrir (onopen)
         # na hora e impedir que o proxy (nginx/Cloudflare) buffere a resposta
-        # esperando o primeiro byte. Sem isso, os primeiros 25s ficam em silêncio
-        # e a conexão é derrubada → "Reconectando" em loop.
+        # esperando o primeiro byte (combinado com o header X-Accel-Buffering: no).
         yield ": connected\n\n"
 
         async with session_scope() as session:
@@ -289,17 +288,30 @@ async def stream_leads(
         bus = LeadsPubSub()
         sub_iter = bus.subscribe(account_uuid).__aiter__()
 
+        # IMPORTANTE: não usar asyncio.wait_for(sub_iter.__anext__(), ...) — no
+        # timeout ele CANCELA o __anext__(), o que quebra o async generator do
+        # pubsub e derruba o stream logo após o 1º heartbeat. asyncio.wait NÃO
+        # cancela a task pendente: ela é reaproveitada na próxima iteração, e o
+        # heartbeat é só um yield enquanto a subscription segue viva.
+        pending: asyncio.Task | None = None
         try:
             while True:
-                try:
-                    # Heartbeat < timeouts do proxy (nginx proxy_read_timeout=120s,
-                    # Cloudflare). 15s mantém a conexão viva com folga.
-                    env = await asyncio.wait_for(sub_iter.__anext__(), timeout=15.0)
-                except StopAsyncIteration:
-                    break
-                except TimeoutError:
+                if pending is None:
+                    pending = asyncio.ensure_future(sub_iter.__anext__())
+
+                # Heartbeat 15s < timeouts do proxy (nginx proxy_read_timeout=120s,
+                # Cloudflare). A task pendente sobrevive ao timeout.
+                done, _ = await asyncio.wait({pending}, timeout=15.0)
+                if not done:
                     yield ": ping\n\n"
                     continue
+
+                try:
+                    env = pending.result()
+                except StopAsyncIteration:
+                    break
+                finally:
+                    pending = None
 
                 if not _envelope_matches_filters(
                     env,
@@ -315,6 +327,8 @@ async def stream_leads(
                 payload = _json.dumps(env, default=str)
                 yield f"event: {event_name}\ndata: {payload}\n\n"
         finally:
+            if pending is not None:
+                pending.cancel()
             await bus.close()
 
     return StreamingResponse(
