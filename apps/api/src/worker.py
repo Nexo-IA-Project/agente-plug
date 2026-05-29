@@ -14,7 +14,7 @@ from interface.worker.scheduler import SchedulerLoop
 from shared.adapters.clock.system_clock import SystemClock
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.scheduled_job import ScheduledJobRepository
-from shared.adapters.db.session import get_engine, get_sessionmaker
+from shared.adapters.db.session import get_engine, get_sessionmaker, session_scope
 from shared.adapters.observability.logger import configure_logging, get_logger
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.mutex import RedisMutex
@@ -57,9 +57,10 @@ async def main() -> None:
         await handle_scheduled(flat_payload)
 
     runner = SchedulerRunner(
-        repo=ScheduledJobRepository(get_sessionmaker()()),
+        repo_factory=lambda session: ScheduledJobRepository(session),
         clock=SystemClock(),
         handlers=dict.fromkeys(JobType, _scheduled_handler),
+        session_scope_factory=session_scope,
     )
 
     scheduler_loop = SchedulerLoop(runner=runner, mutex=mutex, tick_seconds=10)
