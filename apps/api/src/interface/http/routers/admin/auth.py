@@ -37,9 +37,7 @@ async def login(body: LoginRequest, response: Response) -> LoginResponse:
     settings = get_settings()
 
     async with get_db() as session:
-        result = await session.execute(
-            select(UserModel).where(UserModel.email == body.email)
-        )
+        result = await session.execute(select(UserModel).where(UserModel.email == body.email))
         user = result.scalar_one_or_none()
 
         if user is None or not verify_password(body.password, user.password_hash):
