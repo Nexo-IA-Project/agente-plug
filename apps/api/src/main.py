@@ -35,7 +35,7 @@ from interface.http.routers.admin import smtp_config as admin_smtp
 from interface.http.routers.admin import users as admin_users
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
-from shared.adapters.db.session import get_sessionmaker
+from shared.adapters.db.session import get_sessionmaker, session_scope
 from shared.adapters.observability.logger import configure_logging, get_logger
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.dedup import RedisDedup
@@ -54,9 +54,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     dedup = RedisDedup(redis)
     queue = PostgresJobQueue(sessionmaker=get_sessionmaker())
 
-    def _event_repo_factory() -> WebhookEventRepository:
-        session = get_sessionmaker()()
-        return WebhookEventRepository(session)
+    @asynccontextmanager
+    async def _event_repo_factory() -> AsyncIterator[WebhookEventRepository]:
+        # session_scope commita no exit e fecha a conexão. Antes a sessão era
+        # raw (sem context manager) e o INSERT do webhook nunca commitava →
+        # conexões ficavam `idle in transaction` penduradas (leak corrigido).
+        async with session_scope() as session:
+            yield WebhookEventRepository(session)
 
     async def _validate_token(raw_token: str) -> bool:
         from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository

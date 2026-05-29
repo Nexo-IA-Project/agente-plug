@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import secrets
 from collections.abc import Awaitable, Callable
+from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
@@ -18,7 +19,7 @@ log = get_logger(__name__)
 @dataclass
 class _Config:
     dedup: object | None = None
-    event_repo_factory: Callable[[], object] | None = None
+    event_repo_factory: Callable[[], AbstractAsyncContextManager[object]] | None = None
     queue: object | None = None
     token_resolver: Callable[[], Awaitable[str]] | None = None
 
@@ -29,7 +30,7 @@ _cfg = _Config()
 def configure(
     *,
     dedup,
-    event_repo_factory: Callable[[], object],
+    event_repo_factory: Callable[[], AbstractAsyncContextManager[object]],
     queue,
     token_resolver: Callable[[], Awaitable[str]],
 ) -> None:
@@ -79,12 +80,12 @@ async def receive(payload: dict = Body(...)) -> dict:
         log.info("purchase_webhook_duplicate", purchase_id=parsed.purchase_id)
         return {"accepted": True, "duplicate": True}
 
-    repo = _cfg.event_repo_factory()
-    await repo.insert_if_new(
-        source=WebhookSource.HUBLA,
-        external_id=parsed.purchase_id,
-        payload=payload,
-    )
+    async with _cfg.event_repo_factory() as repo:
+        await repo.insert_if_new(
+            source=WebhookSource.HUBLA,
+            external_id=parsed.purchase_id,
+            payload=payload,
+        )
 
     job_id = await _cfg.queue.enqueue({"kind": "purchase", "payload": payload})
     WEBHOOK_RECEIVED.labels(source="hubla", status="202").inc()
