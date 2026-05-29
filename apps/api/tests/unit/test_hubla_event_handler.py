@@ -125,6 +125,7 @@ async def test_lead_abandoned_uses_existing_conversation_and_skips_purchase_hand
 async def test_unknown_product_for_subscription_activated_still_runs_purchase_handler():
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+    product_repo.find_active_by_name = AsyncMock(return_value=None)
 
     contact_repo = AsyncMock()
     contact_repo.upsert = AsyncMock(return_value=_make_contact())
@@ -145,6 +146,45 @@ async def test_unknown_product_for_subscription_activated_still_runs_purchase_ha
 
     enroll_uc.execute.assert_not_called()
     purchase_handler.handle_one.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_product_matched_by_name_fallback_when_id_unknown():
+    """Hubla envia id de offer (v1) não cadastrado, mas o nome do produto bate →
+    resolve por nome (ponte) e enrolla o flow normalmente."""
+    product = _make_product()
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)  # id de offer desconhecido
+    product_repo.find_active_by_name = AsyncMock(return_value=product)  # nome bate
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(return_value="conv-y")
+
+    enroll_uc = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=purchase_handler,
+    )
+
+    await handler.handle(_make_event("subscription.activated"))
+
+    product_repo.find_active_by_name.assert_awaited_once()
+    enroll_uc.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -333,6 +373,7 @@ async def test_subscription_created_persists_lead_with_utms_and_invoice():
     """PR 4: HublaEventHandler grava HublaEvent + faz upsert do Lead com UTMs/valor."""
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)  # produto não cadastrado
+    product_repo.find_active_by_name = AsyncMock(return_value=None)
 
     contact_repo = AsyncMock()
     contact_repo.upsert = AsyncMock(return_value=_make_contact())
@@ -482,6 +523,7 @@ async def test_handler_works_without_lead_repos_backward_compat():
     """Existing call sites that don't pass lead_repo/hubla_event_repo must still work."""
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+    product_repo.find_active_by_name = AsyncMock(return_value=None)
 
     contact_repo = AsyncMock()
     contact_repo.upsert = AsyncMock(return_value=_make_contact())
@@ -534,6 +576,7 @@ async def test_contact_id_propagated_to_hubla_event_and_lead():
 
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+    product_repo.find_active_by_name = AsyncMock(return_value=None)
     purchase_handler = AsyncMock()
 
     handler = HublaEventHandler(

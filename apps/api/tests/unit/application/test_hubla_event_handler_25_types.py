@@ -21,6 +21,7 @@ def _make_handler() -> HublaEventHandler:
     product_repo.find_active_by_hubla_id = AsyncMock(
         return_value=None
     )  # produto não encontrado por padrão
+    product_repo.find_active_by_name = AsyncMock(return_value=None)  # fallback por nome: sem match
 
     flow_repo = MagicMock()
     flow_repo.list_active_by_product_and_event = AsyncMock(return_value=[])

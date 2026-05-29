@@ -301,11 +301,27 @@ class HublaEventHandler:
 
         product = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
 
+        # Fallback por nome: a Hubla pode enviar um id de offer (webhook v1 "NewSale")
+        # em vez do id de produto, então o lookup por hubla_id falha mesmo com o produto
+        # cadastrado. Casa pelo nome exato como ponte. Logamos um warning explícito para
+        # NÃO falhar em silêncio — esse id precisa ser cadastrado/migrado para v2.
+        if product is None and product_name:
+            product = await self._product_repo.find_active_by_name(account_uuid, product_name)
+            if product is not None:
+                log.warning(
+                    "hubla_event_product_matched_by_name_fallback",
+                    event_type=event_type,
+                    hubla_product_id=hubla_product_id,
+                    product_name=product_name,
+                    product_id=str(product.id),
+                )
+
         if product is None:
             log.warning(
                 "hubla_event_product_not_found",
                 event_type=event_type,
                 hubla_product_id=hubla_product_id,
+                product_name=product_name,
             )
             # Para subscription.activated, mantém comportamento legado (welcome + access case)
             # mesmo sem curso cadastrado no catálogo — garante que nenhuma compra seja ignorada.
