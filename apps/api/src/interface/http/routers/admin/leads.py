@@ -277,6 +277,12 @@ async def stream_leads(
     from shared.adapters.redis.leads_pubsub import LeadsPubSub
 
     async def event_stream():
+        # Flush imediato: faz o dado fluir em t=0 para o EventSource abrir (onopen)
+        # na hora e impedir que o proxy (nginx/Cloudflare) buffere a resposta
+        # esperando o primeiro byte. Sem isso, os primeiros 25s ficam em silêncio
+        # e a conexão é derrubada → "Reconectando" em loop.
+        yield ": connected\n\n"
+
         async with session_scope() as session:
             account_uuid = await get_default_account_uuid(session)
 
@@ -286,7 +292,9 @@ async def stream_leads(
         try:
             while True:
                 try:
-                    env = await asyncio.wait_for(sub_iter.__anext__(), timeout=25.0)
+                    # Heartbeat < timeouts do proxy (nginx proxy_read_timeout=120s,
+                    # Cloudflare). 15s mantém a conexão viva com folga.
+                    env = await asyncio.wait_for(sub_iter.__anext__(), timeout=15.0)
                 except StopAsyncIteration:
                     break
                 except TimeoutError:
@@ -309,7 +317,17 @@ async def stream_leads(
         finally:
             await bus.close()
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            # nginx honra X-Accel-Buffering: no e desliga proxy_buffering só
+            # nesta resposta (o buffering padrão segura o SSE). no-cache evita
+            # cache do stream em qualquer camada.
+            "X-Accel-Buffering": "no",
+            "Cache-Control": "no-cache",
+        },
+    )
 
 
 @router.get("/leads/{lead_id}", response_model=LeadDetailResponse)
