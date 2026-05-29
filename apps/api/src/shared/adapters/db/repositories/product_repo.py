@@ -49,6 +49,22 @@ class SqlProductRepository:
         m = (await self.session.execute(stmt)).scalar_one_or_none()
         return _to_entity(m) if m else None
 
+    async def find_active_by_name(self, account_id: UUID, name: str) -> Product | None:
+        """Fallback de resolução por nome exato (ponte para ids de offer não cadastrados).
+
+        Só resolve se houver **exatamente um** produto ativo com aquele nome — em caso
+        de ambiguidade (ou nenhum), retorna None para não enrollar no flow errado.
+        """
+        if not name:
+            return None
+        stmt = select(ProductModel).where(
+            ProductModel.account_id == account_id,
+            ProductModel.name == name,
+            ProductModel.is_active.is_(True),
+        )
+        rows = (await self.session.execute(stmt)).scalars().all()
+        return _to_entity(rows[0]) if len(rows) == 1 else None
+
     async def create(
         self, *, account_id: UUID, name: str, hubla_id: str, is_active: bool = True
     ) -> Product:
