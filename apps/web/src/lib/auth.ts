@@ -28,12 +28,11 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 export async function loginRequest(
   email: string,
   password: string,
-  accountId: number,
 ): Promise<string> {
   const res = await fetch(`${API_URL}/admin/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, account_id: accountId }),
+    body: JSON.stringify({ email, password }),
   });
 
   if (!res.ok) {
