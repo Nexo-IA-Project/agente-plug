@@ -54,7 +54,8 @@ async def test_subscription_activated_enrolls_and_runs_purchase_handler():
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
 
     flow_repo = AsyncMock()
-    flow_repo.list_active_by_product_and_event = AsyncMock(
+    # subscription.activated é evento de ativação → matching flexível usa o método plural.
+    flow_repo.list_active_by_product_and_events = AsyncMock(
         return_value=[_make_flow("subscription.activated")]
     )
 
@@ -153,8 +154,9 @@ async def test_flow_with_mismatched_trigger_is_not_enrolled():
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
 
     flow_repo = AsyncMock()
-    # O repo filtra por event_type; retorna lista vazia pois nenhum flow corresponde ao evento.
-    flow_repo.list_active_by_product_and_event = AsyncMock(return_value=[])
+    # Evento de ativação usa o método plural (grupo canônico); retorna vazio
+    # porque nenhum flow do produto está nesse grupo.
+    flow_repo.list_active_by_product_and_events = AsyncMock(return_value=[])
 
     contact_repo = AsyncMock()
     contact_repo.upsert = AsyncMock(return_value=_make_contact())
@@ -176,14 +178,132 @@ async def test_flow_with_mismatched_trigger_is_not_enrolled():
 
     await handler.handle(_make_event("subscription.activated"))
 
-    # Verifica que o repo foi chamado com o filtro correto de event_type
-    flow_repo.list_active_by_product_and_event.assert_called_once()
-    call_kwargs = flow_repo.list_active_by_product_and_event.call_args.kwargs
-    assert call_kwargs["event_type"] == "subscription.activated"
+    # Verifica que o repo foi consultado com o grupo canônico de ativação
+    flow_repo.list_active_by_product_and_events.assert_called_once()
+    call_kwargs = flow_repo.list_active_by_product_and_events.call_args.kwargs
+    assert "subscription.activated" in call_kwargs["event_types"]
+    assert "customer.member_added" in call_kwargs["event_types"]
 
     # Nenhum flow correspondeu → sem enrollment, mas purchase_handler executa (access case)
     enroll_uc.execute.assert_not_called()
     purchase_handler.handle_one.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_member_added_enrolls_flow_configured_for_subscription_activated():
+    """Matching flexível: customer.member_added (Hubla v2) deve disparar flows
+    configurados para subscription.activated (grupo canônico de ativação)."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(return_value="conv-x")
+
+    enroll_uc = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=purchase_handler,
+    )
+
+    await handler.handle(_make_event("customer.member_added"))
+
+    # Casa o flow antigo via grupo de ativação e enrolla.
+    flow_repo.list_active_by_product_and_events.assert_called_once()
+    call_kwargs = flow_repo.list_active_by_product_and_events.call_args.kwargs
+    assert "customer.member_added" in call_kwargs["event_types"]
+    assert "subscription.activated" in call_kwargs["event_types"]
+    enroll_uc.execute.assert_called_once()
+    # customer.member_added NÃO está em PURCHASE_EVENT_TYPES → não roda welcome legado.
+    purchase_handler.handle_one.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_route_continues_when_create_conversation_fails():
+    """Resiliência: falha de ChatNexo em um flow não impede os demais nem derruba o evento."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated"), _make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(side_effect=[RuntimeError("404"), "conv-2"])
+
+    enroll_uc = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=purchase_handler,
+    )
+
+    # Não deve levantar — o 1º flow falha, o 2º enrolla.
+    await handler.handle(_make_event("customer.member_added"))
+
+    assert enroll_uc.execute.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_single_flow_chatnexo_failure_does_not_raise_and_marks_processed():
+    """Um único flow que falha no ChatNexo: handle() completa e marca processed."""
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(side_effect=RuntimeError("404 contact_inboxes"))
+
+    hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=MagicMock(id=uuid4()))
+    hubla_event_repo.mark_processed = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    await handler.handle(_make_event("customer.member_added"))
+
+    # O finally garante mark_processed mesmo com a falha de ChatNexo.
+    hubla_event_repo.mark_processed.assert_awaited_once()
 
 
 @pytest.mark.asyncio

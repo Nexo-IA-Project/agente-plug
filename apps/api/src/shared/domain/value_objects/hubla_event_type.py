@@ -52,6 +52,29 @@ ALL_HUBLA_EVENT_TYPES: frozenset[str] = frozenset(get_args(HublaEventType))
 PURCHASE_EVENT_TYPES: frozenset[str] = frozenset({"subscription.activated"})
 """Eventos que disparam o pipeline legado de PurchaseHandler (welcome + access_case)."""
 
+ACTIVATION_EVENT_TYPES: frozenset[str] = frozenset(
+    {
+        "subscription.activated",
+        "customer.member_added",
+    }
+)
+"""Grupo canônico de "acesso concedido".
+
+A Hubla v2 migrou de `subscription.activated` para `customer.member_added` como
+sinal de acesso liberado. Para o disparo de onboarding flows, qualquer evento
+deste grupo casa com flows configurados para qualquer outro evento do grupo —
+assim o onboarding dispara independentemente do rótulo que a Hubla enviar.
+
+Nota: `PURCHASE_EVENT_TYPES` permanece restrito a `subscription.activated` de
+propósito — o PurchaseHandler legado (welcome + access_case) não deve rodar em
+`customer.member_added` para evitar duplicação.
+"""
+
+
+def is_activation_event(value: str) -> bool:
+    """True se `value` é um evento canônico de "acesso concedido" (ver ACTIVATION_EVENT_TYPES)."""
+    return value in ACTIVATION_EVENT_TYPES
+
 
 # Mapa de nomes antigos (errados, usados em código/dados anteriores) → nomes
 # corretos da Hubla. Usado pela função `normalize_event_type` em runtime

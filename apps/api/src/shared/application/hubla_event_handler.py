@@ -11,7 +11,9 @@ from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.hubla_event import HublaEvent
 from shared.domain.entities.lead import Lead
 from shared.domain.value_objects.hubla_event_type import (
+    ACTIVATION_EVENT_TYPES,
     PURCHASE_EVENT_TYPES,
+    is_activation_event,
     is_valid_hubla_event_type,
     normalize_event_type,
 )
@@ -325,42 +327,68 @@ class HublaEventHandler:
             return
 
         # contact is guaranteed non-None here (checked at top of _route)
-        flows = await self._flow_repo.list_active_by_product_and_event(
-            product_id=product.id, event_type=event_type
-        )
+        # Matching flexível: um evento de ativação ("acesso concedido") casa flows
+        # configurados para QUALQUER evento do grupo canônico — assim os flows
+        # antigos (subscription.activated) continuam disparando mesmo quando a
+        # Hubla v2 envia customer.member_added. Demais eventos usam match exato.
+        if is_activation_event(event_type):
+            flows = await self._flow_repo.list_active_by_product_and_events(
+                product_id=product.id, event_types=sorted(ACTIVATION_EVENT_TYPES)
+            )
+        else:
+            flows = await self._flow_repo.list_active_by_product_and_event(
+                product_id=product.id, event_type=event_type
+            )
 
         # ChatNexo (Chatwoot fork) usa account_id como integer; o UUID local não bate.
         chatnexo_account_id = str(self._chatnexo_account_id)
 
+        enrolled = 0
         for flow in flows:
-            conversation_id = await self._chatnexo.get_open_conversation(
-                account_id=chatnexo_account_id, contact_phone=str(contact.phone)
-            )
-            if conversation_id is None:
-                conversation_id = await self._chatnexo.create_conversation(
-                    account_id=chatnexo_account_id,
-                    contact_phone=str(contact.phone),
-                    inbox_id=self._chatnexo_inbox_id,
-                    contact_name=payer_full_name or None,
-                    contact_email=payer_email or None,
+            # Resiliência: uma falha de ChatNexo/enrollment em um flow não pode
+            # derrubar o evento inteiro (lead já foi persistido) nem impedir os
+            # demais flows. Loga e segue. (Antes: 404 do ChatNexo → DLQ.)
+            try:
+                conversation_id = await self._chatnexo.get_open_conversation(
+                    account_id=chatnexo_account_id, contact_phone=str(contact.phone)
                 )
-            await self._enroll_contact_uc.execute(
-                account_id=account_uuid,
-                contact_id=UUID(str(contact.id)),
-                conversation_id=str(conversation_id),
-                contact_phone=str(contact.phone),
-                purchase_id=purchase_id,
-                flow_id=flow.id,
-                customer_name=payer_full_name,
-                product_name=product_name,
-                purchase_time=activated_at,
-            )
+                if conversation_id is None:
+                    conversation_id = await self._chatnexo.create_conversation(
+                        account_id=chatnexo_account_id,
+                        contact_phone=str(contact.phone),
+                        inbox_id=self._chatnexo_inbox_id,
+                        contact_name=payer_full_name or None,
+                        contact_email=payer_email or None,
+                    )
+                await self._enroll_contact_uc.execute(
+                    account_id=account_uuid,
+                    contact_id=UUID(str(contact.id)),
+                    conversation_id=str(conversation_id),
+                    contact_phone=str(contact.phone),
+                    purchase_id=purchase_id,
+                    flow_id=flow.id,
+                    customer_name=payer_full_name,
+                    product_name=product_name,
+                    purchase_time=activated_at,
+                )
+                enrolled += 1
+            except Exception as exc:
+                log.error(
+                    "hubla_event_flow_enroll_failed",
+                    event_type=event_type,
+                    flow_id=str(flow.id),
+                    purchase_id=purchase_id,
+                    error=str(exc),
+                    exc_info=True,
+                )
+                continue
 
         log.info(
             "hubla_event_flows_enrolled",
             event_type=event_type,
             product_id=str(product.id),
-            flows=len(flows),
+            flows=enrolled,
+            attempted=len(flows),
             purchase_id=purchase_id,
         )
 
