@@ -173,6 +173,17 @@ class ProfileRepository:
             for r in rows
         ]
 
+    async def name_map(self, account_id: UUID) -> dict[UUID, str]:
+        """Mapa {profile_id: name} de todos os profiles da account (evita N+1)."""
+        rows = (
+            await self.session.execute(
+                select(ProfileModel.id, ProfileModel.name).where(
+                    ProfileModel.account_id == account_id
+                )
+            )
+        ).all()
+        return {r.id: r.name for r in rows}
+
     async def list_by_account(self, account_id: UUID) -> list[Profile]:
         rows = (
             (
