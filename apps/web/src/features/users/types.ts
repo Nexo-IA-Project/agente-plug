@@ -12,6 +12,8 @@ export interface User {
   has_avatar: boolean;
   created_at: string;
   last_login_at: string | null;
+  profile_id: string | null;
+  profile_name: string | null;
 }
 
 export interface UserListResponse {
@@ -25,10 +27,12 @@ export interface CreateUserInput {
   name: string;
   email: string;
   role: UserRole;
+  profile_id: string | null;
 }
 
 export interface UpdateUserInput {
   name: string;
   role: UserRole;
   is_active: boolean;
+  profile_id: string | null;
 }
