@@ -46,6 +46,7 @@ def _lead_to_dict(lead: Lead) -> dict[str, Any]:
         "last_event_at": lead.last_event_at.isoformat() if lead.last_event_at else None,
         "last_event_type": lead.last_event_type,
         "chatnexo_conversation_url": lead.chatnexo_conversation_url,
+        "product_unmatched": lead.product_unmatched,
     }
 
 

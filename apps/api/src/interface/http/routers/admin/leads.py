@@ -40,6 +40,7 @@ class LeadResponse(BaseModel):
     last_event_at: datetime
     last_event_type: str
     chatnexo_conversation_url: str | None = None
+    product_unmatched: bool = False
 
 
 class LeadListResponse(BaseModel):
@@ -106,6 +107,7 @@ def _to_response(m: Lead) -> LeadResponse:
         last_event_at=m.last_event_at,
         last_event_type=m.last_event_type,
         chatnexo_conversation_url=m.chatnexo_conversation_url,
+        product_unmatched=m.product_unmatched,
     )
 
 
@@ -116,6 +118,7 @@ async def list_leads(
     utm_source: str | None = Query(default=None),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
+    unmatched: bool | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=200),
     auth: AdminAuth = Depends(require_admin),
@@ -130,6 +133,7 @@ async def list_leads(
             utm_source=utm_source,
             date_from=date_from,
             date_to=date_to,
+            unmatched=unmatched,
             page=page,
             page_size=page_size,
         )

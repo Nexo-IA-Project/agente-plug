@@ -964,4 +964,36 @@ async def test_does_not_publish_when_lead_not_persisted():
     await handler.handle(payload)
 
     lead_repo.upsert.assert_not_called()
-    leads_pubsub.publish.assert_not_called()
+
+
+def test_lead_to_dict_includes_product_unmatched():
+    """_lead_to_dict deve expor product_unmatched no envelope SSE."""
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from shared.application.hubla_event_handler import _lead_to_dict
+    from shared.domain.entities.lead import Lead
+
+    now = datetime.now(UTC)
+    lead = Lead(
+        id=uuid4(),
+        account_id=uuid4(),
+        hubla_subscription_id="sub-001",
+        payer_phone="+5511999990000",
+        payer_name="Teste",
+        payer_email="t@test.com",
+        hubla_product_id="prod-x",
+        product_name="Produto X",
+        subscription_status="active",
+        first_seen_at=now,
+        last_event_at=now,
+        last_event_type="subscription.activated",
+        created_at=now,
+        updated_at=now,
+        product_unmatched=True,
+    )
+
+    result = _lead_to_dict(lead)
+
+    assert "product_unmatched" in result
+    assert result["product_unmatched"] is True

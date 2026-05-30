@@ -53,6 +53,7 @@ def _to_lead_entity(m: LeadModel) -> Lead:
         last_event_type=m.last_event_type,
         created_at=m.created_at,
         updated_at=m.updated_at,
+        product_unmatched=m.product_unmatched,
     )
 
 
@@ -182,6 +183,7 @@ class SqlLeadRepository:
         utm_source: str | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
+        unmatched: bool | None = None,
         page: int = 1,
         page_size: int = 25,
     ) -> tuple[list[Lead], int]:
@@ -196,6 +198,8 @@ class SqlLeadRepository:
             stmt = stmt.where(LeadModel.last_event_at >= date_from)
         if date_to is not None:
             stmt = stmt.where(LeadModel.last_event_at <= date_to)
+        if unmatched is True:
+            stmt = stmt.where(LeadModel.product_unmatched.is_(True))
 
         total_stmt = select(func.count()).select_from(stmt.subquery())
         total: int = (await self.session.execute(total_stmt)).scalar_one()

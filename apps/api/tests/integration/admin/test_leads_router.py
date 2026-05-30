@@ -519,3 +519,46 @@ async def test_leads_stream_emits_events(
         with contextlib.suppress(asyncio.CancelledError, Exception):
             await task
         await bus.close()
+
+
+@pytest.mark.integration
+async def test_list_leads_filter_unmatched(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """?unmatched=true retorna apenas leads com product_unmatched=True."""
+    db_session.add(_make_lead(seeded_account.id, payer_name="Mapeado", product_unmatched=False))
+    db_session.add(_make_lead(seeded_account.id, payer_name="Não Mapeado", product_unmatched=True))
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads?unmatched=true", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert len(items) >= 1
+    assert all(item["product_unmatched"] is True for item in items)
+    names = [item["payer_name"] for item in items]
+    assert "Não Mapeado" in names
+    assert "Mapeado" not in names
+
+
+@pytest.mark.integration
+async def test_list_leads_response_includes_product_unmatched(
+    client: AsyncClient,
+    db_session: AsyncSession,
+    seeded_account: AccountModel,
+    admin_headers: dict[str, str],
+) -> None:
+    """O campo product_unmatched está sempre presente no response."""
+    db_session.add(_make_lead(seeded_account.id, product_unmatched=False))
+    await db_session.flush()
+    await db_session.commit()
+
+    r = await client.get("/admin/leads", headers=admin_headers)
+    assert r.status_code == 200, r.text
+    items = r.json()["items"]
+    assert len(items) >= 1
+    for item in items:
+        assert "product_unmatched" in item
