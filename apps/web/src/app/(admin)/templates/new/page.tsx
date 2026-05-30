@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TemplateForm } from "@/features/templates/components/TemplateForm";
 import { useMetaTemplates } from "@/features/templates/hooks/useMetaTemplates";
 import { useToast } from "@/shared/hooks/useToast";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function NewTemplatePage() {
   const { create } = useMetaTemplates();
@@ -12,6 +13,7 @@ export default function NewTemplatePage() {
   const router = useRouter();
 
   return (
+    <RequirePermission perm="templates.view">
     <div className="mx-auto max-w-4xl p-6">
       <div className="mb-6 flex items-center gap-3">
         <Link href="/templates" className="text-on-surface-variant hover:text-on-surface">
@@ -27,5 +29,6 @@ export default function NewTemplatePage() {
         }}
       />
     </div>
+    </RequirePermission>
   );
 }

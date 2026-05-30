@@ -7,8 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from interface.http.deps.admin_auth import AdminAuth
-from interface.http.deps.admin_auth import require_admin as _require_admin
-from interface.http.deps.admin_auth import require_admin_role as _require_admin_role
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.api_token_repo import ApiTokenRepository
 from shared.adapters.db.session import session_scope
 
@@ -41,7 +40,7 @@ class TokenListItem(BaseModel):
 )
 async def create_token(
     body: CreateTokenRequest,
-    auth: AdminAuth = Depends(_require_admin),
+    auth: AdminAuth = Depends(require_permission("tokens.manage")),
 ) -> TokenCreatedResponse:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)
@@ -58,7 +57,7 @@ async def create_token(
 
 @router.get("/api-tokens", response_model=list[TokenListItem])
 async def list_tokens(
-    auth: AdminAuth = Depends(_require_admin),
+    auth: AdminAuth = Depends(require_permission("tokens.view")),
 ) -> list[TokenListItem]:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)
@@ -79,7 +78,7 @@ async def list_tokens(
 @router.delete("/api-tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def revoke_token(
     token_id: uuid.UUID,
-    auth: AdminAuth = Depends(_require_admin_role),
+    auth: AdminAuth = Depends(require_permission("tokens.manage")),
 ) -> None:
     async with session_scope() as session:
         repo = ApiTokenRepository(session)

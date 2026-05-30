@@ -82,7 +82,7 @@ function AgentListItem({
   );
 }
 
-export function ChatNexoAgentsSection() {
+export function ChatNexoAgentsCard() {
   const toast = useToast();
   const [agents, setAgents] = useState<AgentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,21 +128,26 @@ export function ChatNexoAgentsSection() {
   }
 
   return (
-    <section>
-      {/* Section header */}
-      <div className="mb-6 flex items-center gap-3">
-        <div className="h-5 w-1 rounded-full bg-primary" />
+    <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
+      {/* Card header */}
+      <div className="flex items-center gap-3 border-b border-outline-variant/60 bg-surface-container-low dark:bg-surface-container px-5 py-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-container">
+          <span
+            className="material-symbols-outlined text-on-primary-container"
+            style={{ fontSize: "20px", fontVariationSettings: "'FILL' 1" }}
+          >
+            support_agent
+          </span>
+        </div>
         <div>
-          <h2 className="text-lg font-semibold text-on-surface">Atendentes ChatNexo</h2>
-          <p className="mt-0.5 text-sm text-on-surface-variant">
-            Cada atendente usa uma chave de API própria. O sistema escolhe aleatoriamente ao enviar
-            uma mensagem de onboarding.
+          <p className="text-sm font-semibold text-on-surface">Atendentes</p>
+          <p className="text-xs text-on-surface-variant">
+            Cada atendente usa uma chave própria; o sistema escolhe aleatoriamente ao enviar onboarding
           </p>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
-        {/* Agents list */}
+      {/* Agents list */}
         <div className="p-5">
           {loading ? (
             <div className="flex items-center gap-2 py-4 text-sm text-on-surface-variant">
@@ -248,7 +253,6 @@ export function ChatNexoAgentsSection() {
             </div>
           </div>
         </form>
-      </div>
-    </section>
+    </div>
   );
 }

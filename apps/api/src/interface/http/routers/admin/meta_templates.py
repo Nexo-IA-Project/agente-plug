@@ -9,7 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from interface.http.schemas.meta_templates import (
     CreateTemplateRequest,
     EditTemplateRequest,
@@ -114,7 +115,7 @@ async def _flow_usage_check(account_id: UUID, template_name: str) -> list[dict[s
 async def upload_media(
     file: Annotated[UploadFile, File()],
     kind: Annotated[str, Form()],
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("templates.create")),
 ) -> UploadMediaResponse:
     if kind not in {"IMAGE", "VIDEO", "DOCUMENT"}:
         raise HTTPException(status_code=422, detail={"code": "MEDIA_KIND_INVALID"})
@@ -155,7 +156,7 @@ async def upload_media(
 )
 async def create_template(
     body: CreateTemplateRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("templates.create")),
 ) -> MetaTemplateResponse:
     client, waba_id, app_id = await _get_meta_client_and_waba(auth)
     if not waba_id:
@@ -212,7 +213,7 @@ async def create_template(
 
 @router.get("/meta-templates", response_model=list[MetaTemplateResponse])
 async def list_templates(
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("templates.view")),
 ) -> list[MetaTemplateResponse]:
     client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
@@ -228,7 +229,7 @@ async def list_templates(
 @router.delete("/meta-templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: UUID,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("templates.delete")),
 ) -> None:
     client, waba_id, _app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
@@ -270,7 +271,7 @@ async def delete_template(
 async def edit_template(
     template_id: UUID,
     body: EditTemplateRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("templates.create")),
 ) -> MetaTemplateResponse:
     client, waba_id, app_id = await _get_meta_client_and_waba(auth)
     async with session_scope() as session:
@@ -321,7 +322,7 @@ async def edit_template(
 @router.post("/meta-templates/sync")
 async def sync_templates(
     dry_run: bool = False,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("templates.create")),
 ) -> dict[str, Any]:
     """Full re-sync de templates Meta com a WABA atual.
 

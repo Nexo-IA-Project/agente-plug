@@ -1,30 +1,9 @@
 "use client";
 
-import { useAuth } from "./useAuth";
-
-export type Action =
-  | "manage_users"
-  | "delete_template"
-  | "delete_document"
-  | "delete_api_token"
-  | "edit_credentials"
-  | "edit_smtp";
-
-const ADMIN_ONLY: Action[] = [
-  "manage_users",
-  "delete_template",
-  "delete_document",
-  "delete_api_token",
-  "edit_credentials",
-  "edit_smtp",
-];
+import { usePermissionContext } from "@/features/auth/context/PermissionContext";
 
 export function usePermission() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin";
-  const can = (action: Action): boolean => {
-    if (ADMIN_ONLY.includes(action)) return isAdmin;
-    return true;
-  };
-  return { isAdmin, can };
+  const { permissions, isAdmin, loading } = usePermissionContext();
+  const can = (key: string): boolean => isAdmin || permissions.has(key);
+  return { isAdmin, loading, can };
 }

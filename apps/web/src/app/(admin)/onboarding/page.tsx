@@ -6,8 +6,17 @@ import { FlowCard } from "@/features/onboarding/components/FlowCard";
 import { FlowDrawer } from "@/features/onboarding/components/FlowDrawer";
 import { useToast } from "@/shared/hooks/useToast";
 import type { CreateFlowInput, OnboardingFlow, UpdateFlowInput } from "@/features/onboarding/types";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function OnboardingPage() {
+  return (
+    <RequirePermission perm="onboarding.view">
+      <OnboardingContent />
+    </RequirePermission>
+  );
+}
+
+function OnboardingContent() {
   const { flows, loading, error, create, update, remove } = useOnboardingFlows();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingFlow, setEditingFlow] = useState<OnboardingFlow | null>(null);

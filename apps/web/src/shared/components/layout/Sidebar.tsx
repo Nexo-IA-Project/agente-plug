@@ -1,6 +1,7 @@
 // apps/web/src/shared/components/layout/Sidebar.tsx
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -10,23 +11,25 @@ import { usePermission } from "@/features/auth/hooks/usePermission";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { useAvatar } from "@/features/profile/context/AvatarContext";
 
-const NAV_ITEMS = [
-  { label: "Painel", href: "/dashboard", icon: "dashboard" },
-  { label: "Base de Conhecimento", href: "/kb", icon: "database" },
-  { label: "Contas", href: "/accounts", icon: "group" },
-  { label: "Produtos", href: "/products", icon: "inventory_2" },
-  { label: "Leads", href: "/leads", icon: "person_search" },
-  { label: "Onboarding", href: "/onboarding", icon: "schedule_send" },
-  { label: "Pendências", href: "/onboarding/pendencias", icon: "report" },
-  { label: "Templates", href: "/templates", icon: "sms" },
-  { label: "Usuários", href: "/users", icon: "manage_accounts", adminOnly: true },
-  { label: "Perfis", href: "/profiles", icon: "badge", adminOnly: true },
-  { label: "Configurações", href: "/settings", icon: "settings", exact: true },
+type NavEntry = { label: string; href: string; icon: string; perm: string; exact?: boolean };
+
+const NAV_ITEMS: NavEntry[] = [
+  { label: "Painel", href: "/dashboard", icon: "dashboard", perm: "dashboard.view" },
+  { label: "Base de Conhecimento", href: "/kb", icon: "database", perm: "kb.view" },
+  { label: "Produtos", href: "/products", icon: "inventory_2", perm: "products.view" },
+  { label: "Leads", href: "/leads", icon: "person_search", perm: "leads.view" },
+  { label: "Onboarding", href: "/onboarding", icon: "schedule_send", perm: "onboarding.view" },
+  { label: "Pendências", href: "/onboarding/pendencias", icon: "report", perm: "onboarding.view" },
+  { label: "Templates", href: "/templates", icon: "sms", perm: "templates.view" },
+  { label: "Usuários", href: "/users", icon: "manage_accounts", perm: "users.view" },
+  { label: "Perfis", href: "/profiles", icon: "badge", perm: "profiles.view" },
 ];
 
-const FOOTER_ITEMS = [
-  { label: "Tokens de API", href: "/settings/tokens", icon: "key" },
-] as const;
+const SETTINGS_CHILDREN: NavEntry[] = [
+  { label: "Integrações", href: "/settings", icon: "hub", perm: "settings.view", exact: true },
+  { label: "Comportamento", href: "/settings/comportamento", icon: "tune", perm: "settings.view", exact: true },
+  { label: "API / Tokens", href: "/settings/tokens", icon: "key", perm: "tokens.view", exact: true },
+];
 
 function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
   return (
@@ -50,17 +53,42 @@ function NavItem({ href, icon, label, active }: { href: string; icon: string; la
   );
 }
 
+function SettingsChildItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 rounded-lg py-2 pl-9 pr-3 text-label-lg transition-colors",
+        active
+          ? "bg-surface-container font-semibold text-on-surface"
+          : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+      )}
+    >
+      <span
+        className="material-symbols-outlined"
+        style={{ fontSize: "18px", fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}
+      >
+        {icon}
+      </span>
+      {label}
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
-  const { isAdmin } = usePermission();
+  const { can } = usePermission();
   const { user } = useAuth();
   const { blobUrl: avatarUrl } = useAvatar();
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !(item as { adminOnly?: boolean }).adminOnly || isAdmin
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => can(item.perm));
+  const visibleSettings = SETTINGS_CHILDREN.filter((item) => can(item.perm));
+
+  const settingsHrefs = SETTINGS_CHILDREN.map((c) => c.href);
+  const onSettingsRoute = settingsHrefs.includes(pathname);
+  const [settingsOpen, setSettingsOpen] = useState(onSettingsRoute);
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[240px] flex-col border-r border-outline-variant bg-surface-container-lowest">
@@ -87,19 +115,62 @@ export function Sidebar() {
               other.href.startsWith(item.href + "/") &&
               (pathname === other.href || pathname.startsWith(other.href + "/")),
           );
-          const active =
-            "exact" in item && item.exact
-              ? pathname === item.href
-              : isPrefixMatch && !hasMoreSpecific;
+          const active = item.exact
+            ? pathname === item.href
+            : isPrefixMatch && !hasMoreSpecific;
           return <NavItem key={item.href} {...item} active={active} />;
         })}
-      </nav>
 
-      <div className="space-y-1 border-t border-outline-variant px-4 py-4">
-        {FOOTER_ITEMS.map((item) => (
-          <NavItem key={item.href} {...item} active={pathname === item.href} />
-        ))}
-      </div>
+        {visibleSettings.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((v) => !v)}
+              aria-expanded={settingsOpen}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-body-sm transition-colors",
+                onSettingsRoute
+                  ? "bg-surface-container font-semibold text-on-surface"
+                  : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+              )}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "20px", fontVariationSettings: onSettingsRoute ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                settings
+              </span>
+              <span className="flex-1 text-left">Configurações</span>
+              <span
+                className={cn(
+                  "material-symbols-outlined transition-transform duration-200",
+                  settingsOpen && "rotate-180"
+                )}
+                style={{ fontSize: "20px" }}
+              >
+                expand_more
+              </span>
+            </button>
+
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                settingsOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+              )}
+            >
+              <div className="mt-1 space-y-1">
+                {visibleSettings.map((child) => (
+                  <SettingsChildItem
+                    key={child.href}
+                    {...child}
+                    active={pathname === child.href}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
 
       <div className="mt-auto border-t border-outline-variant p-3">
         <Link href="/profile" className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-surface-container">

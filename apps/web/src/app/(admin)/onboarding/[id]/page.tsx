@@ -6,6 +6,7 @@ import { useOnboardingSteps } from "@/features/onboarding/hooks/useOnboardingSte
 import { useOnboardingFlows } from "@/features/onboarding/hooks/useOnboardingFlows";
 import { StepList } from "@/features/onboarding/components/StepList";
 import { useToast } from "@/shared/hooks/useToast";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function OnboardingFlowDetailPage({
   params,
@@ -13,6 +14,14 @@ export default function OnboardingFlowDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  return (
+    <RequirePermission perm="onboarding.view">
+      <OnboardingFlowDetailContent id={id} />
+    </RequirePermission>
+  );
+}
+
+function OnboardingFlowDetailContent({ id }: { id: string }) {
   const { steps, loading, error, create, update, remove, reorder } = useOnboardingSteps(id);
   const { flows } = useOnboardingFlows();
   const triggerEventType =

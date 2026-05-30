@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.permissions import resolve_user_permissions
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
 from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.db.session import session_scope
@@ -28,6 +29,7 @@ class MeResponse(BaseModel):
     has_avatar: bool
     profile_id: str | None = None
     profile_name: str | None = None
+    permissions: list[str] = []
 
 
 async def _resolve_profile_name(
@@ -60,6 +62,7 @@ async def get_me(auth: AdminAuth = Depends(require_admin)) -> MeResponse:
         user = await repo.get_by_id(auth.user_id)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        perms = sorted(await resolve_user_permissions(s, user_id=auth.user_id, role=auth.user_role))
         return MeResponse(
             id=user.id,
             name=user.name,
@@ -69,6 +72,7 @@ async def get_me(auth: AdminAuth = Depends(require_admin)) -> MeResponse:
             has_avatar=user.avatar is not None,
             profile_id=str(user.profile_id) if user.profile_id else None,
             profile_name=await _resolve_profile_name(s, auth, user.profile_id),
+            permissions=perms,
         )
 
 
@@ -84,6 +88,7 @@ async def update_me(
         user = await repo.get_by_id(auth.user_id)
         if user is None:
             raise HTTPException(status_code=404, detail="User not found")
+        perms = sorted(await resolve_user_permissions(s, user_id=auth.user_id, role=auth.user_role))
         return MeResponse(
             id=user.id,
             name=user.name,
@@ -93,6 +98,7 @@ async def update_me(
             has_avatar=user.avatar is not None,
             profile_id=str(user.profile_id) if user.profile_id else None,
             profile_name=await _resolve_profile_name(s, auth, user.profile_id),
+            permissions=perms,
         )
 
 

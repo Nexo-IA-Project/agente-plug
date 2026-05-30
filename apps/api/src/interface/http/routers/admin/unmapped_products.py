@@ -15,7 +15,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
@@ -53,7 +54,7 @@ class ReprocessResponse(BaseModel):
 
 @router.get("/unmapped-products", response_model=list[UnmappedProductResponse])
 async def list_unmapped_products(
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.view")),
 ) -> list[UnmappedProductResponse]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -65,7 +66,7 @@ async def list_unmapped_products(
 @router.post("/unmapped-products/resolve", response_model=ResolveResponse)
 async def resolve_unmapped_product(
     body: ResolveRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.resolve_unmapped")),
 ) -> ResolveResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -84,7 +85,7 @@ async def resolve_unmapped_product(
 @router.post("/unmapped-products/reprocess", response_model=ReprocessResponse)
 async def reprocess_unmapped_product(
     body: ReprocessRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.resolve_unmapped")),
 ) -> ReprocessResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)

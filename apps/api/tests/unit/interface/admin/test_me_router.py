@@ -42,7 +42,13 @@ def test_get_me_returns_user():
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        with patch("interface.http.routers.admin.me.UserRepository") as MockRepo:
+        with (
+            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch(
+                "interface.http.routers.admin.me.resolve_user_permissions",
+                AsyncMock(return_value=set()),
+            ),
+        ):
             instance = MagicMock()
             instance.get_by_id = AsyncMock(return_value=fake_user)
             MockRepo.return_value = instance
@@ -52,6 +58,7 @@ def test_get_me_returns_user():
             r = client.get("/admin/me")
             assert r.status_code == 200
             assert r.json()["name"] == "Fabio"
+            assert r.json()["permissions"] == []
 
 
 def test_get_me_includes_profile_when_assigned():
@@ -83,6 +90,10 @@ def test_get_me_includes_profile_when_assigned():
         with (
             patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
             patch("interface.http.routers.admin.me.ProfileRepository") as MockProfileRepo,
+            patch(
+                "interface.http.routers.admin.me.resolve_user_permissions",
+                AsyncMock(return_value=set()),
+            ),
         ):
             instance = MagicMock()
             instance.get_by_id = AsyncMock(return_value=fake_user)
@@ -98,6 +109,50 @@ def test_get_me_includes_profile_when_assigned():
             body = r.json()
             assert body["profile_id"] == str(pid)
             assert body["profile_name"] == "Gerente"
+
+
+def _get_me_with_permissions(perms):
+    fake_user = MagicMock()
+    fake_user.id = "uid"
+    fake_user.name = "Fabio"
+    fake_user.email = "f@x.com"
+    fake_user.role = MagicMock(value="admin")
+    fake_user.must_change_password = False
+    fake_user.avatar = None
+    fake_user.profile_id = None
+    with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
+        s = AsyncMock()
+        mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
+        mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch(
+                "interface.http.routers.admin.me.resolve_user_permissions",
+                AsyncMock(return_value=perms),
+            ),
+        ):
+            instance = MagicMock()
+            instance.get_by_id = AsyncMock(return_value=fake_user)
+            MockRepo.return_value = instance
+
+            app = _make_app(_auth())
+            client = TestClient(app)
+            r = client.get("/admin/me")
+            assert r.status_code == 200
+            return r.json()
+
+
+def test_get_me_admin_has_all_permissions():
+    from shared.domain.permissions.catalog import all_permission_keys
+
+    body = _get_me_with_permissions(set(all_permission_keys()))
+    assert len(body["permissions"]) == len(all_permission_keys())
+
+
+def test_get_me_operator_permissions():
+    body = _get_me_with_permissions({"leads.view", "dashboard.view"})
+    assert body["permissions"] == ["dashboard.view", "leads.view"]
 
 
 def test_update_avatar_rejects_oversized():

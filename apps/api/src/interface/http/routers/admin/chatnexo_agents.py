@@ -7,7 +7,8 @@ from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.chatnexo_agent_repo import (
     ChatNexoAgentRepository,
     _decrypt,
@@ -44,7 +45,9 @@ def _fernet() -> Fernet:
 
 
 @router.get("/chatnexo-agents", response_model=list[AgentItem])
-async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentItem]:
+async def list_agents(
+    _auth: AdminAuth = Depends(require_permission("settings.view")),
+) -> list[AgentItem]:
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)
@@ -65,7 +68,7 @@ async def list_agents(_auth: AdminAuth = Depends(require_admin)) -> list[AgentIt
 @router.post("/chatnexo-agents", response_model=AgentItem, status_code=status.HTTP_201_CREATED)
 async def create_agent(
     body: CreateAgentInput,
-    _auth: AdminAuth = Depends(require_admin),
+    _auth: AdminAuth = Depends(require_permission("settings.edit_credentials")),
 ) -> AgentItem:
     async with session_scope() as session:
         fernet = _fernet()
@@ -85,7 +88,7 @@ async def create_agent(
 async def update_agent(
     agent_id: UUID,
     body: UpdateAgentInput,
-    _auth: AdminAuth = Depends(require_admin),
+    _auth: AdminAuth = Depends(require_permission("settings.edit_credentials")),
 ) -> AgentItem:
     if body.name is None and body.api_key is None and body.is_active is None:
         raise HTTPException(
@@ -118,7 +121,10 @@ async def update_agent(
 
 
 @router.delete("/chatnexo-agents/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_agent(agent_id: UUID, _auth: AdminAuth = Depends(require_admin)) -> None:
+async def delete_agent(
+    agent_id: UUID,
+    _auth: AdminAuth = Depends(require_permission("settings.edit_credentials")),
+) -> None:
     async with session_scope() as session:
         fernet = _fernet()
         repo = ChatNexoAgentRepository(session=session, fernet=fernet)

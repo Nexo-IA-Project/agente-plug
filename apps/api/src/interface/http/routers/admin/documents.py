@@ -5,8 +5,9 @@ import asyncio
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth
 from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
+from interface.http.deps.permissions import require_permission
 from shared.domain.entities.knowledge_document import KnowledgeDocument
 
 router = APIRouter(tags=["admin-documents"])
@@ -47,6 +48,7 @@ async def list_documents(
     offset: int = 0,
     limit: int = 20,
     deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_permission("kb.view")),
 ) -> list[DocumentOut]:
     docs = await deps.listar(account_id=deps.account_id, offset=offset, limit=limit)
     return [DocumentOut.from_entity(d) for d in docs]
@@ -57,6 +59,7 @@ async def upload_document(
     file: UploadFile = File(...),
     tags: str = Form(default=""),
     deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_permission("kb.create")),
 ) -> dict:
     content = await file.read()
     mime_type = file.content_type or "application/octet-stream"
@@ -93,6 +96,7 @@ async def upload_document(
 async def get_document(
     doc_id: str,
     deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_permission("kb.view")),
 ) -> DocumentOut:
     doc = await deps.doc_repo.get(doc_id, deps.account_id)
     if doc is None:
@@ -104,7 +108,7 @@ async def get_document(
 async def delete_document(
     doc_id: str,
     deps: AdminDeps = Depends(get_admin_deps),
-    _auth: AdminAuth = Depends(require_admin_role),
+    _auth: AdminAuth = Depends(require_permission("kb.delete")),
 ) -> None:
     await deps.deletar(doc_id=doc_id, account_id=deps.account_id)
 
@@ -113,6 +117,7 @@ async def delete_document(
 async def reindex_document(
     doc_id: str,
     deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_permission("kb.create")),
 ) -> dict:
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,

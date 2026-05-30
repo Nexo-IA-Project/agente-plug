@@ -5,7 +5,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
 from shared.adapters.db.session import session_scope
 from shared.config.single_tenant import get_default_account_uuid
@@ -81,7 +82,7 @@ def _to_detail(profile: Profile) -> ProfileDetail:
 # --------------------------------------------------------------------------- #
 @router.get("/profiles", response_model=list[ProfileListItem])
 async def list_profiles(
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.view")),
 ) -> list[ProfileListItem]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -102,7 +103,7 @@ async def list_profiles(
 @router.get("/profiles/{profile_id}", response_model=ProfileDetail)
 async def get_profile(
     profile_id: str,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.view")),
 ) -> ProfileDetail:
     pid = _parse_uuid(profile_id)
     async with session_scope() as session:
@@ -117,7 +118,7 @@ async def get_profile(
 @router.post("/profiles", response_model=ProfileDetail, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     body: CreateProfileRequest,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.manage")),
 ) -> ProfileDetail:
     _validate_permissions(body.permissions)
     async with session_scope() as session:
@@ -141,7 +142,7 @@ async def create_profile(
 async def update_profile(
     profile_id: str,
     body: UpdateProfileRequest,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.manage")),
 ) -> ProfileDetail:
     pid = _parse_uuid(profile_id)
     _validate_permissions(body.permissions)
@@ -176,7 +177,7 @@ async def update_profile(
 @router.delete("/profiles/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
     profile_id: str,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.manage")),
 ) -> None:
     pid = _parse_uuid(profile_id)
     async with session_scope() as session:
@@ -195,7 +196,7 @@ async def delete_profile(
 
 @router.get("/permissions/catalog", response_model=list[PermissionGroup])
 async def permissions_catalog(
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("profiles.view")),
 ) -> list[PermissionGroup]:
     # Agrupa por módulo preservando a ordem de aparição em PERMISSION_CATALOG.
     groups: dict[str, list[PermissionItem]] = {}

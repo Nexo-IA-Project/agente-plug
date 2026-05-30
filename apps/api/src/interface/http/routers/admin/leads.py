@@ -11,7 +11,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission, require_permission_sse
 from shared.adapters.db.repositories.lead_repo import SqlLeadRepository
 from shared.adapters.db.session import session_scope
 from shared.config.single_tenant import get_default_account_uuid
@@ -121,7 +122,7 @@ async def list_leads(
     unmatched: bool | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=200),
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("leads.view")),
 ) -> LeadListResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -152,7 +153,7 @@ async def export_leads(
     utm_source: str | None = Query(default=None),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("leads.export")),
 ) -> StreamingResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -229,7 +230,7 @@ async def export_leads(
 @router.get("/leads/utm-sources/suggest", response_model=list[str])
 async def suggest_utm_sources(
     q: str | None = Query(default=None),
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("leads.view")),
 ) -> list[str]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -276,7 +277,7 @@ async def stream_leads(
     utm_source: str | None = Query(default=None),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
-    auth: AdminAuth = Depends(require_admin_sse),
+    auth: AdminAuth = Depends(require_permission_sse("leads.view")),
 ) -> StreamingResponse:
     from shared.adapters.redis.leads_pubsub import LeadsPubSub
 
@@ -351,7 +352,7 @@ async def stream_leads(
 @router.get("/leads/{lead_id}", response_model=LeadDetailResponse)
 async def get_lead(
     lead_id: UUID,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("leads.view")),
 ) -> LeadDetailResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)

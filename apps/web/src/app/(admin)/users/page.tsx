@@ -16,12 +16,22 @@ import { useToast } from "@/shared/hooks/useToast";
 import { UserListTable } from "@/features/users/components/UserListTable";
 import { UserDrawer } from "@/features/users/components/UserDrawer";
 import { ResetPasswordDialog } from "@/features/users/components/ResetPasswordDialog";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 import type { User, CreateUserInput, UpdateUserInput } from "@/features/users/types";
 import type { ProfileListItem } from "@/features/profiles/types";
 
 export default function UsersPage() {
+  return (
+    <RequirePermission perm="users.view">
+      <UsersContent />
+    </RequirePermission>
+  );
+}
+
+function UsersContent() {
   const { user: currentUser } = useAuth();
-  const { isAdmin } = usePermission();
+  const { can } = usePermission();
+  const canManage = can("users.manage");
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +43,11 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, profileList] = await Promise.all([listUsers(), listProfiles()]);
+      const res = await listUsers();
       setUsers(res.items);
+      // Perfis exigem profiles.view (admin-only). Para quem só tem users.view,
+      // a listagem de usuários não pode quebrar por causa disso — então é tolerante.
+      const profileList = await listProfiles().catch(() => [] as ProfileListItem[]);
       setProfiles(profileList);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao carregar usuários");
@@ -47,14 +60,6 @@ export default function UsersPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  if (!isAdmin) {
-    return (
-      <div className="p-8">
-        <p className="text-on-surface-variant">Acesso restrito a administradores.</p>
-      </div>
-    );
-  }
 
   async function onCreate(input: CreateUserInput | UpdateUserInput) {
     try {
@@ -106,15 +111,17 @@ export default function UsersPage() {
     <div className="p-8 flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <h1 className="text-headline-md">Usuários</h1>
-        <button
-          onClick={() => {
-            setDrawerUser(null);
-            setDrawerOpen(true);
-          }}
-          className="px-4 py-2 rounded bg-primary text-on-primary"
-        >
-          + Novo usuário
-        </button>
+        {canManage && (
+          <button
+            onClick={() => {
+              setDrawerUser(null);
+              setDrawerOpen(true);
+            }}
+            className="px-4 py-2 rounded bg-primary text-on-primary"
+          >
+            + Novo usuário
+          </button>
+        )}
       </header>
 
       {loading ? (
@@ -123,6 +130,7 @@ export default function UsersPage() {
         <UserListTable
           users={users}
           currentUserId={currentUser?.id ?? ""}
+          canManage={canManage}
           onEdit={(u) => {
             setDrawerUser(u);
             setDrawerOpen(true);

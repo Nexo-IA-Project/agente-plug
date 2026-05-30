@@ -37,6 +37,8 @@ PERMISSION_CATALOG: list[Permission] = [
     _p("templates", "delete", "Excluir template"),
     _p("users", "view", "Ver usuários"),
     _p("users", "manage", "Gerenciar usuários"),
+    _p("profiles", "view", "Ver perfis"),
+    _p("profiles", "manage", "Gerenciar perfis"),
     _p("settings", "view", "Ver configurações"),
     _p("settings", "edit_credentials", "Editar credenciais/integração"),
     _p("settings", "edit_smtp", "Editar SMTP"),
@@ -53,6 +55,8 @@ def all_permission_keys() -> list[str]:
 ADMIN_ONLY_KEYS: frozenset[str] = frozenset(
     {
         "users.manage",
+        "profiles.view",
+        "profiles.manage",
         "templates.delete",
         "kb.delete",
         "tokens.manage",

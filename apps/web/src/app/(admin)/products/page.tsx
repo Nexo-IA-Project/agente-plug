@@ -7,6 +7,7 @@ import { ProductDrawer } from "@/features/products/components/ProductDrawer";
 import { useToast } from "@/shared/hooks/useToast";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
 import type { Product, CreateProductInput } from "@/features/products/types";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function ProductsPage() {
   const { products, loading, error, create, update, remove } = useProducts();
@@ -66,6 +67,7 @@ export default function ProductsPage() {
   };
 
   return (
+    <RequirePermission perm="products.view">
     <div className="flex flex-col gap-6 p-8">
       <header className="flex items-center justify-between">
         <div>
@@ -109,5 +111,6 @@ export default function ProductsPage() {
         onSubmit={handleSubmit}
       />
     </div>
+    </RequirePermission>
   );
 }

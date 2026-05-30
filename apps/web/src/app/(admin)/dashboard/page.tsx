@@ -1,12 +1,16 @@
 // apps/web/src/app/dashboard/page.tsx
+"use client";
+
 import { KpiCard } from "@/features/dashboard/components/KpiCard";
 import { ConversationsChart } from "@/features/dashboard/components/ConversationsChart";
 import { ModelHealthCard } from "@/features/dashboard/components/ModelHealthCard";
 import { SkillsTable } from "@/features/dashboard/components/SkillsTable";
 import { kpiData, chartData, skillsData, modelHealthData } from "@/features/dashboard/data/dashboardMocks";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function DashboardPage() {
   return (
+    <RequirePermission perm="dashboard.view">
     <div className="flex flex-col gap-6">
       <div className="flex items-end justify-between">
         <div>
@@ -36,5 +40,6 @@ export default function DashboardPage() {
 
       <SkillsTable skills={skillsData} />
     </div>
+    </RequirePermission>
   );
 }
