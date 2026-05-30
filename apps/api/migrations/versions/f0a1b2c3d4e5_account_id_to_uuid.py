@@ -60,9 +60,7 @@ _TABLES = [
 
 def _resolve_account_uuid(conn) -> uuid.UUID:
     """Retorna o UUID da primeira conta; cria 'Conta Principal' se não houver."""
-    row = conn.execute(
-        sa.text("SELECT id FROM accounts ORDER BY created_at LIMIT 1")
-    ).first()
+    row = conn.execute(sa.text("SELECT id FROM accounts ORDER BY created_at LIMIT 1")).first()
     if row is not None:
         return row[0]
 
@@ -83,7 +81,7 @@ def _convert(conn, table: str, account_uuid: uuid.UUID) -> None:
 
     # 2. backfill TODAS as linhas com o UUID da conta single-tenant
     conn.execute(
-        sa.text(f"UPDATE {table} SET account_uuid = :acc"),  # noqa: S608 (table do dict fixo)
+        sa.text(f"UPDATE {table} SET account_uuid = :acc"),
         {"acc": str(account_uuid)},
     )
 
@@ -106,9 +104,21 @@ def _convert(conn, table: str, account_uuid: uuid.UUID) -> None:
     )
 
 
+# View legada de compat (criada manualmente fora das migrations em alguns ambientes;
+# espelha users). Depende de users.account_id, então precisa ser dropada antes do
+# DROP COLUMN / ALTER TYPE e recriada depois. IF EXISTS torna idempotente em ambientes
+# que não têm a view (ex: testcontainer).
+_ADMIN_USERS_VIEW = (
+    "CREATE VIEW admin_users AS "
+    "SELECT id, account_id, email, password_hash, role, created_at FROM users"
+)
+
+
 def upgrade() -> None:
     conn = op.get_bind()
     account_uuid = _resolve_account_uuid(conn)
+
+    op.execute("DROP VIEW IF EXISTS admin_users")
 
     for table in _TABLES:
         _convert(conn, table, account_uuid)
@@ -132,6 +142,9 @@ def upgrade() -> None:
         "idx_refund_cases_account_contact", "refund_cases", ["account_id", "contact_id"]
     )
 
+    # recria a view de compat (agora account_id é uuid)
+    op.execute(_ADMIN_USERS_VIEW)
+
 
 def _revert(table: str) -> None:
     # FK e índices criados no upgrade são dropados; a coluna volta a INTEGER.
@@ -149,6 +162,7 @@ def _revert(table: str) -> None:
 
 
 def downgrade() -> None:
+    op.execute("DROP VIEW IF EXISTS admin_users")
     # dropar índices/uniques recriados no upgrade
     op.drop_constraint("uq_users_account_email", "users", type_="unique")
     op.drop_index("ix_users_account_id", table_name="users")
@@ -179,3 +193,6 @@ def downgrade() -> None:
     op.create_index(
         "idx_refund_cases_account_contact", "refund_cases", ["account_id", "contact_id"]
     )
+
+    # recria a view de compat (account_id de volta a integer)
+    op.execute(_ADMIN_USERS_VIEW)
