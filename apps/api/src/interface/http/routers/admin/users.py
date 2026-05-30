@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin_role
-from shared.adapters.db.repositories.smtp_config_repo import SmtpConfigRepository
+from shared.adapters.db.repositories.platform_config_repo import PlatformConfigRepository
 from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.email.smtp_email_service import SmtpEmailService
@@ -92,8 +92,7 @@ async def create_user(
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)
         user_repo = UserRepository(s)
-        smtp_repo = SmtpConfigRepository(s)
-        email_svc = SmtpEmailService(repo=smtp_repo)
+        email_svc = SmtpEmailService(repo=PlatformConfigRepository(s))
         uc = CreateUserUseCase(user_repo=user_repo, email_service=email_svc)
         try:
             user = await uc.execute(
@@ -172,8 +171,7 @@ async def reset_password(
         if target is None or target.account_id != account_id:
             raise HTTPException(status_code=404, detail="User not found")
 
-        smtp_repo = SmtpConfigRepository(s)
-        email_svc = SmtpEmailService(repo=smtp_repo)
+        email_svc = SmtpEmailService(repo=PlatformConfigRepository(s))
         uc = ResetUserPasswordUseCase(user_repo=user_repo, email_service=email_svc)
         await uc.execute(account_id=account_id, user_id=user_id)
         await s.commit()

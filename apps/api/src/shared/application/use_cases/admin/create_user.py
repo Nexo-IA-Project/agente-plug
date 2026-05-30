@@ -36,7 +36,5 @@ class CreateUserUseCase:
         await self.user_repo.save(user)
 
         subject, body = welcome_email(name=name, email=email, temp_password=temp_password)
-        await self.email_service.send_email(
-            account_id=account_id, to=email, subject=subject, body_html=body
-        )
+        await self.email_service.send_email(to=email, subject=subject, body_html=body)
         return user
