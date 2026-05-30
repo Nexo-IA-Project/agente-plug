@@ -118,6 +118,9 @@ def upgrade() -> None:
     conn = op.get_bind()
     account_uuid = _resolve_account_uuid(conn)
 
+    # só recria a view depois se ela JÁ existia (ambientes que têm o shim manual).
+    # Em prod ela não existe → não criamos nada inesperado.
+    had_view = conn.execute(sa.text("SELECT to_regclass('admin_users') IS NOT NULL")).scalar()
     op.execute("DROP VIEW IF EXISTS admin_users")
 
     for table in _TABLES:
@@ -142,8 +145,9 @@ def upgrade() -> None:
         "idx_refund_cases_account_contact", "refund_cases", ["account_id", "contact_id"]
     )
 
-    # recria a view de compat (agora account_id é uuid)
-    op.execute(_ADMIN_USERS_VIEW)
+    # recria a view de compat (agora account_id é uuid) — só se existia antes
+    if had_view:
+        op.execute(_ADMIN_USERS_VIEW)
 
 
 def _revert(table: str) -> None:
@@ -162,6 +166,8 @@ def _revert(table: str) -> None:
 
 
 def downgrade() -> None:
+    conn = op.get_bind()
+    had_view = conn.execute(sa.text("SELECT to_regclass('admin_users') IS NOT NULL")).scalar()
     op.execute("DROP VIEW IF EXISTS admin_users")
     # dropar índices/uniques recriados no upgrade
     op.drop_constraint("uq_users_account_email", "users", type_="unique")
@@ -194,5 +200,6 @@ def downgrade() -> None:
         "idx_refund_cases_account_contact", "refund_cases", ["account_id", "contact_id"]
     )
 
-    # recria a view de compat (account_id de volta a integer)
-    op.execute(_ADMIN_USERS_VIEW)
+    # recria a view de compat (account_id de volta a integer) — só se existia antes
+    if had_view:
+        op.execute(_ADMIN_USERS_VIEW)
