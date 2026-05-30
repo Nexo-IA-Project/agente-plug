@@ -75,20 +75,6 @@ const SECTIONS: SectionSpec[] = [
     ],
   },
   {
-    id: "openai",
-    title: "OpenAI",
-    subtitle: "Modelo de linguagem e embeddings",
-    icon: "psychology",
-    fields: [
-      {
-        key: "openai_api_key",
-        label: "API Key",
-        type: "secret",
-        placeholder: "sk-proj-...",
-      },
-    ],
-  },
-  {
     id: "meta",
     title: "Meta / WhatsApp",
     subtitle: "API oficial do WhatsApp Business",
