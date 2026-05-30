@@ -17,6 +17,7 @@ class IntegrationConfig:
     meta_api_key: str
     meta_waba_id: str
     meta_app_id: str
+    alert_whatsapp_target: str | None = field(default=None)
     chatnexo_agents: list[ChatNexoAgent] = field(default_factory=list)
 
 
@@ -50,6 +51,7 @@ class AccountConfigPatch:
     meta_api_key: str | None = field(default=None)
     meta_waba_id: str | None = field(default=None)
     meta_app_id: str | None = field(default=None)
+    alert_whatsapp_target: str | None = field(default=None)
     idle_ping_minutes: int | None = field(default=None)
     idle_close_minutes: int | None = field(default=None)
     intent_confidence_threshold: float | None = field(default=None)

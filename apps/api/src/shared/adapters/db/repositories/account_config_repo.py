@@ -115,6 +115,7 @@ class AccountConfigRepository:
                 meta_api_key=gs("meta_api_key", s.meta_api_key),
                 meta_waba_id=i.get("meta_waba_id") or s.meta_waba_id,
                 meta_app_id=i.get("meta_app_id") or (s.meta_app_id or ""),
+                alert_whatsapp_target=i.get("alert_whatsapp_target") or None,
                 chatnexo_agents=agents,
             ),
             behavior=BehaviorConfig(
@@ -151,6 +152,7 @@ class AccountConfigRepository:
             "meta_api_key",
             "meta_waba_id",
             "meta_app_id",
+            "alert_whatsapp_target",
         ):
             val: str | None = getattr(patch, key)
             if _should_skip(val):
