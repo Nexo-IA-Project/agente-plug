@@ -61,14 +61,27 @@ async def receive(payload: dict = Body(...)) -> dict:
         raise RuntimeError("webhook_hubla router not configured; call configure() before serving")
 
     event_type: str = payload.get("type", "unknown")
-    subscription_id: str = payload.get("event", {}).get("subscription", {}).get("id", "")
-    external_id = f"{event_type}:{subscription_id}" if subscription_id else event_type
+    event_obj: dict = payload.get("event", {}) or {}
+    # Id único da venda: v2 manda em event.subscription.id; v1 ("NewSale" etc.)
+    # manda em event.transactionId. Sem um id confiável, NÃO deduplicamos — colapsar
+    # tudo no event_type derrubava todas as vendas (ex: external_id="NewSale" → 1ª passa,
+    # resto vira "duplicado" por 24h). Melhor processar 2x (downstream é idempotente por
+    # purchase_id) do que perder venda em silêncio.
+    sale_id: str = (event_obj.get("subscription", {}) or {}).get("id", "") or event_obj.get(
+        "transactionId", ""
+    )
 
-    first = await _cfg.dedup.try_mark(key=f"hubla:{external_id}", ttl_seconds=24 * 3600)
-    if not first:
-        WEBHOOK_RECEIVED.labels(source="hubla-unified", status="202-dup").inc()
-        log.info("hubla_webhook_duplicate", event_type=event_type, external_id=external_id)
-        return {"accepted": True, "duplicate": True}
+    if sale_id:
+        external_id = f"{event_type}:{sale_id}"
+        first = await _cfg.dedup.try_mark(key=f"hubla:{external_id}", ttl_seconds=24 * 3600)
+        if not first:
+            WEBHOOK_RECEIVED.labels(source="hubla-unified", status="202-dup").inc()
+            log.info("hubla_webhook_duplicate", event_type=event_type, external_id=external_id)
+            return {"accepted": True, "duplicate": True}
+    else:
+        # sem id de venda → não dá pra deduplicar com segurança; segue para enfileirar.
+        external_id = event_type
+        log.warning("hubla_webhook_no_sale_id", event_type=event_type)
 
     async with _cfg.event_repo_factory() as repo:
         await repo.insert_if_new(
