@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { useToast } from "@/shared/hooks/useToast";
 import { useConfirm } from "@/shared/components/confirm/ConfirmProvider";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function ApiTokensPage() {
   const toast = useToast();
@@ -93,6 +94,7 @@ export default function ApiTokensPage() {
   }
 
   return (
+    <RequirePermission perm="tokens.view">
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-end justify-between">
@@ -268,5 +270,6 @@ export default function ApiTokensPage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

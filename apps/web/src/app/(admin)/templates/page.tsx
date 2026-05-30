@@ -11,6 +11,7 @@ import { LoadingOverlay } from "@/shared/components/LoadingOverlay";
 import { useToast } from "@/shared/hooks/useToast";
 import { editMetaTemplate, syncMetaTemplates } from "@/lib/api";
 import type { EditTemplateDto, MetaTemplate } from "@/features/templates/types";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 interface FlowUsage {
   id: string;
@@ -19,6 +20,14 @@ interface FlowUsage {
 }
 
 export default function TemplatesPage() {
+  return (
+    <RequirePermission perm="templates.view">
+      <TemplatesContent />
+    </RequirePermission>
+  );
+}
+
+function TemplatesContent() {
   const { templates, loading, error, reload, create, remove } = useMetaTemplates();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MetaTemplate | null>(null);

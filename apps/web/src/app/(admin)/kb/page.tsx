@@ -1,10 +1,14 @@
 // apps/web/src/app/kb/page.tsx
+"use client";
+
 import { Dropzone } from "@/features/kb/components/Dropzone";
 import { FileList } from "@/features/kb/components/FileList";
 import { processedFiles } from "@/features/kb/data/kbMocks";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function KbPage() {
   return (
+    <RequirePermission perm="kb.view">
     <div className="flex h-[calc(100vh-128px)] flex-col gap-6 lg:flex-row">
       <div className="flex flex-1 flex-col rounded-xl border border-outline-variant bg-surface-container-low p-card-padding">
         <div className="mb-6">
@@ -17,5 +21,6 @@ export default function KbPage() {
       </div>
       <FileList files={processedFiles} />
     </div>
+    </RequirePermission>
   );
 }

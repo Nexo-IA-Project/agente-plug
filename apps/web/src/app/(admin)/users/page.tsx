@@ -11,17 +11,24 @@ import {
   listProfiles,
 } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks/useAuth";
-import { usePermission } from "@/features/auth/hooks/usePermission";
 import { useToast } from "@/shared/hooks/useToast";
 import { UserListTable } from "@/features/users/components/UserListTable";
 import { UserDrawer } from "@/features/users/components/UserDrawer";
 import { ResetPasswordDialog } from "@/features/users/components/ResetPasswordDialog";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 import type { User, CreateUserInput, UpdateUserInput } from "@/features/users/types";
 import type { ProfileListItem } from "@/features/profiles/types";
 
 export default function UsersPage() {
+  return (
+    <RequirePermission perm="users.view">
+      <UsersContent />
+    </RequirePermission>
+  );
+}
+
+function UsersContent() {
   const { user: currentUser } = useAuth();
-  const { isAdmin } = usePermission();
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,14 +54,6 @@ export default function UsersPage() {
   useEffect(() => {
     load();
   }, [load]);
-
-  if (!isAdmin) {
-    return (
-      <div className="p-8">
-        <p className="text-on-surface-variant">Acesso restrito a administradores.</p>
-      </div>
-    );
-  }
 
   async function onCreate(input: CreateUserInput | UpdateUserInput) {
     try {

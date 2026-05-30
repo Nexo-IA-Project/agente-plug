@@ -6,6 +6,7 @@ import { UnmappedTable } from "@/features/unmapped/components/UnmappedTable";
 import { ResolveDrawer } from "@/features/unmapped/components/ResolveDrawer";
 import { useToast } from "@/shared/hooks/useToast";
 import type { UnmappedProduct } from "@/features/unmapped/types";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function PendenciasPage() {
   const toast = useToast();
@@ -36,6 +37,7 @@ export default function PendenciasPage() {
   };
 
   return (
+    <RequirePermission perm="onboarding.view">
     <div className="space-y-5 p-6">
       <header className="flex items-center justify-between">
         <div>
@@ -70,5 +72,6 @@ export default function PendenciasPage() {
         onResolved={load}
       />
     </div>
+    </RequirePermission>
   );
 }

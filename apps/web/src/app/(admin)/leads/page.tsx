@@ -10,6 +10,7 @@ import { useProducts } from "@/features/products/hooks/useProducts";
 import { getTriggerEventMeta } from "@/features/onboarding/lib/triggerEvents";
 import { useLeadsStream } from "@/features/leads/hooks/useLeadsStream";
 import type { Lead, LeadEvent, LeadFilters } from "@/features/leads/types";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Todos os status" },
@@ -154,6 +155,7 @@ export default function LeadsPage() {
   };
 
   return (
+    <RequirePermission perm="leads.view">
     <div className="space-y-5 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -436,6 +438,7 @@ export default function LeadsPage() {
         onApply={(f) => setFilters(f)}
       />
     </div>
+    </RequirePermission>
   );
 }
 
