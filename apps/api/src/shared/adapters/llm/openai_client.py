@@ -6,8 +6,6 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-from shared.config.settings import get_settings
-
 
 @dataclass
 class OpenAIClient:
@@ -15,9 +13,9 @@ class OpenAIClient:
     chat_model: str = "gpt-4o-mini"
     embed_model: str = "text-embedding-3-small"
 
-    @classmethod
-    def from_settings(cls) -> OpenAIClient:
-        return cls(client=AsyncOpenAI(api_key=get_settings().openai_api_key))
+    # A chave OpenAI agora vem da config global de plataforma — construa o cliente
+    # via resolve_openai_key(session) (shared.application.resolve_openai_key), não
+    # de get_settings(). Por isso não há mais from_settings().
 
     async def complete_json(
         self,
