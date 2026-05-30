@@ -27,6 +27,12 @@ import type {
   UpdateUserInput,
 } from "@/features/users/types";
 import type { MeResponse } from "@/features/profile/types";
+import type {
+  ProfileListItem,
+  ProfileDetail,
+  ProfileInput,
+  PermissionGroup,
+} from "@/features/profiles/types";
 import type { PlatformConfig, PlatformConfigInput } from "@/features/settings/types";
 import type {
   UnmappedProduct,
@@ -543,6 +549,40 @@ export async function deleteUser(id: string): Promise<void> {
 
 export async function resetUserPassword(id: string): Promise<void> {
   await apiFetch<void>(`/admin/users/${id}/reset-password`, { method: "POST" });
+}
+
+// ============================================================
+// Profiles & Permissions (admin only)
+// ============================================================
+
+export async function listProfiles(): Promise<ProfileListItem[]> {
+  return apiFetch<ProfileListItem[]>("/admin/profiles");
+}
+
+export async function getProfile(id: string): Promise<ProfileDetail> {
+  return apiFetch<ProfileDetail>(`/admin/profiles/${id}`);
+}
+
+export async function createProfile(input: ProfileInput): Promise<ProfileDetail> {
+  return apiFetch<ProfileDetail>("/admin/profiles", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateProfile(id: string, input: ProfileInput): Promise<ProfileDetail> {
+  return apiFetch<ProfileDetail>(`/admin/profiles/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteProfile(id: string): Promise<void> {
+  await apiFetch<void>(`/admin/profiles/${id}`, { method: "DELETE" });
+}
+
+export async function getPermissionCatalog(): Promise<PermissionGroup[]> {
+  return apiFetch<PermissionGroup[]>("/admin/permissions/catalog");
 }
 
 // ============================================================

@@ -4,19 +4,22 @@
 import { useEffect, useState } from "react";
 import { Drawer } from "@/shared/components/Drawer";
 import type { User, CreateUserInput, UpdateUserInput } from "@/features/users/types";
+import type { ProfileListItem } from "@/features/profiles/types";
 
 interface Props {
   open: boolean;
   user: User | null;
+  profiles: ProfileListItem[];
   onClose: () => void;
   onSubmit: (input: CreateUserInput | UpdateUserInput) => Promise<void>;
 }
 
-export function UserDrawer({ open, user, onClose, onSubmit }: Props) {
+export function UserDrawer({ open, user, profiles, onClose, onSubmit }: Props) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "operator">("operator");
   const [isActive, setIsActive] = useState(true);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -25,11 +28,13 @@ export function UserDrawer({ open, user, onClose, onSubmit }: Props) {
       setEmail(user.email);
       setRole(user.role);
       setIsActive(user.is_active);
+      setProfileId(user.profile_id);
     } else {
       setName("");
       setEmail("");
       setRole("operator");
       setIsActive(true);
+      setProfileId(null);
     }
   }, [user, open]);
 
@@ -38,9 +43,9 @@ export function UserDrawer({ open, user, onClose, onSubmit }: Props) {
     setSaving(true);
     try {
       if (user) {
-        await onSubmit({ name, role, is_active: isActive } as UpdateUserInput);
+        await onSubmit({ name, role, is_active: isActive, profile_id: profileId } as UpdateUserInput);
       } else {
-        await onSubmit({ name, email, role } as CreateUserInput);
+        await onSubmit({ name, email, role, profile_id: profileId } as CreateUserInput);
       }
       onClose();
     } finally {
@@ -85,6 +90,21 @@ export function UserDrawer({ open, user, onClose, onSubmit }: Props) {
           >
             <option value="operator">Operador</option>
             <option value="admin">Administrador</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-body-sm">Perfil</span>
+          <select
+            value={profileId ?? ""}
+            onChange={(e) => setProfileId(e.target.value === "" ? null : e.target.value)}
+            className="px-3 py-2 rounded border border-outline-variant bg-surface"
+          >
+            <option value="">Sem perfil</option>
+            {profiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.is_system ? `${p.name} (sistema)` : p.name}
+              </option>
+            ))}
           </select>
         </label>
         {user && (

@@ -16,7 +16,14 @@ class CreateUserUseCase:
     user_repo: UserRepository
     email_service: SmtpEmailService
 
-    async def execute(self, account_id: UUID, name: str, email: str, role: UserRole) -> User:
+    async def execute(
+        self,
+        account_id: UUID,
+        name: str,
+        email: str,
+        role: UserRole,
+        profile_id: UUID | None = None,
+    ) -> User:
         existing = await self.user_repo.get_by_email(account_id=account_id, email=email)
         if existing is not None:
             raise ValueError(f"User with email {email} already exists")
@@ -32,6 +39,7 @@ class CreateUserUseCase:
             role=role,
             must_change_password=True,
             is_active=True,
+            profile_id=profile_id,
         )
         await self.user_repo.save(user)
 

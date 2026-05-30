@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 from shared.adapters.db.repositories.platform_config_repo import PlatformConfigRepository
+from shared.adapters.db.repositories.profile_repo import ProfileRepository
 from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.email.smtp_email_service import SmtpEmailService
@@ -31,6 +33,8 @@ class UserResponse(BaseModel):
     has_avatar: bool
     created_at: datetime
     last_login_at: datetime | None
+    profile_id: str | None = None
+    profile_name: str | None = None
 
 
 class UserListResponse(BaseModel):
@@ -44,15 +48,18 @@ class CreateUserRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     email: EmailStr
     role: Literal["admin", "operator"]
+    profile_id: str | None = None
 
 
 class UpdateUserRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     role: Literal["admin", "operator"]
     is_active: bool
+    profile_id: str | None = None
 
 
-def _to_response(user) -> UserResponse:
+def _to_response(user, profile_name: str | None = None) -> UserResponse:
+    profile_id = getattr(user, "profile_id", None)
     return UserResponse(
         id=user.id,
         name=user.name,
@@ -63,7 +70,18 @@ def _to_response(user) -> UserResponse:
         has_avatar=user.avatar is not None,
         created_at=user.created_at,
         last_login_at=user.last_login_at,
+        profile_id=str(profile_id) if profile_id is not None else None,
+        profile_name=profile_name,
     )
+
+
+def _parse_profile_id(raw: str | None) -> UUID | None:
+    if raw is None or raw == "":
+        return None
+    try:
+        return UUID(raw)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail="Invalid profile_id") from e
 
 
 @router.get("/users", response_model=UserListResponse)
@@ -76,8 +94,11 @@ async def list_users(
         account_id = auth.account_id or await get_default_account_uuid(s)
         repo = UserRepository(s)
         items, total = await repo.list_by_account(account_id, page, page_size)
+        name_map = await ProfileRepository(s).name_map(account_id)
         return UserListResponse(
-            items=[_to_response(u) for u in items],
+            items=[
+                _to_response(u, name_map.get(u.profile_id) if u.profile_id else None) for u in items
+            ],
             total=total,
             page=page,
             page_size=page_size,
@@ -92,6 +113,13 @@ async def create_user(
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)
         user_repo = UserRepository(s)
+        profile_name: str | None = None
+        profile_id = _parse_profile_id(body.profile_id)
+        if profile_id is not None:
+            profile = await ProfileRepository(s).get_by_id(account_id, profile_id)
+            if profile is None:
+                raise HTTPException(status_code=400, detail="Profile not found in this account")
+            profile_name = profile.name
         email_svc = SmtpEmailService(repo=PlatformConfigRepository(s))
         uc = CreateUserUseCase(user_repo=user_repo, email_service=email_svc)
         try:
@@ -100,11 +128,12 @@ async def create_user(
                 name=body.name,
                 email=body.email,
                 role=UserRole(body.role),
+                profile_id=profile_id,
             )
         except ValueError as e:
             raise HTTPException(status_code=409, detail=str(e)) from e
         await s.commit()
-        return _to_response(user)
+        return _to_response(user, profile_name)
 
 
 @router.put("/users/{user_id}", response_model=UserResponse)
@@ -129,12 +158,24 @@ async def update_user(
                     status_code=409, detail="Cannot demote/deactivate the last admin"
                 )
 
+        profile_name: str | None = None
+        profile_id = _parse_profile_id(body.profile_id)
+        if profile_id is not None:
+            profile = await ProfileRepository(s).get_by_id(account_id, profile_id)
+            if profile is None:
+                raise HTTPException(status_code=400, detail="Profile not found in this account")
+            profile_name = profile.name
+
         await repo.update_admin_fields(
-            user_id=user_id, name=body.name, role=UserRole(body.role), is_active=body.is_active
+            user_id=user_id,
+            name=body.name,
+            role=UserRole(body.role),
+            is_active=body.is_active,
+            profile_id=profile_id,
         )
         await s.commit()
         updated = await repo.get_by_id(user_id)
-        return _to_response(updated)
+        return _to_response(updated, profile_name)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

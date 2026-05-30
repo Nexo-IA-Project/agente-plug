@@ -103,13 +103,19 @@ class UserRepository:
         await self._session.flush()
 
     async def update_admin_fields(
-        self, user_id: str, name: str, role: UserRole, is_active: bool
+        self,
+        user_id: str,
+        name: str,
+        role: UserRole,
+        is_active: bool,
+        profile_id: UUID | None = None,
     ) -> None:
         result = await self._session.execute(select(UserModel).where(UserModel.id == user_id))
         m = result.scalar_one()
         m.name = name
         m.role = role.value
         m.is_active = is_active
+        m.profile_id = profile_id
         await self._session.flush()
 
     async def touch_last_login(self, user_id: str) -> None:

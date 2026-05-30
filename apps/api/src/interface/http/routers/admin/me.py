@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import base64
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
+from shared.adapters.db.repositories.profile_repo import ProfileRepository
 from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.db.session import session_scope
 from shared.application.use_cases.admin.change_my_password import (
@@ -23,6 +26,18 @@ class MeResponse(BaseModel):
     role: str
     must_change_password: bool
     has_avatar: bool
+    profile_id: str | None = None
+    profile_name: str | None = None
+
+
+async def _resolve_profile_name(
+    s: AsyncSession, auth: AdminAuth, profile_id: UUID | None
+) -> str | None:
+    """Resolve o nome do perfil do usuário (scoped por account). None se sem perfil."""
+    if profile_id is None or auth.account_id is None:
+        return None
+    names = await ProfileRepository(session=s).name_map(auth.account_id)
+    return names.get(profile_id)
 
 
 class UpdateMeRequest(BaseModel):
@@ -52,6 +67,8 @@ async def get_me(auth: AdminAuth = Depends(require_admin)) -> MeResponse:
             role=user.role.value,
             must_change_password=user.must_change_password,
             has_avatar=user.avatar is not None,
+            profile_id=str(user.profile_id) if user.profile_id else None,
+            profile_name=await _resolve_profile_name(s, auth, user.profile_id),
         )
 
 
@@ -65,6 +82,8 @@ async def update_me(
         await repo.update_profile(user_id=auth.user_id, name=body.name)
         await s.commit()
         user = await repo.get_by_id(auth.user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
         return MeResponse(
             id=user.id,
             name=user.name,
@@ -72,6 +91,8 @@ async def update_me(
             role=user.role.value,
             must_change_password=user.must_change_password,
             has_avatar=user.avatar is not None,
+            profile_id=str(user.profile_id) if user.profile_id else None,
+            profile_name=await _resolve_profile_name(s, auth, user.profile_id),
         )
 
 

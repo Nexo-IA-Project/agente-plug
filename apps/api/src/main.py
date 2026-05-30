@@ -30,6 +30,7 @@ from interface.http.routers.admin import (
 )
 from interface.http.routers.admin import platform_config as admin_platform_config
 from interface.http.routers.admin import products as admin_products
+from interface.http.routers.admin import profiles as admin_profiles
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
 from interface.http.routers.admin import unmapped_products as admin_unmapped_products
@@ -142,6 +143,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_meta_templates.router, prefix="/admin")
     app.include_router(public_media.router)
     app.include_router(admin_products.router, prefix="/admin")
+    app.include_router(admin_profiles.router, prefix="/admin")
     app.include_router(admin_leads.router, prefix="/admin")
     app.include_router(admin_chatnexo_agents.router, prefix="/admin")
     app.include_router(admin_users.router, prefix="/admin")

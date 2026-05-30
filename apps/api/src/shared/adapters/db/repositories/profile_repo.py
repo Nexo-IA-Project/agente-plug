@@ -4,10 +4,11 @@ import uuid
 from dataclasses import dataclass
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import ProfileModel, ProfilePermissionModel
+from shared.adapters.db.models import ProfileModel, ProfilePermissionModel, UserModel
 from shared.domain.entities.profile import Profile
 
 
@@ -62,6 +63,124 @@ class ProfileRepository:
             is_system=m.is_system,
             permissions=await self._perms(m.id),
         )
+
+    async def get_by_id(self, account_id: UUID, profile_id: UUID) -> Profile | None:
+        m = (
+            await self.session.execute(
+                select(ProfileModel).where(
+                    ProfileModel.account_id == account_id, ProfileModel.id == profile_id
+                )
+            )
+        ).scalar_one_or_none()
+        if m is None:
+            return None
+        return Profile(
+            id=m.id,
+            account_id=m.account_id,
+            name=m.name,
+            is_system=m.is_system,
+            permissions=await self._perms(m.id),
+        )
+
+    async def update(
+        self, *, account_id: UUID, profile_id: UUID, name: str, permissions: list[str]
+    ) -> Profile | None:
+        m = (
+            await self.session.execute(
+                select(ProfileModel).where(
+                    ProfileModel.account_id == account_id, ProfileModel.id == profile_id
+                )
+            )
+        ).scalar_one_or_none()
+        if m is None:
+            return None
+        m.name = name
+        m.updated_at = func.now()
+        # substitui o conjunto de permissions
+        await self.session.execute(
+            sa_delete(ProfilePermissionModel).where(ProfilePermissionModel.profile_id == profile_id)
+        )
+        ordered = list(dict.fromkeys(permissions))  # dedup preservando ordem
+        for key in ordered:
+            self.session.add(
+                ProfilePermissionModel(id=uuid.uuid4(), profile_id=profile_id, permission_key=key)
+            )
+        await self.session.flush()
+        return Profile(
+            id=m.id,
+            account_id=m.account_id,
+            name=m.name,
+            is_system=m.is_system,
+            permissions=ordered,
+        )
+
+    async def delete(self, account_id: UUID, profile_id: UUID) -> bool:
+        m = (
+            await self.session.execute(
+                select(ProfileModel).where(
+                    ProfileModel.account_id == account_id, ProfileModel.id == profile_id
+                )
+            )
+        ).scalar_one_or_none()
+        if m is None:
+            return False
+        await self.session.delete(m)
+        await self.session.flush()
+        return True
+
+    async def list_with_counts(self, account_id: UUID) -> list[dict[str, object]]:
+        perm_count = (
+            select(
+                ProfilePermissionModel.profile_id.label("profile_id"),
+                func.count().label("permission_count"),
+            )
+            .group_by(ProfilePermissionModel.profile_id)
+            .subquery()
+        )
+        user_count = (
+            select(
+                UserModel.profile_id.label("profile_id"),
+                func.count().label("user_count"),
+            )
+            .where(UserModel.profile_id.is_not(None))
+            .group_by(UserModel.profile_id)
+            .subquery()
+        )
+        stmt = (
+            select(
+                ProfileModel.id,
+                ProfileModel.name,
+                ProfileModel.is_system,
+                func.coalesce(perm_count.c.permission_count, 0).label("permission_count"),
+                func.coalesce(user_count.c.user_count, 0).label("user_count"),
+            )
+            .outerjoin(perm_count, perm_count.c.profile_id == ProfileModel.id)
+            .outerjoin(user_count, user_count.c.profile_id == ProfileModel.id)
+            .where(ProfileModel.account_id == account_id)
+            .order_by(ProfileModel.name)
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            {
+                "id": r.id,
+                "name": r.name,
+                "is_system": r.is_system,
+                "permission_count": int(r.permission_count),
+                "user_count": int(r.user_count),
+            }
+            for r in rows
+        ]
+
+    async def name_map(self, account_id: UUID) -> dict[UUID, str]:
+        """Mapa {profile_id: name} de todos os profiles da account (evita N+1)."""
+        rows = (
+            await self.session.execute(
+                select(ProfileModel.id, ProfileModel.name).where(
+                    ProfileModel.account_id == account_id
+                )
+            )
+        ).all()
+        return {r.id: r.name for r in rows}
 
     async def list_by_account(self, account_id: UUID) -> list[Profile]:
         rows = (
