@@ -22,6 +22,7 @@ depends_on = None
 
 def upgrade() -> None:
     import json
+    import os
     import uuid as _uuid
 
     conn = op.get_bind()
@@ -55,6 +56,19 @@ def upgrade() -> None:
     if acc:
         settings = acc if isinstance(acc, dict) else json.loads(acc)
         openai = (settings.get("integration") or {}).get("openai_api_key") or None
+
+    # Fallback: se o tenant nunca teve a key (caso de produção, onde a OpenAI
+    # sempre veio do .env), criptografa a OPENAI_API_KEY do ambiente e grava no
+    # platform_config para que a FONTE DE VERDADE passe a ser o banco. O .env
+    # continua como fallback de runtime no resolve_openai_key. O blob é cifrado
+    # com a mesma INTEGRATION_CREDENTIALS_KEY usada pelo PlatformConfigRepository.
+    if openai is None:
+        env_key = os.environ.get("OPENAI_API_KEY")
+        cred_key = os.environ.get("INTEGRATION_CREDENTIALS_KEY")
+        if env_key and cred_key:
+            from cryptography.fernet import Fernet
+
+            openai = Fernet(cred_key.encode()).encrypt(env_key.encode()).decode()
 
     # Backfill SMTP: única linha de smtp_config, se houver.
     smtp = (

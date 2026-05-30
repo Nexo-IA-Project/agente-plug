@@ -112,3 +112,46 @@ def test_downgrade_recreates_smtp_then_upgrade_restores(database_url: str) -> No
         await engine.dispose()
 
     asyncio.run(_assert_upgraded())
+
+
+def test_upgrade_backfills_openai_from_env_when_tenant_has_none(database_url: str) -> None:
+    """Sem key no tenant (testcontainer não tem conta), a migração deve criptografar
+    a OPENAI_API_KEY do ambiente com a INTEGRATION_CREDENTIALS_KEY e gravá-la no
+    platform_config — para a fonte de verdade passar a ser o banco."""
+    import asyncio
+
+    from cryptography.fernet import Fernet
+
+    from shared.adapters.db.session import create_engine
+
+    _run_alembic(database_url, "down", "a7b8c9d0e1f2")
+
+    cred_key = Fernet.generate_key().decode()
+    test_openai = "sk-from-env-test-12345"
+    prev_openai = os.environ.get("OPENAI_API_KEY")
+    prev_cred = os.environ.get("INTEGRATION_CREDENTIALS_KEY")
+    os.environ["OPENAI_API_KEY"] = test_openai
+    os.environ["INTEGRATION_CREDENTIALS_KEY"] = cred_key
+    try:
+        _run_alembic(database_url, "up", "heads")
+    finally:
+        for name, prev in (
+            ("OPENAI_API_KEY", prev_openai),
+            ("INTEGRATION_CREDENTIALS_KEY", prev_cred),
+        ):
+            if prev is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = prev
+
+    async def _assert_backfilled() -> None:
+        engine = create_engine(database_url)
+        async with engine.connect() as conn:
+            blob = (
+                await conn.execute(text("SELECT openai_api_key FROM platform_config LIMIT 1"))
+            ).scalar()
+        await engine.dispose()
+        assert blob is not None, "openai_api_key deveria ter sido backfillado do env"
+        assert Fernet(cred_key.encode()).decrypt(blob.encode()).decode() == test_openai
+
+    asyncio.run(_assert_backfilled())
