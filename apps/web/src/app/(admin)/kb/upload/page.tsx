@@ -1,21 +1,26 @@
 // apps/web/src/app/kb/upload/page.tsx
+"use client";
+
 import { Dropzone } from "@/features/kb/components/Dropzone";
 import { FileList } from "@/features/kb/components/FileList";
 import { processedFiles } from "@/features/kb/data/kbMocks";
+import { RequirePermission } from "@/features/auth/components/RequirePermission";
 
 export default function KbUploadPage() {
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-128px)]">
-      <div className="flex flex-1 flex-col rounded-xl border border-outline-variant bg-surface-container-low p-card-padding">
-        <div className="mb-6">
-          <h1 className="text-h1 font-bold text-on-surface">Importação de Conhecimento</h1>
-          <p className="mt-1 text-body-sm text-on-surface-variant">
-            Arraste e solte arquivos para alimentar a base de conhecimento do agente.
-          </p>
+    <RequirePermission perm="kb.create">
+      <div className="flex flex-col gap-6 lg:flex-row lg:h-[calc(100vh-128px)]">
+        <div className="flex flex-1 flex-col rounded-xl border border-outline-variant bg-surface-container-low p-card-padding">
+          <div className="mb-6">
+            <h1 className="text-h1 font-bold text-on-surface">Importação de Conhecimento</h1>
+            <p className="mt-1 text-body-sm text-on-surface-variant">
+              Arraste e solte arquivos para alimentar a base de conhecimento do agente.
+            </p>
+          </div>
+          <Dropzone />
         </div>
-        <Dropzone />
+        <FileList files={processedFiles} />
       </div>
-      <FileList files={processedFiles} />
-    </div>
+    </RequirePermission>
   );
 }

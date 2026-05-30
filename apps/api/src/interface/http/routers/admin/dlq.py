@@ -3,15 +3,20 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select
 
-from interface.http.deps.permissions import require_permission
 from shared.adapters.db.models import JobDlqModel, JobQueueModel
 from shared.adapters.db.session import session_scope
+from shared.config.settings import get_settings
 
 router = APIRouter(tags=["admin-dlq"])
+
+
+def _require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    if x_api_key != get_settings().admin_api_key:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid API key")
 
 
 class DlqEntryOut(BaseModel):
@@ -34,11 +39,7 @@ class RequeueResponse(BaseModel):
     requeued: int
 
 
-@router.get(
-    "/dlq",
-    response_model=DlqListResponse,
-    dependencies=[Depends(require_permission("settings.view"))],
-)
+@router.get("/dlq", response_model=DlqListResponse, dependencies=[Depends(_require_api_key)])
 async def list_dlq(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -75,7 +76,7 @@ async def list_dlq(
 @router.delete(
     "/dlq/{entry_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("settings.view"))],
+    dependencies=[Depends(_require_api_key)],
 )
 async def delete_dlq_entry(entry_id: str) -> None:
     """Remove a specific DLQ entry."""
@@ -99,7 +100,7 @@ async def delete_dlq_entry(entry_id: str) -> None:
 @router.post(
     "/dlq/{entry_id}/requeue",
     response_model=RequeueResponse,
-    dependencies=[Depends(require_permission("settings.view"))],
+    dependencies=[Depends(_require_api_key)],
 )
 async def requeue_dlq_entry(entry_id: str) -> RequeueResponse:
     """Move a DLQ entry back to the job queue for reprocessing."""
@@ -133,7 +134,7 @@ async def requeue_dlq_entry(entry_id: str) -> RequeueResponse:
 @router.post(
     "/dlq/requeue-all",
     response_model=RequeueResponse,
-    dependencies=[Depends(require_permission("settings.view"))],
+    dependencies=[Depends(_require_api_key)],
 )
 async def requeue_all_dlq() -> RequeueResponse:
     """Move all DLQ entries back to the job queue."""
