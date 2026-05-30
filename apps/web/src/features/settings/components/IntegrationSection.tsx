@@ -113,6 +113,13 @@ const SECTIONS: SectionSpec[] = [
         type: "text",
         description: "ID do App Meta (upload de mídia)",
       },
+      {
+        key: "alert_whatsapp_target",
+        label: "Número de alerta interno (WhatsApp)",
+        type: "text",
+        placeholder: "+55 34 9XXXX-XXXX",
+        description: "Recebe avisos quando um produto não é reconhecido no onboarding",
+      },
     ],
   },
 ];
@@ -148,7 +155,7 @@ function SectionCard({ section, settings, onSaved }: {
           <InlineEditField
             key={field.key}
             label={field.label}
-            value={settings[field.key]}
+            value={settings[field.key] ?? ""}
             type={field.type}
             placeholder={field.placeholder}
             description={field.description}
