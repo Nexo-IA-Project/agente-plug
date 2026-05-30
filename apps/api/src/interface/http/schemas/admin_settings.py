@@ -11,7 +11,6 @@ class AccountSettingsResponse(BaseModel):
     chatnexo_account_id: int
     chatnexo_inbox_id: int
     hubla_webhook_secret: str
-    openai_api_key: str
     meta_api_key: str
     meta_waba_id: str
     meta_app_id: str
@@ -33,7 +32,6 @@ class AccountSettingsUpdateRequest(BaseModel):
     chatnexo_account_id: int | None = None
     chatnexo_inbox_id: int | None = None
     hubla_webhook_secret: str | None = None
-    openai_api_key: str | None = None
     meta_api_key: str | None = None
     meta_waba_id: str | None = None
     meta_app_id: str | None = None

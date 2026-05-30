@@ -13,7 +13,6 @@ class IntegrationConfig:
     chatnexo_account_id: int
     chatnexo_inbox_id: int
     hubla_webhook_secret: str
-    openai_api_key: str
     meta_api_key: str
     meta_waba_id: str
     meta_app_id: str
@@ -47,7 +46,6 @@ class AccountConfigPatch:
     chatnexo_account_id: int | None = field(default=None)
     chatnexo_inbox_id: int | None = field(default=None)
     hubla_webhook_secret: str | None = field(default=None)
-    openai_api_key: str | None = field(default=None)
     meta_api_key: str | None = field(default=None)
     meta_waba_id: str | None = field(default=None)
     meta_app_id: str | None = field(default=None)

@@ -24,6 +24,7 @@ from shared.adapters.hubla.client import HublaClient
 from shared.adapters.kb.knowledge_adapter import EmbeddingsKnowledgeAdapter
 from shared.adapters.redis.client import get_redis
 from shared.adapters.redis.refund_mutex import RedisRefundMutex
+from shared.application.resolve_openai_key import resolve_openai_key
 from shared.config.settings import get_settings
 from shared.config.single_tenant import get_default_account_uuid
 
@@ -82,7 +83,8 @@ async def _process_message(
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
         account_config = await config_repo.get(account_id=account_uuid)
 
-        openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
+        openai_key = await resolve_openai_key(session)
+        openai_client = AsyncOpenAI(api_key=openai_key)
 
         # Resolução de agente: usar o agente travado pela última mensagem de onboarding
         conv_repo = ConversationRepository(session=session)

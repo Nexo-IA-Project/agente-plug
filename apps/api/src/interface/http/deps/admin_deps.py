@@ -16,6 +16,7 @@ from shared.adapters.kb.chunker import TextChunker
 from shared.adapters.kb.jwt_handler import verify_token
 from shared.adapters.kb.openai_embeddings import OpenAIEmbeddingsAdapter
 from shared.adapters.kb.text_extractor import TextExtractor
+from shared.application.resolve_openai_key import resolve_openai_key
 from shared.application.use_cases.kb.buscar_chunks import BuscarChunks
 from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
 from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
@@ -74,8 +75,6 @@ async def get_admin_deps(
     user_email: str = payload["sub"]
     user_role: str = payload.get("role", "viewer")
 
-    openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
-    embeddings = OpenAIEmbeddingsAdapter(openai_client, model=settings.kb_embedding_model)
     extractor = TextExtractor()
     chunker = TextChunker(
         chunk_size=settings.kb_chunk_size,
@@ -83,6 +82,8 @@ async def get_admin_deps(
     )
 
     async with session_scope() as session:
+        openai_client = AsyncOpenAI(api_key=await resolve_openai_key(session))
+        embeddings = OpenAIEmbeddingsAdapter(openai_client, model=settings.kb_embedding_model)
         account_id = token_account_id or await get_default_account_uuid(session)
         doc_repo = DocumentRepository(session)
         chunk_repo = ChunkRepository(session)

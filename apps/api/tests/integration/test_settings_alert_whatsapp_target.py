@@ -44,7 +44,6 @@ def _make_config(alert_whatsapp_target: str | None = None) -> AccountConfig:
             chatnexo_account_id=1,
             chatnexo_inbox_id=1,
             hubla_webhook_secret="hubla-secret",
-            openai_api_key="sk-proj-openai-key",
             meta_api_key="meta-key",
             meta_waba_id="123456789",
             meta_app_id="987654321",

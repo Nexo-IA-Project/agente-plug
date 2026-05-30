@@ -39,7 +39,6 @@ def _make_config() -> AccountConfig:
             chatnexo_account_id=1,
             chatnexo_inbox_id=1,
             hubla_webhook_secret="hubla-secret",
-            openai_api_key="sk-proj-openai-key",
             meta_api_key="meta-key",
             meta_waba_id="123456789",
             meta_app_id="987654321",
@@ -82,7 +81,6 @@ def test_get_settings_returns_masked_api_keys():
     assert r.status_code == 200
     data = r.json()
     assert "****" in data["chatnexo_api_key"]
-    assert "****" in data["openai_api_key"]
     assert data["chatnexo_base_url"] == "http://chatnexo"
     assert data["idle_ping_minutes"] == 30
 
