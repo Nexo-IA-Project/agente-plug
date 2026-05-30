@@ -31,6 +31,13 @@ import type {
   SmtpConfig,
   SmtpConfigInput,
 } from "@/features/profile/types";
+import type {
+  UnmappedProduct,
+  ResolveUnmappedInput,
+  ResolveUnmappedResponse,
+  ReprocessUnmappedInput,
+  ReprocessUnmappedResponse,
+} from "@/features/unmapped/types";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -488,6 +495,30 @@ export function uploadTemplateMedia(
     };
     xhr.onerror = () => reject(new Error("Network error"));
     xhr.send(fd);
+  });
+}
+
+// ─── Unmapped Products (Pendências de onboarding) ──────────────────────────────
+
+export async function listUnmapped(): Promise<UnmappedProduct[]> {
+  return apiFetch<UnmappedProduct[]>("/admin/unmapped-products");
+}
+
+export async function resolveUnmapped(
+  input: ResolveUnmappedInput,
+): Promise<ResolveUnmappedResponse> {
+  return apiFetch<ResolveUnmappedResponse>("/admin/unmapped-products/resolve", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function reprocessUnmapped(
+  input: ReprocessUnmappedInput,
+): Promise<ReprocessUnmappedResponse> {
+  return apiFetch<ReprocessUnmappedResponse>("/admin/unmapped-products/reprocess", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }
 
