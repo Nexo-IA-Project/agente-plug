@@ -86,6 +86,98 @@ async def test_subscription_activated_enrolls_and_runs_purchase_handler():
 
 
 @pytest.mark.asyncio
+async def test_schedule_mode_from_now_overrides_activated_at():
+    """Task 7: ao reprocessar com `_schedule_mode=from_now`, o enrollment usa o
+    horário atual (now) em vez do activatedAt original do payload."""
+    from datetime import UTC, datetime
+
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(return_value="conv-now")
+
+    enroll_uc = AsyncMock()
+    purchase_handler = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=purchase_handler,
+    )
+
+    before = datetime.now(UTC)
+    payload = _make_event("subscription.activated")
+    # activatedAt original: 2026-05-22 — bem no passado.
+    payload["_schedule_mode"] = "from_now"
+    await handler.handle(payload)
+    after = datetime.now(UTC)
+
+    # purchase_time passado ao enroll deve ser "agora", não o activatedAt do payload.
+    enroll_uc.execute.assert_called_once()
+    purchase_time = enroll_uc.execute.call_args.kwargs["purchase_time"]
+    original = datetime.fromisoformat("2026-05-22T12:00:00+00:00")
+    assert purchase_time != original
+    assert before <= purchase_time <= after
+
+    # purchase_handler também recebe o activated_at "agora".
+    purchase_handler.handle_one.assert_called_once()
+    assert before <= purchase_handler.handle_one.call_args.kwargs["activated_at"] <= after
+
+
+@pytest.mark.asyncio
+async def test_schedule_mode_original_keeps_payload_activated_at():
+    """Task 7: sem `_schedule_mode` (ou "original"), mantém o activatedAt do payload."""
+    from datetime import datetime
+
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())
+
+    flow_repo = AsyncMock()
+    flow_repo.list_active_by_product_and_events = AsyncMock(
+        return_value=[_make_flow("subscription.activated")]
+    )
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    chatnexo = AsyncMock()
+    chatnexo.get_open_conversation = AsyncMock(return_value=None)
+    chatnexo.create_conversation = AsyncMock(return_value="conv-orig")
+
+    enroll_uc = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=flow_repo,
+        contact_repo=contact_repo,
+        chatnexo=chatnexo,
+        enroll_contact_uc=enroll_uc,
+        purchase_handler=AsyncMock(),
+    )
+
+    payload = _make_event("subscription.activated")
+    payload["_schedule_mode"] = "original"
+    await handler.handle(payload)
+
+    enroll_uc.execute.assert_called_once()
+    purchase_time = enroll_uc.execute.call_args.kwargs["purchase_time"]
+    assert purchase_time == datetime.fromisoformat("2026-05-22T12:00:00+00:00")
+
+
+@pytest.mark.asyncio
 async def test_lead_abandoned_uses_existing_conversation_and_skips_purchase_handler():
     product_repo = AsyncMock()
     product_repo.find_active_by_hubla_id = AsyncMock(return_value=_make_product())

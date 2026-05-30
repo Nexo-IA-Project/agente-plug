@@ -147,6 +147,13 @@ class HublaEventHandler:
         except (ValueError, AttributeError):
             activated_at = datetime.now(UTC)
 
+        # Reprocesso de pendências (Task 7): quando o job é re-enfileirado com
+        # schedule_mode="from_now", agenda os steps a partir de agora em vez de
+        # usar o activatedAt original do payload. Ausente ou "original" mantém o
+        # comportamento padrão (usa o horário original da ativação).
+        if payload.get("_schedule_mode") == "from_now":
+            activated_at = datetime.now(UTC)
+
         account_uuid = self._account_id
         account_id_str = str(account_uuid)
 
