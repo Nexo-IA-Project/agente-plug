@@ -328,6 +328,46 @@ async def test_matched_product_marks_lead_not_unmatched():
 
 
 @pytest.mark.asyncio
+async def test_no_phone_does_not_mark_unmatched():
+    """Fix #1: evento sem telefone → _route retorna None ("sem decisão sobre o
+    produto") → set_product_unmatched NÃO deve ser chamado (evita falso positivo,
+    pois o produto pode estar mapeado)."""
+    contact_repo = AsyncMock()
+    # Sem telefone, contact_repo.upsert nem é chamado, mas garantimos contact None.
+    contact_repo.upsert = AsyncMock(return_value=None)
+
+    lead_id = uuid4()
+    lead_repo = AsyncMock()
+    lead_repo.upsert = AsyncMock(return_value=MagicMock(id=lead_id))
+    lead_repo.set_product_unmatched = AsyncMock()
+
+    hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=MagicMock(id=uuid4()))
+    hubla_event_repo.mark_processed = AsyncMock()
+
+    product_repo = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=AsyncMock(),
+        contact_repo=contact_repo,
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        lead_repo=lead_repo,
+        hubla_event_repo=hubla_event_repo,
+    )
+
+    payload = _make_event("subscription.activated")
+    payload["event"]["subscription"]["payer"]["phone"] = ""
+    await handler.handle(payload)
+
+    # Lead ainda é persistido, mas a flag NÃO é mexida (sem decisão sobre o produto).
+    lead_repo.set_product_unmatched.assert_not_called()
+    product_repo.find_active_by_hubla_id.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_product_matched_by_name_fallback_when_id_unknown():
     """Hubla envia id de offer (v1) não cadastrado, mas o nome do produto bate →
     resolve por nome (ponte) e enrolla o flow normalmente."""
@@ -899,9 +939,82 @@ async def test_publishes_lead_upserted_envelope_after_upsert():
     assert envelope["lead"]["hubla_subscription_id"] == "sub-pub-1"
     assert envelope["lead"]["utm_source"] == "Meta Ads"
     assert envelope["lead"]["subscription_status"] == "active"
+    # Fix #2: produto casa (find_active_by_hubla_id retorna MagicMock truthy) →
+    # a flag publicada no SSE reflete o estado atualizado (não-unmatched).
+    assert envelope["lead"]["product_unmatched"] is False
     # Metadados do hubla_event acompanham o envelope.
     assert envelope["event"]["event_type"] == "subscription.activated"
     assert envelope["event"]["id"] == str(event_entity.id)
+
+
+@pytest.mark.asyncio
+async def test_publishes_unmatched_flag_in_envelope_for_unmapped_product():
+    """Fix #2: produto não casa → o envelope SSE publica product_unmatched=True
+    (a entidade em memória é atualizada ANTES do publish)."""
+    from datetime import UTC, datetime
+
+    from shared.domain.entities.lead import Lead
+
+    account_id = uuid4()
+    lead_id = uuid4()
+    now = datetime.now(UTC)
+
+    lead_entity = Lead(
+        id=lead_id,
+        account_id=account_id,
+        hubla_subscription_id="sub-unmatched-1",
+        payer_phone="+5511999990000",
+        payer_name="João Silva",
+        payer_email="joao@email.com",
+        hubla_product_id="prod-hubla-123",
+        product_name="Produto X",
+        subscription_status="abandoned",
+        first_seen_at=now,
+        last_event_at=now,
+        last_event_type="lead.abandoned",
+        created_at=now,
+        updated_at=now,
+        product_unmatched=False,
+    )
+
+    product_repo = AsyncMock()
+    product_repo.find_active_by_hubla_id = AsyncMock(return_value=None)
+    product_repo.find_active_by_name = AsyncMock(return_value=None)
+
+    contact_repo = AsyncMock()
+    contact_repo.upsert = AsyncMock(return_value=_make_contact())
+
+    lead_repo = AsyncMock()
+    lead_repo.upsert = AsyncMock(return_value=lead_entity)
+    lead_repo.set_product_unmatched = AsyncMock()
+
+    hubla_event_repo = AsyncMock()
+    hubla_event_repo.insert = AsyncMock(return_value=MagicMock(id=uuid4()))
+    hubla_event_repo.mark_processed = AsyncMock()
+
+    leads_pubsub = AsyncMock()
+    leads_pubsub.publish = AsyncMock()
+
+    handler = HublaEventHandler(
+        product_repo=product_repo,
+        flow_repo=AsyncMock(),
+        contact_repo=contact_repo,
+        chatnexo=AsyncMock(),
+        enroll_contact_uc=AsyncMock(),
+        purchase_handler=AsyncMock(),
+        lead_repo=lead_repo,
+        hubla_event_repo=hubla_event_repo,
+        leads_pubsub=leads_pubsub,
+        account_id=account_id,
+    )
+
+    # lead.abandoned não está em PURCHASE_EVENT_TYPES → caminho puro de unmapped.
+    await handler.handle(_make_event("lead.abandoned"))
+
+    lead_repo.set_product_unmatched.assert_awaited_once_with(lead_id=lead_id, value=True)
+    leads_pubsub.publish.assert_awaited_once()
+    _account, envelope = leads_pubsub.publish.await_args.args
+    assert envelope["lead"]["product_unmatched"] is True
 
 
 @pytest.mark.asyncio

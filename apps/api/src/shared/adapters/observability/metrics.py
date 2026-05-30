@@ -117,7 +117,6 @@ AGENT_ITERATIONS = Counter(
 HUBLA_UNMAPPED_PRODUCT = Counter(
     "hubla_unmapped_product_total",
     "Eventos Hubla cujo produto não casou nenhum cadastro",
-    ["product_name"],
     registry=REGISTRY,
 )
 
