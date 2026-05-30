@@ -20,6 +20,7 @@ export function UserListTable({ users, onEdit, onResetPassword, onDelete, curren
             <th className="px-4 py-3 text-left text-on-surface-variant">Nome</th>
             <th className="px-4 py-3 text-left text-on-surface-variant">Email</th>
             <th className="px-4 py-3 text-left text-on-surface-variant">Papel</th>
+            <th className="px-4 py-3 text-left text-on-surface-variant">Perfil</th>
             <th className="px-4 py-3 text-left text-on-surface-variant">Status</th>
             <th className="px-4 py-3 text-left text-on-surface-variant">Último login</th>
             <th className="px-4 py-3 text-right text-on-surface-variant">Ações</th>
@@ -38,6 +39,9 @@ export function UserListTable({ users, onEdit, onResetPassword, onDelete, curren
                 }`}>
                   {u.role === "admin" ? "Admin" : "Operador"}
                 </span>
+              </td>
+              <td className="px-4 py-3 text-on-surface-variant">
+                {u.profile_name ?? "—"}
               </td>
               <td className="px-4 py-3">
                 <span className={u.is_active ? "text-on-surface" : "text-on-surface-variant"}>
@@ -80,7 +84,7 @@ export function UserListTable({ users, onEdit, onResetPassword, onDelete, curren
           ))}
           {users.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-8 text-center text-on-surface-variant">
+              <td colSpan={7} className="px-4 py-8 text-center text-on-surface-variant">
                 Nenhum usuário encontrado.
               </td>
             </tr>

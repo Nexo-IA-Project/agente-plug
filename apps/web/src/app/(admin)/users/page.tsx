@@ -8,6 +8,7 @@ import {
   updateUser,
   deleteUser,
   resetUserPassword,
+  listProfiles,
 } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { usePermission } from "@/features/auth/hooks/usePermission";
@@ -16,11 +17,13 @@ import { UserListTable } from "@/features/users/components/UserListTable";
 import { UserDrawer } from "@/features/users/components/UserDrawer";
 import { ResetPasswordDialog } from "@/features/users/components/ResetPasswordDialog";
 import type { User, CreateUserInput, UpdateUserInput } from "@/features/users/types";
+import type { ProfileListItem } from "@/features/profiles/types";
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
   const { isAdmin } = usePermission();
   const [users, setUsers] = useState<User[]>([]);
+  const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawerUser, setDrawerUser] = useState<User | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -30,8 +33,9 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await listUsers();
+      const [res, profileList] = await Promise.all([listUsers(), listProfiles()]);
       setUsers(res.items);
+      setProfiles(profileList);
     } catch {
       // toast não entra na dep array para não causar loop infinito
     } finally {
@@ -131,6 +135,7 @@ export default function UsersPage() {
       <UserDrawer
         open={drawerOpen}
         user={drawerUser}
+        profiles={profiles}
         onClose={() => setDrawerOpen(false)}
         onSubmit={drawerUser ? onUpdate : onCreate}
       />
