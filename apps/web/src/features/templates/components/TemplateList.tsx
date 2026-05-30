@@ -378,7 +378,7 @@ export function TemplateList({
                         </span>
                       </button>
                     )}
-                    {can("delete_template") && (
+                    {can("templates.delete") && (
                       <button
                         onClick={() => onDelete(t)}
                         title="Excluir template"

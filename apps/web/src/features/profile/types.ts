@@ -7,4 +7,5 @@ export interface MeResponse {
   role: "admin" | "operator";
   must_change_password: boolean;
   has_avatar: boolean;
+  permissions: string[];
 }
