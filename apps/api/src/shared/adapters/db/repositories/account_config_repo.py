@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from cryptography.fernet import Fernet
 from sqlalchemy import select
@@ -75,7 +76,7 @@ class AccountConfigRepository:
         result = await self.session.execute(select(AccountModel).limit(1))
         return result.scalar_one_or_none()
 
-    async def get(self, *, account_id: int) -> AccountConfig:
+    async def get(self, *, account_id: UUID) -> AccountConfig:
         model = await self._load_model()
         raw: dict = dict(model.settings or {}) if model else {}
 
@@ -133,7 +134,7 @@ class AccountConfigRepository:
             ),
         )
 
-    async def update(self, *, account_id: int, patch: AccountConfigPatch) -> AccountConfig:
+    async def update(self, *, account_id: UUID, patch: AccountConfigPatch) -> AccountConfig:
         model = await self._load_model()
         if model is None:
             model = AccountModel(name="default", settings={})
@@ -183,4 +184,5 @@ class AccountConfigRepository:
         model.settings = current
         await self.session.flush()
 
-        return await self.get(account_id=1)
+        account_uuid = await get_default_account_uuid(self.session)
+        return await self.get(account_id=account_uuid)

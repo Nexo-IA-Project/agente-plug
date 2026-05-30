@@ -76,8 +76,9 @@ async def _get_meta_client_and_waba(auth: AdminAuth) -> tuple[MetaTemplateClient
     settings = get_settings()
     fernet = Fernet(settings.integration_credentials_key.encode())
     async with session_scope() as session:
+        account_id = auth.account_id or await _get_account_uuid(session)
         repo = AccountConfigRepository(session=session, fernet=fernet)
-        config = await repo.get(account_id=auth.account_id)
+        config = await repo.get(account_id=account_id)
     client = MetaTemplateClient.from_account_config(config)
     waba_id = config.integration.meta_waba_id or settings.meta_waba_id or ""
     app_id = config.integration.meta_app_id or (settings.meta_app_id or "")

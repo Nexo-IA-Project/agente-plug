@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -85,7 +87,7 @@ class AccessCaseRepository:
         model.search_attempts = search_attempts
         await self._session.flush()
 
-    async def find_by_phone(self, *, account_id: int, phone: str) -> AccessCase | None:
+    async def find_by_phone(self, *, account_id: UUID, phone: str) -> AccessCase | None:
         result = await self._session.execute(
             select(AccessCaseModel)
             .where(AccessCaseModel.account_id == account_id)

@@ -63,9 +63,8 @@ async def handle_scheduled(payload: dict) -> None:
         fernet = Fernet(settings_obj.integration_credentials_key.encode())
         async with session_scope() as session:
             config_repo = AccountConfigRepository(session=session, fernet=fernet)
-            config = await config_repo.get(account_id=1)
-
             account_uuid = await get_default_account_uuid(session)
+            config = await config_repo.get(account_id=account_uuid)
             agents = config.integration.chatnexo_agents
             base_url = config.integration.chatnexo_base_url
             fallback_key = config.integration.chatnexo_api_key

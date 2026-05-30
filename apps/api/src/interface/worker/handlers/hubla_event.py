@@ -38,7 +38,8 @@ async def handle_hubla_event(payload: dict) -> None:
 
     async with session_scope() as session:
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
-        account_config = await config_repo.get(account_id=1)
+        account_uuid = await get_default_account_uuid(session)
+        account_config = await config_repo.get(account_id=account_uuid)
         # Usa key de um atendente ativo (random); cai pro fallback chatnexo_api_key
         # apenas se não houver nenhum atendente cadastrado. O fallback historicamente
         # pode ser de outra conta — sempre prefira o atendente.
@@ -74,8 +75,6 @@ async def handle_hubla_event(payload: dict) -> None:
             chatnexo_account_id=account_config.integration.chatnexo_account_id,
             chatnexo_inbox_id=account_config.integration.chatnexo_inbox_id,
         )
-
-        account_uuid = await get_default_account_uuid(session)
 
         handler = HublaEventHandler(
             product_repo=product_repo,

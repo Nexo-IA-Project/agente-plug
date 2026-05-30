@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -40,7 +41,7 @@ class BuscarConhecimentoComContextoSkill(BaseSkill):
         result = await self._use_case.execute(
             query=kwargs["query"],
             contexto_aluno=kwargs["contexto_aluno"],
-            account_id=int(ctx.account_id),
+            account_id=UUID(ctx.account_id),
         )
         if not result["encontrado"]:
             if result.get("escalar"):

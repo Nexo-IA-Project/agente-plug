@@ -1,7 +1,56 @@
-import pytest
+from uuid import UUID
 
+import pytest
+from sqlalchemy import text
+
+from shared.adapters.db.models import AccessCaseModel
 from shared.adapters.db.repositories.access_case_repo import AccessCaseRepository
 from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
+
+# account_id agora é UUID com FK -> accounts. Usamos duas contas reais.
+ACC1 = UUID("11111111-1111-1111-1111-111111111111")
+ACC2 = UUID("22222222-2222-2222-2222-222222222222")
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _apply_migrations(database_url: str) -> None:
+    """Aplica alembic migrations no testcontainer Postgres uma vez por sessão."""
+    import os
+
+    from shared.config.settings import get_settings
+
+    original = os.environ.get("DATABASE_URL")
+    os.environ["DATABASE_URL"] = database_url
+    get_settings.cache_clear()  # type: ignore[attr-defined]
+    try:
+        from alembic import command
+        from alembic.config import Config as AlembicConfig
+
+        cfg = AlembicConfig("alembic.ini")
+        cfg.set_main_option("sqlalchemy.url", database_url)
+        command.upgrade(cfg, "heads")
+    finally:
+        if original is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = original
+        get_settings.cache_clear()  # type: ignore[attr-defined]
+
+
+@pytest.fixture(autouse=True)
+async def _ensure_accounts(db_session) -> None:
+    from sqlalchemy import delete
+
+    await db_session.execute(delete(AccessCaseModel))
+    for acc in (ACC1, ACC2):
+        await db_session.execute(
+            text(
+                "INSERT INTO accounts (id, name, settings, created_at) "
+                "VALUES (:id, :name, '{}'::jsonb, NOW()) ON CONFLICT (id) DO NOTHING"
+            ),
+            {"id": str(acc), "name": f"acc-{acc}"},
+        )
+    await db_session.commit()
 
 
 @pytest.mark.asyncio
@@ -9,7 +58,7 @@ from shared.domain.entities.access_case import AccessCase, AccessCaseStatus
 async def test_save_and_get_by_purchase_id(db_session):
     repo = AccessCaseRepository(db_session)
     case = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="contact-1",
         conversation_id="conv-1",
         purchase_id="purchase-unique-001",
@@ -38,7 +87,7 @@ async def test_get_by_purchase_id_not_found(db_session):
 async def test_update_status(db_session):
     repo = AccessCaseRepository(db_session)
     case = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="c",
         conversation_id="cv",
         purchase_id="p-update-test",
@@ -60,14 +109,14 @@ async def test_update_status(db_session):
 async def test_duplicate_purchase_id_raises(db_session):
     repo = AccessCaseRepository(db_session)
     case1 = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="c",
         conversation_id="cv",
         purchase_id="duplicate-purchase",
         product_name="P",
     )
     case2 = AccessCase(
-        account_id=2,
+        account_id=ACC2,
         contact_id="c2",
         conversation_id="cv2",
         purchase_id="duplicate-purchase",
@@ -83,7 +132,7 @@ async def test_duplicate_purchase_id_raises(db_session):
 async def test_save_persists_student_cpf_and_search_attempts(db_session):
     repo = AccessCaseRepository(db_session)
     case = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="+5511999999999",
         conversation_id="conv-1",
         purchase_id="p-cpf-001",
@@ -105,23 +154,27 @@ async def test_find_by_phone_returns_most_recent(db_session):
 
     repo = AccessCaseRepository(db_session)
     older = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="+5511999999999",
         conversation_id="cv-older",
         purchase_id="p-older",
         product_name="Curso Antigo",
     )
     newer = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="+5511999999999",
         conversation_id="cv-newer",
         purchase_id="p-newer",
         product_name="Curso Novo",
     )
     await repo.save(older)
+    # commit entre os saves para que o NOW() (transaction-scoped) avance e
+    # created_at fique determinístico (flush sozinho compartilharia o mesmo NOW()).
+    await db_session.commit()
     await asyncio.sleep(0.01)
     await repo.save(newer)
-    found = await repo.find_by_phone(account_id=1, phone="+5511999999999")
+    await db_session.commit()
+    found = await repo.find_by_phone(account_id=ACC1, phone="+5511999999999")
     assert found is not None
     assert found.purchase_id == "p-newer"
 
@@ -131,14 +184,14 @@ async def test_find_by_phone_returns_most_recent(db_session):
 async def test_find_by_phone_respects_account_id_isolation(db_session):
     repo = AccessCaseRepository(db_session)
     case_a = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="+5511999999999",
         conversation_id="cv-a",
         purchase_id="p-tenant-a",
         product_name="Curso A",
     )
     case_b = AccessCase(
-        account_id=2,
+        account_id=ACC2,
         contact_id="+5511999999999",
         conversation_id="cv-b",
         purchase_id="p-tenant-b",
@@ -146,8 +199,8 @@ async def test_find_by_phone_respects_account_id_isolation(db_session):
     )
     await repo.save(case_a)
     await repo.save(case_b)
-    found_a = await repo.find_by_phone(account_id=1, phone="+5511999999999")
-    found_b = await repo.find_by_phone(account_id=2, phone="+5511999999999")
+    found_a = await repo.find_by_phone(account_id=ACC1, phone="+5511999999999")
+    found_b = await repo.find_by_phone(account_id=ACC2, phone="+5511999999999")
     assert found_a.purchase_id == "p-tenant-a"
     assert found_b.purchase_id == "p-tenant-b"
 
@@ -156,7 +209,7 @@ async def test_find_by_phone_respects_account_id_isolation(db_session):
 @pytest.mark.integration
 async def test_find_by_phone_returns_none_when_no_case(db_session):
     repo = AccessCaseRepository(db_session)
-    found = await repo.find_by_phone(account_id=1, phone="+5511000000000")
+    found = await repo.find_by_phone(account_id=ACC1, phone="+5511000000000")
     assert found is None
 
 
@@ -165,7 +218,7 @@ async def test_find_by_phone_returns_none_when_no_case(db_session):
 async def test_update_status_sets_status_and_attempts(db_session):
     repo = AccessCaseRepository(db_session)
     case = AccessCase(
-        account_id=1,
+        account_id=ACC1,
         contact_id="+5511999999999",
         conversation_id="cv-upd",
         purchase_id="p-update-status",

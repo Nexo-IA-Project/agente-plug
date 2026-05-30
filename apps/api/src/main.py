@@ -78,13 +78,15 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         from shared.adapters.db.repositories.account_config_repo import (
             AccountConfigRepository,
         )
+        from shared.config.single_tenant import get_default_account_uuid
 
         async with get_sessionmaker()() as session:
             repo = AccountConfigRepository(
                 session=session,
                 fernet=Fernet(settings.integration_credentials_key.encode()),
             )
-            config = await repo.get(account_id=0)  # single-tenant: ignora id
+            account_uuid = await get_default_account_uuid(session)
+            config = await repo.get(account_id=account_uuid)
             return config.integration.hubla_webhook_secret or settings.hubla_webhook_secret
 
     webhook_purchase.configure(

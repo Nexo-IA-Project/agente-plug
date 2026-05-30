@@ -69,7 +69,7 @@ async def login(body: LoginRequest, response: Response) -> LoginResponse:
     token = create_access_token(
         data={
             "sub": snapshot["email"],
-            "account_id": snapshot["account_id"],
+            "account_id": str(snapshot["account_id"]),
             "role": snapshot["role"],
             "user_id": snapshot["id"],
             "must_change_password": snapshot["must_change_password"],

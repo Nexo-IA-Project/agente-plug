@@ -259,7 +259,7 @@ class SqlLeadRepository:
         settings = get_settings()
         fernet = Fernet(settings.integration_credentials_key.encode())
         config_repo = AccountConfigRepository(session=self.session, fernet=fernet)
-        config = await config_repo.get(account_id=1)
+        config = await config_repo.get(account_id=account_id)
         integration = config.integration
         if not integration.chatnexo_base_url:
             return entity

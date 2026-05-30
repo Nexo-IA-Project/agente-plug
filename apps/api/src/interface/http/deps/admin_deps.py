@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
+from uuid import UUID
 
 from fastapi import Cookie, Header, HTTPException, status
 from jose import JWTError
@@ -20,11 +21,12 @@ from shared.application.use_cases.kb.deletar_documento import DeletarDocumento
 from shared.application.use_cases.kb.ingerir_documento import IngerirDocumento
 from shared.application.use_cases.kb.listar_documentos import ListarDocumentos
 from shared.config.settings import Settings, get_settings
+from shared.config.single_tenant import get_default_account_uuid
 
 
 @dataclass
 class AdminDeps:
-    account_id: int
+    account_id: UUID
     user_email: str
     user_role: str
     settings: Settings
@@ -62,7 +64,13 @@ async def get_admin_deps(
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
-    account_id: int = payload["account_id"]
+    # account_id agora é UUID. Tokens legados carregavam inteiro — parse tolerante,
+    # com fallback resolvido dentro da sessão (single-tenant).
+    raw_acc = payload.get("account_id")
+    try:
+        token_account_id: UUID | None = UUID(str(raw_acc)) if raw_acc is not None else None
+    except (ValueError, TypeError):
+        token_account_id = None
     user_email: str = payload["sub"]
     user_role: str = payload.get("role", "viewer")
 
@@ -75,6 +83,7 @@ async def get_admin_deps(
     )
 
     async with session_scope() as session:
+        account_id = token_account_id or await get_default_account_uuid(session)
         doc_repo = DocumentRepository(session)
         chunk_repo = ChunkRepository(session)
         usage_repo = UsageLogRepository(session)

@@ -17,6 +17,7 @@ from shared.adapters.db.session import session_scope
 from shared.application.use_cases.admin.get_account_config import GetAccountConfig
 from shared.application.use_cases.admin.update_account_config import UpdateAccountConfig
 from shared.config.settings import get_settings
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.account_config import AccountConfig, AccountConfigPatch
 
 router = APIRouter(tags=["admin-settings"])
@@ -53,9 +54,10 @@ async def get_settings_endpoint(
     s = get_settings()
     fernet = Fernet(s.integration_credentials_key.encode())
     async with session_scope() as session:
+        account_id = auth.account_id or await get_default_account_uuid(session)
         repo = AccountConfigRepository(session=session, fernet=fernet)
         uc = GetAccountConfig(repo=repo)
-        config = await uc.execute(account_id=auth.account_id)
+        config = await uc.execute(account_id=account_id)
     return _to_response(config)
 
 
@@ -71,8 +73,9 @@ async def get_hubla_webhook_token(
     s = get_settings()
     fernet = Fernet(s.integration_credentials_key.encode())
     async with session_scope() as session:
+        account_id = auth.account_id or await get_default_account_uuid(session)
         repo = AccountConfigRepository(session=session, fernet=fernet)
-        config = await repo.get(account_id=auth.account_id)
+        config = await repo.get(account_id=account_id)
     return {"token": config.integration.hubla_webhook_secret or ""}
 
 
@@ -104,9 +107,10 @@ async def update_settings_endpoint(
     )
     try:
         async with session_scope() as session:
+            account_id = auth.account_id or await get_default_account_uuid(session)
             repo = AccountConfigRepository(session=session, fernet=fernet)
             uc = UpdateAccountConfig(repo=repo)
-            config = await uc.execute(account_id=auth.account_id, patch=patch)
+            config = await uc.execute(account_id=account_id, patch=patch)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)

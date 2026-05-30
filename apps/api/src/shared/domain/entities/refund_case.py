@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 class RefundCaseStatus(StrEnum):
@@ -18,7 +18,7 @@ class RefundCaseStatus(StrEnum):
 
 @dataclass
 class RefundCase:
-    account_id: int
+    account_id: UUID
     contact_id: str
     conversation_id: str
     student_email: str

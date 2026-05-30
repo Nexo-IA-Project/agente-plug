@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from cryptography.fernet import Fernet
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +38,7 @@ class SmtpConfigRepository:
     def decrypt_password(self, encrypted: str) -> str:
         return self._fernet.decrypt(encrypted.encode()).decode()
 
-    async def get(self, account_id: int) -> SmtpConfig | None:
+    async def get(self, account_id: UUID) -> SmtpConfig | None:
         result = await self._session.execute(
             select(SmtpConfigModel).where(SmtpConfigModel.account_id == account_id)
         )
@@ -45,7 +47,7 @@ class SmtpConfigRepository:
 
     async def upsert(
         self,
-        account_id: int,
+        account_id: UUID,
         host: str,
         port: int,
         username: str,

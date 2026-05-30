@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,7 @@ def _to_entity(m: UserModel) -> User:
         is_active=m.is_active,
         created_at=m.created_at,
         last_login_at=m.last_login_at,
+        profile_id=m.profile_id,
     )
 
 
@@ -42,6 +44,7 @@ class UserRepository:
             avatar=user.avatar,
             must_change_password=user.must_change_password,
             is_active=user.is_active,
+            profile_id=user.profile_id,
         )
         self._session.add(model)
         await self._session.flush()
@@ -51,7 +54,7 @@ class UserRepository:
         row = result.scalar_one_or_none()
         return _to_entity(row) if row else None
 
-    async def get_by_email(self, account_id: int, email: str) -> User | None:
+    async def get_by_email(self, account_id: UUID, email: str) -> User | None:
         result = await self._session.execute(
             select(UserModel)
             .where(UserModel.account_id == account_id)
@@ -61,7 +64,7 @@ class UserRepository:
         return _to_entity(row) if row else None
 
     async def list_by_account(
-        self, account_id: int, page: int, page_size: int
+        self, account_id: UUID, page: int, page_size: int
     ) -> tuple[list[User], int]:
         total_result = await self._session.execute(
             select(func.count()).select_from(UserModel).where(UserModel.account_id == account_id)
@@ -121,7 +124,7 @@ class UserRepository:
         await self._session.delete(m)
         await self._session.flush()
 
-    async def count_active_admins(self, account_id: int) -> int:
+    async def count_active_admins(self, account_id: UUID) -> int:
         result = await self._session.execute(
             select(func.count())
             .select_from(UserModel)

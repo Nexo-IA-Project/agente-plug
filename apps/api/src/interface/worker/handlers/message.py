@@ -75,13 +75,16 @@ async def _process_message(
     fernet = Fernet(settings.integration_credentials_key.encode())
 
     async with session_scope() as session:
+        # account_id (int) vem do payload e representa o id numérico do ChatNexo,
+        # usado em thread_id/URLs — não é o UUID do tenant. A config é resolvida
+        # via single-tenant (AccountConfigRepository ignora o argumento internamente).
+        account_uuid = await get_default_account_uuid(session)
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
-        account_config = await config_repo.get(account_id=account_id)
+        account_config = await config_repo.get(account_id=account_uuid)
 
         openai_client = AsyncOpenAI(api_key=account_config.integration.openai_api_key)
 
         # Resolução de agente: usar o agente travado pela última mensagem de onboarding
-        account_uuid = await get_default_account_uuid(session)
         conv_repo = ConversationRepository(session=session)
         last_agent_id = await conv_repo.get_last_onboarding_agent_id(
             account_id=account_uuid,
@@ -131,8 +134,11 @@ async def _process_message(
         registry = build_registry(adapters)
         guard_service = GuardService([LegalMentionGuard(), LoopDetectorGuard()])
 
+        # ctx.account_id carrega o UUID do tenant (FK das tabelas migradas:
+        # knowledge_chunks/access_cases/refund_cases). thread_id permanece
+        # chaveado pelo id numérico do ChatNexo para não orfanar threads OpenAI.
         ctx = AgentContext(
-            account_id=str(account_id),
+            account_id=str(account_uuid),
             phone=phone,
             conversation_id=str(conversation_id),
             thread_id=f"{account_id}:{phone}",

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from fastapi import Cookie, Depends, Header, HTTPException, Query, status
 from jose import JWTError
@@ -11,7 +12,7 @@ from shared.config.settings import get_settings
 
 @dataclass
 class AdminAuth:
-    account_id: int
+    account_id: UUID | None
     user_email: str
     user_role: str
     user_id: str
@@ -28,8 +29,17 @@ def _decode(token: str) -> AdminAuth:
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
+
+    # account_id agora é UUID. Tokens legados (emitidos antes da migração)
+    # carregavam um inteiro — toleramos: parse falho → None, sem derrubar o login.
+    raw_acc = payload.get("account_id")
+    try:
+        account_id = UUID(str(raw_acc)) if raw_acc is not None else None
+    except (ValueError, TypeError):
+        account_id = None
+
     return AdminAuth(
-        account_id=payload["account_id"],
+        account_id=account_id,
         user_email=payload["sub"],
         user_role=payload.get("role", "operator"),
         user_id=payload.get("user_id", ""),

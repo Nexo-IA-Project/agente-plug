@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,7 +31,7 @@ class DocumentRepository:
         self._session.add(model)
         await self._session.flush()
 
-    async def get(self, doc_id: str, account_id: int) -> KnowledgeDocument | None:
+    async def get(self, doc_id: str, account_id: UUID) -> KnowledgeDocument | None:
         result = await self._session.execute(
             select(KnowledgeDocumentModel)
             .where(KnowledgeDocumentModel.id == doc_id)
@@ -39,7 +41,7 @@ class DocumentRepository:
         return None if model is None else self._to_entity(model)
 
     async def list_by_account(
-        self, account_id: int, offset: int = 0, limit: int = 20
+        self, account_id: UUID, offset: int = 0, limit: int = 20
     ) -> list[KnowledgeDocument]:
         result = await self._session.execute(
             select(KnowledgeDocumentModel)
@@ -67,7 +69,7 @@ class DocumentRepository:
         model.chunk_count = count
         await self._session.flush()
 
-    async def delete(self, doc_id: str, account_id: int) -> None:
+    async def delete(self, doc_id: str, account_id: UUID) -> None:
         await self._session.execute(
             delete(KnowledgeDocumentModel)
             .where(KnowledgeDocumentModel.id == doc_id)

@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from unittest.mock import patch
+from uuid import UUID
 
 import pytest
 from fastapi import HTTPException
+
+_ACC = UUID("47418057-77cc-469e-8263-d7311fe64155")
 
 
 @pytest.mark.asyncio
@@ -45,7 +48,7 @@ async def test_require_admin_role_passes_for_admin():
     from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
     auth = AdminAuth(
-        account_id=1,
+        account_id=_ACC,
         user_email="a@x.com",
         user_role="admin",
         user_id="u1",
@@ -62,7 +65,7 @@ async def test_require_admin_role_blocks_operator():
     from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 
     auth = AdminAuth(
-        account_id=1,
+        account_id=_ACC,
         user_email="a@x.com",
         user_role="operator",
         user_id="u1",
@@ -71,3 +74,58 @@ async def test_require_admin_role_blocks_operator():
     with pytest.raises(HTTPException) as exc:
         await require_admin_role(auth=auth)
     assert exc.value.status_code == 403
+
+
+def _decode_with_payload(payload: dict):
+    """Helper: chama _decode com um verify_token mockado retornando o payload dado."""
+    from interface.http.deps import admin_auth
+
+    with (
+        patch.object(admin_auth, "verify_token", return_value=payload),
+        patch.object(admin_auth, "get_settings") as mock_settings,
+    ):
+        mock_settings.return_value.jwt_secret = "test-secret"
+        return admin_auth._decode("fake-token")
+
+
+def test_decode_parses_uuid_account_id():
+    auth = _decode_with_payload(
+        {
+            "account_id": str(_ACC),
+            "sub": "a@x.com",
+            "role": "admin",
+            "user_id": "u1",
+            "must_change_password": False,
+        }
+    )
+    assert auth.account_id == _ACC
+    assert isinstance(auth.account_id, UUID)
+
+
+def test_decode_tolerates_legacy_int_account_id():
+    # Token legado emitido antes da migração: account_id é inteiro.
+    auth = _decode_with_payload(
+        {
+            "account_id": 1,
+            "sub": "a@x.com",
+            "role": "operator",
+            "user_id": "u1",
+            "must_change_password": False,
+        }
+    )
+    # Não derruba o login — apenas resolve para None.
+    assert auth.account_id is None
+    assert auth.user_email == "a@x.com"
+    assert auth.user_role == "operator"
+
+
+def test_decode_handles_missing_account_id():
+    auth = _decode_with_payload(
+        {
+            "sub": "a@x.com",
+            "role": "admin",
+            "user_id": "u1",
+            "must_change_password": False,
+        }
+    )
+    assert auth.account_id is None

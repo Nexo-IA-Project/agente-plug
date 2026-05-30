@@ -86,11 +86,10 @@ class PurchaseHandler:
             )
 
         # Access capability — sempre executa.
-        # NOTE: AccessCaseModel.account_id é INTEGER (schema legado pré multi-tenant).
-        # Reaproveitamos o chatnexo_account_id (int) até o refactor multi-tenant.
+        # AccessCaseModel.account_id agora é UUID (FK p/ accounts) — usamos o tenant UUID.
         case = AccessCase(
             id=str(uuid4()),
-            account_id=chatnexo_account_id_int,
+            account_id=account_uuid,
             contact_id=str(contact.id),
             conversation_id=str(conversation_id),
             purchase_id=purchase_id,

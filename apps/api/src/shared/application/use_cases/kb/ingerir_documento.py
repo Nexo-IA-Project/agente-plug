@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from shared.adapters.kb.chunker import TextChunker
 from shared.adapters.kb.text_extractor import TextExtractor
 from shared.domain.entities.knowledge_chunk import KnowledgeChunk
@@ -27,7 +29,7 @@ class IngerirDocumento:
         self._chunker = chunker
         self._embeddings = embeddings
 
-    async def execute(self, doc_id: str, content: bytes, account_id: int) -> None:
+    async def execute(self, doc_id: str, content: bytes, account_id: UUID) -> None:
         await self._doc_repo.update_status(doc_id, DocumentStatus.PROCESSING)
         try:
             doc = await self._doc_repo.get(doc_id, account_id)

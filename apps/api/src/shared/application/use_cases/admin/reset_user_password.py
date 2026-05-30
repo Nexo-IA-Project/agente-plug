@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from uuid import UUID
 
 from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.email.smtp_email_service import SmtpEmailService
@@ -14,7 +15,7 @@ class ResetUserPasswordUseCase:
     user_repo: UserRepository
     email_service: SmtpEmailService
 
-    async def execute(self, account_id: int, user_id: str) -> None:
+    async def execute(self, account_id: UUID, user_id: str) -> None:
         user = await self.user_repo.get_by_id(user_id)
         if user is None:
             raise LookupError(f"User {user_id} not found")
