@@ -11,6 +11,7 @@ import {
   listProfiles,
 } from "@/lib/api";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { usePermission } from "@/features/auth/hooks/usePermission";
 import { useToast } from "@/shared/hooks/useToast";
 import { UserListTable } from "@/features/users/components/UserListTable";
 import { UserDrawer } from "@/features/users/components/UserDrawer";
@@ -29,6 +30,8 @@ export default function UsersPage() {
 
 function UsersContent() {
   const { user: currentUser } = useAuth();
+  const { can } = usePermission();
+  const canManage = can("users.manage");
   const [users, setUsers] = useState<User[]>([]);
   const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +43,11 @@ function UsersContent() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, profileList] = await Promise.all([listUsers(), listProfiles()]);
+      const res = await listUsers();
       setUsers(res.items);
+      // Perfis exigem profiles.view (admin-only). Para quem só tem users.view,
+      // a listagem de usuários não pode quebrar por causa disso — então é tolerante.
+      const profileList = await listProfiles().catch(() => [] as ProfileListItem[]);
       setProfiles(profileList);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao carregar usuários");
@@ -105,15 +111,17 @@ function UsersContent() {
     <div className="p-8 flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <h1 className="text-headline-md">Usuários</h1>
-        <button
-          onClick={() => {
-            setDrawerUser(null);
-            setDrawerOpen(true);
-          }}
-          className="px-4 py-2 rounded bg-primary text-on-primary"
-        >
-          + Novo usuário
-        </button>
+        {canManage && (
+          <button
+            onClick={() => {
+              setDrawerUser(null);
+              setDrawerOpen(true);
+            }}
+            className="px-4 py-2 rounded bg-primary text-on-primary"
+          >
+            + Novo usuário
+          </button>
+        )}
       </header>
 
       {loading ? (
@@ -122,6 +130,7 @@ function UsersContent() {
         <UserListTable
           users={users}
           currentUserId={currentUser?.id ?? ""}
+          canManage={canManage}
           onEdit={(u) => {
             setDrawerUser(u);
             setDrawerOpen(true);

@@ -9,9 +9,17 @@ interface Props {
   onResetPassword: (u: User) => void;
   onDelete: (u: User) => void;
   currentUserId: string;
+  canManage?: boolean;
 }
 
-export function UserListTable({ users, onEdit, onResetPassword, onDelete, currentUserId }: Props) {
+export function UserListTable({
+  users,
+  onEdit,
+  onResetPassword,
+  onDelete,
+  currentUserId,
+  canManage = true,
+}: Props) {
   return (
     <div className="overflow-x-auto rounded-lg border border-outline-variant">
       <table className="w-full text-body-sm">
@@ -54,31 +62,35 @@ export function UserListTable({ users, onEdit, onResetPassword, onDelete, curren
                   : "—"}
               </td>
               <td className="px-4 py-3">
-                <div className="flex gap-1 justify-end">
-                  <button
-                    onClick={() => onEdit(u)}
-                    title="Editar"
-                    className="p-1.5 rounded hover:bg-surface-container"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
-                  </button>
-                  <button
-                    onClick={() => onResetPassword(u)}
-                    title="Resetar senha"
-                    className="p-1.5 rounded hover:bg-surface-container"
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock_reset</span>
-                  </button>
-                  {u.id !== currentUserId && (
+                {canManage ? (
+                  <div className="flex gap-1 justify-end">
                     <button
-                      onClick={() => onDelete(u)}
-                      title="Excluir"
-                      className="p-1.5 rounded hover:bg-error-container text-error"
+                      onClick={() => onEdit(u)}
+                      title="Editar"
+                      className="p-1.5 rounded hover:bg-surface-container"
                     >
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
                     </button>
-                  )}
-                </div>
+                    <button
+                      onClick={() => onResetPassword(u)}
+                      title="Resetar senha"
+                      className="p-1.5 rounded hover:bg-surface-container"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>lock_reset</span>
+                    </button>
+                    {u.id !== currentUserId && (
+                      <button
+                        onClick={() => onDelete(u)}
+                        title="Excluir"
+                        className="p-1.5 rounded hover:bg-error-container text-error"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-right text-on-surface-variant">—</div>
+                )}
               </td>
             </tr>
           ))}

@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import { getAccountSettings } from "@/lib/api";
 import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
 import { RequirePermission } from "@/features/auth/components/RequirePermission";
+import { usePermission } from "@/features/auth/hooks/usePermission";
 import type { AccountSettings } from "@/features/settings/types";
 
 export default function BehaviorSettingsPage() {
+  const { can } = usePermission();
   const [settings, setSettings] = useState<AccountSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +62,11 @@ export default function BehaviorSettingsPage() {
           </header>
 
           {/* Behavior */}
-          <BehaviorSection initial={settings} onSaved={setSettings} />
+          <BehaviorSection
+            initial={settings}
+            onSaved={setSettings}
+            canEdit={can("settings.edit_credentials")}
+          />
         </div>
       )}
     </RequirePermission>

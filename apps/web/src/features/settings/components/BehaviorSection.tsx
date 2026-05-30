@@ -95,9 +95,10 @@ interface ParamCardProps {
   value: number;
   onChange: (key: keyof AccountSettings, value: number) => void;
   isDirty: boolean;
+  canEdit: boolean;
 }
 
-function ParamCard({ field, value, onChange, isDirty }: ParamCardProps) {
+function ParamCard({ field, value, onChange, isDirty, canEdit }: ParamCardProps) {
   return (
     <div
       className={[
@@ -132,6 +133,7 @@ function ParamCard({ field, value, onChange, isDirty }: ParamCardProps) {
         max={field.max}
         step={field.step ?? 1}
         value={value}
+        disabled={!canEdit}
         onChange={(e) => onChange(field.key, Number(e.target.value))}
         className={[
           "w-full rounded-xl border px-3 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2",
@@ -152,9 +154,10 @@ interface GroupCardProps {
   settings: AccountSettings;
   values: Partial<AccountSettings>;
   onChange: (key: keyof AccountSettings, value: number) => void;
+  canEdit: boolean;
 }
 
-function GroupCard({ group, settings, values, onChange }: GroupCardProps) {
+function GroupCard({ group, settings, values, onChange, canEdit }: GroupCardProps) {
   const dirtyCount = group.fields.filter((f) => f.key in values).length;
 
   return (
@@ -191,6 +194,7 @@ function GroupCard({ group, settings, values, onChange }: GroupCardProps) {
             value={(values[field.key] as number | undefined) ?? (settings[field.key] as number)}
             onChange={onChange}
             isDirty={field.key in values}
+            canEdit={canEdit}
           />
         ))}
       </div>
@@ -203,9 +207,10 @@ function GroupCard({ group, settings, values, onChange }: GroupCardProps) {
 interface Props {
   initial: AccountSettings;
   onSaved: (updated: AccountSettings) => void;
+  canEdit?: boolean;
 }
 
-export function BehaviorSection({ initial, onSaved }: Props) {
+export function BehaviorSection({ initial, onSaved, canEdit = true }: Props) {
   const { values, saving, hasChanges, setValue, discard, save } = useBehaviorForm(onSaved);
 
   return (
@@ -230,12 +235,13 @@ export function BehaviorSection({ initial, onSaved }: Props) {
             settings={initial}
             values={values}
             onChange={setValue}
+            canEdit={canEdit}
           />
         ))}
       </div>
 
       {/* Save bar */}
-      {hasChanges && (
+      {hasChanges && canEdit && (
         <div className="mt-4 flex items-center justify-between rounded-2xl border border-secondary/20 bg-secondary-container px-5 py-3">
           <p className="text-body-sm text-on-surface">
             {Object.keys(values).length} parâmetro{Object.keys(values).length > 1 ? "s" : ""} com alteração pendente
