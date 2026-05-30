@@ -684,6 +684,11 @@ class LeadModel(Base):
         Index("ix_leads_account_status", "account_id", "subscription_status"),
         Index("ix_leads_account_activated", "account_id", "activated_at"),
         Index("ix_leads_account_utm_source", "account_id", "utm_source"),  # PR4 review fix
+        Index(
+            "ix_leads_account_unmatched",
+            "account_id",
+            postgresql_where=sa_text("product_unmatched"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = _pk()

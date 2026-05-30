@@ -334,11 +334,32 @@ async def test_reprocess_enqueues_jobs(
     seeded_account: AccountModel,
     admin_headers: dict[str, str],
 ) -> None:
-    db_session.add(_make_event(seeded_account.id))
-    db_session.add(_make_event(seeded_account.id))
-    db_session.add(_make_event(seeded_account.id))
-    # Evento de outro produto não deve ser re-enfileirado
-    db_session.add(_make_event(seeded_account.id, hubla_product_id="outro-produto"))
+    # 3 leads pendentes (unmatched) + seus eventos correspondentes (mesmo
+    # hubla_subscription_id). Estes DEVEM ser re-enfileirados.
+    unmatched_subs = [f"sub-unmatched-{i}" for i in range(3)]
+    for sub in unmatched_subs:
+        db_session.add(_make_lead(seeded_account.id, hubla_subscription_id=sub))
+        db_session.add(_make_event(seeded_account.id, hubla_subscription_id=sub))
+
+    # Lead JÁ resolvido (product_unmatched=False) com mesmo hubla_product_id: seu
+    # evento NÃO deve ser re-enfileirado.
+    db_session.add(
+        _make_lead(
+            seeded_account.id,
+            hubla_subscription_id="sub-matched",
+            product_unmatched=False,
+        )
+    )
+    db_session.add(_make_event(seeded_account.id, hubla_subscription_id="sub-matched"))
+
+    # Evento de outro produto também não deve ser re-enfileirado
+    db_session.add(
+        _make_event(
+            seeded_account.id,
+            hubla_subscription_id="sub-other-product",
+            hubla_product_id="outro-produto",
+        )
+    )
     await db_session.commit()
 
     r = await client.post(
@@ -365,7 +386,8 @@ async def test_reprocess_default_schedule_mode_is_from_now(
     seeded_account: AccountModel,
     admin_headers: dict[str, str],
 ) -> None:
-    db_session.add(_make_event(seeded_account.id))
+    db_session.add(_make_lead(seeded_account.id, hubla_subscription_id="sub-default"))
+    db_session.add(_make_event(seeded_account.id, hubla_subscription_id="sub-default"))
     await db_session.commit()
 
     r = await client.post(

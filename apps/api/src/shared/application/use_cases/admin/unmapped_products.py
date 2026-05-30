@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from shared.adapters.db.models import (
     HublaEventModel,
     JobQueueModel,
-    ProductHublaAliasModel,
+    LeadModel,
 )
 from shared.domain.value_objects.priority import Priority
 
@@ -44,24 +44,15 @@ async def resolve(
 ) -> dict[str, int]:
     """Associa um hubla_product_id a um produto existente (cria alias).
 
-    Idempotente: se o alias já existir para (account_id, hubla_id), não cria de
-    novo (evita IntegrityError no unique e rollback da sessão compartilhada).
+    Idempotente: `add_alias` faz INSERT ... ON CONFLICT DO NOTHING no unique
+    (account_id, hubla_id), então chamar `resolve` 2x não estoura IntegrityError
+    nem rollback da sessão compartilhada — sem janela de corrida de check-then-insert.
     """
-    session: AsyncSession = product_repo.session
-    existing = (
-        await session.execute(
-            select(ProductHublaAliasModel.id).where(
-                ProductHublaAliasModel.account_id == account_id,
-                ProductHublaAliasModel.hubla_id == hubla_product_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if existing is None:
-        await product_repo.add_alias(
-            account_id=account_id,
-            product_id=product_id,
-            hubla_id=hubla_product_id,
-        )
+    await product_repo.add_alias(
+        account_id=account_id,
+        product_id=product_id,
+        hubla_id=hubla_product_id,
+    )
 
     affected = await lead_repo.count_unmapped_by_product(account_id, hubla_product_id)
     return {"affected_leads": affected}
@@ -80,9 +71,22 @@ async def reprocess(
     atômico via session_scope). Cada job carrega `_schedule_mode` no payload para
     o handler decidir como agendar os steps.
     """
+    # Só re-enfileira eventos cujos leads ainda estão pendentes (product_unmatched).
+    # Eventos do mesmo hubla_product_id cujo lead já foi resolvido NÃO devem ser
+    # reprocessados. A ligação evento↔lead é por (account_id, hubla_subscription_id).
+    unmatched_subs = (
+        select(LeadModel.hubla_subscription_id)
+        .where(
+            LeadModel.account_id == account_id,
+            LeadModel.hubla_product_id == hubla_product_id,
+            LeadModel.product_unmatched.is_(True),
+        )
+        .scalar_subquery()
+    )
     stmt = select(HublaEventModel).where(
         HublaEventModel.account_id == account_id,
         HublaEventModel.hubla_product_id == hubla_product_id,
+        HublaEventModel.hubla_subscription_id.in_(unmatched_subs),
     )
     events = (await session.execute(stmt)).scalars().all()
 

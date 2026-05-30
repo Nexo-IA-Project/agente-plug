@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import OnboardingFlowModel, ProductHublaAliasModel, ProductModel
@@ -64,11 +65,23 @@ class SqlProductRepository:
         return _to_entity(am) if am else None
 
     async def add_alias(self, *, account_id: UUID, product_id: UUID, hubla_id: str) -> None:
-        self.session.add(
-            ProductHublaAliasModel(
-                id=uuid4(), account_id=account_id, product_id=product_id, hubla_id=hubla_id
+        """Cria alias (hubla_id → product_id) de forma idempotente.
+
+        Usa INSERT ... ON CONFLICT DO NOTHING no unique (account_id, hubla_id) para
+        evitar janela de corrida do check-then-insert e IntegrityError quando o alias
+        já existe. Chamar 2x não cria duplicata nem invalida a sessão compartilhada.
+        """
+        stmt = (
+            pg_insert(ProductHublaAliasModel)
+            .values(
+                id=uuid4(),
+                account_id=account_id,
+                product_id=product_id,
+                hubla_id=hubla_id,
             )
+            .on_conflict_do_nothing(constraint="uq_product_alias_account_hubla")
         )
+        await self.session.execute(stmt)
         await self.session.flush()
 
     async def find_active_by_name(self, account_id: UUID, name: str) -> Product | None:

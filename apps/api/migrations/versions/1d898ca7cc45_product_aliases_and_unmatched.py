@@ -7,6 +7,7 @@ Create Date: 2026-05-29
 down_revision chosen from the single active head reported by
 `alembic heads` at time of writing (c2d3e4f5a6b7).
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -42,9 +43,7 @@ def upgrade() -> None:
             server_default=sa.text("NOW()"),
             nullable=False,
         ),
-        sa.UniqueConstraint(
-            "account_id", "hubla_id", name="uq_product_alias_account_hubla"
-        ),
+        sa.UniqueConstraint("account_id", "hubla_id", name="uq_product_alias_account_hubla"),
     )
     op.create_index(
         "ix_product_alias_account_hubla",
@@ -65,12 +64,17 @@ def upgrade() -> None:
             server_default=sa.false(),
         ),
     )
+    op.create_index(
+        "ix_leads_account_unmatched",
+        "leads",
+        ["account_id"],
+        postgresql_where=sa.text("product_unmatched"),
+    )
 
 
 def downgrade() -> None:
+    op.drop_index("ix_leads_account_unmatched", table_name="leads")
     op.drop_column("leads", "product_unmatched")
     op.drop_index("ix_product_alias_product", table_name="product_hubla_aliases")
-    op.drop_index(
-        "ix_product_alias_account_hubla", table_name="product_hubla_aliases"
-    )
+    op.drop_index("ix_product_alias_account_hubla", table_name="product_hubla_aliases")
     op.drop_table("product_hubla_aliases")
