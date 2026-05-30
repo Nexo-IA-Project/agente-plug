@@ -36,6 +36,7 @@ def test_get_me_returns_user():
     fake_user.role = MagicMock(value="admin")
     fake_user.must_change_password = False
     fake_user.avatar = None
+    fake_user.profile_id = None
     with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
         s = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
@@ -51,6 +52,52 @@ def test_get_me_returns_user():
             r = client.get("/admin/me")
             assert r.status_code == 200
             assert r.json()["name"] == "Fabio"
+
+
+def test_get_me_includes_profile_when_assigned():
+    import uuid
+
+    pid = uuid.uuid4()
+    fake_user = MagicMock()
+    fake_user.id = "uid"
+    fake_user.name = "Fabio"
+    fake_user.email = "f@x.com"
+    fake_user.role = MagicMock(value="admin")
+    fake_user.must_change_password = False
+    fake_user.avatar = None
+    fake_user.profile_id = pid
+
+    auth = AdminAuth(
+        account_id=uuid.uuid4(),
+        user_email="x@x.com",
+        user_role="admin",
+        user_id="uid",
+        must_change_password=False,
+    )
+
+    with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
+        s = AsyncMock()
+        mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
+        mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with (
+            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch("interface.http.routers.admin.me.ProfileRepository") as MockProfileRepo,
+        ):
+            instance = MagicMock()
+            instance.get_by_id = AsyncMock(return_value=fake_user)
+            MockRepo.return_value = instance
+            prof = MagicMock()
+            prof.name_map = AsyncMock(return_value={pid: "Gerente"})
+            MockProfileRepo.return_value = prof
+
+            app = _make_app(auth)
+            client = TestClient(app)
+            r = client.get("/admin/me")
+            assert r.status_code == 200
+            body = r.json()
+            assert body["profile_id"] == str(pid)
+            assert body["profile_name"] == "Gerente"
 
 
 def test_update_avatar_rejects_oversized():

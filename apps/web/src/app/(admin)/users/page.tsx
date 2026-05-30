@@ -36,8 +36,8 @@ export default function UsersPage() {
       const [res, profileList] = await Promise.all([listUsers(), listProfiles()]);
       setUsers(res.items);
       setProfiles(profileList);
-    } catch {
-      // toast não entra na dep array para não causar loop infinito
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao carregar usuários");
     } finally {
       setLoading(false);
     }

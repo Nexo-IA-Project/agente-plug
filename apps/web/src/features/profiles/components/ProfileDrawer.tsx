@@ -22,7 +22,6 @@ const MODULE_LABELS: Record<string, string> = {
   onboarding: "Onboarding",
   templates: "Templates",
   users: "Usuários",
-  profiles: "Perfis",
   settings: "Configurações",
   tokens: "Tokens",
   accounts: "Contas",

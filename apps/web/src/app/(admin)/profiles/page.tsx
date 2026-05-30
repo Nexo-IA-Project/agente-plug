@@ -22,8 +22,8 @@ export default function ProfilesPage() {
     try {
       const items = await listProfiles();
       setProfiles(items);
-    } catch {
-      // toast fora da dep array para não causar loop
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao carregar perfis");
     } finally {
       setLoading(false);
     }
