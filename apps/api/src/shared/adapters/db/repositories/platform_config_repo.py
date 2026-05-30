@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,9 +24,15 @@ class PlatformConfigRepository:
         return self._fernet().encrypt(plaintext.encode()).decode()
 
     def decrypt(self, token: str | None) -> str | None:
+        # Degrada para None em blob inválido / key divergente, em vez de propagar
+        # InvalidToken. Isso preserva o fallback de env do resolve_openai_key e
+        # evita derrubar runtime caso o backfill copie um blob corrompido.
         if not token:
             return None
-        return self._fernet().decrypt(token.encode()).decode()
+        try:
+            return self._fernet().decrypt(token.encode()).decode()
+        except InvalidToken:
+            return None
 
     async def get(self) -> PlatformConfig:
         m = (await self.session.execute(select(PlatformConfigModel).limit(1))).scalar_one_or_none()

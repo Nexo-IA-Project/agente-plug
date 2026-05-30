@@ -54,6 +54,13 @@ async def test_encrypt_decrypt_roundtrip(repo: PlatformConfigRepository) -> None
     assert repo.decrypt(repo.encrypt("segredo")) == "segredo"
 
 
+async def test_decrypt_invalid_blob_returns_none(repo: PlatformConfigRepository) -> None:
+    """Blob corrompido / key divergente degrada para None (preserva fallback de env),
+    em vez de propagar InvalidToken e derrubar o runtime."""
+    assert repo.decrypt("nao-e-um-token-fernet-valido") is None
+    assert repo.decrypt(None) is None
+
+
 async def test_upsert_and_get(repo: PlatformConfigRepository) -> None:
     encrypted_key = repo.encrypt("sk-test")
     await repo.upsert(

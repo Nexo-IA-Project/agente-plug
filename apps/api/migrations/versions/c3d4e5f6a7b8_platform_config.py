@@ -103,8 +103,9 @@ def downgrade() -> None:
 
     conn = op.get_bind()
 
-    # Recria smtp_config no estado pós-#71 (account_id UUID). Os nomes de
-    # constraint precisam casar EXATAMENTE com os que o downgrade de
+    # Recria smtp_config no estado em que esta migração a encontrou: account_id
+    # UUID (resultado de f0a1b2c3d4e5, que roda antes desta na cadeia). Os nomes
+    # de constraint precisam casar EXATAMENTE com os que o downgrade de
     # f0a1b2c3d4e5 espera dropar (fk_smtp_config_account_id_accounts e
     # smtp_config_account_id_key), senão a cadeia de rollback quebra.
     op.create_table(
