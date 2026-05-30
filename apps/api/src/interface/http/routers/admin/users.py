@@ -97,8 +97,7 @@ async def list_users(
         name_map = await ProfileRepository(s).name_map(account_id)
         return UserListResponse(
             items=[
-                _to_response(u, name_map.get(u.profile_id) if u.profile_id else None)
-                for u in items
+                _to_response(u, name_map.get(u.profile_id) if u.profile_id else None) for u in items
             ],
             total=total,
             page=page,

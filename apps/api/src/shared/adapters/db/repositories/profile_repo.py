@@ -98,9 +98,7 @@ class ProfileRepository:
         m.updated_at = func.now()
         # substitui o conjunto de permissions
         await self.session.execute(
-            sa_delete(ProfilePermissionModel).where(
-                ProfilePermissionModel.profile_id == profile_id
-            )
+            sa_delete(ProfilePermissionModel).where(ProfilePermissionModel.profile_id == profile_id)
         )
         ordered = list(dict.fromkeys(permissions))  # dedup preservando ordem
         for key in ordered:
