@@ -456,8 +456,49 @@ class UserModel(Base):
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
 
     __table_args__ = (UniqueConstraint("account_id", "email", name="uq_users_account_email"),)
+
+
+class ProfileModel(Base):
+    __tablename__ = "profiles"
+    __table_args__ = (UniqueConstraint("account_id", "name", name="uq_profiles_account_name"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_system: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("FALSE")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+
+class ProfilePermissionModel(Base):
+    __tablename__ = "profile_permissions"
+    __table_args__ = (UniqueConstraint("profile_id", "permission_key", name="uq_profile_perm"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    permission_key: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class SmtpConfigModel(Base):
