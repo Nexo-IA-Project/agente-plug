@@ -20,6 +20,7 @@ from shared.adapters.db.session import session_scope
 from shared.adapters.redis.leads_pubsub import LeadsPubSub
 from shared.application.hubla_event_handler import HublaEventHandler
 from shared.application.purchase_handler import PurchaseHandler
+from shared.application.unmapped_alert import make_unmapped_alert
 from shared.application.use_cases.onboarding.enroll_contact import EnrollContact
 from shared.config.settings import get_settings
 from shared.config.single_tenant import get_default_account_uuid
@@ -89,6 +90,12 @@ async def handle_hubla_event(payload: dict) -> None:
             account_id=account_uuid,
             chatnexo_account_id=account_config.integration.chatnexo_account_id,
             chatnexo_inbox_id=account_config.integration.chatnexo_inbox_id,
+            unmapped_alert=make_unmapped_alert(
+                chatnexo=chatnexo,
+                account_id=str(account_config.integration.chatnexo_account_id),
+                inbox_id=account_config.integration.chatnexo_inbox_id,
+                target=account_config.integration.alert_whatsapp_target,
+            ),
         )
 
         await handler.handle(payload)

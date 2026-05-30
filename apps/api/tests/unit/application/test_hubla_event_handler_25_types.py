@@ -38,6 +38,7 @@ def _make_handler() -> HublaEventHandler:
 
     lead_repo = MagicMock()
     lead_repo.upsert = AsyncMock()
+    lead_repo.set_product_unmatched = AsyncMock()
 
     hubla_event_repo = MagicMock()
     event_model = MagicMock(id=uuid4())

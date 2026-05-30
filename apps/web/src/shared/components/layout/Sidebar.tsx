@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "Produtos", href: "/products", icon: "inventory_2" },
   { label: "Leads", href: "/leads", icon: "person_search" },
   { label: "Onboarding", href: "/onboarding", icon: "schedule_send" },
+  { label: "Pendências", href: "/onboarding/pendencias", icon: "report" },
   { label: "Templates", href: "/templates", icon: "sms" },
   { label: "Usuários", href: "/users", icon: "manage_accounts", adminOnly: true },
   { label: "Configurações", href: "/settings", icon: "settings", exact: true },
@@ -74,13 +75,23 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-4">
-        {visibleItems.map((item) => (
-          <NavItem
-            key={item.href}
-            {...item}
-            active={"exact" in item && item.exact ? pathname === item.href : pathname === item.href || pathname.startsWith(item.href + "/")}
-          />
-        ))}
+        {visibleItems.map((item) => {
+          // Itens mais específicos (ex: /onboarding/pendencias) têm prioridade:
+          // se outro item de menu casa com um prefixo mais longo, este não fica ativo.
+          const isPrefixMatch =
+            pathname === item.href || pathname.startsWith(item.href + "/");
+          const hasMoreSpecific = visibleItems.some(
+            (other) =>
+              other.href !== item.href &&
+              other.href.startsWith(item.href + "/") &&
+              (pathname === other.href || pathname.startsWith(other.href + "/")),
+          );
+          const active =
+            "exact" in item && item.exact
+              ? pathname === item.href
+              : isPrefixMatch && !hasMoreSpecific;
+          return <NavItem key={item.href} {...item} active={active} />;
+        })}
       </nav>
 
       <div className="space-y-1 border-t border-outline-variant px-4 py-4">

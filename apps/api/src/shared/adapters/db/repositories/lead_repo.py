@@ -6,7 +6,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from cryptography.fernet import Fernet
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,6 +53,7 @@ def _to_lead_entity(m: LeadModel) -> Lead:
         last_event_type=m.last_event_type,
         created_at=m.created_at,
         updated_at=m.updated_at,
+        product_unmatched=m.product_unmatched,
     )
 
 
@@ -182,6 +183,7 @@ class SqlLeadRepository:
         utm_source: str | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
+        unmatched: bool | None = None,
         page: int = 1,
         page_size: int = 25,
     ) -> tuple[list[Lead], int]:
@@ -196,6 +198,8 @@ class SqlLeadRepository:
             stmt = stmt.where(LeadModel.last_event_at >= date_from)
         if date_to is not None:
             stmt = stmt.where(LeadModel.last_event_at <= date_to)
+        if unmatched is True:
+            stmt = stmt.where(LeadModel.product_unmatched.is_(True))
 
         total_stmt = select(func.count()).select_from(stmt.subquery())
         total: int = (await self.session.execute(total_stmt)).scalar_one()
@@ -367,3 +371,41 @@ class SqlLeadRepository:
                 }
             )
         return result
+
+    async def set_product_unmatched(self, *, lead_id: UUID, value: bool) -> None:
+        await self.session.execute(
+            update(LeadModel).where(LeadModel.id == lead_id).values(product_unmatched=value)
+        )
+
+    async def list_unmapped(self, account_id: UUID) -> list[dict]:
+        stmt = (
+            select(
+                LeadModel.hubla_product_id,
+                func.max(LeadModel.product_name).label("product_name"),
+                func.count(LeadModel.id).label("affected_leads"),
+                func.min(LeadModel.first_seen_at).label("first_seen"),
+                func.max(LeadModel.last_event_at).label("last_seen"),
+            )
+            .where(LeadModel.account_id == account_id, LeadModel.product_unmatched.is_(True))
+            .group_by(LeadModel.hubla_product_id)
+            .order_by(func.max(LeadModel.last_event_at).desc())
+        )
+        rows = (await self.session.execute(stmt)).all()
+        return [
+            {
+                "hubla_product_id": r.hubla_product_id,
+                "product_name": r.product_name,
+                "affected_leads": int(r.affected_leads),
+                "first_seen": r.first_seen,
+                "last_seen": r.last_seen,
+            }
+            for r in rows
+        ]
+
+    async def count_unmapped_by_product(self, account_id: UUID, hubla_product_id: str) -> int:
+        stmt = select(func.count(LeadModel.id)).where(
+            LeadModel.account_id == account_id,
+            LeadModel.hubla_product_id == hubla_product_id,
+            LeadModel.product_unmatched.is_(True),
+        )
+        return int((await self.session.execute(stmt)).scalar_one())

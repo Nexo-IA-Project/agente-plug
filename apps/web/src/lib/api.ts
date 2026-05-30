@@ -31,6 +31,13 @@ import type {
   SmtpConfig,
   SmtpConfigInput,
 } from "@/features/profile/types";
+import type {
+  UnmappedProduct,
+  ResolveUnmappedInput,
+  ResolveUnmappedResponse,
+  ReprocessUnmappedInput,
+  ReprocessUnmappedResponse,
+} from "@/features/unmapped/types";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -324,6 +331,7 @@ export async function listLeads(
   if (filters.utm_source) params.set("utm_source", filters.utm_source);
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.unmatched) params.set("unmatched", "true");
   if (filters.page) params.set("page", String(filters.page));
   if (filters.page_size) params.set("page_size", String(filters.page_size));
   const qs = params.toString();
@@ -362,6 +370,7 @@ export async function downloadLeadsCsv(
   if (filters.utm_source) params.set("utm_source", filters.utm_source);
   if (filters.date_from) params.set("date_from", filters.date_from);
   if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.unmatched) params.set("unmatched", "true");
   const qs = params.toString();
   const path = `/admin/leads/export${qs ? "?" + qs : ""}`;
 
@@ -488,6 +497,30 @@ export function uploadTemplateMedia(
     };
     xhr.onerror = () => reject(new Error("Network error"));
     xhr.send(fd);
+  });
+}
+
+// ─── Unmapped Products (Pendências de onboarding) ──────────────────────────────
+
+export async function listUnmapped(): Promise<UnmappedProduct[]> {
+  return apiFetch<UnmappedProduct[]>("/admin/unmapped-products");
+}
+
+export async function resolveUnmapped(
+  input: ResolveUnmappedInput,
+): Promise<ResolveUnmappedResponse> {
+  return apiFetch<ResolveUnmappedResponse>("/admin/unmapped-products/resolve", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function reprocessUnmapped(
+  input: ReprocessUnmappedInput,
+): Promise<ReprocessUnmappedResponse> {
+  return apiFetch<ReprocessUnmappedResponse>("/admin/unmapped-products/reprocess", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }
 

@@ -8,6 +8,7 @@ export interface AccountSettings {
   meta_api_key: string;
   meta_waba_id: string;
   meta_app_id: string;
+  alert_whatsapp_target?: string | null;
   idle_ping_minutes: number;
   idle_close_minutes: number;
   intent_confidence_threshold: number;

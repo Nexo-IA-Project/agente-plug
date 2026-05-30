@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -7,6 +8,7 @@ from uuid import UUID
 import structlog
 
 from shared.adapters.hubla.v1_normalizer import is_v1_payload, normalize_v1_payload
+from shared.adapters.observability.metrics import HUBLA_UNMAPPED_PRODUCT
 from shared.config.single_tenant import DEFAULT_ACCOUNT_UUID
 from shared.domain.entities.hubla_event import HublaEvent
 from shared.domain.entities.lead import Lead
@@ -44,6 +46,7 @@ def _lead_to_dict(lead: Lead) -> dict[str, Any]:
         "last_event_at": lead.last_event_at.isoformat() if lead.last_event_at else None,
         "last_event_type": lead.last_event_type,
         "chatnexo_conversation_url": lead.chatnexo_conversation_url,
+        "product_unmatched": lead.product_unmatched,
     }
 
 
@@ -84,6 +87,7 @@ class HublaEventHandler:
         account_id: UUID | None = None,
         chatnexo_account_id: int = 1,
         chatnexo_inbox_id: int = 1,
+        unmapped_alert: Callable[..., Awaitable[None]] | None = None,
     ) -> None:
         self._product_repo = product_repo
         self._flow_repo = flow_repo
@@ -97,6 +101,7 @@ class HublaEventHandler:
         self._account_id = account_id or DEFAULT_ACCOUNT_UUID
         self._chatnexo_account_id = chatnexo_account_id
         self._chatnexo_inbox_id = chatnexo_inbox_id
+        self._unmapped_alert = unmapped_alert
 
     async def handle(self, payload: dict[str, Any]) -> None:
         # Hubla mantém 2 versões de webhook coexistindo (v1.0.0 legacy + v2.0.0 atual).
@@ -141,6 +146,13 @@ class HublaEventHandler:
         try:
             activated_at = datetime.fromisoformat(activated_at_raw.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
+            activated_at = datetime.now(UTC)
+
+        # Reprocesso de pendências (Task 7): quando o job é re-enfileirado com
+        # schedule_mode="from_now", agenda os steps a partir de agora em vez de
+        # usar o activatedAt original do payload. Ausente ou "original" mantém o
+        # comportamento padrão (usa o horário original da ativação).
+        if payload.get("_schedule_mode") == "from_now":
             activated_at = datetime.now(UTC)
 
         account_uuid = self._account_id
@@ -241,26 +253,11 @@ class HublaEventHandler:
                 event_at=activated_at,
             )
 
-        # Real-time: publica lead.upserted no canal Redis pro stream SSE.
-        # is_new é heurística: insert novo tem created_at == updated_at; updates
-        # subsequentes só mexem em updated_at. Suficiente pro frontend decidir
-        # "prepend nova linha" vs "atualizar linha existente".
-        if self._leads_pubsub is not None and lead_entity is not None:
-            is_new = lead_entity.created_at == lead_entity.updated_at
-            envelope: dict[str, Any] = {
-                "type": "lead.upserted",
-                "is_new": is_new,
-                "lead": _lead_to_dict(lead_entity),
-            }
-            if event_model is not None:
-                envelope["event"] = _hubla_event_to_dict(event_model)
-            await self._leads_pubsub.publish(account_uuid, envelope)
-
         # === End PR 4 early persistence ===
 
         # PR 4 review fix #12: mark processed_at at every exit point (try/finally).
         try:
-            await self._route(
+            matched = await self._route(
                 event_type=event_type,
                 account_uuid=account_uuid,
                 account_id_str=account_id_str,
@@ -274,6 +271,39 @@ class HublaEventHandler:
                 purchase_id=purchase_id,
                 activated_at=activated_at,
             )
+            # Task 5: marca/limpa product_unmatched no lead (cobre reprocesso quando o
+            # produto passa a casar). Fica no fluxo normal — não no finally — para não
+            # mascarar o estado em caso de exceção no roteamento.
+            # matched is None => sem decisão sobre o produto (sem telefone/contato):
+            # NÃO mexe na flag (evita falso positivo de unmatched).
+            if self._lead_repo is not None and lead_entity is not None and matched is not None:
+                await self._lead_repo.set_product_unmatched(
+                    lead_id=lead_entity.id, value=not matched
+                )
+
+            # Atualiza a entidade em memória ANTES de publicar o envelope SSE, para
+            # que o frontend receba o estado correto de product_unmatched (e não o
+            # default de um lead recém-criado).
+            if lead_entity is not None and matched is not None:
+                lead_entity.product_unmatched = matched is False
+
+            # Real-time: publica lead.upserted no canal Redis pro stream SSE.
+            # Movido para DEPOIS do _route/set_product_unmatched para emitir a flag
+            # já atualizada. _route é resiliente (try/except por flow) e não levanta
+            # no caminho normal, então o publish acontece de forma confiável aqui.
+            # is_new é heurística: insert novo tem created_at == updated_at; updates
+            # subsequentes só mexem em updated_at. Suficiente pro frontend decidir
+            # "prepend nova linha" vs "atualizar linha existente".
+            if self._leads_pubsub is not None and lead_entity is not None:
+                is_new = lead_entity.created_at == lead_entity.updated_at
+                envelope: dict[str, Any] = {
+                    "type": "lead.upserted",
+                    "is_new": is_new,
+                    "lead": _lead_to_dict(lead_entity),
+                }
+                if event_model is not None:
+                    envelope["event"] = _hubla_event_to_dict(event_model)
+                await self._leads_pubsub.publish(account_uuid, envelope)
         finally:
             if event_model is not None and self._hubla_event_repo is not None:
                 await self._hubla_event_repo.mark_processed(event_model.id)
@@ -293,11 +323,18 @@ class HublaEventHandler:
         product_name: str,
         purchase_id: str,
         activated_at: datetime,
-    ) -> None:
-        """Roteamento interno: enrollment de flows + PurchaseHandler legado."""
+    ) -> bool | None:
+        """Roteamento interno: enrollment de flows + PurchaseHandler legado.
+
+        Retorna:
+          - None quando não há decisão sobre o produto (sem telefone/contato): o
+            produto pode estar mapeado, então NÃO se deve marcar unmatched.
+          - True quando o produto casou um cadastro (por id/alias ou por nome).
+          - False quando o produto não foi encontrado (ramo unmapped).
+        """
         if not payer_phone or contact is None:
             log.warning("hubla_event_no_phone", event_type=event_type, purchase_id=purchase_id)
-            return
+            return None
 
         product = await self._product_repo.find_active_by_hubla_id(account_uuid, hubla_product_id)
 
@@ -317,12 +354,23 @@ class HublaEventHandler:
                 )
 
         if product is None:
-            log.warning(
-                "hubla_event_product_not_found",
+            # Task 5: produto não reconhecido (nem por id/alias, nem por nome).
+            # Em vez de drop silencioso: métrica + log.error + hook de alerta opcional.
+            HUBLA_UNMAPPED_PRODUCT.inc()
+            log.error(
+                "hubla_event_product_unmapped",
                 event_type=event_type,
                 hubla_product_id=hubla_product_id,
                 product_name=product_name,
+                payer_phone=payer_phone,
             )
+            if self._unmapped_alert is not None:
+                try:
+                    await self._unmapped_alert(
+                        product_name, hubla_product_id, payer_full_name, payer_phone
+                    )
+                except Exception as exc:  # alerta nunca derruba o pipeline
+                    log.warning("unmapped_alert_failed", error=str(exc))
             # Para subscription.activated, mantém comportamento legado (welcome + access case)
             # mesmo sem curso cadastrado no catálogo — garante que nenhuma compra seja ignorada.
             if event_type in PURCHASE_EVENT_TYPES:
@@ -337,10 +385,7 @@ class HublaEventHandler:
                     payer_document=payer_document,
                     account_id=account_uuid,
                 )
-            # TODO(PR4): para outros event types com produto desconhecido (lead.abandoned, etc),
-            # ainda salvamos em hubla_events + leads para análise posterior.
-            # Por enquanto: drop silencioso (apenas o log.warning acima).
-            return
+            return False
 
         # contact is guaranteed non-None here (checked at top of _route)
         # Matching flexível: um evento de ativação ("acesso concedido") casa flows
@@ -421,3 +466,5 @@ class HublaEventHandler:
                 payer_document=payer_document,
                 account_id=account_uuid,
             )
+
+        return True

@@ -282,6 +282,27 @@ class ProductModel(Base):
     )
 
 
+class ProductHublaAliasModel(Base):
+    __tablename__ = "product_hubla_aliases"
+    __table_args__ = (
+        UniqueConstraint("account_id", "hubla_id", name="uq_product_alias_account_hubla"),
+        Index("ix_product_alias_account_hubla", "account_id", "hubla_id"),
+        Index("ix_product_alias_product", "product_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False
+    )
+    hubla_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+
+
 class AccessCaseModel(Base):
     __tablename__ = "access_cases"
 
@@ -663,6 +684,11 @@ class LeadModel(Base):
         Index("ix_leads_account_status", "account_id", "subscription_status"),
         Index("ix_leads_account_activated", "account_id", "activated_at"),
         Index("ix_leads_account_utm_source", "account_id", "utm_source"),  # PR4 review fix
+        Index(
+            "ix_leads_account_unmatched",
+            "account_id",
+            postgresql_where=sa_text("product_unmatched"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = _pk()
@@ -686,6 +712,7 @@ class LeadModel(Base):
     hubla_product_id: Mapped[str] = mapped_column(
         String(100), nullable=False, default="", server_default=""
     )
+    product_unmatched: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     product_name: Mapped[str] = mapped_column(
         String(300), nullable=False, default="", server_default=""
     )

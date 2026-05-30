@@ -32,6 +32,7 @@ from interface.http.routers.admin import products as admin_products
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
 from interface.http.routers.admin import smtp_config as admin_smtp
+from interface.http.routers.admin import unmapped_products as admin_unmapped_products
 from interface.http.routers.admin import users as admin_users
 from shared.adapters.db.queue import PostgresJobQueue
 from shared.adapters.db.repositories.webhook_event import WebhookEventRepository
@@ -144,6 +145,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_users.router, prefix="/admin")
     app.include_router(admin_me.router, prefix="/admin")
     app.include_router(admin_smtp.router, prefix="/admin")
+    app.include_router(admin_unmapped_products.router, prefix="/admin")
     return app
 
 
