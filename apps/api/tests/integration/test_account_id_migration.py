@@ -20,9 +20,11 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# NOTA: smtp_config foi dropada no head pela migração c3d4e5f6a7b8 (platform_config),
+# então não consta aqui — sua conversão p/ uuid é validada apenas via reversibilidade
+# (estado intermediário e7f8a9b0c1d2, onde a tabela ainda existe como integer).
 _UUID_TABLES = [
     "users",
-    "smtp_config",
     "knowledge_documents",
     "knowledge_chunks",
     "kb_usage_logs",
@@ -91,15 +93,17 @@ async def test_account_id_has_fk_to_accounts(db_session: AsyncSession, table: st
 
 @pytest.mark.integration
 async def test_uniques_recreated(db_session: AsyncSession) -> None:
+    # smtp_config_account_id_key não é checado: a tabela smtp_config é dropada no
+    # head por c3d4e5f6a7b8 (platform_config). Validamos só o unique de users.
     result = await db_session.execute(
         text(
             "SELECT conname FROM pg_constraint "
-            "WHERE conname IN ('uq_users_account_email', 'smtp_config_account_id_key') "
+            "WHERE conname IN ('uq_users_account_email') "
             "ORDER BY conname"
         )
     )
     names = {row[0] for row in result.fetchall()}
-    assert names == {"smtp_config_account_id_key", "uq_users_account_email"}
+    assert names == {"uq_users_account_email"}
 
 
 @pytest.mark.integration

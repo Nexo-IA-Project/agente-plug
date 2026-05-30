@@ -103,17 +103,14 @@ def downgrade() -> None:
 
     conn = op.get_bind()
 
-    # Recria smtp_config com account_id UUID FK (estado pós-#71).
+    # Recria smtp_config no estado pós-#71 (account_id UUID). Os nomes de
+    # constraint precisam casar EXATAMENTE com os que o downgrade de
+    # f0a1b2c3d4e5 espera dropar (fk_smtp_config_account_id_accounts e
+    # smtp_config_account_id_key), senão a cadeia de rollback quebra.
     op.create_table(
         "smtp_config",
         sa.Column("id", sa.String(36), primary_key=True),
-        sa.Column(
-            "account_id",
-            UUID(as_uuid=True),
-            sa.ForeignKey("accounts.id"),
-            nullable=False,
-            unique=True,
-        ),
+        sa.Column("account_id", UUID(as_uuid=True), nullable=False),
         sa.Column("host", sa.String(200), nullable=False),
         sa.Column("port", sa.Integer, nullable=False),
         sa.Column("username", sa.String(200), nullable=False),
@@ -127,6 +124,10 @@ def downgrade() -> None:
             nullable=False,
             server_default=sa.text("NOW()"),
         ),
+        sa.ForeignKeyConstraint(
+            ["account_id"], ["accounts.id"], name="fk_smtp_config_account_id_accounts"
+        ),
+        sa.UniqueConstraint("account_id", name="smtp_config_account_id_key"),
     )
 
     pc = (
