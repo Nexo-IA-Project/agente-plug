@@ -150,6 +150,45 @@ def test_valid_token_and_payload_enqueues_job(app_and_deps):
     )
 
 
+def test_v1_newsale_uses_transaction_id_for_dedup_key(app_and_deps):
+    """Regressão do incidente: NewSale (v1) não tem event.subscription.id — o id da
+    venda está em event.transactionId. O external_id NÃO pode colapsar para 'NewSale'
+    (senão o dedup derruba todas as vendas após a 1ª). Deve usar o transactionId."""
+    app, deps = app_and_deps
+    deps["dedup"].try_mark = AsyncMock(return_value=True)
+    deps["event_repo"].insert_if_new = AsyncMock(return_value=object())
+    deps["queue"].enqueue = AsyncMock(return_value="job-1")
+
+    client = TestClient(app)
+    payload = {"type": "NewSale", "version": "1.0.0", "event": {"transactionId": "tx-abc-123"}}
+    r = client.post("/webhook/hubla", json=payload, params={"token": "secret-token"})
+
+    assert r.status_code == 202, r.text
+    assert r.json()["duplicate"] is False
+    # chave de dedup deve conter o transactionId, não ser apenas "hubla:NewSale"
+    key = deps["dedup"].try_mark.await_args.kwargs["key"]
+    assert key == "hubla:NewSale:tx-abc-123"
+    deps["queue"].enqueue.assert_awaited_once()
+
+
+def test_v1_newsales_with_distinct_tx_are_not_deduped(app_and_deps):
+    """Duas vendas NewSale com transactionId distintos geram chaves de dedup distintas."""
+    app, deps = app_and_deps
+    deps["dedup"].try_mark = AsyncMock(return_value=True)
+    deps["event_repo"].insert_if_new = AsyncMock(return_value=object())
+    deps["queue"].enqueue = AsyncMock(return_value="j")
+    client = TestClient(app)
+    for tx in ("tx-1", "tx-2"):
+        client.post(
+            "/webhook/hubla",
+            json={"type": "NewSale", "version": "1.0.0", "event": {"transactionId": tx}},
+            params={"token": "secret-token"},
+        )
+    keys = [c.kwargs["key"] for c in deps["dedup"].try_mark.await_args_list]
+    assert keys == ["hubla:NewSale:tx-1", "hubla:NewSale:tx-2"]
+    assert deps["queue"].enqueue.await_count == 2
+
+
 def test_duplicate_payload_returns_202_duplicate_no_enqueue(app_and_deps):
     app, deps = app_and_deps
     # Dedup retorna False = já visto anteriormente.
