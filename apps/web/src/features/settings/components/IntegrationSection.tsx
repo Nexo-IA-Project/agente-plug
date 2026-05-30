@@ -29,38 +29,6 @@ interface SectionSpec {
 
 const SECTIONS: SectionSpec[] = [
   {
-    id: "chatnexo",
-    title: "ChatNexo",
-    subtitle: "Plataforma de mensagens WhatsApp",
-    icon: "chat",
-    fields: [
-      {
-        key: "chatnexo_base_url",
-        label: "Base URL",
-        type: "url",
-        placeholder: "https://api.chatnexo.com.br",
-      },
-      {
-        key: "chatnexo_api_key",
-        label: "API Key (fallback)",
-        type: "secret",
-        description: "Usada quando nenhum atendente está configurado",
-      },
-      {
-        key: "chatnexo_account_id",
-        label: "Account ID",
-        type: "number",
-        description: "ID da conta no ChatNexo (troca de conta sem deploy)",
-      },
-      {
-        key: "chatnexo_inbox_id",
-        label: "Inbox ID",
-        type: "number",
-        description: "ID da inbox dentro da conta",
-      },
-    ],
-  },
-  {
     id: "hubla",
     title: "Hubla",
     subtitle: "Gateway de pagamentos e webhooks",
@@ -161,9 +129,9 @@ export function IntegrationSection({ initial, onSaved }: Props) {
       <div className="mb-6 flex items-center gap-3">
         <div className="h-5 w-1 rounded-full bg-primary" />
         <div>
-          <h2 className="text-lg font-semibold text-on-surface">Integrações</h2>
+          <h2 className="text-lg font-semibold text-on-surface">Outras integrações</h2>
           <p className="mt-0.5 text-sm text-on-surface-variant">
-            Credenciais de acesso aos serviços externos. Campos sensíveis são exibidos mascarados.
+            Pagamentos e WhatsApp oficial. Campos sensíveis são mascarados.
           </p>
         </div>
       </div>

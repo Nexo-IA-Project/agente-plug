@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
-import { ChatNexoAgentsSection } from "@/features/settings/components/ChatNexoAgentsSection";
+import { ChatNexoSection } from "@/features/settings/components/ChatNexoSection";
 import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
-import { PlatformSection } from "@/features/settings/components/PlatformSection";
 import { usePermission } from "@/features/auth/hooks/usePermission";
 import type { AccountSettings } from "@/features/settings/types";
 
@@ -71,14 +70,11 @@ export default function SettingsPage() {
 
       {isAdmin && (
         <>
-          {/* Plataforma / Núcleo — config global (OpenAI + SMTP) */}
-          <PlatformSection />
+          {/* ChatNexo — conexão + atendentes */}
+          <ChatNexoSection initial={settings} onSaved={setSettings} />
 
-          {/* Integrations — credenciais do tenant */}
+          {/* Outras integrações — Hubla + Meta */}
           <IntegrationSection initial={settings} onSaved={setSettings} />
-
-          {/* ChatNexo agents */}
-          <ChatNexoAgentsSection />
         </>
       )}
 
