@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import OnboardingFlowModel, ProductModel
+from shared.adapters.db.models import OnboardingFlowModel, ProductHublaAliasModel, ProductModel
 from shared.domain.entities.product import Product
 
 
@@ -41,13 +41,35 @@ class SqlProductRepository:
         return _to_entity(m) if m else None
 
     async def find_active_by_hubla_id(self, account_id: UUID, hubla_id: str) -> Product | None:
+        # 1) id principal
         stmt = select(ProductModel).where(
             ProductModel.account_id == account_id,
             ProductModel.hubla_id == hubla_id,
             ProductModel.is_active.is_(True),
         )
         m = (await self.session.execute(stmt)).scalar_one_or_none()
-        return _to_entity(m) if m else None
+        if m:
+            return _to_entity(m)
+        # 2) alias -> produto ativo
+        alias_stmt = (
+            select(ProductModel)
+            .join(ProductHublaAliasModel, ProductHublaAliasModel.product_id == ProductModel.id)
+            .where(
+                ProductHublaAliasModel.account_id == account_id,
+                ProductHublaAliasModel.hubla_id == hubla_id,
+                ProductModel.is_active.is_(True),
+            )
+        )
+        am = (await self.session.execute(alias_stmt)).scalar_one_or_none()
+        return _to_entity(am) if am else None
+
+    async def add_alias(self, *, account_id: UUID, product_id: UUID, hubla_id: str) -> None:
+        self.session.add(
+            ProductHublaAliasModel(
+                id=uuid4(), account_id=account_id, product_id=product_id, hubla_id=hubla_id
+            )
+        )
+        await self.session.flush()
 
     async def find_active_by_name(self, account_id: UUID, name: str) -> Product | None:
         """Fallback de resolução por nome exato (ponte para ids de offer não cadastrados).
