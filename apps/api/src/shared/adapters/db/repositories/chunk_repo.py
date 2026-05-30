@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,7 +39,7 @@ class ChunkRepository:
 
     async def similarity_search(
         self,
-        account_id: int,
+        account_id: UUID,
         embedding: list[float],
         top_k: int = 5,
         threshold: float = 0.55,

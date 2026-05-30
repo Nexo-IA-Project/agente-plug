@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+from uuid import UUID
 
 from agent.skills.buscar_conhecimento.keyword_extractor import extract_keywords
 from agent.skills.buscar_conhecimento.synonym_expander import expand_synonyms
@@ -13,7 +14,7 @@ class BuscarConhecimento:
         self._knowledge = knowledge_repo
         self._usage_log = usage_log_repo
 
-    async def execute(self, query: str, account_id: int) -> dict:
+    async def execute(self, query: str, account_id: UUID) -> dict:
         # Tentativa 1: query exata
         chunks = await self._knowledge.search(query=query, account_id=account_id)
         if chunks:
@@ -44,7 +45,7 @@ class BuscarConhecimento:
         await self._log(account_id, query, strategy="all_failed", found=False)
         return {"encontrado": False, "chunks": [], "strategy": "all_failed"}
 
-    async def _log(self, account_id: int, query: str, strategy: str, found: bool) -> None:
+    async def _log(self, account_id: UUID, query: str, strategy: str, found: bool) -> None:
         if self._usage_log:
             with contextlib.suppress(Exception):
                 await self._usage_log.registrar(

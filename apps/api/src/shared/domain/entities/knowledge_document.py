@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 class DocumentStatus(StrEnum):
@@ -15,7 +15,7 @@ class DocumentStatus(StrEnum):
 
 @dataclass
 class KnowledgeDocument:
-    account_id: int
+    account_id: UUID
     filename: str
     mime_type: str
     file_size_bytes: int

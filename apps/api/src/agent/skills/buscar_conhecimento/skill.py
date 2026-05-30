@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
@@ -36,7 +37,9 @@ class BuscarConhecimentoSkill(BaseSkill):
             if not pre.passed:
                 return pre.block_message
 
-        result = await self._use_case.execute(query=kwargs["query"], account_id=int(ctx.account_id))
+        result = await self._use_case.execute(
+            query=kwargs["query"], account_id=UUID(ctx.account_id)
+        )
         if not result["encontrado"]:
             return "Não encontrei informações sobre este tópico na base de conhecimento."
         return "\n\n".join(result["chunks"])

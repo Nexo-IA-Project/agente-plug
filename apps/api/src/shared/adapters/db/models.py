@@ -307,7 +307,9 @@ class AccessCaseModel(Base):
     __tablename__ = "access_cases"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
     contact_id: Mapped[str] = mapped_column(String, nullable=False)
     conversation_id: Mapped[str] = mapped_column(String, nullable=False)
     purchase_id: Mapped[str] = mapped_column(String, nullable=False, unique=True)
@@ -335,7 +337,9 @@ class RefundCaseModel(Base):
     __tablename__ = "refund_cases"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
     contact_id: Mapped[str] = mapped_column(String, nullable=False)
     conversation_id: Mapped[str] = mapped_column(String, nullable=False)
     purchase_id: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -367,7 +371,9 @@ class KnowledgeDocumentModel(Base):
     __tablename__ = "knowledge_documents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
     filename: Mapped[str] = mapped_column(String(500), nullable=False)
     mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
     file_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -394,7 +400,9 @@ class KnowledgeChunkModel(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     document_id: Mapped[str] = mapped_column(String(36), nullable=False)
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
     text: Mapped[str] = mapped_column(String, nullable=False)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     token_count: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -413,7 +421,9 @@ class KbUsageLogModel(Base):
     __tablename__ = "kb_usage_logs"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
     query: Mapped[str] = mapped_column(String, nullable=False)
     result_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
@@ -442,7 +452,9 @@ class UserModel(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, index=True
+    )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(200), nullable=False)
     password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -456,15 +468,58 @@ class UserModel(Base):
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="SET NULL"), nullable=True
+    )
 
     __table_args__ = (UniqueConstraint("account_id", "email", name="uq_users_account_email"),)
+
+
+class ProfileModel(Base):
+    __tablename__ = "profiles"
+    __table_args__ = (UniqueConstraint("account_id", "name", name="uq_profiles_account_name"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_system: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("FALSE")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
+    )
+
+
+class ProfilePermissionModel(Base):
+    __tablename__ = "profile_permissions"
+    __table_args__ = (UniqueConstraint("profile_id", "permission_key", name="uq_profile_perm"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    permission_key: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
 class SmtpConfigModel(Base):
     __tablename__ = "smtp_config"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, unique=True
+    )
     host: Mapped[str] = mapped_column(String(200), nullable=False)
     port: Mapped[int] = mapped_column(Integer, nullable=False)
     username: Mapped[str] = mapped_column(String(200), nullable=False)

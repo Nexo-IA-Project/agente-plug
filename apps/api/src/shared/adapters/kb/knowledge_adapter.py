@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from uuid import UUID
+
 from openai import AsyncOpenAI
 
 from shared.adapters.db.repositories.chunk_repo import ChunkRepository
@@ -24,7 +26,7 @@ class EmbeddingsKnowledgeAdapter:
     async def search(
         self,
         query: str,
-        account_id: int,
+        account_id: UUID,
         threshold: float = 0.55,
         top_k: int = 5,
     ) -> list[KnowledgeChunk]:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +55,7 @@ class RefundCaseRepository:
         model.refund_processed_this_turn = case.refund_processed_this_turn
         await self._session.flush()
 
-    async def find_by_phone(self, *, account_id: int, phone: str) -> RefundCase | None:
+    async def find_by_phone(self, *, account_id: UUID, phone: str) -> RefundCase | None:
         result = await self._session.execute(
             select(RefundCaseModel)
             .where(RefundCaseModel.account_id == account_id)

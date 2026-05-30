@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 class AccessCaseStatus(StrEnum):
@@ -18,7 +18,7 @@ class AccessCaseStatus(StrEnum):
 
 @dataclass
 class AccessCase:
-    account_id: int
+    account_id: UUID
     contact_id: str
     conversation_id: str
     purchase_id: str

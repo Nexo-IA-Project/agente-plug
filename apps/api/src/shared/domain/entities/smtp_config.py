@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 @dataclass
 class SmtpConfig:
-    account_id: int
+    account_id: UUID
     host: str
     port: int
     username: str

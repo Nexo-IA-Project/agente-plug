@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from shared.domain.ports.embeddings_port import EmbeddingsPort
 
 
@@ -15,7 +17,7 @@ class BuscarChunks:
 
     async def execute(
         self,
-        account_id: int,
+        account_id: UUID,
         query: str,
         top_k: int = 5,
         threshold: float = 0.55,

@@ -70,14 +70,16 @@ class EnrollmentStepItem(BaseModel):
 
 
 async def _get_account_uuid(session, auth: AdminAuth) -> _uuid_module.UUID:
-    """Resolve ``auth.account_id`` para o UUID do registro em ``accounts``.
+    """Resolve o UUID da account do request.
 
-    Sistema single-tenant: ``AdminAuth.account_id`` é um ``int`` (atualmente 1)
-    e a tabela ``accounts`` usa UUID como PK sem coluna inteira correspondente.
-    O lookup retorna o primeiro account encontrado. Quando multi-tenant chegar,
-    esta função deve passar a mapear ``auth.account_id`` para o UUID correto.
+    ``AdminAuth.account_id`` agora é um ``UUID | None`` (tokens novos carregam
+    o UUID; tokens legados com account_id inteiro decodificam para ``None``).
+    Quando presente usamos direto; caso contrário caímos no resolver
+    single-tenant (primeira account criada). Quando multi-tenant chegar, o
+    ramo ``None`` deve deixar de existir (todo token carregará UUID).
     """
-    _ = auth  # explicitar intenção single-tenant
+    if auth.account_id is not None:
+        return auth.account_id
     result = await session.execute(select(AccountModel.id).limit(1))
     return result.scalar_one()
 
@@ -266,7 +268,7 @@ async def dispatch_step_now(
         settings_obj = get_settings()
         fernet = Fernet(settings_obj.integration_credentials_key.encode())
         config_repo = AccountConfigRepository(session=session, fernet=fernet)
-        config = await config_repo.get(account_id=1)
+        config = await config_repo.get(account_id=account_uuid)
         chatnexo, _chosen_agent_id = build_chatnexo_client(
             base_url=config.integration.chatnexo_base_url,
             agents=config.integration.chatnexo_agents,

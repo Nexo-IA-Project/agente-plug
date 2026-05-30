@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 
 class UserRole(StrEnum):
@@ -13,7 +13,7 @@ class UserRole(StrEnum):
 
 @dataclass
 class User:
-    account_id: int
+    account_id: UUID
     name: str
     email: str
     password_hash: str
@@ -24,3 +24,4 @@ class User:
     is_active: bool = True
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     last_login_at: datetime | None = None
+    profile_id: UUID | None = None

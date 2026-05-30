@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,7 +14,7 @@ class UsageLogRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def record_no_result(self, account_id: int, query: str) -> None:
+    async def record_no_result(self, account_id: UUID, query: str) -> None:
         log = KbUsageLogModel(
             account_id=account_id,
             query=query,
@@ -21,7 +23,7 @@ class UsageLogRepository:
         self._session.add(log)
         await self._session.flush()
 
-    async def list_recent(self, account_id: int, limit: int = 50) -> list[dict]:
+    async def list_recent(self, account_id: UUID, limit: int = 50) -> list[dict]:
         result = await self._session.execute(
             select(KbUsageLogModel)
             .where(KbUsageLogModel.account_id == account_id)

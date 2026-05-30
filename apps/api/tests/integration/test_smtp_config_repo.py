@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
+from uuid import UUID
 
 import pytest
 from cryptography.fernet import Fernet
-from sqlalchemy import delete
+from sqlalchemy import delete, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import SmtpConfigModel
@@ -12,6 +13,11 @@ from shared.adapters.db.repositories.smtp_config_repo import SmtpConfigRepositor
 from shared.config.settings import get_settings
 
 FERNET_KEY = Fernet.generate_key().decode()
+
+# account_id agora é UUID com FK -> accounts.
+ACC1 = UUID("11111111-1111-1111-1111-111111111111")
+ACC2 = UUID("22222222-2222-2222-2222-222222222222")
+ACC_ABSENT = UUID("99999999-9999-9999-9999-999999999999")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -38,6 +44,14 @@ def _apply_migrations(database_url: str) -> None:
 @pytest.fixture(autouse=True)
 async def _clean_smtp(db_session: AsyncSession) -> None:
     await db_session.execute(delete(SmtpConfigModel))
+    for acc in (ACC1, ACC2):
+        await db_session.execute(
+            text(
+                "INSERT INTO accounts (id, name, settings, created_at) "
+                "VALUES (:id, :name, '{}'::jsonb, NOW()) ON CONFLICT (id) DO NOTHING"
+            ),
+            {"id": str(acc), "name": f"acc-{acc}"},
+        )
     await db_session.commit()
 
 
@@ -53,7 +67,7 @@ def _patch_fernet_key(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_upsert_and_get(db_session: AsyncSession) -> None:
     repo = SmtpConfigRepository(db_session)
     await repo.upsert(
-        account_id=1,
+        account_id=ACC1,
         host="smtp.gmail.com",
         port=587,
         username="user@gmail.com",
@@ -64,7 +78,7 @@ async def test_upsert_and_get(db_session: AsyncSession) -> None:
     )
     await db_session.flush()
 
-    cfg = await repo.get(account_id=1)
+    cfg = await repo.get(account_id=ACC1)
     assert cfg is not None
     assert cfg.host == "smtp.gmail.com"
     assert cfg.port == 587
@@ -76,7 +90,7 @@ async def test_upsert_and_get(db_session: AsyncSession) -> None:
 async def test_upsert_updates_existing(db_session: AsyncSession) -> None:
     repo = SmtpConfigRepository(db_session)
     await repo.upsert(
-        account_id=2,
+        account_id=ACC2,
         host="smtp1.com",
         port=25,
         username="u",
@@ -88,7 +102,7 @@ async def test_upsert_updates_existing(db_session: AsyncSession) -> None:
     await db_session.flush()
 
     await repo.upsert(
-        account_id=2,
+        account_id=ACC2,
         host="smtp2.com",
         port=587,
         username="u2",
@@ -99,7 +113,7 @@ async def test_upsert_updates_existing(db_session: AsyncSession) -> None:
     )
     await db_session.flush()
 
-    cfg = await repo.get(account_id=2)
+    cfg = await repo.get(account_id=ACC2)
     assert cfg is not None
     assert cfg.host == "smtp2.com"
     assert cfg.port == 587
@@ -109,4 +123,4 @@ async def test_upsert_updates_existing(db_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_get_returns_none_when_absent(db_session: AsyncSession) -> None:
     repo = SmtpConfigRepository(db_session)
-    assert await repo.get(account_id=999) is None
+    assert await repo.get(account_id=ACC_ABSENT) is None

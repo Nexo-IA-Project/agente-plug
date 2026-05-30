@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from email.message import EmailMessage
+from uuid import UUID
 
 import aiosmtplib
 
@@ -16,7 +17,7 @@ class SmtpEmailService:
     def __init__(self, repo: SmtpConfigRepository) -> None:
         self._repo = repo
 
-    async def send_email(self, account_id: int, to: str, subject: str, body_html: str) -> None:
+    async def send_email(self, account_id: UUID, to: str, subject: str, body_html: str) -> None:
         cfg = await self._repo.get(account_id=account_id)
         if cfg is None:
             raise SmtpNotConfiguredError(f"SMTP not configured for account {account_id}")

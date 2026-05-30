@@ -9,6 +9,7 @@ from interface.http.deps.admin_auth import AdminAuth, require_admin_role
 from shared.adapters.db.repositories.smtp_config_repo import SmtpConfigRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.email.smtp_email_service import SmtpEmailService
+from shared.config.single_tenant import get_default_account_uuid
 
 router = APIRouter(tags=["admin-smtp"])
 
@@ -42,8 +43,9 @@ async def get_config(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> SmtpConfigResponse | None:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = SmtpConfigRepository(s)
-        cfg = await repo.get(account_id=auth.account_id)
+        cfg = await repo.get(account_id=account_id)
         if cfg is None:
             return None
         return SmtpConfigResponse(
@@ -63,8 +65,9 @@ async def upsert_config(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> SmtpConfigResponse:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = SmtpConfigRepository(s)
-        existing = await repo.get(account_id=auth.account_id)
+        existing = await repo.get(account_id=account_id)
 
         if not body.password:
             if existing is None:
@@ -74,7 +77,7 @@ async def upsert_config(
             password_to_store = body.password
 
         cfg = await repo.upsert(
-            account_id=auth.account_id,
+            account_id=account_id,
             host=body.host,
             port=body.port,
             username=body.username,
@@ -101,11 +104,12 @@ async def test_smtp(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> dict[Literal["ok"], bool]:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = SmtpConfigRepository(s)
         svc = SmtpEmailService(repo=repo)
         try:
             await svc.send_email(
-                account_id=auth.account_id,
+                account_id=account_id,
                 to=body.to,
                 subject="Teste de configuração SMTP — NexoIA",
                 body_html="<p>Este é um email de teste. Sua configuração SMTP está funcionando.</p>",

@@ -15,6 +15,7 @@ from shared.application.use_cases.admin.create_user import CreateUserUseCase
 from shared.application.use_cases.admin.reset_user_password import (
     ResetUserPasswordUseCase,
 )
+from shared.config.single_tenant import get_default_account_uuid
 from shared.domain.entities.user import UserRole
 
 router = APIRouter(tags=["admin-users"])
@@ -72,8 +73,9 @@ async def list_users(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> UserListResponse:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = UserRepository(s)
-        items, total = await repo.list_by_account(auth.account_id, page, page_size)
+        items, total = await repo.list_by_account(account_id, page, page_size)
         return UserListResponse(
             items=[_to_response(u) for u in items],
             total=total,
@@ -88,13 +90,14 @@ async def create_user(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> UserResponse:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         user_repo = UserRepository(s)
         smtp_repo = SmtpConfigRepository(s)
         email_svc = SmtpEmailService(repo=smtp_repo)
         uc = CreateUserUseCase(user_repo=user_repo, email_service=email_svc)
         try:
             user = await uc.execute(
-                account_id=auth.account_id,
+                account_id=account_id,
                 name=body.name,
                 email=body.email,
                 role=UserRole(body.role),
@@ -112,15 +115,16 @@ async def update_user(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> UserResponse:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = UserRepository(s)
         user = await repo.get_by_id(user_id)
-        if user is None or user.account_id != auth.account_id:
+        if user is None or user.account_id != account_id:
             raise HTTPException(status_code=404, detail="User not found")
 
         if (user.role == UserRole.ADMIN and body.role != "admin") or (
             user.role == UserRole.ADMIN and not body.is_active
         ):
-            admin_count = await repo.count_active_admins(auth.account_id)
+            admin_count = await repo.count_active_admins(account_id)
             if admin_count <= 1:
                 raise HTTPException(
                     status_code=409, detail="Cannot demote/deactivate the last admin"
@@ -143,12 +147,13 @@ async def delete_user(
         raise HTTPException(status_code=409, detail="Cannot delete your own user")
 
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         repo = UserRepository(s)
         user = await repo.get_by_id(user_id)
-        if user is None or user.account_id != auth.account_id:
+        if user is None or user.account_id != account_id:
             raise HTTPException(status_code=404, detail="User not found")
         if user.role == UserRole.ADMIN:
-            admin_count = await repo.count_active_admins(auth.account_id)
+            admin_count = await repo.count_active_admins(account_id)
             if admin_count <= 1:
                 raise HTTPException(status_code=409, detail="Cannot delete the last admin")
         await repo.delete(user_id)
@@ -161,13 +166,14 @@ async def reset_password(
     auth: AdminAuth = Depends(require_admin_role),
 ) -> None:
     async with session_scope() as s:
+        account_id = auth.account_id or await get_default_account_uuid(s)
         user_repo = UserRepository(s)
         target = await user_repo.get_by_id(user_id)
-        if target is None or target.account_id != auth.account_id:
+        if target is None or target.account_id != account_id:
             raise HTTPException(status_code=404, detail="User not found")
 
         smtp_repo = SmtpConfigRepository(s)
         email_svc = SmtpEmailService(repo=smtp_repo)
         uc = ResetUserPasswordUseCase(user_repo=user_repo, email_service=email_svc)
-        await uc.execute(account_id=auth.account_id, user_id=user_id)
+        await uc.execute(account_id=account_id, user_id=user_id)
         await s.commit()

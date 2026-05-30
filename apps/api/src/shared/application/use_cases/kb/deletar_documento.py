@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 
 class DeletarDocumento:
     """Use case: delete all chunks then the document record."""
@@ -8,6 +10,6 @@ class DeletarDocumento:
         self._doc_repo = doc_repo
         self._chunk_repo = chunk_repo
 
-    async def execute(self, doc_id: str, account_id: int) -> None:
+    async def execute(self, doc_id: str, account_id: UUID) -> None:
         await self._chunk_repo.delete_by_document(doc_id)
         await self._doc_repo.delete(doc_id, account_id=account_id)
