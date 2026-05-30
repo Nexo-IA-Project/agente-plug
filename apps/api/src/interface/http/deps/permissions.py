@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
 from shared.adapters.db.models import ProfilePermissionModel, UserModel
 from shared.adapters.db.session import session_scope
 from shared.domain.permissions.catalog import all_permission_keys
@@ -34,16 +34,32 @@ async def resolve_user_permissions(session: AsyncSession, *, user_id: str, role:
     return set(rows)
 
 
+async def _check_permission(auth: AdminAuth, key: str) -> AdminAuth:
+    if auth.user_role == "admin":
+        return auth
+    async with session_scope() as session:
+        perms = await resolve_user_permissions(session, user_id=auth.user_id, role=auth.user_role)
+    if key not in perms:
+        raise HTTPException(status_code=403, detail="Permissão insuficiente")
+    return auth
+
+
 def require_permission(key: str) -> Callable[..., Awaitable[AdminAuth]]:
     async def _dep(auth: AdminAuth = Depends(require_admin)) -> AdminAuth:
-        if auth.user_role == "admin":
-            return auth
-        async with session_scope() as session:
-            perms = await resolve_user_permissions(
-                session, user_id=auth.user_id, role=auth.user_role
-            )
-        if key not in perms:
-            raise HTTPException(status_code=403, detail="Permissão insuficiente")
-        return auth
+        return await _check_permission(auth, key)
+
+    return _dep
+
+
+def require_permission_sse(key: str) -> Callable[..., Awaitable[AdminAuth]]:
+    """Variante SSE de :func:`require_permission`.
+
+    Depende de :func:`require_admin_sse` (aceita JWT via query string ``?token=``)
+    em vez de :func:`require_admin`, mantendo o mesmo bypass de admin e checagem
+    de permissão por operador.
+    """
+
+    async def _dep(auth: AdminAuth = Depends(require_admin_sse)) -> AdminAuth:
+        return await _check_permission(auth, key)
 
     return _dep

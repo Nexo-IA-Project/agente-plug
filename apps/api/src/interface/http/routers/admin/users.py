@@ -7,7 +7,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.platform_config_repo import PlatformConfigRepository
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
 from shared.adapters.db.repositories.user_repo import UserRepository
@@ -88,7 +89,7 @@ def _parse_profile_id(raw: str | None) -> UUID | None:
 async def list_users(
     page: int = 1,
     page_size: int = 50,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("users.view")),
 ) -> UserListResponse:
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)
@@ -108,7 +109,7 @@ async def list_users(
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     body: CreateUserRequest,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("users.manage")),
 ) -> UserResponse:
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)
@@ -140,7 +141,7 @@ async def create_user(
 async def update_user(
     user_id: str,
     body: UpdateUserRequest,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("users.manage")),
 ) -> UserResponse:
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)
@@ -181,7 +182,7 @@ async def update_user(
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: str,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("users.manage")),
 ) -> None:
     if user_id == auth.user_id:
         raise HTTPException(status_code=409, detail="Cannot delete your own user")
@@ -203,7 +204,7 @@ async def delete_user(
 @router.post("/users/{user_id}/reset-password", status_code=status.HTTP_204_NO_CONTENT)
 async def reset_password(
     user_id: str,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("users.manage")),
 ) -> None:
     async with session_scope() as s:
         account_id = auth.account_id or await get_default_account_uuid(s)

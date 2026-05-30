@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 
 def _make_app_with_mock_deps(mock_deps):
-    from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+    from interface.http.deps.admin_auth import AdminAuth, require_admin
     from interface.http.deps.admin_deps import get_admin_deps
     from interface.http.routers.admin.documents import router
 
@@ -23,7 +23,7 @@ def _make_app_with_mock_deps(mock_deps):
 
     app = FastAPI()
     app.dependency_overrides[get_admin_deps] = lambda: mock_deps
-    app.dependency_overrides[require_admin_role] = _admin_override
+    app.dependency_overrides[require_admin] = _admin_override
     app.include_router(router, prefix="/admin")
     return app
 

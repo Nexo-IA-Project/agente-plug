@@ -4,7 +4,8 @@ from __future__ import annotations
 from cryptography.fernet import Fernet
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from interface.http.schemas.admin_settings import (
     AccountSettingsResponse,
     AccountSettingsUpdateRequest,
@@ -48,7 +49,7 @@ def _to_response(config: AccountConfig) -> AccountSettingsResponse:
 
 @router.get("/settings", response_model=AccountSettingsResponse)
 async def get_settings_endpoint(
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("settings.view")),
 ) -> AccountSettingsResponse:
     s = get_settings()
     fernet = Fernet(s.integration_credentials_key.encode())
@@ -62,7 +63,7 @@ async def get_settings_endpoint(
 
 @router.get("/settings/hubla-webhook-token")
 async def get_hubla_webhook_token(
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("settings.view")),
 ) -> dict[str, str]:
     """Retorna o secret real (não mascarado) usado pra autenticar webhooks da Hubla.
 
@@ -81,7 +82,7 @@ async def get_hubla_webhook_token(
 @router.put("/settings", response_model=AccountSettingsResponse)
 async def update_settings_endpoint(
     body: AccountSettingsUpdateRequest,
-    auth: AdminAuth = Depends(require_admin_role),
+    auth: AdminAuth = Depends(require_permission("settings.edit_credentials")),
 ) -> AccountSettingsResponse:
     s = get_settings()
     fernet = Fernet(s.integration_credentials_key.encode())

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 # Ensure the module is imported so patch paths resolve correctly.
 import interface.http.routers.admin.profiles  # noqa: F401
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth, require_admin
 from shared.domain.entities.profile import Profile
 from shared.domain.permissions.catalog import all_permission_keys
 
@@ -29,7 +29,7 @@ def _make_app() -> FastAPI:
 
     app = FastAPI()
     app.include_router(router, prefix="/admin")
-    app.dependency_overrides[require_admin_role] = _admin_auth
+    app.dependency_overrides[require_admin] = _admin_auth
     return app
 
 

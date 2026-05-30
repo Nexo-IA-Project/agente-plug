@@ -3,7 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from interface.http.deps.admin_auth import AdminAuth
 from interface.http.deps.admin_deps import AdminDeps, get_admin_deps
+from interface.http.deps.permissions import require_permission
 
 router = APIRouter(tags=["admin-search"])
 
@@ -24,6 +26,7 @@ class SearchResponse(BaseModel):
 async def test_search(
     body: SearchRequest,
     deps: AdminDeps = Depends(get_admin_deps),
+    _auth: AdminAuth = Depends(require_permission("kb.view")),
 ) -> SearchResponse:
     results = await deps.buscar(
         account_id=deps.account_id,

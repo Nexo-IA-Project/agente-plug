@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 # Ensure the module is imported so patch paths resolve correctly.
 import interface.http.routers.admin.users
-from interface.http.deps.admin_auth import AdminAuth, require_admin_role
+from interface.http.deps.admin_auth import AdminAuth, require_admin
 
 
 def _admin_auth():
@@ -27,7 +27,7 @@ def _make_app(auth_override):
 
     app = FastAPI()
     app.include_router(router, prefix="/admin")
-    app.dependency_overrides[require_admin_role] = lambda: auth_override
+    app.dependency_overrides[require_admin] = lambda: auth_override
     return app
 
 

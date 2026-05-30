@@ -7,7 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.repositories.product_repo import SqlProductRepository
 from shared.adapters.db.session import session_scope
 from shared.config.single_tenant import get_default_account_uuid
@@ -39,7 +40,7 @@ class ProductResponse(BaseModel):
 
 @router.get("/products", response_model=list[ProductResponse])
 async def list_products(
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("products.view")),
 ) -> list[ProductResponse]:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -64,7 +65,7 @@ async def list_products(
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
 async def create_product(
     body: CreateProductRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("products.create")),
 ) -> ProductResponse:
     async with session_scope() as session:
         account_uuid = await get_default_account_uuid(session)
@@ -97,7 +98,7 @@ async def create_product(
 async def update_product(
     product_id: UUID,
     body: UpdateProductRequest,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("products.edit")),
 ) -> ProductResponse:
     async with session_scope() as session:
         repo = SqlProductRepository(session=session)
@@ -131,7 +132,7 @@ async def update_product(
 @router.delete("/products/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: UUID,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("products.delete")),
 ) -> None:
     async with session_scope() as session:
         repo = SqlProductRepository(session=session)

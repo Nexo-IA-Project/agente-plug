@@ -16,7 +16,8 @@ from fastapi import status as http_status
 from pydantic import BaseModel
 from sqlalchemy import select
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import AdminAuth
+from interface.http.deps.permissions import require_permission
 from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.onboarding_enrollment_repo import (
     OnboardingEnrollmentRepository,
@@ -96,7 +97,7 @@ async def list_enrollments(
     status: str | None = Query(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.view")),
 ) -> EnrollmentListResponse:
     status_enum: EnrollmentStatus | None = None
     if status:
@@ -150,7 +151,7 @@ async def list_enrollments(
 )
 async def list_enrollment_steps(
     enrollment_id: UUID,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.view")),
 ) -> list[EnrollmentStepItem]:
     async with session_scope() as session:
         account_uuid = await _get_account_uuid(session, auth)
@@ -188,7 +189,7 @@ class DispatchNowResponse(BaseModel):
 async def dispatch_step_now(
     enrollment_id: UUID,
     step_id: UUID,
-    auth: AdminAuth = Depends(require_admin),
+    auth: AdminAuth = Depends(require_permission("onboarding.edit")),
 ) -> DispatchNowResponse:
     """Força o disparo imediato de um step pending ou failed.
 
