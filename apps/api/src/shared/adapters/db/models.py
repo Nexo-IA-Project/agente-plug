@@ -513,22 +513,30 @@ class ProfilePermissionModel(Base):
     permission_key: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
-class SmtpConfigModel(Base):
-    __tablename__ = "smtp_config"
+class PlatformConfigModel(Base):
+    """Global platform config (singleton row). OpenAI key + SMTP, shared across tenants."""
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    account_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False, unique=True
+    __tablename__ = "platform_config"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    singleton: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("TRUE"), unique=True
     )
-    host: Mapped[str] = mapped_column(String(200), nullable=False)
-    port: Mapped[int] = mapped_column(Integer, nullable=False)
-    username: Mapped[str] = mapped_column(String(200), nullable=False)
-    encrypted_password: Mapped[str] = mapped_column(Text, nullable=False)
-    use_tls: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
-    from_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    from_email: Mapped[str] = mapped_column(String(200), nullable=False)
+    openai_api_key: Mapped[str | None] = mapped_column(Text, nullable=True)  # Fernet
+    smtp_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    smtp_use_tls: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("TRUE")
+    )
+    smtp_username: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_encrypted_password: Mapped[str | None] = mapped_column(Text, nullable=True)  # Fernet
+    smtp_from_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    smtp_from_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+        DateTime(timezone=True),
+        server_default=sa_text("NOW()"),
+        onupdate=sa_text("NOW()"),
+        nullable=False,
     )
 
 

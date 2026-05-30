@@ -49,7 +49,7 @@ async def test_create_user_201():
         patch("interface.http.routers.admin.users.session_scope") as mock_scope,
         patch("interface.http.routers.admin.users.CreateUserUseCase") as MockUC,
         patch("interface.http.routers.admin.users.SmtpEmailService"),
-        patch("interface.http.routers.admin.users.SmtpConfigRepository"),
+        patch("interface.http.routers.admin.users.PlatformConfigRepository"),
         patch("interface.http.routers.admin.users.UserRepository"),
     ):
         session = AsyncMock()

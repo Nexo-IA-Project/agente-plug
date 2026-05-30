@@ -23,7 +23,6 @@ def _make_config() -> AccountConfig:
             chatnexo_account_id=1,
             chatnexo_inbox_id=1,
             hubla_webhook_secret="secret",
-            openai_api_key="sk-test",
             meta_api_key="meta",
             meta_waba_id="",
             meta_app_id="",

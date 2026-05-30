@@ -74,7 +74,7 @@ async def test_get_returns_env_defaults_when_jsonb_empty():
         config = await repo.get(account_id=1)
 
     assert config.integration.chatnexo_base_url == "http://default"
-    assert config.integration.openai_api_key == "sk-default"
+    assert config.integration.chatnexo_api_key == "default_key"
     assert config.behavior.idle_ping_minutes == 30
     assert config.behavior.refund_deadline_days == 7
 
@@ -82,12 +82,12 @@ async def test_get_returns_env_defaults_when_jsonb_empty():
 @pytest.mark.asyncio
 async def test_get_uses_db_values_over_env_defaults():
     fernet = _make_fernet()
-    encrypted_key = fernet.encrypt(b"sk-db-key").decode()
+    encrypted_key = fernet.encrypt(b"cnx-db-key").decode()
     account = _mock_account(
         {
             "integration": {
                 "chatnexo_base_url": "http://from-db",
-                "openai_api_key": encrypted_key,
+                "chatnexo_api_key": encrypted_key,
             },
             "behavior": {
                 "idle_ping_minutes": 45,
@@ -112,7 +112,7 @@ async def test_get_uses_db_values_over_env_defaults():
         config = await repo.get(account_id=1)
 
     assert config.integration.chatnexo_base_url == "http://from-db"
-    assert config.integration.openai_api_key == "sk-db-key"
+    assert config.integration.chatnexo_api_key == "cnx-db-key"
     assert config.behavior.idle_ping_minutes == 45
     assert config.behavior.refund_deadline_days == 7  # fallback env
 
@@ -124,7 +124,7 @@ async def test_update_encrypts_sensitive_fields():
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 
-    patch_obj = AccountConfigPatch(openai_api_key="sk-new-key")
+    patch_obj = AccountConfigPatch(chatnexo_api_key="cnx-new-key")
 
     with (
         patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
@@ -141,21 +141,21 @@ async def test_update_encrypts_sensitive_fields():
         await repo.update(account_id=1, patch=patch_obj)
 
     saved = account.settings
-    stored_key = saved["integration"]["openai_api_key"]
-    assert stored_key != "sk-new-key"
-    assert fernet.decrypt(stored_key.encode()).decode() == "sk-new-key"
+    stored_key = saved["integration"]["chatnexo_api_key"]
+    assert stored_key != "cnx-new-key"
+    assert fernet.decrypt(stored_key.encode()).decode() == "cnx-new-key"
 
 
 @pytest.mark.asyncio
 async def test_update_ignores_masked_values():
     fernet = _make_fernet()
-    encrypted_orig = fernet.encrypt(b"sk-original").decode()
-    account = _mock_account({"integration": {"openai_api_key": encrypted_orig}})
+    encrypted_orig = fernet.encrypt(b"cnx-original").decode()
+    account = _mock_account({"integration": {"chatnexo_api_key": encrypted_orig}})
     session = _mock_session_with_account(account)
     repo = _make_repo(session, fernet)
 
     # Valor mascarado real produzido por _mask() — termina em "****".
-    patch_obj = AccountConfigPatch(openai_api_key="sk-proj-****")
+    patch_obj = AccountConfigPatch(chatnexo_api_key="cnx-key-****")
 
     with (
         patch("shared.adapters.db.repositories.account_config_repo.get_settings") as mock_s,
@@ -172,7 +172,7 @@ async def test_update_ignores_masked_values():
         await repo.update(account_id=1, patch=patch_obj)
 
     saved = account.settings
-    assert saved["integration"]["openai_api_key"] == encrypted_orig
+    assert saved["integration"]["chatnexo_api_key"] == encrypted_orig
 
 
 def test_mask_hides_sensitive_values():

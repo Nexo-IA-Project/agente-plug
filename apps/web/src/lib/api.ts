@@ -26,11 +26,8 @@ import type {
   CreateUserInput,
   UpdateUserInput,
 } from "@/features/users/types";
-import type {
-  MeResponse,
-  SmtpConfig,
-  SmtpConfigInput,
-} from "@/features/profile/types";
+import type { MeResponse } from "@/features/profile/types";
+import type { PlatformConfig, PlatformConfigInput } from "@/features/settings/types";
 import type {
   UnmappedProduct,
   ResolveUnmappedInput,
@@ -590,19 +587,23 @@ export async function fetchMyAvatarBlob(): Promise<string | null> {
 }
 
 // ============================================================
-// SMTP Config (admin only)
+// Platform / Core Config (global — OpenAI + SMTP, admin only)
 // ============================================================
 
-export async function getSmtpConfig(): Promise<SmtpConfig | null> {
-  return apiFetch<SmtpConfig | null>("/admin/smtp-config");
+export async function getPlatformConfig(): Promise<PlatformConfig> {
+  return apiFetch<PlatformConfig>("/admin/platform-config");
 }
 
-export async function saveSmtpConfig(input: SmtpConfigInput): Promise<SmtpConfig> {
-  return apiFetch<SmtpConfig>("/admin/smtp-config", { method: "PUT", body: JSON.stringify(input) });
+export async function savePlatformConfig(input: PlatformConfigInput): Promise<PlatformConfig> {
+  return apiFetch<PlatformConfig>("/admin/platform-config", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
 }
 
-export async function testSmtpConfig(to: string): Promise<void> {
-  await apiFetch<{ ok: boolean }>("/admin/smtp-config/test", {
-    method: "POST", body: JSON.stringify({ to }),
+export async function testPlatformConfig(to: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/admin/platform-config/test", {
+    method: "POST",
+    body: JSON.stringify({ to }),
   });
 }

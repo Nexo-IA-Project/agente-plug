@@ -5,7 +5,7 @@ import { getAccountSettings } from "@/lib/api";
 import { IntegrationSection } from "@/features/settings/components/IntegrationSection";
 import { ChatNexoAgentsSection } from "@/features/settings/components/ChatNexoAgentsSection";
 import { BehaviorSection } from "@/features/settings/components/BehaviorSection";
-import { SmtpConfigForm } from "@/features/settings/components/SmtpConfigForm";
+import { PlatformSection } from "@/features/settings/components/PlatformSection";
 import { usePermission } from "@/features/auth/hooks/usePermission";
 import type { AccountSettings } from "@/features/settings/types";
 
@@ -71,10 +71,10 @@ export default function SettingsPage() {
 
       {isAdmin && (
         <>
-          {/* SMTP — primeiro para facilitar o onboarding */}
-          <SmtpConfigForm />
+          {/* Plataforma / Núcleo — config global (OpenAI + SMTP) */}
+          <PlatformSection />
 
-          {/* Integrations */}
+          {/* Integrations — credenciais do tenant */}
           <IntegrationSection initial={settings} onSaved={setSettings} />
 
           {/* ChatNexo agents */}

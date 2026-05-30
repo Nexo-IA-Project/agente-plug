@@ -27,6 +27,4 @@ class ResetUserPasswordUseCase:
         )
 
         subject, body = password_reset_email(name=user.name, temp_password=temp_password)
-        await self.email_service.send_email(
-            account_id=account_id, to=user.email, subject=subject, body_html=body
-        )
+        await self.email_service.send_email(to=user.email, subject=subject, body_html=body)
