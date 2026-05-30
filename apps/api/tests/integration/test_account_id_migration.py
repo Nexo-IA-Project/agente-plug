@@ -104,7 +104,11 @@ async def test_uniques_recreated(db_session: AsyncSession) -> None:
 
 @pytest.mark.integration
 async def test_migration_is_reversible(database_url: str, db_session: AsyncSession) -> None:
-    """downgrade -1 (volta account_id p/ INTEGER) e upgrade heads (volta p/ uuid).
+    """Reverte a migração de account_id (→ INTEGER) e re-aplica (→ uuid).
+
+    Desce até a revisão ANTERIOR à conversão de account_id (`e7f8a9b0c1d2`, a de
+    profiles) — não dá pra usar "-1" porque o head agora é a migração de seed, que
+    fica acima da conversão de account_id.
 
     Os comandos do alembic rodam o env.py async via asyncio.run(), que não pode
     ser chamado de dentro do event loop do pytest-asyncio — por isso despachamos
@@ -114,11 +118,14 @@ async def test_migration_is_reversible(database_url: str, db_session: AsyncSessi
 
     from alembic import command
 
+    # revisão imediatamente anterior à migração account_id→UUID (f0a1b2c3d4e5)
+    before_account_uuid = "e7f8a9b0c1d2"
+
     original = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = database_url
     cfg = _alembic_cfg(database_url)
     try:
-        await asyncio.to_thread(command.downgrade, cfg, "-1")
+        await asyncio.to_thread(command.downgrade, cfg, before_account_uuid)
         # após downgrade, account_id deve ser integer novamente
         assert await _column_type(db_session, "users") == "integer"
         assert await _column_type(db_session, "smtp_config") == "integer"

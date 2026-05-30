@@ -6,10 +6,9 @@ import os
 import uuid
 
 import pytest
-from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from shared.adapters.db.models import AccountModel, ProfileModel, ProfilePermissionModel
+from shared.adapters.db.models import AccountModel
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
 
 
@@ -40,11 +39,10 @@ async def test_create_dedup_get_list(engine: AsyncEngine) -> None:
     maker = async_sessionmaker(engine, expire_on_commit=False)
     acc_id = uuid.uuid4()
 
-    # limpa tabelas para idempotência
+    # conta própria com uuid único por run; as asserções abaixo são scoped por
+    # account_id, então não limpamos tabelas (deletar accounts violaria a FK nova
+    # users.account_id → accounts).
     async with maker() as s:
-        await s.execute(delete(ProfilePermissionModel))
-        await s.execute(delete(ProfileModel))
-        await s.execute(delete(AccountModel))
         s.add(AccountModel(id=acc_id, name="t"))
         await s.commit()
 
