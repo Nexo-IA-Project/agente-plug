@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { label: "Pendências", href: "/onboarding/pendencias", icon: "report" },
   { label: "Templates", href: "/templates", icon: "sms" },
   { label: "Usuários", href: "/users", icon: "manage_accounts", adminOnly: true },
+  { label: "Perfis", href: "/profiles", icon: "badge", adminOnly: true },
   { label: "Configurações", href: "/settings", icon: "settings", exact: true },
 ];
 
