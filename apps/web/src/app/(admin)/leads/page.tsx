@@ -123,6 +123,7 @@ export default function LeadsPage() {
     filters.utm_source,
     filters.date_from,
     filters.date_to,
+    filters.unmatched,
   ].filter(Boolean).length;
 
   const handleExport = async () => {
@@ -144,7 +145,8 @@ export default function LeadsPage() {
     filters.status ||
     filters.utm_source ||
     filters.date_from ||
-    filters.date_to
+    filters.date_to ||
+    filters.unmatched
   );
 
   const clearFilters = () => {
@@ -241,6 +243,12 @@ export default function LeadsPage() {
             onRemove={() => updateFilter({ utm_source: undefined })}
           />
         )}
+        {filters.unmatched && (
+          <FilterChip
+            label="Produto não reconhecido"
+            onRemove={() => updateFilter({ unmatched: undefined })}
+          />
+        )}
 
         {hasActiveFilters && (
           <button
@@ -323,8 +331,21 @@ export default function LeadsPage() {
                     <td className="px-4 py-3 font-mono text-xs text-on-surface-variant">
                       {lead.payer_phone}
                     </td>
-                    <td className="max-w-[180px] truncate px-4 py-3 text-on-surface-variant">
-                      {lead.product_name}
+                    <td className="max-w-[220px] px-4 py-3 text-on-surface-variant">
+                      <div className="flex flex-col gap-1">
+                        <span className="truncate">{lead.product_name}</span>
+                        {lead.product_unmatched && (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-500">
+                            <span
+                              className="material-symbols-outlined"
+                              style={{ fontSize: "11px" }}
+                            >
+                              warning
+                            </span>
+                            Produto não reconhecido
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-on-surface">
                       {formatCents(lead.amount_total_cents)}

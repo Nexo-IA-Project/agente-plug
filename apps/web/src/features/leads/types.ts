@@ -17,6 +17,7 @@ export interface Lead {
   activated_at: string | null;
   last_event_at: string;
   last_event_type: string;
+  product_unmatched: boolean;
 }
 
 export interface LeadEvent {
@@ -71,6 +72,7 @@ export interface LeadFilters {
   utm_source?: string;
   date_from?: string; // ISO datetime string
   date_to?: string;   // ISO datetime string
+  unmatched?: boolean;
   page?: number;
   page_size?: number;
 }

@@ -31,6 +31,7 @@ function buildUrl(filters: LeadFilters): string {
   if (filters.utm_source) qs.set("utm_source", filters.utm_source);
   if (filters.date_from) qs.set("date_from", filters.date_from);
   if (filters.date_to) qs.set("date_to", filters.date_to);
+  if (filters.unmatched) qs.set("unmatched", "true");
   // EventSource não consegue mandar header Authorization; passa JWT na query.
   const token = getToken();
   if (token) qs.set("token", token);
@@ -82,6 +83,7 @@ export function useLeadsStream(filters: LeadFilters, handlers: Handlers) {
     filters.utm_source,
     filters.date_from,
     filters.date_to,
+    filters.unmatched,
   ]);
 
   return { status };

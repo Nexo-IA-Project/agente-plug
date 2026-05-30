@@ -48,6 +48,7 @@ export function LeadFiltersModal({ open, onClose, initial, onApply }: Props) {
     to: fromIso(initial.date_to),
   });
   const [utm, setUtm] = useState<string>(initial.utm_source ?? "");
+  const [unmatchedOnly, setUnmatchedOnly] = useState<boolean>(initial.unmatched ?? false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -60,6 +61,7 @@ export function LeadFiltersModal({ open, onClose, initial, onApply }: Props) {
       to: fromIso(initial.date_to),
     });
     setUtm(initial.utm_source ?? "");
+    setUnmatchedOnly(initial.unmatched ?? false);
   }, [open, initial]);
 
   useEffect(() => {
@@ -77,6 +79,7 @@ export function LeadFiltersModal({ open, onClose, initial, onApply }: Props) {
       date_from: toIso(range?.from),
       date_to: toIso(range?.to, true),
       utm_source: utm || undefined,
+      unmatched: unmatchedOnly || undefined,
       page: 1,
     });
     onClose();
@@ -87,6 +90,7 @@ export function LeadFiltersModal({ open, onClose, initial, onApply }: Props) {
     setStatusValue("");
     setRange(undefined);
     setUtm("");
+    setUnmatchedOnly(false);
   };
 
   return (
@@ -213,6 +217,37 @@ export function LeadFiltersModal({ open, onClose, initial, onApply }: Props) {
               ))}
             </ul>
           )}
+        </div>
+
+        {/* Produto não reconhecido */}
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Produto
+          </label>
+          <button
+            type="button"
+            onClick={() => setUnmatchedOnly((v) => !v)}
+            className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors ${
+              unmatchedOnly
+                ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : "border-outline-variant bg-surface-container-low text-on-surface hover:bg-surface-container"
+            }`}
+          >
+            <span
+              className={`material-symbols-outlined ${unmatchedOnly ? "text-amber-500" : "text-on-surface-variant"}`}
+              style={{ fontSize: "18px" }}
+            >
+              {unmatchedOnly ? "check_box" : "check_box_outline_blank"}
+            </span>
+            <span className="flex-1 text-left">
+              Só produtos não reconhecidos
+            </span>
+            {unmatchedOnly && (
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-500">
+                Ativo
+              </span>
+            )}
+          </button>
         </div>
       </div>
     </Modal>
