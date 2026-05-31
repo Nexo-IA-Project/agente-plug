@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import FastAPI
@@ -9,14 +10,14 @@ from fastapi.testclient import TestClient
 from interface.http.deps.admin_auth import AdminAuth, require_admin
 
 
-def _auth(role="admin"):
+def _auth(role="admin", membership_id=None):
     return AdminAuth(
-        account_id=1,
+        account_id=uuid.uuid4(),
         user_email="x@x.com",
         user_role=role,
         user_id="uid",
         identity_id="uid",
-        membership_id=None,
+        membership_id=membership_id,
         user_name="",
         must_change_password=False,
     )
@@ -31,29 +32,31 @@ def _make_app(auth):
     return app
 
 
-def test_get_me_returns_user():
-    fake_user = MagicMock()
-    fake_user.id = "uid"
-    fake_user.name = "Fabio"
-    fake_user.email = "f@x.com"
-    fake_user.role = MagicMock(value="admin")
-    fake_user.must_change_password = False
-    fake_user.avatar = None
-    fake_user.profile_id = None
+def _fake_identity(profile_id=None):
+    ident = MagicMock()
+    ident.id = "uid"
+    ident.name = "Fabio"
+    ident.email = "f@x.com"
+    ident.must_change_password = False
+    ident.avatar = None
+    return ident
+
+
+def test_get_me_returns_identity():
     with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
         s = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch("interface.http.routers.admin.me.IdentityRepository") as MockRepo,
             patch(
-                "interface.http.routers.admin.me.resolve_user_permissions",
+                "interface.http.routers.admin.me.resolve_membership_permissions",
                 AsyncMock(return_value=set()),
             ),
         ):
             instance = MagicMock()
-            instance.get_by_id = AsyncMock(return_value=fake_user)
+            instance.get_by_id = AsyncMock(return_value=_fake_identity())
             MockRepo.return_value = instance
 
             app = _make_app(_auth())
@@ -65,28 +68,9 @@ def test_get_me_returns_user():
 
 
 def test_get_me_includes_profile_when_assigned():
-    import uuid
-
     pid = uuid.uuid4()
-    fake_user = MagicMock()
-    fake_user.id = "uid"
-    fake_user.name = "Fabio"
-    fake_user.email = "f@x.com"
-    fake_user.role = MagicMock(value="admin")
-    fake_user.must_change_password = False
-    fake_user.avatar = None
-    fake_user.profile_id = pid
-
-    auth = AdminAuth(
-        account_id=uuid.uuid4(),
-        user_email="x@x.com",
-        user_role="admin",
-        user_id="uid",
-        identity_id="uid",
-        membership_id=None,
-        user_name="",
-        must_change_password=False,
-    )
+    membership = MagicMock()
+    membership.profile_id = pid
 
     with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
         s = AsyncMock()
@@ -94,21 +78,25 @@ def test_get_me_includes_profile_when_assigned():
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch("interface.http.routers.admin.me.IdentityRepository") as MockRepo,
+            patch("interface.http.routers.admin.me.MembershipRepository") as MockMembershipRepo,
             patch("interface.http.routers.admin.me.ProfileRepository") as MockProfileRepo,
             patch(
-                "interface.http.routers.admin.me.resolve_user_permissions",
+                "interface.http.routers.admin.me.resolve_membership_permissions",
                 AsyncMock(return_value=set()),
             ),
         ):
             instance = MagicMock()
-            instance.get_by_id = AsyncMock(return_value=fake_user)
+            instance.get_by_id = AsyncMock(return_value=_fake_identity())
             MockRepo.return_value = instance
+            membership_repo = MagicMock()
+            membership_repo.get_by_id = AsyncMock(return_value=membership)
+            MockMembershipRepo.return_value = membership_repo
             prof = MagicMock()
             prof.name_map = AsyncMock(return_value={pid: "Gerente"})
             MockProfileRepo.return_value = prof
 
-            app = _make_app(auth)
+            app = _make_app(_auth(membership_id="m1"))
             client = TestClient(app)
             r = client.get("/admin/me")
             assert r.status_code == 200
@@ -118,28 +106,20 @@ def test_get_me_includes_profile_when_assigned():
 
 
 def _get_me_with_permissions(perms):
-    fake_user = MagicMock()
-    fake_user.id = "uid"
-    fake_user.name = "Fabio"
-    fake_user.email = "f@x.com"
-    fake_user.role = MagicMock(value="admin")
-    fake_user.must_change_password = False
-    fake_user.avatar = None
-    fake_user.profile_id = None
     with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
         s = AsyncMock()
         mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
         mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
 
         with (
-            patch("interface.http.routers.admin.me.UserRepository") as MockRepo,
+            patch("interface.http.routers.admin.me.IdentityRepository") as MockRepo,
             patch(
-                "interface.http.routers.admin.me.resolve_user_permissions",
+                "interface.http.routers.admin.me.resolve_membership_permissions",
                 AsyncMock(return_value=perms),
             ),
         ):
             instance = MagicMock()
-            instance.get_by_id = AsyncMock(return_value=fake_user)
+            instance.get_by_id = AsyncMock(return_value=_fake_identity())
             MockRepo.return_value = instance
 
             app = _make_app(_auth())

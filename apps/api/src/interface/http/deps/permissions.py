@@ -7,31 +7,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
-from shared.adapters.db.models import MembershipModel, ProfilePermissionModel, UserModel
+from shared.adapters.db.models import MembershipModel, ProfilePermissionModel
 from shared.adapters.db.session import session_scope
 from shared.domain.permissions.catalog import all_permission_keys
-
-
-async def resolve_user_permissions(session: AsyncSession, *, user_id: str, role: str) -> set[str]:
-    if role == "admin":
-        return set(all_permission_keys())
-    profile_id = (
-        await session.execute(select(UserModel.profile_id).where(UserModel.id == user_id))
-    ).scalar_one_or_none()
-    if profile_id is None:
-        return set()
-    rows = (
-        (
-            await session.execute(
-                select(ProfilePermissionModel.permission_key).where(
-                    ProfilePermissionModel.profile_id == profile_id
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    return set(rows)
 
 
 async def resolve_membership_permissions(

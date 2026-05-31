@@ -21,8 +21,8 @@ async def test_change_password_succeeds_when_current_matches():
     mock_repo.get_by_id = AsyncMock(return_value=user)
     mock_repo.update_password = AsyncMock()
 
-    uc = ChangeMyPasswordUseCase(user_repo=mock_repo)
-    await uc.execute(user_id="uid", current_password="current123", new_password="newPass!9")
+    uc = ChangeMyPasswordUseCase(identity_repo=mock_repo)
+    await uc.execute(identity_id="uid", current_password="current123", new_password="newPass!9")
 
     mock_repo.update_password.assert_awaited_once()
     kwargs = mock_repo.update_password.await_args.kwargs
@@ -38,9 +38,9 @@ async def test_change_password_rejects_wrong_current():
     mock_repo.get_by_id = AsyncMock(return_value=user)
     mock_repo.update_password = AsyncMock()
 
-    uc = ChangeMyPasswordUseCase(user_repo=mock_repo)
+    uc = ChangeMyPasswordUseCase(identity_repo=mock_repo)
     with pytest.raises(InvalidCurrentPasswordError):
-        await uc.execute(user_id="uid", current_password="wrong", new_password="newPass!9")
+        await uc.execute(identity_id="uid", current_password="wrong", new_password="newPass!9")
     mock_repo.update_password.assert_not_awaited()
 
 
@@ -52,6 +52,6 @@ async def test_change_password_validates_new_min_length():
     mock_repo = MagicMock()
     mock_repo.get_by_id = AsyncMock(return_value=user)
 
-    uc = ChangeMyPasswordUseCase(user_repo=mock_repo)
+    uc = ChangeMyPasswordUseCase(identity_repo=mock_repo)
     with pytest.raises(ValueError, match="at least 8"):
-        await uc.execute(user_id="uid", current_password="ok", new_password="short")
+        await uc.execute(identity_id="uid", current_password="ok", new_password="short")
