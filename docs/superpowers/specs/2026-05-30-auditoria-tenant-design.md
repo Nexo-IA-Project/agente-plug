@@ -131,6 +131,8 @@ add BackgroundTask: IpApiGeoService.lookup(ip) → audit_repo.update_geo(event_i
 
 Requests sem `audit_ctx` (não autenticados, 401/403 antes da rota) **não** geram evento — falha de auth não é ação do usuário.
 
+**Exceção — login/logout:** essas rotas não carregam JWT, portanto não têm `audit_ctx`. Os eventos de "Login" e "Logout" são gravados **diretamente no router** (`/admin/auth/login` e `/admin/auth/logout`) após autenticação bem-sucedida, usando o `account_id` retornado pelo processo de login. O middleware ignora essas duas rotas.
+
 ### ACTION_MAP (método × path regex → label + resource_type)
 
 | Método | Path regex | Label | resource_type |
@@ -222,7 +224,7 @@ apps/web/src/app/(admin)/administracao/auditoria/page.tsx
 - Guard `<RequirePermission perm="audit.view">`
 - Tabela com colunas: **Usuário**, **Ação**, **IP · Localidade**, **Data e Hora**
 - **Localidade** = `geo_city, geo_country` quando disponível, IP puro como fallback
-- Filtros no topo: seletor de usuário (lista de nomes do tenant), seletor de ação (lista de labels únicos), date-range (date_from / date_to)
+- Filtros no topo: seletor de usuário (consome `GET /admin/users` já existente), seletor de ação (lista hardcoded com os labels do ACTION_MAP — sem chamada extra ao backend), date-range (date_from / date_to)
 - Paginação padrão do projeto (mesma estrutura de `/leads`)
 - Sem drawer de detalhe — todas as informações cabem na linha
 
