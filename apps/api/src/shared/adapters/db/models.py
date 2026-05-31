@@ -553,6 +553,12 @@ class MembershipModel(Base):
         UniqueConstraint("identity_id", "account_id", name="uq_membership_identity_account"),
         Index("ix_memberships_account_id", "account_id"),
         Index("ix_memberships_identity_id", "identity_id"),
+        Index(
+            "uq_membership_owner_per_account",
+            "account_id",
+            unique=True,
+            postgresql_where=sa_text("is_owner"),
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

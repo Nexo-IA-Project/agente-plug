@@ -16,6 +16,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 ACC = UUID("33333333-3333-3333-3333-333333333333")
+ACC2 = UUID("66666666-6666-6666-6666-666666666666")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -109,6 +110,78 @@ async def test_backfill_creates_identities_and_memberships(db_session: AsyncSess
         await db_session.execute(
             text("SELECT count(*) FROM memberships WHERE is_owner AND account_id=:acc"),
             {"acc": str(ACC)},
+        )
+    ).scalar()
+    assert n_owners == 1
+
+
+@pytest.mark.asyncio
+async def test_fallback_promotes_oldest_member_when_no_admin(db_session: AsyncSession) -> None:
+    # limpa e cria conta só com operators
+    await db_session.execute(text("DELETE FROM memberships"))
+    await db_session.execute(text("DELETE FROM identities"))
+    await db_session.execute(text("DELETE FROM users"))
+    await db_session.execute(
+        text(
+            "INSERT INTO accounts (id, name, settings, created_at) VALUES (:id, 'NoAdminCo', '{}'::jsonb, NOW()) ON CONFLICT (id) DO NOTHING"
+        ),
+        {"id": str(ACC2)},
+    )
+    await db_session.execute(
+        text(
+            "INSERT INTO users (id, account_id, name, email, password_hash, role, must_change_password, is_active, created_at) VALUES "
+            "('22222222-0000-0000-0000-000000000001', :acc, 'Op1', 'op1@x.com', 'h', 'operator', false, true, NOW() - interval '3 day'),"
+            "('22222222-0000-0000-0000-000000000002', :acc, 'Op2', 'op2@x.com', 'h', 'operator', false, true, NOW())"
+        ),
+        {"acc": str(ACC2)},
+    )
+    await db_session.commit()
+    # backfill com fallback (4 passos)
+    await db_session.execute(
+        text(
+            "INSERT INTO identities (id, email, password_hash, name, avatar, must_change_password, is_active, created_at, last_login_at) "
+            "SELECT DISTINCT ON (lower(u.email)) u.id, u.email, u.password_hash, u.name, u.avatar, u.must_change_password, u.is_active, u.created_at, u.last_login_at "
+            "FROM users u ORDER BY lower(u.email), u.created_at ASC"
+        )
+    )
+    await db_session.execute(
+        text(
+            "INSERT INTO memberships (id, identity_id, account_id, role, profile_id, is_owner, is_active, created_at) "
+            "SELECT gen_random_uuid()::text, i.id, u.account_id, u.role, u.profile_id, FALSE, u.is_active, u.created_at "
+            "FROM users u JOIN identities i ON lower(i.email)=lower(u.email)"
+        )
+    )
+    await db_session.execute(
+        text(
+            "UPDATE memberships SET is_owner=TRUE WHERE id IN (SELECT DISTINCT ON (account_id) id FROM memberships WHERE role='admin' ORDER BY account_id, created_at ASC)"
+        )
+    )
+    await db_session.execute(
+        text(
+            "UPDATE memberships SET is_owner=TRUE, role='admin' WHERE id IN ("
+            "SELECT DISTINCT ON (account_id) id FROM memberships "
+            "WHERE account_id NOT IN (SELECT account_id FROM memberships WHERE is_owner) "
+            "ORDER BY account_id, created_at ASC)"
+        )
+    )
+    await db_session.commit()
+    row = (
+        await db_session.execute(
+            text(
+                "SELECT i.email, m.role, m.is_owner FROM memberships m JOIN identities i ON i.id=m.identity_id "
+                "WHERE m.account_id=:acc AND m.is_owner"
+            ),
+            {"acc": str(ACC2)},
+        )
+    ).first()
+    assert row is not None
+    assert row[0] == "op1@x.com"  # mais antigo
+    assert row[1] == "admin"  # promovido
+    assert row[2] is True
+    n_owners = (
+        await db_session.execute(
+            text("SELECT count(*) FROM memberships WHERE is_owner AND account_id=:acc"),
+            {"acc": str(ACC2)},
         )
     ).scalar()
     assert n_owners == 1

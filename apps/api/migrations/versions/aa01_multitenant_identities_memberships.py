@@ -142,8 +142,10 @@ def upgrade() -> None:
     n_emails = conn.execute(sa.text("SELECT count(DISTINCT lower(email)) FROM users")).scalar()
     n_ident = conn.execute(sa.text("SELECT count(*) FROM identities")).scalar()
     n_memb = conn.execute(sa.text("SELECT count(*) FROM memberships")).scalar()
-    assert n_ident == n_emails, f"identities={n_ident} != distinct emails={n_emails}"
-    assert n_memb == n_users, f"memberships={n_memb} != users={n_users}"
+    if n_ident != n_emails:
+        raise RuntimeError(f"identities={n_ident} != distinct emails={n_emails}")
+    if n_memb != n_users:
+        raise RuntimeError(f"memberships={n_memb} != users={n_users}")
     orphans = conn.execute(
         sa.text(
             """
@@ -154,7 +156,8 @@ def upgrade() -> None:
             """
         )
     ).scalar()
-    assert orphans == 0, f"{orphans} linhas de users sem membership"
+    if orphans != 0:
+        raise RuntimeError(f"{orphans} linhas de users sem membership")
     bad_owner = conn.execute(
         sa.text(
             """
@@ -164,11 +167,13 @@ def upgrade() -> None:
             """
         )
     ).scalar()
-    assert bad_owner == 0, f"{bad_owner} contas sem exatamente 1 owner"
+    if bad_owner != 0:
+        raise RuntimeError(f"{bad_owner} contas sem exatamente 1 owner")
     null_pw = conn.execute(
         sa.text("SELECT count(*) FROM identities WHERE password_hash IS NULL OR password_hash = ''")
     ).scalar()
-    assert null_pw == 0, f"{null_pw} identities com password_hash vazio"
+    if null_pw != 0:
+        raise RuntimeError(f"{null_pw} identities com password_hash vazio")
 
 
 def downgrade() -> None:
