@@ -199,9 +199,15 @@ class AccountConfigRepository:
         mb = dict(current.get("message_buffer", {}))
         if patch.message_buffer_enabled is not None:
             mb["enabled"] = patch.message_buffer_enabled
-        if patch.message_buffer_outgoing_url is not None and not patch.message_buffer_outgoing_url.endswith("****"):
+        if (
+            patch.message_buffer_outgoing_url is not None
+            and not patch.message_buffer_outgoing_url.endswith("****")
+        ):
             mb["outgoing_url"] = patch.message_buffer_outgoing_url
-        if patch.message_buffer_tenant_id is not None and not patch.message_buffer_tenant_id.endswith("****"):
+        if (
+            patch.message_buffer_tenant_id is not None
+            and not patch.message_buffer_tenant_id.endswith("****")
+        ):
             mb["tenant_id"] = patch.message_buffer_tenant_id
         if not _should_skip(patch.message_buffer_api_key):
             assert patch.message_buffer_api_key is not None

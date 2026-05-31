@@ -4,6 +4,7 @@ Chama POST /api/dispatch em vez do ChatNexo quando message_buffer_enabled=True.
 O Message Buffer recebe a mensagem, cria/acha a conversa por telefone e entrega
 ao ChatMega — sem acionar o loop de IA.
 """
+
 from __future__ import annotations
 
 import httpx

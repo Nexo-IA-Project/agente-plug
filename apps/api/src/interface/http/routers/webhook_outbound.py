@@ -3,6 +3,7 @@
 Autenticação: Bearer <api_token> (mesmo sistema de tokens do painel admin).
 A mensagem é entregue ao contato via ChatNexo sem acionar loop de IA.
 """
+
 from __future__ import annotations
 
 import uuid
