@@ -38,6 +38,10 @@ class AccountModel(Base):
     id: Mapped[uuid.UUID] = _pk()
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, nullable=False)
+    legal_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    tax_id: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    contact_email: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
@@ -522,6 +526,51 @@ class ProfilePermissionModel(Base):
         index=True,
     )
     permission_key: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class IdentityModel(Base):
+    __tablename__ = "identities"
+    __table_args__ = (UniqueConstraint("email", name="uq_identities_email"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email: Mapped[str] = mapped_column(String(200), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(200), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    avatar: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("TRUE")
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MembershipModel(Base):
+    __tablename__ = "memberships"
+    __table_args__ = (
+        UniqueConstraint("identity_id", "account_id", name="uq_membership_identity_account"),
+        Index("ix_memberships_account_id", "account_id"),
+        Index("ix_memberships_identity_id", "identity_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    identity_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("identities.id", ondelete="CASCADE"), nullable=False
+    )
+    account_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=True
+    )
+    is_owner: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("FALSE"))
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=sa_text("TRUE"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
+    )
 
 
 class PlatformConfigModel(Base):
