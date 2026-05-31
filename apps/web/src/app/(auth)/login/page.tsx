@@ -20,10 +20,11 @@ export default function LoginPage() {
     try {
       const token = await loginRequest(email, password);
       setToken(token);
+      // Mantém o formulário travado até a navegação concluir (não reseta loading
+      // no sucesso) — evita duplo-submit enquanto a página redireciona.
       window.location.href = "/dashboard";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
-    } finally {
       setLoading(false);
     }
   }
@@ -314,6 +315,10 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit}>
+              <fieldset
+                disabled={loading}
+                style={{ border: "none", padding: 0, margin: 0, minInlineSize: "auto" }}
+              >
               {/* Email */}
               <div className="anim-2" style={{ marginBottom: 14 }}>
                 <label
@@ -433,6 +438,7 @@ export default function LoginPage() {
                   {loading ? "Entrando..." : "Entrar no painel"}
                 </button>
               </div>
+              </fieldset>
             </form>
 
             {/* Footer */}

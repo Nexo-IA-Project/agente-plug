@@ -35,13 +35,6 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <button aria-label="Notificações" className="relative flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
-          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>notifications</span>
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
-        </button>
-        <button aria-label="Ajuda" className="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors">
-          <span className="material-symbols-outlined" style={{ fontSize: "20px" }}>help_outline</span>
-        </button>
         <ThemeToggle />
         <button
           onClick={handleLogout}
