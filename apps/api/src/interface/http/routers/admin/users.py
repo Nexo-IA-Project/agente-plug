@@ -261,5 +261,5 @@ async def reset_password(
 
         email_svc = SmtpEmailService(repo=PlatformConfigRepository(s))
         uc = ResetUserPasswordUseCase(identity_repo=IdentityRepository(s), email_service=email_svc)
-        await uc.execute(account_id=account_id, identity_id=membership.identity_id)
+        await uc.execute(identity_id=membership.identity_id)
         await s.commit()

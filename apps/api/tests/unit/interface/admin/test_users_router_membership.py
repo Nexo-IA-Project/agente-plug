@@ -79,3 +79,22 @@ async def test_cannot_delete_owner_membership():
     ):
         r = TestClient(app).delete(f"/admin/users/{owner.id}")
         assert r.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_cannot_reset_owner_password():
+    app, auth = _app()
+    owner = Membership(
+        identity_id="id-owner",
+        account_id=auth.account_id,
+        role=UserRole.ADMIN,
+        is_owner=True,
+    )
+    sess = _scoped_session()
+    mr = MagicMock(get_by_id=AsyncMock(return_value=owner))
+    with (
+        patch("interface.http.routers.admin.users.session_scope", return_value=sess),
+        patch("interface.http.routers.admin.users.MembershipRepository", return_value=mr),
+    ):
+        r = TestClient(app).post(f"/admin/users/{owner.id}/reset-password")
+        assert r.status_code == 403

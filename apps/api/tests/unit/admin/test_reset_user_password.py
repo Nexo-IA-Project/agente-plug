@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -22,7 +21,7 @@ async def test_reset_password_updates_hash_and_sends_email():
     mock_email.send_email = AsyncMock()
 
     uc = ResetUserPasswordUseCase(identity_repo=mock_repo, email_service=mock_email)
-    await uc.execute(account_id=uuid.uuid4(), identity_id="id-1")
+    await uc.execute(identity_id="id-1")
 
     mock_repo.update_password.assert_awaited_once()
     kwargs = mock_repo.update_password.await_args.kwargs
@@ -42,4 +41,4 @@ async def test_reset_password_raises_when_identity_not_found():
 
     uc = ResetUserPasswordUseCase(identity_repo=mock_repo, email_service=MagicMock())
     with pytest.raises(LookupError):
-        await uc.execute(account_id=uuid.uuid4(), identity_id="missing")
+        await uc.execute(identity_id="missing")
