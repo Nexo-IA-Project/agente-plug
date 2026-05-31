@@ -3,10 +3,13 @@
 export type UserRole = "admin" | "operator";
 
 export interface User {
+  /** ID do vínculo (membership), não da identidade. */
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  /** Dono da conta — protegido pela plataforma (não editável/excluível). */
+  is_owner: boolean;
   is_active: boolean;
   must_change_password: boolean;
   has_avatar: boolean;

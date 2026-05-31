@@ -21,6 +21,19 @@ export function ResetPasswordDialog({ open, user, onClose, onConfirm }: Props) {
           <strong>{user.name}</strong> ({user.email}) e enviada por email. A
           senha atual deixará de funcionar imediatamente.
         </p>
+        <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3">
+          <span
+            className="material-symbols-outlined shrink-0 text-warning"
+            style={{ fontSize: 20 }}
+          >
+            warning
+          </span>
+          <p className="text-body-sm text-on-surface">
+            Isto redefine a senha de acesso da pessoa em{" "}
+            <strong>todo o sistema</strong> (todas as empresas das quais ela
+            participa).
+          </p>
+        </div>
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-2 rounded bg-surface-container">
             Cancelar

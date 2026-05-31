@@ -589,6 +589,18 @@ export async function getPermissionCatalog(): Promise<PermissionGroup[]> {
 // Me (perfil próprio)
 // ============================================================
 
+export interface MyMembership {
+  account_id: string;
+  account_name: string;
+  role: "admin" | "operator";
+  is_owner: boolean;
+  is_current: boolean;
+}
+
+export async function getMyMemberships(): Promise<MyMembership[]> {
+  return apiFetch<MyMembership[]>("/admin/me/memberships");
+}
+
 export async function getMe(): Promise<MeResponse> {
   return apiFetch<MeResponse>("/admin/me");
 }
