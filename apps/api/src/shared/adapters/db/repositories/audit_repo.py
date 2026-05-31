@@ -75,6 +75,8 @@ class SqlAuditRepository:
         *,
         user_id: str | None = None,
         action: str | None = None,
+        resource_type: str | None = None,
+        exclude_auth: bool = False,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
         page: int = 1,
@@ -85,6 +87,10 @@ class SqlAuditRepository:
             .where(AuditEventModel.account_id == account_id)
             .where(AuditEventModel.actor != "system")
         )
+        if resource_type is not None:
+            base = base.where(AuditEventModel.resource_type == resource_type)
+        if exclude_auth:
+            base = base.where(AuditEventModel.resource_type != "auth")
         if user_id is not None:
             base = base.where(AuditEventModel.user_id == user_id)
         if action is not None:

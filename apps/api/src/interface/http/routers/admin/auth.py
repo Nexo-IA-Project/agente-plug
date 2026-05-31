@@ -46,7 +46,7 @@ def _extract_login_ip(request: Request) -> str:
 
 
 async def _save_auth_audit(
-    *, account_id: str, user_id: str, user_email: str, ip: str, action: str = "Login"
+    *, account_id: str, user_id: str, user_email: str, ip: str, action: str = "Login", user_agent: str = ""
 ) -> None:
     from uuid import UUID as _UUID
 
@@ -73,6 +73,7 @@ async def _save_auth_audit(
             geo_city=None,
             geo_country=None,
             geo_region=None,
+            metadata={"user_agent": user_agent} if user_agent else {},
         )
         async with session_scope() as session:
             repo = SqlAuditRepository(session=session)
@@ -130,6 +131,7 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
         user_email=snapshot["email"],
         ip=_extract_login_ip(request),
         action="Login",
+        user_agent=request.headers.get("user-agent", ""),
     ))
     del _login_task
 
@@ -180,6 +182,7 @@ async def logout(
                 user_email=payload.get("sub", ""),
                 ip=_extract_login_ip(request),
                 action="Logout",
+                user_agent=request.headers.get("user-agent", ""),
             ))
             del _logout_task
         except Exception:

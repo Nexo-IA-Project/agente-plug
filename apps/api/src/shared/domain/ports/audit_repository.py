@@ -25,6 +25,8 @@ class AuditRepository(Protocol):
         *,
         user_id: str | None = None,
         action: str | None = None,
+        resource_type: str | None = None,
+        exclude_auth: bool = False,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
         page: int = 1,

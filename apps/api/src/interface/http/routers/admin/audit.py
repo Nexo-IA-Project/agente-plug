@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -22,6 +23,7 @@ router = APIRouter(tags=["admin-audit"])
 class AuditEventResponse(BaseModel):
     id: UUID
     user_name: str | None
+    user_email: str | None
     action: str
     resource_type: str
     resource_id: str | None
@@ -29,6 +31,7 @@ class AuditEventResponse(BaseModel):
     geo_city: str | None
     geo_country: str | None
     geo_region: str | None
+    metadata: dict[str, Any]
     created_at: datetime
 
 
@@ -43,6 +46,7 @@ def _to_response(e: AuditEvent) -> AuditEventResponse:
     return AuditEventResponse(
         id=e.id,
         user_name=e.user_name,
+        user_email=e.actor or None,
         action=e.action,
         resource_type=e.resource_type,
         resource_id=e.resource_id,
@@ -50,6 +54,7 @@ def _to_response(e: AuditEvent) -> AuditEventResponse:
         geo_city=e.geo_city,
         geo_country=e.geo_country,
         geo_region=e.geo_region,
+        metadata=e.metadata,
         created_at=e.created_at,
     )
 
@@ -60,6 +65,8 @@ async def list_audit_events(
     page_size: int = Query(default=25, ge=1, le=100),
     user_id: str | None = Query(default=None),
     action: str | None = Query(default=None),
+    resource_type: str | None = Query(default=None),
+    exclude_auth: bool = Query(default=False),
     date_from: datetime | None = Query(default=None),
     date_to: datetime | None = Query(default=None),
     auth: AdminAuth = Depends(require_permission("audit.view")),
@@ -74,6 +81,8 @@ async def list_audit_events(
                 account_id=auth.account_id,
                 user_id=user_id,
                 action=action,
+                resource_type=resource_type,
+                exclude_auth=exclude_auth,
                 date_from=date_from,
                 date_to=date_to,
                 page=page,

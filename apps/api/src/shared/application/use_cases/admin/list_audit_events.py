@@ -13,6 +13,8 @@ class ListAuditEventsInput:
     account_id: UUID
     user_id: str | None = None
     action: str | None = None
+    resource_type: str | None = None
+    exclude_auth: bool = False
     date_from: datetime | None = None
     date_to: datetime | None = None
     page: int = 1
@@ -37,6 +39,8 @@ class ListAuditEventsUseCase:
             inp.account_id,
             user_id=inp.user_id,
             action=inp.action,
+            resource_type=inp.resource_type,
+            exclude_auth=inp.exclude_auth,
             date_from=inp.date_from,
             date_to=inp.date_to,
             page=inp.page,
