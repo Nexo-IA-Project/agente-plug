@@ -53,7 +53,7 @@ async def test_require_admin_role_passes_for_admin():
         user_role="admin",
         user_id="u1",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
     result = await require_admin_role(auth=auth)
     assert result is auth
@@ -71,7 +71,7 @@ async def test_require_admin_role_blocks_operator():
         user_role="operator",
         user_id="u1",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
     with pytest.raises(HTTPException) as exc:
         await require_admin_role(auth=auth)

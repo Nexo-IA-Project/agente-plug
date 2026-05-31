@@ -50,37 +50,67 @@ _background_tasks: set[asyncio.Task] = set()  # evita GC das tasks de geo lookup
 
 # (method, path_regex, label, resource_type)
 _ACTION_RULES: list[tuple[str, re.Pattern[str], str, str]] = [
-    ("POST",   re.compile(r"^/admin/users/[^/]+/reset-password$"), "Resetou senha de usuário", "user"),
-    ("POST",   re.compile(r"^/admin/users$"),                      "Criou usuário",            "user"),
-    ("PUT",    re.compile(r"^/admin/users/[^/]+$"),                "Editou usuário",           "user"),
-    ("DELETE", re.compile(r"^/admin/users/[^/]+$"),                "Excluiu usuário",          "user"),
-    ("PUT",    re.compile(r"^/admin/me/password$"),                "Alterou própria senha",    "user"),
-    ("PUT",    re.compile(r"^/admin/me/avatar$"),                  "Alterou avatar",           "user"),
-    ("PUT",    re.compile(r"^/admin/me$"),                         "Editou perfil próprio",    "user"),
-    ("POST",   re.compile(r"^/admin/products$"),                   "Criou produto",            "product"),
-    ("PUT",    re.compile(r"^/admin/products/[^/]+$"),             "Editou produto",           "product"),
-    ("DELETE", re.compile(r"^/admin/products/[^/]+$"),             "Excluiu produto",          "product"),
-    ("POST",   re.compile(r"^/admin/documents/upload$"),           "Enviou documento KB",      "document"),
-    ("DELETE", re.compile(r"^/admin/documents/[^/]+$"),            "Excluiu documento KB",     "document"),
-    ("POST",   re.compile(r"^/admin/followup/flows/[^/]+/steps$"), "Adicionou step ao flow",   "flow_step"),
-    ("PUT",    re.compile(r"^/admin/followup/flows/[^/]+/steps/[^/]+$"), "Editou step do flow",    "flow_step"),
-    ("DELETE", re.compile(r"^/admin/followup/flows/[^/]+/steps/[^/]+$"), "Excluiu step do flow",   "flow_step"),
-    ("PATCH",  re.compile(r"^/admin/followup/flows/[^/]+/steps/reorder$"), "Reordenou steps do flow", "flow_step"),
-    ("POST",   re.compile(r"^/admin/followup/flows$"),             "Criou flow de follow-up",  "flow"),
-    ("PUT",    re.compile(r"^/admin/followup/flows/[^/]+$"),       "Editou flow de follow-up", "flow"),
-    ("DELETE", re.compile(r"^/admin/followup/flows/[^/]+$"),       "Excluiu flow de follow-up","flow"),
-    ("POST",   re.compile(r"^/admin/meta-templates$"),             "Criou template Meta",      "meta_template"),
-    ("DELETE", re.compile(r"^/admin/meta-templates/[^/]+$"),       "Excluiu template Meta",    "meta_template"),
-    ("PUT",    re.compile(r"^/admin/settings$"),                   "Editou configurações",     "settings"),
-    ("PUT",    re.compile(r"^/admin/smtp-config$"),                "Editou configuração SMTP", "settings"),
-    ("POST",   re.compile(r"^/admin/api-tokens$"),                 "Criou token de API",       "api_token"),
-    ("DELETE", re.compile(r"^/admin/api-tokens/[^/]+$"),           "Revogou token de API",     "api_token"),
-    ("POST",   re.compile(r"^/admin/profiles$"),                   "Criou perfil",             "profile"),
-    ("PUT",    re.compile(r"^/admin/profiles/[^/]+$"),             "Editou perfil",            "profile"),
-    ("DELETE", re.compile(r"^/admin/profiles/[^/]+$"),             "Excluiu perfil",           "profile"),
-    ("POST",   re.compile(r"^/admin/dlq/requeue-all$"),            "Reprocessou todos os jobs DLQ", "dlq"),
-    ("POST",   re.compile(r"^/admin/dlq/[^/]+/requeue$"),          "Reprocessou job DLQ",      "dlq"),
-    ("DELETE", re.compile(r"^/admin/dlq/[^/]+$"),                  "Excluiu job DLQ",          "dlq"),
+    (
+        "POST",
+        re.compile(r"^/admin/users/[^/]+/reset-password$"),
+        "Resetou senha de usuário",
+        "user",
+    ),
+    ("POST", re.compile(r"^/admin/users$"), "Criou usuário", "user"),
+    ("PUT", re.compile(r"^/admin/users/[^/]+$"), "Editou usuário", "user"),
+    ("DELETE", re.compile(r"^/admin/users/[^/]+$"), "Excluiu usuário", "user"),
+    ("PUT", re.compile(r"^/admin/me/password$"), "Alterou própria senha", "user"),
+    ("PUT", re.compile(r"^/admin/me/avatar$"), "Alterou avatar", "user"),
+    ("PUT", re.compile(r"^/admin/me$"), "Editou perfil próprio", "user"),
+    ("POST", re.compile(r"^/admin/products$"), "Criou produto", "product"),
+    ("PUT", re.compile(r"^/admin/products/[^/]+$"), "Editou produto", "product"),
+    ("DELETE", re.compile(r"^/admin/products/[^/]+$"), "Excluiu produto", "product"),
+    ("POST", re.compile(r"^/admin/documents/upload$"), "Enviou documento KB", "document"),
+    ("DELETE", re.compile(r"^/admin/documents/[^/]+$"), "Excluiu documento KB", "document"),
+    (
+        "POST",
+        re.compile(r"^/admin/followup/flows/[^/]+/steps$"),
+        "Adicionou step ao flow",
+        "flow_step",
+    ),
+    (
+        "PUT",
+        re.compile(r"^/admin/followup/flows/[^/]+/steps/[^/]+$"),
+        "Editou step do flow",
+        "flow_step",
+    ),
+    (
+        "DELETE",
+        re.compile(r"^/admin/followup/flows/[^/]+/steps/[^/]+$"),
+        "Excluiu step do flow",
+        "flow_step",
+    ),
+    (
+        "PATCH",
+        re.compile(r"^/admin/followup/flows/[^/]+/steps/reorder$"),
+        "Reordenou steps do flow",
+        "flow_step",
+    ),
+    ("POST", re.compile(r"^/admin/followup/flows$"), "Criou flow de follow-up", "flow"),
+    ("PUT", re.compile(r"^/admin/followup/flows/[^/]+$"), "Editou flow de follow-up", "flow"),
+    ("DELETE", re.compile(r"^/admin/followup/flows/[^/]+$"), "Excluiu flow de follow-up", "flow"),
+    ("POST", re.compile(r"^/admin/meta-templates$"), "Criou template Meta", "meta_template"),
+    (
+        "DELETE",
+        re.compile(r"^/admin/meta-templates/[^/]+$"),
+        "Excluiu template Meta",
+        "meta_template",
+    ),
+    ("PUT", re.compile(r"^/admin/settings$"), "Editou configurações", "settings"),
+    ("PUT", re.compile(r"^/admin/smtp-config$"), "Editou configuração SMTP", "settings"),
+    ("POST", re.compile(r"^/admin/api-tokens$"), "Criou token de API", "api_token"),
+    ("DELETE", re.compile(r"^/admin/api-tokens/[^/]+$"), "Revogou token de API", "api_token"),
+    ("POST", re.compile(r"^/admin/profiles$"), "Criou perfil", "profile"),
+    ("PUT", re.compile(r"^/admin/profiles/[^/]+$"), "Editou perfil", "profile"),
+    ("DELETE", re.compile(r"^/admin/profiles/[^/]+$"), "Excluiu perfil", "profile"),
+    ("POST", re.compile(r"^/admin/dlq/requeue-all$"), "Reprocessou todos os jobs DLQ", "dlq"),
+    ("POST", re.compile(r"^/admin/dlq/[^/]+/requeue$"), "Reprocessou job DLQ", "dlq"),
+    ("DELETE", re.compile(r"^/admin/dlq/[^/]+$"), "Excluiu job DLQ", "dlq"),
 ]
 
 _WRITE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
@@ -124,13 +154,16 @@ def _parse_uuid(value: str | None) -> UUID | None:
 
 async def _do_geo_update(event_id: UUID, ip: str) -> None:
     from shared.adapters.db.session import session_scope
+
     geo = IpApiGeoService()
     result = await geo.lookup(ip)
     if result is None:
         return
     async with session_scope() as session:
         repo = SqlAuditRepository(session=session)
-        await repo.update_geo(event_id, city=result.city, country=result.country, region=result.region)
+        await repo.update_geo(
+            event_id, city=result.city, country=result.country, region=result.region
+        )
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
@@ -173,6 +206,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         try:
             from shared.adapters.db.session import session_scope
+
             async with session_scope() as session:
                 repo = SqlAuditRepository(session=session)
                 await repo.save(event)

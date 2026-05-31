@@ -104,11 +104,15 @@ class SqlAuditRepository:
         total = (await self.session.execute(count_q)).scalar_one()
 
         rows = (
-            await self.session.execute(
-                base.order_by(AuditEventModel.created_at.desc())
-                .offset((page - 1) * page_size)
-                .limit(page_size)
+            (
+                await self.session.execute(
+                    base.order_by(AuditEventModel.created_at.desc())
+                    .offset((page - 1) * page_size)
+                    .limit(page_size)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         return [_to_entity(r) for r in rows], total

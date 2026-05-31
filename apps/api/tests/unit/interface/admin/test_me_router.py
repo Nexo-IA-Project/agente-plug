@@ -16,7 +16,7 @@ def _auth(role="admin"):
         user_role=role,
         user_id="uid",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
 
 
@@ -81,7 +81,7 @@ def test_get_me_includes_profile_when_assigned():
         user_role="admin",
         user_id="uid",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
 
     with patch("interface.http.routers.admin.me.session_scope") as mock_scope:

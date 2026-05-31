@@ -46,7 +46,13 @@ def _extract_login_ip(request: Request) -> str:
 
 
 async def _save_auth_audit(
-    *, account_id: str, user_id: str, user_email: str, ip: str, action: str = "Login", user_agent: str = ""
+    *,
+    account_id: str,
+    user_id: str,
+    user_email: str,
+    ip: str,
+    action: str = "Login",
+    user_agent: str = "",
 ) -> None:
     from uuid import UUID as _UUID
 
@@ -125,14 +131,16 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
         }
         await session.commit()
 
-    _login_task = asyncio.create_task(_save_auth_audit(
-        account_id=str(snapshot["account_id"]),
-        user_id=str(snapshot["id"]),
-        user_email=snapshot["email"],
-        ip=_extract_login_ip(request),
-        action="Login",
-        user_agent=request.headers.get("user-agent", ""),
-    ))
+    _login_task = asyncio.create_task(
+        _save_auth_audit(
+            account_id=str(snapshot["account_id"]),
+            user_id=str(snapshot["id"]),
+            user_email=snapshot["email"],
+            ip=_extract_login_ip(request),
+            action="Login",
+            user_agent=request.headers.get("user-agent", ""),
+        )
+    )
     del _login_task
 
     max_age = settings.jwt_expire_minutes * 60
@@ -176,14 +184,16 @@ async def logout(
         try:
             settings = get_settings()
             payload = verify_token(token, secret=settings.jwt_secret)
-            _logout_task = asyncio.create_task(_save_auth_audit(
-                account_id=str(payload.get("account_id", "")),
-                user_id=str(payload.get("user_id", "")),
-                user_email=payload.get("sub", ""),
-                ip=_extract_login_ip(request),
-                action="Logout",
-                user_agent=request.headers.get("user-agent", ""),
-            ))
+            _logout_task = asyncio.create_task(
+                _save_auth_audit(
+                    account_id=str(payload.get("account_id", "")),
+                    user_id=str(payload.get("user_id", "")),
+                    user_email=payload.get("sub", ""),
+                    ip=_extract_login_ip(request),
+                    action="Logout",
+                    user_agent=request.headers.get("user-agent", ""),
+                )
+            )
             del _logout_task
         except Exception:
             pass

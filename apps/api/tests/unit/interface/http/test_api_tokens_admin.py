@@ -26,7 +26,7 @@ def _auth_override() -> AdminAuth:
         user_role="admin",
         user_id="test-id",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
 
 

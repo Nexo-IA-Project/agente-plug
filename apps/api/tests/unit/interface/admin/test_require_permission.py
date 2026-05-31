@@ -24,7 +24,7 @@ def _auth(role: str) -> AdminAuth:
         user_role=role,
         user_id="user-1",
         user_name="",
-            must_change_password=False,
+        must_change_password=False,
     )
 
 

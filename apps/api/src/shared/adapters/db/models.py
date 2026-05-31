@@ -187,7 +187,9 @@ class AuditEventModel(Base):
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
     actor: Mapped[str] = mapped_column(String(120), nullable=False)
-    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     user_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     action: Mapped[str] = mapped_column(String(80), nullable=False)
     resource_type: Mapped[str] = mapped_column(String(40), nullable=False)
