@@ -10,6 +10,7 @@ interface InlineEditFieldProps {
   description?: string;
   step?: number;
   onSave: (value: string | number) => Promise<boolean>;
+  readOnly?: boolean;
 }
 
 export function InlineEditField({
@@ -20,6 +21,7 @@ export function InlineEditField({
   description,
   step,
   onSave,
+  readOnly = false,
 }: InlineEditFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -33,6 +35,7 @@ export function InlineEditField({
   }, [isEditing]);
 
   function startEdit() {
+    if (readOnly) return;
     setEditValue("");
     setIsEditing(true);
   }
@@ -76,7 +79,9 @@ export function InlineEditField({
           "relative overflow-hidden rounded-xl border transition-all duration-200",
           isEditing
             ? "border-primary ring-2 ring-primary/20 bg-surface-container"
-            : "border-outline-variant bg-surface-container hover:border-outline cursor-pointer",
+            : readOnly
+              ? "border-outline-variant bg-surface-container"
+              : "border-outline-variant bg-surface-container hover:border-outline cursor-pointer",
         ].join(" ")}
       >
         {/* Static display (not editing) */}
@@ -95,14 +100,16 @@ export function InlineEditField({
           >
             {isEmpty ? (placeholder || "Não configurado") : displayValue}
           </span>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); startEdit(); }}
-            className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
-            aria-label={`Editar ${label}`}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>edit</span>
-          </button>
+          {!readOnly && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); startEdit(); }}
+              className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+              aria-label={`Editar ${label}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "16px" }}>edit</span>
+            </button>
+          )}
         </div>
 
         {/* Edit mode */}

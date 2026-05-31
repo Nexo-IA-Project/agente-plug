@@ -75,13 +75,6 @@ export function HublaWebhookCard() {
           </span>
         </button>
       </div>
-      {token !== null && !hasToken && (
-        <p className="mt-2 text-xs text-error">
-          Defina o <strong>Webhook Secret</strong> acima e salve antes de copiar
-          a URL — caso contrário a Hubla vai cair em 401.
-        </p>
-      )}
-
       <h4 className="mt-5 text-sm font-semibold text-on-surface">
         Como configurar na Hubla
       </h4>
