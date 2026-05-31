@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { loginRequest, setToken } from "@/lib/auth";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,11 +16,24 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const token = await loginRequest(email, password);
-      setToken(token);
-      // Mantém o formulário travado até a navegação concluir (não reseta loading
-      // no sucesso) — evita duplo-submit enquanto a página redireciona.
-      window.location.href = "/dashboard";
+      const result = await loginRequest(email, password);
+      if (result.status === "authenticated") {
+        setToken(result.access_token);
+        // Mantém o formulário travado até a navegação concluir (não reseta loading
+        // no sucesso) — evita duplo-submit enquanto a página redireciona.
+        window.location.href = "/dashboard";
+      } else if (result.status === "must_change_password") {
+        // Armazena pre_auth_token para uso no fluxo de troca de senha obrigatória
+        // (UX completa será feita em outra task)
+        sessionStorage.setItem("pre_auth_token", result.pre_auth_token);
+        window.location.href = "/change-password";
+      } else {
+        // choose_account: UX do chooser será implementada em outra task
+        sessionStorage.setItem("pre_auth_token", result.pre_auth_token);
+        sessionStorage.setItem("pending_accounts", JSON.stringify(result.accounts));
+        window.location.href = "/login";
+        setLoading(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
       setLoading(false);
