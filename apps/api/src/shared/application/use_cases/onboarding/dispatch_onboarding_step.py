@@ -46,6 +46,7 @@ class DispatchOnboardingStep:
         flow_repo: Any | None = None,
         leads_pubsub: Any | None = None,
         session: Any | None = None,
+        message_buffer: Any | None = None,
     ) -> None:
         self._enrollment_repo = enrollment_repo
         self._contact_repo = contact_repo
@@ -61,6 +62,9 @@ class DispatchOnboardingStep:
         # de step (sucesso, falha, cancelamento) — alimenta o SSE de leads.
         self._leads_pubsub = leads_pubsub
         self._session = session
+        # Quando fornecido, mensagens são entregues via Message Buffer em vez
+        # do ChatNexo. O MB é quem chama o ChatMega — o Flow fica fora do loop.
+        self._message_buffer = message_buffer
 
     async def _publish_enrollment_updated(
         self,
@@ -183,11 +187,19 @@ class DispatchOnboardingStep:
 
         if step.message_text:
             try:
-                await self._chatnexo.send_message(
-                    account_id=str(chatnexo_account_id),
-                    conversation_id=str(conversation_id),
-                    text=step.message_text,
-                )
+                if self._message_buffer is not None:
+                    await self._message_buffer.send_text(
+                        to_phone=contact_phone,
+                        text=step.message_text,
+                        idempotency_key=str(enrollment_step_id),
+                        origin="onboarding",
+                    )
+                else:
+                    await self._chatnexo.send_message(
+                        account_id=str(chatnexo_account_id),
+                        conversation_id=str(conversation_id),
+                        text=step.message_text,
+                    )
             except Exception as exc:
                 reason = str(exc)[:500]
                 await self._enrollment_repo.mark_failed(step.id, reason)
@@ -326,17 +338,31 @@ class DispatchOnboardingStep:
                 )
 
             try:
-                await self._chatnexo.send_template(
-                    account_id=str(chatnexo_account_id),
-                    conversation_id=str(conversation_id),
-                    template_name=step.meta_template_name,
-                    language=language,
-                    variables=resolved_vars,
-                    header_link=header_link,
-                    header_kind=header_kind,
-                    rendered_body=rendered_body,
-                    parameter_format=parameter_format,  # type: ignore[arg-type]
-                )
+                if self._message_buffer is not None:
+                    await self._message_buffer.send_template(
+                        to_phone=contact_phone,
+                        idempotency_key=str(enrollment_step_id),
+                        origin="onboarding",
+                        content=rendered_body,
+                        template_name=step.meta_template_name,
+                        language=language,
+                        parameter_format=parameter_format,
+                        processed_params=resolved_vars,
+                        header_link=header_link,
+                        header_kind=header_kind,
+                    )
+                else:
+                    await self._chatnexo.send_template(
+                        account_id=str(chatnexo_account_id),
+                        conversation_id=str(conversation_id),
+                        template_name=step.meta_template_name,
+                        language=language,
+                        variables=resolved_vars,
+                        header_link=header_link,
+                        header_kind=header_kind,
+                        rendered_body=rendered_body,
+                        parameter_format=parameter_format,  # type: ignore[arg-type]
+                    )
             except Exception as exc:
                 reason = str(exc)[:500]
                 await self._enrollment_repo.mark_failed(step.id, reason)

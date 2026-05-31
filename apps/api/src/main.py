@@ -14,6 +14,7 @@ from interface.http.routers import (
     public_media,
     webhook_hubla,
     webhook_message,
+    webhook_outbound,
     webhook_purchase,
 )
 from interface.http.routers.admin import api_tokens as admin_api_tokens
@@ -109,6 +110,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         queue=queue,
         token_validator=_validate_token,
     )
+    webhook_outbound.configure(token_validator=_validate_token)
 
     yield
     log.info("app_stopping")
@@ -134,6 +136,7 @@ def create_app() -> FastAPI:
     app.include_router(webhook_purchase.router)
     app.include_router(webhook_hubla.router)
     app.include_router(webhook_message.router)
+    app.include_router(webhook_outbound.router)
     app.include_router(admin_api_tokens.router, prefix="/admin")
     app.include_router(admin_auth.router, prefix="/admin")
     app.include_router(admin_documents.router, prefix="/admin")

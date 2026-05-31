@@ -72,7 +72,7 @@ function ConnectionCard({ settings, onSaved }: Props & { settings: AccountSettin
           <InlineEditField
             key={field.key}
             label={field.label}
-            value={settings[field.key] ?? ""}
+            value={(settings[field.key] ?? "") as string | number}
             type={field.type}
             placeholder={field.placeholder}
             description={field.description}

@@ -51,6 +51,7 @@ async def handle_scheduled(payload: dict) -> None:
             OnboardingFlowRepository,
         )
         from shared.adapters.db.session import session_scope
+        from shared.adapters.message_buffer.client import MessageBufferClient
         from shared.adapters.redis.leads_pubsub import LeadsPubSub
         from shared.application.use_cases.onboarding.dispatch_onboarding_step import (
             DispatchOnboardingStep,
@@ -74,6 +75,19 @@ async def handle_scheduled(payload: dict) -> None:
                 strategy=RandomAgentSelection(),
                 fallback_api_key=fallback_key,
             )
+
+            mb = config.message_buffer
+            message_buffer = (
+                MessageBufferClient(
+                    base_url=mb.outgoing_url,
+                    api_key=mb.api_key or "",
+                    external_account_id=config.integration.chatnexo_account_id,
+                    external_inbox_id=config.integration.chatnexo_inbox_id,
+                )
+                if mb.enabled and mb.outgoing_url
+                else None
+            )
+
             dispatch = DispatchOnboardingStep(
                 enrollment_repo=OnboardingEnrollmentRepository(session=session),
                 contact_repo=ContactRepository(session=session),
@@ -83,6 +97,7 @@ async def handle_scheduled(payload: dict) -> None:
                 flow_repo=OnboardingFlowRepository(session=session),
                 leads_pubsub=LeadsPubSub(),
                 session=session,
+                message_buffer=message_buffer,
             )
             result = await dispatch.execute(
                 enrollment_step_id=_UUID(payload["enrollment_step_id"]),

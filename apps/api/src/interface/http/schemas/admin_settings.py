@@ -23,6 +23,11 @@ class AccountSettingsResponse(BaseModel):
     refund_deadline_days: int
     welcome_d1_delay_hours: int
     ai_memory_messages: int
+    # Message Buffer
+    message_buffer_enabled: bool = False
+    message_buffer_outgoing_url: str | None = None
+    message_buffer_api_key: str | None = None
+    message_buffer_tenant_id: str | None = None
 
 
 class AccountSettingsUpdateRequest(BaseModel):
@@ -44,3 +49,8 @@ class AccountSettingsUpdateRequest(BaseModel):
     refund_deadline_days: int | None = None
     welcome_d1_delay_hours: int | None = None
     ai_memory_messages: int | None = Field(default=None, ge=5, le=100)
+    # Message Buffer
+    message_buffer_enabled: bool | None = None
+    message_buffer_outgoing_url: str | None = None
+    message_buffer_api_key: str | None = None
+    message_buffer_tenant_id: str | None = None

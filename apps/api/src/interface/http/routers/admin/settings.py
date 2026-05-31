@@ -19,7 +19,10 @@ from shared.application.use_cases.admin.get_account_config import GetAccountConf
 from shared.application.use_cases.admin.update_account_config import UpdateAccountConfig
 from shared.config.settings import get_settings
 from shared.config.single_tenant import get_default_account_uuid
-from shared.domain.entities.account_config import AccountConfig, AccountConfigPatch
+from shared.domain.entities.account_config import (
+    AccountConfig,
+    AccountConfigPatch,
+)
 
 router = APIRouter(tags=["admin-settings"])
 
@@ -27,6 +30,7 @@ router = APIRouter(tags=["admin-settings"])
 def _to_response(config: AccountConfig) -> AccountSettingsResponse:
     i = config.integration
     b = config.behavior
+    mb = config.message_buffer
     return AccountSettingsResponse(
         chatnexo_base_url=i.chatnexo_base_url,
         chatnexo_api_key=_mask(i.chatnexo_api_key),
@@ -44,6 +48,10 @@ def _to_response(config: AccountConfig) -> AccountSettingsResponse:
         refund_deadline_days=b.refund_deadline_days,
         welcome_d1_delay_hours=b.welcome_d1_delay_hours,
         ai_memory_messages=b.ai_memory_messages,
+        message_buffer_enabled=mb.enabled,
+        message_buffer_outgoing_url=mb.outgoing_url,
+        message_buffer_api_key=_mask(mb.api_key or ""),
+        message_buffer_tenant_id=mb.tenant_id,
     )
 
 
@@ -103,6 +111,10 @@ async def update_settings_endpoint(
         refund_deadline_days=body.refund_deadline_days,
         welcome_d1_delay_hours=body.welcome_d1_delay_hours,
         ai_memory_messages=body.ai_memory_messages,
+        message_buffer_enabled=body.message_buffer_enabled,
+        message_buffer_outgoing_url=body.message_buffer_outgoing_url,
+        message_buffer_api_key=body.message_buffer_api_key,
+        message_buffer_tenant_id=body.message_buffer_tenant_id,
     )
     try:
         async with session_scope() as session:
