@@ -155,3 +155,67 @@ def test_update_avatar_rejects_invalid_base64():
     client = TestClient(app)
     r = client.put("/admin/me/avatar", json={"data": "not!!!base64!!!"})
     assert r.status_code == 422
+
+
+# ── /me/memberships ──────────────────────────────────────────────────────────
+
+def _fake_member_view(account_id, account_name, role="admin", is_owner=False):
+    v = MagicMock()
+    v.account_id = account_id
+    v.account_name = account_name
+    v.role = MagicMock()
+    v.role.value = role
+    v.is_owner = is_owner
+    return v
+
+
+def test_list_my_memberships_marks_is_current_correctly():
+    current_account_id = uuid.uuid4()
+    other_account_id = uuid.uuid4()
+
+    view_current = _fake_member_view(current_account_id, "Empresa Atual", role="admin", is_owner=True)
+    view_other = _fake_member_view(other_account_id, "Outra Empresa", role="operator", is_owner=False)
+
+    auth = AdminAuth(
+        account_id=current_account_id,
+        user_email="x@x.com",
+        user_role="admin",
+        user_id="uid",
+        identity_id="uid",
+        membership_id="m1",
+        user_name="",
+        must_change_password=False,
+    )
+
+    with patch("interface.http.routers.admin.me.session_scope") as mock_scope:
+        s = AsyncMock()
+        mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
+        mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with patch("interface.http.routers.admin.me.MembershipRepository") as MockMembershipRepo:
+            membership_repo = MagicMock()
+            membership_repo.list_active_by_identity = AsyncMock(
+                return_value=[view_current, view_other]
+            )
+            MockMembershipRepo.return_value = membership_repo
+
+            app = _make_app(auth)
+            client = TestClient(app)
+            r = client.get("/admin/me/memberships")
+
+    assert r.status_code == 200
+    items = r.json()
+    assert len(items) == 2
+
+    current_item = next(i for i in items if i["account_id"] == str(current_account_id))
+    other_item = next(i for i in items if i["account_id"] == str(other_account_id))
+
+    assert current_item["is_current"] is True
+    assert current_item["account_name"] == "Empresa Atual"
+    assert current_item["role"] == "admin"
+    assert current_item["is_owner"] is True
+
+    assert other_item["is_current"] is False
+    assert other_item["account_name"] == "Outra Empresa"
+    assert other_item["role"] == "operator"
+    assert other_item["is_owner"] is False

@@ -21,6 +21,14 @@ from shared.application.use_cases.admin.change_my_password import (
 router = APIRouter(tags=["admin-me"])
 
 
+class MembershipItem(BaseModel):
+    account_id: str
+    account_name: str
+    role: str
+    is_owner: bool
+    is_current: bool
+
+
 class MeResponse(BaseModel):
     id: str
     name: str
@@ -152,3 +160,21 @@ async def change_password(
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e)) from e
         await s.commit()
+
+
+@router.get("/me/memberships", response_model=list[MembershipItem])
+async def list_my_memberships(
+    auth: AdminAuth = Depends(require_admin),
+) -> list[MembershipItem]:
+    async with session_scope() as s:
+        views = await MembershipRepository(s).list_active_by_identity(auth.identity_id)
+        return [
+            MembershipItem(
+                account_id=str(v.account_id),
+                account_name=v.account_name,
+                role=v.role.value,
+                is_owner=v.is_owner,
+                is_current=(str(v.account_id) == str(auth.account_id)),
+            )
+            for v in views
+        ]
