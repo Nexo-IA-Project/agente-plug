@@ -14,7 +14,7 @@ import { useAvatar } from "@/features/profile/context/AvatarContext";
 type NavEntry = { label: string; href: string; icon: string; perm: string; exact?: boolean };
 
 const NAV_ITEMS: NavEntry[] = [
-  { label: "Painel", href: "/dashboard", icon: "dashboard", perm: "dashboard.view" },
+  { label: "Dashboard", href: "/dashboard", icon: "dashboard", perm: "dashboard.view" },
   { label: "Base de Conhecimento", href: "/kb", icon: "database", perm: "kb.view" },
   { label: "Produtos", href: "/products", icon: "inventory_2", perm: "products.view" },
   { label: "Leads", href: "/leads", icon: "person_search", perm: "leads.view" },
