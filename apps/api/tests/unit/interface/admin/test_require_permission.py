@@ -55,7 +55,7 @@ def test_require_permission_admin_passes_without_touching_db():
 
 def test_require_permission_operator_with_key_passes():
     with patch(
-        "interface.http.deps.permissions.resolve_user_permissions",
+        "interface.http.deps.permissions.resolve_membership_permissions",
         new=AsyncMock(return_value={"x.y"}),
     ):
         client = TestClient(_make_app("operator"))
@@ -66,7 +66,7 @@ def test_require_permission_operator_with_key_passes():
 
 def test_require_permission_operator_without_key_403():
     with patch(
-        "interface.http.deps.permissions.resolve_user_permissions",
+        "interface.http.deps.permissions.resolve_membership_permissions",
         new=AsyncMock(return_value={"other.perm"}),
     ):
         client = TestClient(_make_app("operator"))
