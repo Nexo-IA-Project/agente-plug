@@ -31,6 +31,10 @@ const SETTINGS_CHILDREN: NavEntry[] = [
   { label: "API / Tokens", href: "/settings/tokens", icon: "key", perm: "tokens.view", exact: true },
 ];
 
+const ADMIN_CHILDREN: NavEntry[] = [
+  { label: "Auditoria", href: "/administracao/auditoria", icon: "policy", perm: "audit.view" },
+];
+
 function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {
   return (
     <Link
@@ -89,6 +93,11 @@ export function Sidebar() {
   const settingsHrefs = SETTINGS_CHILDREN.map((c) => c.href);
   const onSettingsRoute = settingsHrefs.includes(pathname);
   const [settingsOpen, setSettingsOpen] = useState(onSettingsRoute);
+
+  const visibleAdmin = ADMIN_CHILDREN.filter((item) => can(item.perm));
+  const adminHrefs = ADMIN_CHILDREN.map((c) => c.href);
+  const onAdminRoute = adminHrefs.some((h) => pathname.startsWith(h));
+  const [adminOpen, setAdminOpen] = useState(onAdminRoute);
 
   return (
     <aside className="fixed left-0 top-0 z-50 flex h-screen w-[240px] flex-col border-r border-outline-variant bg-surface-container-lowest">
@@ -160,6 +169,56 @@ export function Sidebar() {
             >
               <div className="mt-1 space-y-1">
                 {visibleSettings.map((child) => (
+                  <SettingsChildItem
+                    key={child.href}
+                    {...child}
+                    active={pathname === child.href}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {visibleAdmin.length > 0 && (
+          <div>
+            <button
+              type="button"
+              onClick={() => setAdminOpen((v) => !v)}
+              aria-expanded={adminOpen}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-body-sm transition-colors",
+                onAdminRoute
+                  ? "bg-surface-container font-semibold text-on-surface"
+                  : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"
+              )}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "20px", fontVariationSettings: onAdminRoute ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                admin_panel_settings
+              </span>
+              <span className="flex-1 text-left">Administração</span>
+              <span
+                className={cn(
+                  "material-symbols-outlined transition-transform duration-200",
+                  adminOpen && "rotate-180"
+                )}
+                style={{ fontSize: "20px" }}
+              >
+                expand_more
+              </span>
+            </button>
+
+            <div
+              className={cn(
+                "overflow-hidden transition-all duration-300 ease-in-out",
+                adminOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
+              )}
+            >
+              <div className="mt-1 space-y-1">
+                {visibleAdmin.map((child) => (
                   <SettingsChildItem
                     key={child.href}
                     {...child}
