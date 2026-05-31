@@ -15,6 +15,7 @@ def _auth(role="admin"):
         user_email="x@x.com",
         user_role=role,
         user_id="uid",
+        user_name="",
         must_change_password=False,
     )
 
@@ -79,6 +80,7 @@ def test_get_me_includes_profile_when_assigned():
         user_email="x@x.com",
         user_role="admin",
         user_id="uid",
+        user_name="",
         must_change_password=False,
     )
 

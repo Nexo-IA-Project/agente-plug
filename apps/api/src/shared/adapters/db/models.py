@@ -186,10 +186,18 @@ class AuditEventModel(Base):
     account_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("accounts.id"), nullable=False
     )
-    actor: Mapped[str] = mapped_column(String(20), nullable=False)
+    actor: Mapped[str] = mapped_column(String(120), nullable=False)
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    user_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     action: Mapped[str] = mapped_column(String(80), nullable=False)
     resource_type: Mapped[str] = mapped_column(String(40), nullable=False)
     resource_id: Mapped[str | None] = mapped_column(String(80))
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    geo_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    geo_country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    geo_region: Mapped[str | None] = mapped_column(String(100), nullable=True)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(
         "metadata", JSONB, default=dict, nullable=False
     )
@@ -197,7 +205,10 @@ class AuditEventModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=sa_text("NOW()"), nullable=False
     )
-    __table_args__ = (Index("ix_audit_events_account_created", "account_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_audit_events_account_created", "account_id", "created_at"),
+        Index("ix_audit_events_account_user", "account_id", "user_id"),
+    )
 
 
 class IntegrationConfigModel(Base):

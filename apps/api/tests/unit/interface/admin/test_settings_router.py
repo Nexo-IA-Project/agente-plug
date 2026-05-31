@@ -27,6 +27,7 @@ def _auth_override() -> AdminAuth:
         user_email="admin@test.com",
         user_role="admin",
         user_id="test-id",
+        user_name="",
         must_change_password=False,
     )
 

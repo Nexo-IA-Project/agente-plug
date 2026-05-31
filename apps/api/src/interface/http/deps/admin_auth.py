@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-from fastapi import Cookie, Depends, Header, HTTPException, Query, status
+from fastapi import Cookie, Depends, Header, HTTPException, Query, Request, status
 from jose import JWTError
 
 from shared.adapters.kb.jwt_handler import verify_token
@@ -16,6 +16,7 @@ class AdminAuth:
     user_email: str
     user_role: str
     user_id: str
+    user_name: str
     must_change_password: bool
 
 
@@ -38,16 +39,19 @@ def _decode(token: str) -> AdminAuth:
     except (ValueError, TypeError):
         account_id = None
 
+    email = payload["sub"]
     return AdminAuth(
         account_id=account_id,
-        user_email=payload["sub"],
+        user_email=email,
         user_role=payload.get("role", "operator"),
         user_id=payload.get("user_id", ""),
+        user_name=payload.get("user_name") or email,
         must_change_password=payload.get("must_change_password", False),
     )
 
 
 async def require_admin(
+    request: Request,
     authorization: str | None = Header(default=None),
     nexoia_token: str | None = Cookie(default=None),
 ) -> AdminAuth:
@@ -62,7 +66,14 @@ async def require_admin(
             detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return _decode(token)
+    auth = _decode(token)
+    request.state.audit_ctx = {
+        "account_id": auth.account_id,
+        "user_id": auth.user_id,
+        "user_email": auth.user_email,
+        "user_name": auth.user_name,
+    }
+    return auth
 
 
 async def require_admin_role(

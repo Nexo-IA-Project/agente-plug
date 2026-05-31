@@ -44,6 +44,7 @@ PERMISSION_CATALOG: list[Permission] = [
     _p("settings", "edit_smtp", "Editar SMTP"),
     _p("tokens", "view", "Ver tokens de API"),
     _p("tokens", "manage", "Gerenciar tokens de API"),
+    _p("audit", "view", "Ver auditoria"),
 ]
 
 
@@ -62,5 +63,6 @@ ADMIN_ONLY_KEYS: frozenset[str] = frozenset(
         "tokens.manage",
         "settings.edit_credentials",
         "settings.edit_smtp",
+        "audit.view",
     }
 )

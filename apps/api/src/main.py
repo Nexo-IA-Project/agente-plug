@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from interface.http.errors import register_error_handlers
-from interface.http.middleware import CorrelationIdMiddleware
+from interface.http.middleware import AuditMiddleware, CorrelationIdMiddleware
 from interface.http.routers import (
     health,
     metrics,
@@ -17,6 +17,7 @@ from interface.http.routers import (
     webhook_purchase,
 )
 from interface.http.routers.admin import api_tokens as admin_api_tokens
+from interface.http.routers.admin import audit as admin_audit
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import chatnexo_agents as admin_chatnexo_agents
 from interface.http.routers.admin import dlq as admin_dlq
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.add_middleware(CorrelationIdMiddleware)
+    app.add_middleware(AuditMiddleware)
     register_error_handlers(app)
     app.include_router(health.router)
     app.include_router(metrics.router)
@@ -150,6 +152,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_me.router, prefix="/admin")
     app.include_router(admin_platform_config.router, prefix="/admin")
     app.include_router(admin_unmapped_products.router, prefix="/admin")
+    app.include_router(admin_audit.router, prefix="/admin")
     return app
 
 
