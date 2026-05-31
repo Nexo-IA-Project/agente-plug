@@ -30,9 +30,10 @@ function formatDate(iso: string): string {
 interface Props {
   items: AuditEventItem[];
   isLoading: boolean;
+  onDetails?: (item: AuditEventItem) => void;
 }
 
-export function AuditTable({ items, isLoading }: Props) {
+export function AuditTable({ items, isLoading, onDetails }: Props) {
   if (isLoading) {
     return (
       <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
@@ -43,6 +44,7 @@ export function AuditTable({ items, isLoading }: Props) {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Ação</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">IP · Localidade</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Data e Hora</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody>
@@ -55,6 +57,7 @@ export function AuditTable({ items, isLoading }: Props) {
                   <div className="mt-1 h-3 w-16 animate-pulse rounded-full bg-surface-container-high" />
                 </td>
                 <td className="px-4 py-3"><div className="h-3.5 w-36 animate-pulse rounded-full bg-surface-container-high" /></td>
+                <td key="btn" className="px-4 py-3"><div className="h-4 w-16 animate-pulse rounded-full bg-surface-container-high" /></td>
               </tr>
             ))}
           </tbody>
@@ -89,6 +92,7 @@ export function AuditTable({ items, isLoading }: Props) {
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Ação</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">IP · Localidade</th>
             <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Data e Hora</th>
+            <th className="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
@@ -127,6 +131,16 @@ export function AuditTable({ items, isLoading }: Props) {
                 </td>
                 <td className="px-4 py-3 text-xs text-on-surface-variant tabular-nums">
                   {formatDate(item.created_at)}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {onDetails && (
+                    <button
+                      onClick={() => onDetails(item)}
+                      className="rounded-lg px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary-container/40"
+                    >
+                      Ver Detalhes
+                    </button>
+                  )}
                 </td>
               </tr>
             );
