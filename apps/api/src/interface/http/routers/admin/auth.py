@@ -164,20 +164,24 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
             )
 
         views = await MembershipRepository(session).list_active_by_identity(identity.id)
+
+        if identity.must_change_password:
+            await session.commit()
+            return LoginResultResponse(
+                status="must_change_password",
+                pre_auth_token=_pre_auth_token(identity, settings),
+                must_change_password=True,
+            )
+        if not views:
+            await session.commit()
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sem acesso a nenhuma empresa",
+            )
+
         await IdentityRepository(session).touch_last_login(identity.id)
         await session.commit()
 
-    if identity.must_change_password:
-        return LoginResultResponse(
-            status="must_change_password",
-            pre_auth_token=_pre_auth_token(identity, settings),
-            must_change_password=True,
-        )
-    if not views:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sem acesso a nenhuma empresa",
-        )
     if len(views) == 1:
         token = _full_token(identity, views[0], settings)
         max_age = settings.jwt_expire_minutes * 60
@@ -271,7 +275,11 @@ async def select_account(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
+    if payload.get("scope") != "pre_auth":
+        raise HTTPException(status_code=403, detail="Token de pré-autenticação exigido")
     identity_id = payload.get("identity_id") or payload.get("user_id", "")
+    if not identity_id:
+        raise HTTPException(status_code=401, detail="Token inválido")
     return await _emit_for_account(identity_id, body.account_id, request, response)
 
 
