@@ -5,7 +5,7 @@
 set -euo pipefail
 
 STATE_FILE="/root/.deploy-color"
-NGINX_CONF="/etc/nginx/conf.d/agente-plug.conf"
+NGINX_CONF="/etc/nginx/conf.d/nexo-flow.conf"
 
 CURRENT_COLOR=$(cat "${STATE_FILE}" 2>/dev/null || echo "blue")
 

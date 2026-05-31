@@ -1,3 +1,5 @@
+name: nexo-flow
+
 services:
   redis:
     image: redis:7-alpine
@@ -10,7 +12,7 @@ services:
 
   api-blue:
     profiles: [blue]
-    image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/nexo-ia-project/nexo-flow-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     depends_on:
@@ -26,7 +28,7 @@ services:
 
   api-green:
     profiles: [green]
-    image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/nexo-ia-project/nexo-flow-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     depends_on:
@@ -42,7 +44,7 @@ services:
 
   web-blue:
     profiles: [blue]
-    image: ghcr.io/nexo-ia-project/agente-plug-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/nexo-ia-project/nexo-flow-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     ports:
@@ -56,7 +58,7 @@ services:
 
   web-green:
     profiles: [green]
-    image: ghcr.io/nexo-ia-project/agente-plug-web:${IMAGE_TAG:-latest}
+    image: ghcr.io/nexo-ia-project/nexo-flow-web:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     ports:
@@ -69,7 +71,7 @@ services:
       start_period: 45s
 
   worker:
-    image: ghcr.io/nexo-ia-project/agente-plug-api:${IMAGE_TAG:-latest}
+    image: ghcr.io/nexo-ia-project/nexo-flow-api:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: /root/.env.prod
     depends_on:

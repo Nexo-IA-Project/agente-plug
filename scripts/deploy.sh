@@ -4,13 +4,13 @@
 set -euo pipefail
 
 # ── Configuração ─────────────────────────────────────────────────────────────
-REPO_DIR="/root/agente-plug"
+REPO_DIR="/root/nexo-flow"
 COMPOSE_FILE="${REPO_DIR}/docker-compose.prod.yml"
 ENV_FILE="/root/.env.prod"
 STATE_FILE="/root/.deploy-color"
-NGINX_CONF="/etc/nginx/conf.d/agente-plug.conf"
-IMAGE_API="ghcr.io/nexo-ia-project/agente-plug-api"
-IMAGE_WEB="ghcr.io/nexo-ia-project/agente-plug-web"
+NGINX_CONF="/etc/nginx/conf.d/nexo-flow.conf"
+IMAGE_API="ghcr.io/nexo-ia-project/nexo-flow-api"
+IMAGE_WEB="ghcr.io/nexo-ia-project/nexo-flow-web"
 
 # IMAGE_TAG obrigatório
 : "${IMAGE_TAG:?Variável IMAGE_TAG é obrigatória}"
@@ -61,7 +61,7 @@ for i in $(seq 1 18); do
   echo "    [${i}/18] ainda não healthy, aguardando 5s..."
   if [ "${i}" = "18" ]; then
     echo "ERRO: api-${NEW_COLOR} não ficou healthy em 90s"
-    docker logs "agente-plug-api-${NEW_COLOR}-1" --tail=40 2>/dev/null || true
+    docker logs "nexo-flow-api-${NEW_COLOR}-1" --tail=40 2>/dev/null || true
     echo "==> Derrubando ${NEW_COLOR} — ${CURRENT_COLOR} continua servindo."
     IMAGE_TAG="${IMAGE_TAG_LC}" docker compose \
       --env-file "${ENV_FILE}" \
@@ -98,7 +98,7 @@ IMAGE_TAG="${IMAGE_TAG_LC}" docker compose \
 
 # ── Limpeza de imagens antigas ────────────────────────────────────────────────
 echo "==> Limpando imagens antigas (mantendo últimas 3)..."
-for repo in agente-plug-api agente-plug-web; do
+for repo in nexo-flow-api nexo-flow-web; do
   OLD_IDS=$(docker images "ghcr.io/nexo-ia-project/${repo}" \
     --format "{{.ID}}" | tail -n +4)
   if [ -n "${OLD_IDS}" ]; then
