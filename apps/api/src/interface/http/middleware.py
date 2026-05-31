@@ -10,7 +10,11 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.responses import Response
 
+from shared.adapters.db.repositories.audit_repo import SqlAuditRepository
+from shared.adapters.geo.ip_api import IpApiGeoService
 from shared.adapters.observability.logger import bind_context, reset_context
+from shared.adapters.observability.logger import get_logger as _get_audit_log
+from shared.domain.entities.audit_event import AuditEvent
 
 correlation_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
     "correlation_id", default=""
@@ -40,11 +44,6 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
         response.headers["X-Correlation-Id"] = cid
         return response
 
-
-from shared.adapters.db.repositories.audit_repo import SqlAuditRepository
-from shared.adapters.geo.ip_api import IpApiGeoService
-from shared.adapters.observability.logger import get_logger as _get_audit_log
-from shared.domain.entities.audit_event import AuditEvent
 
 _audit_log = _get_audit_log(__name__)
 
@@ -175,7 +174,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 repo = SqlAuditRepository(session=session)
                 await repo.save(event)
             if ip:
-                asyncio.create_task(_do_geo_update(event_id, ip))
+                _geo_task = asyncio.create_task(_do_geo_update(event_id, ip))
+                del _geo_task
         except Exception:
             _audit_log.warning("audit_save_failed", path=request.url.path)
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -10,7 +8,6 @@ from uuid import uuid4
 from fastapi import APIRouter, Cookie, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.adapters.db.models import UserModel
 from shared.adapters.db.session import session_scope
@@ -126,13 +123,14 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
         }
         await session.commit()
 
-    asyncio.create_task(_save_auth_audit(
+    _login_task = asyncio.create_task(_save_auth_audit(
         account_id=str(snapshot["account_id"]),
         user_id=str(snapshot["id"]),
         user_email=snapshot["email"],
         ip=_extract_login_ip(request),
         action="Login",
     ))
+    del _login_task
 
     max_age = settings.jwt_expire_minutes * 60
     token = create_access_token(
@@ -174,12 +172,13 @@ async def logout(
         try:
             settings = get_settings()
             payload = verify_token(token, secret=settings.jwt_secret)
-            asyncio.create_task(_save_auth_audit(
+            _logout_task = asyncio.create_task(_save_auth_audit(
                 account_id=str(payload.get("account_id", "")),
                 user_id=str(payload.get("user_id", "")),
                 user_email=payload.get("sub", ""),
                 ip=_extract_login_ip(request),
                 action="Logout",
             ))
+            del _logout_task
         except Exception:
             pass
