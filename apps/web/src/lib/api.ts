@@ -647,3 +647,25 @@ export async function testPlatformConfig(to: string): Promise<void> {
     body: JSON.stringify({ to }),
   });
 }
+
+// ============================================================
+// Audit Events (admin only)
+// ============================================================
+
+export async function listAuditEvents(params: {
+  page?: number;
+  page_size?: number;
+  user_id?: string;
+  action?: string;
+  date_from?: string;
+  date_to?: string;
+} = {}): Promise<import("@/features/audit/types").AuditEventListResponse> {
+  const qs = new URLSearchParams();
+  if (params.page) qs.set("page", String(params.page));
+  if (params.page_size) qs.set("page_size", String(params.page_size));
+  if (params.user_id) qs.set("user_id", params.user_id);
+  if (params.action) qs.set("action", params.action);
+  if (params.date_from) qs.set("date_from", params.date_from);
+  if (params.date_to) qs.set("date_to", params.date_to);
+  return apiFetch(`/admin/audit-events?${qs.toString()}`);
+}
