@@ -7,10 +7,16 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
-from interface.http.deps.permissions import resolve_user_permissions
+from interface.http.deps.admin_auth import (
+    AdminAuth,
+    PasswordChangeIdentity,
+    require_admin,
+    require_identity_for_password_change,
+)
+from interface.http.deps.permissions import resolve_membership_permissions
+from shared.adapters.db.repositories.identity_repo import IdentityRepository
+from shared.adapters.db.repositories.membership_repo import MembershipRepository
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
-from shared.adapters.db.repositories.user_repo import UserRepository
 from shared.adapters.db.session import session_scope
 from shared.application.use_cases.admin.change_my_password import (
     ChangeMyPasswordUseCase,
@@ -18,6 +24,14 @@ from shared.application.use_cases.admin.change_my_password import (
 )
 
 router = APIRouter(tags=["admin-me"])
+
+
+class MembershipItem(BaseModel):
+    account_id: str
+    account_name: str
+    role: str
+    is_owner: bool
+    is_current: bool
 
 
 class MeResponse(BaseModel):
@@ -35,11 +49,19 @@ class MeResponse(BaseModel):
 async def _resolve_profile_name(
     s: AsyncSession, auth: AdminAuth, profile_id: UUID | None
 ) -> str | None:
-    """Resolve o nome do perfil do usuário (scoped por account). None se sem perfil."""
+    """Resolve o nome do perfil do membership atual (scoped por account). None se sem perfil."""
     if profile_id is None or auth.account_id is None:
         return None
     names = await ProfileRepository(session=s).name_map(auth.account_id)
     return names.get(profile_id)
+
+
+async def _profile_id_for_membership(s: AsyncSession, auth: AdminAuth) -> UUID | None:
+    """O perfil pertence ao membership (escopo por conta), não à identidade."""
+    if auth.membership_id is None:
+        return None
+    membership = await MembershipRepository(s).get_by_id(auth.membership_id)
+    return membership.profile_id if membership else None
 
 
 class UpdateMeRequest(BaseModel):
@@ -55,25 +77,33 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+async def _build_me(s: AsyncSession, auth: AdminAuth) -> MeResponse:
+    identity = await IdentityRepository(s).get_by_id(auth.identity_id)
+    if identity is None:
+        raise HTTPException(status_code=404, detail="Identity not found")
+    perms = sorted(
+        await resolve_membership_permissions(
+            s, membership_id=auth.membership_id, role=auth.user_role
+        )
+    )
+    profile_id = await _profile_id_for_membership(s, auth)
+    return MeResponse(
+        id=identity.id,
+        name=identity.name,
+        email=identity.email,
+        role=auth.user_role,
+        must_change_password=identity.must_change_password,
+        has_avatar=identity.avatar is not None,
+        profile_id=str(profile_id) if profile_id else None,
+        profile_name=await _resolve_profile_name(s, auth, profile_id),
+        permissions=perms,
+    )
+
+
 @router.get("/me", response_model=MeResponse)
 async def get_me(auth: AdminAuth = Depends(require_admin)) -> MeResponse:
     async with session_scope() as s:
-        repo = UserRepository(s)
-        user = await repo.get_by_id(auth.user_id)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        perms = sorted(await resolve_user_permissions(s, user_id=auth.user_id, role=auth.user_role))
-        return MeResponse(
-            id=user.id,
-            name=user.name,
-            email=user.email,
-            role=user.role.value,
-            must_change_password=user.must_change_password,
-            has_avatar=user.avatar is not None,
-            profile_id=str(user.profile_id) if user.profile_id else None,
-            profile_name=await _resolve_profile_name(s, auth, user.profile_id),
-            permissions=perms,
-        )
+        return await _build_me(s, auth)
 
 
 @router.put("/me", response_model=MeResponse)
@@ -82,24 +112,9 @@ async def update_me(
     auth: AdminAuth = Depends(require_admin),
 ) -> MeResponse:
     async with session_scope() as s:
-        repo = UserRepository(s)
-        await repo.update_profile(user_id=auth.user_id, name=body.name)
+        await IdentityRepository(s).update_profile(identity_id=auth.identity_id, name=body.name)
         await s.commit()
-        user = await repo.get_by_id(auth.user_id)
-        if user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-        perms = sorted(await resolve_user_permissions(s, user_id=auth.user_id, role=auth.user_role))
-        return MeResponse(
-            id=user.id,
-            name=user.name,
-            email=user.email,
-            role=user.role.value,
-            must_change_password=user.must_change_password,
-            has_avatar=user.avatar is not None,
-            profile_id=str(user.profile_id) if user.profile_id else None,
-            profile_name=await _resolve_profile_name(s, auth, user.profile_id),
-            permissions=perms,
-        )
+        return await _build_me(s, auth)
 
 
 @router.put("/me/avatar", status_code=status.HTTP_204_NO_CONTENT)
@@ -119,32 +134,29 @@ async def update_avatar(
         raise HTTPException(status_code=413, detail="Avatar exceeds 200KB after crop")
 
     async with session_scope() as s:
-        repo = UserRepository(s)
-        await repo.update_avatar(user_id=auth.user_id, avatar=avatar_bytes)
+        await IdentityRepository(s).update_avatar(identity_id=auth.identity_id, avatar=avatar_bytes)
         await s.commit()
 
 
 @router.get("/me/avatar")
 async def get_avatar(auth: AdminAuth = Depends(require_admin)) -> Response:
     async with session_scope() as s:
-        repo = UserRepository(s)
-        user = await repo.get_by_id(auth.user_id)
-        if user is None or user.avatar is None:
+        identity = await IdentityRepository(s).get_by_id(auth.identity_id)
+        if identity is None or identity.avatar is None:
             raise HTTPException(status_code=404, detail="No avatar")
-        return Response(content=user.avatar, media_type="image/jpeg")
+        return Response(content=identity.avatar, media_type="image/jpeg")
 
 
 @router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(
     body: ChangePasswordRequest,
-    auth: AdminAuth = Depends(require_admin),
+    identity: PasswordChangeIdentity = Depends(require_identity_for_password_change),
 ) -> None:
     async with session_scope() as s:
-        repo = UserRepository(s)
-        uc = ChangeMyPasswordUseCase(user_repo=repo)
+        uc = ChangeMyPasswordUseCase(identity_repo=IdentityRepository(s))
         try:
             await uc.execute(
-                user_id=auth.user_id,
+                identity_id=identity.identity_id,
                 current_password=body.current_password,
                 new_password=body.new_password,
             )
@@ -153,3 +165,21 @@ async def change_password(
         except ValueError as e:
             raise HTTPException(status_code=422, detail=str(e)) from e
         await s.commit()
+
+
+@router.get("/me/memberships", response_model=list[MembershipItem])
+async def list_my_memberships(
+    auth: AdminAuth = Depends(require_admin),
+) -> list[MembershipItem]:
+    async with session_scope() as s:
+        views = await MembershipRepository(s).list_active_by_identity(auth.identity_id)
+        return [
+            MembershipItem(
+                account_id=str(v.account_id),
+                account_name=v.account_name,
+                role=v.role.value,
+                is_owner=v.is_owner,
+                is_current=(str(v.account_id) == str(auth.account_id)),
+            )
+            for v in views
+        ]

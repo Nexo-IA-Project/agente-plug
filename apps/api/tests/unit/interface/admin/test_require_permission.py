@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 # Ensure the module is imported so patch paths resolve correctly.
 import interface.http.deps.permissions  # noqa: F401
 from interface.http.deps.admin_auth import AdminAuth, require_admin
-from interface.http.deps.permissions import require_permission, resolve_user_permissions
+from interface.http.deps.permissions import require_permission, resolve_membership_permissions
 from shared.domain.permissions.catalog import (
     ADMIN_ONLY_KEYS,
     all_permission_keys,
@@ -23,6 +23,8 @@ def _auth(role: str) -> AdminAuth:
         user_email="a@x.com",
         user_role=role,
         user_id="user-1",
+        identity_id="user-1",
+        membership_id=None,
         user_name="",
         must_change_password=False,
     )
@@ -53,7 +55,7 @@ def test_require_permission_admin_passes_without_touching_db():
 
 def test_require_permission_operator_with_key_passes():
     with patch(
-        "interface.http.deps.permissions.resolve_user_permissions",
+        "interface.http.deps.permissions.resolve_membership_permissions",
         new=AsyncMock(return_value={"x.y"}),
     ):
         client = TestClient(_make_app("operator"))
@@ -64,7 +66,7 @@ def test_require_permission_operator_with_key_passes():
 
 def test_require_permission_operator_without_key_403():
     with patch(
-        "interface.http.deps.permissions.resolve_user_permissions",
+        "interface.http.deps.permissions.resolve_membership_permissions",
         new=AsyncMock(return_value={"other.perm"}),
     ):
         client = TestClient(_make_app("operator"))
@@ -74,26 +76,33 @@ def test_require_permission_operator_without_key_403():
 
 
 @pytest.mark.asyncio
-async def test_resolve_user_permissions_admin_returns_all():
+async def test_resolve_membership_permissions_admin_returns_all():
     session = AsyncMock()
-    perms = await resolve_user_permissions(session, user_id="x", role="admin")
+    perms = await resolve_membership_permissions(session, membership_id="m1", role="admin")
     assert perms == set(all_permission_keys())
     session.execute.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_resolve_user_permissions_operator_without_profile_empty():
+async def test_resolve_membership_permissions_none_membership_empty():
+    session = AsyncMock()
+    perms = await resolve_membership_permissions(session, membership_id=None, role="operator")
+    assert perms == set()
+
+
+@pytest.mark.asyncio
+async def test_resolve_membership_permissions_operator_without_profile_empty():
     session = AsyncMock()
     profile_result = AsyncMock()
     profile_result.scalar_one_or_none = lambda: None
     session.execute = AsyncMock(return_value=profile_result)
 
-    perms = await resolve_user_permissions(session, user_id="x", role="operator")
+    perms = await resolve_membership_permissions(session, membership_id="m1", role="operator")
     assert perms == set()
 
 
 @pytest.mark.asyncio
-async def test_resolve_user_permissions_operator_with_profile():
+async def test_resolve_membership_permissions_operator_with_profile():
     profile_id = uuid.uuid4()
     session = AsyncMock()
 
@@ -107,7 +116,7 @@ async def test_resolve_user_permissions_operator_with_profile():
 
     session.execute = AsyncMock(side_effect=[profile_result, perm_result])
 
-    perms = await resolve_user_permissions(session, user_id="x", role="operator")
+    perms = await resolve_membership_permissions(session, membership_id="m1", role="operator")
     assert perms == {"x.y", "z.w"}
 
 

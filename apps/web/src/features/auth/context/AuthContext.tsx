@@ -13,6 +13,8 @@ export interface AuthUser {
 
 interface AuthContextValue {
   user: AuthUser | null;
+  /** UUID da conta (tenant) ativa, extraído do JWT. null se não autenticado. */
+  accountId: string | null;
   isLoading: boolean;
   refresh: () => void;
   logout: () => void;
@@ -32,11 +34,14 @@ function payloadToUser(p: AuthTokenPayload | null): AuthUser | null {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useCallback(() => {
     const token = getToken();
-    setUser(payloadToUser(token ? decodeJwt(token) : null));
+    const payload = token ? decodeJwt(token) : null;
+    setUser(payloadToUser(payload));
+    setAccountId(payload?.account_id ?? null);
     setIsLoading(false);
   }, []);
 
@@ -47,10 +52,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
+    setAccountId(null);
     window.location.href = "/login";
   }, []);
 
-  return <Ctx.Provider value={{ user, isLoading, refresh, logout }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ user, accountId, isLoading, refresh, logout }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAuthContext(): AuthContextValue {

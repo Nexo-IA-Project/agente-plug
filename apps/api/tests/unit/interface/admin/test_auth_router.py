@@ -2,10 +2,15 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+from shared.adapters.kb import jwt_handler
+from shared.domain.entities.identity import Identity
+from shared.domain.entities.user import UserRole
 
 
 def _make_app():
@@ -16,172 +21,166 @@ def _make_app():
     return app
 
 
-def _make_mock_session(return_user):
-    mock_session = AsyncMock()
-    mock_session.execute = AsyncMock(
-        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=return_user))
-    )
-    mock_session.flush = AsyncMock()
-    mock_session.commit = AsyncMock()
-    return mock_session
+def _view(account_id, role, is_owner=False, name="Co"):
+    v = MagicMock()
+    v.membership_id = str(uuid4())
+    v.account_id = account_id
+    v.account_name = name
+    v.role = role
+    v.is_owner = is_owner
+    return v
+
+
+def _patches(identity, member_views):
+    """Mocks de sessão + repositórios no namespace do router."""
+    sess = AsyncMock()
+    sess.__aenter__ = AsyncMock(return_value=sess)
+    sess.__aexit__ = AsyncMock(return_value=False)
+    sess.commit = AsyncMock()
+
+    ident_repo = MagicMock()
+    ident_repo.get_by_email = AsyncMock(return_value=identity)
+    ident_repo.touch_last_login = AsyncMock()
+
+    memb_repo = MagicMock()
+    memb_repo.list_active_by_identity = AsyncMock(return_value=member_views)
+
+    return sess, ident_repo, memb_repo
 
 
 @pytest.mark.asyncio
 async def test_login_returns_token_on_valid_credentials():
-    """Integration-lite: real router, mocked DB and JWT."""
-    from shared.adapters.kb import jwt_handler
-
-    mock_user_model = MagicMock()
-    mock_user_model.id = "user-1"
-    mock_user_model.email = "admin@test.com"
-    mock_user_model.password_hash = jwt_handler.hash_password("correctpass")
-    mock_user_model.account_id = 1
-    mock_user_model.role = "admin"
-    mock_user_model.is_active = True
-    mock_user_model.must_change_password = False
-    mock_user_model.name = "Admin"
-    mock_user_model.last_login_at = None
+    """Integration-lite: real router, mocked repos and JWT."""
+    ident = Identity(
+        email="admin@test.com",
+        password_hash=jwt_handler.hash_password("correctpass"),
+        name="Admin",
+        must_change_password=False,
+    )
+    views = [_view(uuid4(), UserRole.ADMIN, is_owner=True)]
+    sess, ir, mr = _patches(ident, views)
 
     with (
-        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_db", return_value=sess),
+        patch("interface.http.routers.admin.auth.IdentityRepository", return_value=ir),
+        patch("interface.http.routers.admin.auth.MembershipRepository", return_value=mr),
         patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
     ):
-        mock_session = _make_mock_session(mock_user_model)
-        mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
-
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
 
-        app = _make_app()
-        client = TestClient(app)
+        client = TestClient(_make_app())
         response = client.post(
             "/admin/auth/login",
-            json={"email": "admin@test.com", "password": "correctpass", "account_id": 1},
+            json={"email": "admin@test.com", "password": "correctpass"},
         )
         assert response.status_code == 200
         data = response.json()
+        assert data["status"] == "authenticated"
         assert "access_token" in data
         assert "expires_in" in data
 
 
 @pytest.mark.asyncio
 async def test_login_returns_401_on_wrong_password():
-    from shared.adapters.kb import jwt_handler
-
-    mock_user_model = MagicMock()
-    mock_user_model.password_hash = jwt_handler.hash_password("correctpass")
-    mock_user_model.email = "admin@test.com"
-    mock_user_model.account_id = 1
-    mock_user_model.is_active = True
-    mock_user_model.must_change_password = False
-    mock_user_model.name = "Admin"
-    mock_user_model.last_login_at = None
+    ident = Identity(
+        email="admin@test.com",
+        password_hash=jwt_handler.hash_password("correctpass"),
+        name="Admin",
+        must_change_password=False,
+    )
+    sess, ir, mr = _patches(ident, [_view(uuid4(), UserRole.ADMIN)])
 
     with (
-        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_db", return_value=sess),
+        patch("interface.http.routers.admin.auth.IdentityRepository", return_value=ir),
+        patch("interface.http.routers.admin.auth.MembershipRepository", return_value=mr),
         patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
     ):
-        mock_session = _make_mock_session(mock_user_model)
-        mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
 
-        app = _make_app()
-        client = TestClient(app)
+        client = TestClient(_make_app())
         response = client.post(
             "/admin/auth/login",
-            json={"email": "admin@test.com", "password": "wrongpass", "account_id": 1},
+            json={"email": "admin@test.com", "password": "wrongpass"},
         )
         assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 async def test_login_returns_401_when_user_not_found():
+    sess, ir, mr = _patches(None, [])
+
     with (
-        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_db", return_value=sess),
+        patch("interface.http.routers.admin.auth.IdentityRepository", return_value=ir),
+        patch("interface.http.routers.admin.auth.MembershipRepository", return_value=mr),
         patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
     ):
-        mock_session = _make_mock_session(None)
-        mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
 
-        app = _make_app()
-        client = TestClient(app)
+        client = TestClient(_make_app())
         response = client.post(
             "/admin/auth/login",
-            json={"email": "nobody@test.com", "password": "pass", "account_id": 1},
+            json={"email": "nobody@test.com", "password": "pass"},
         )
         assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 async def test_login_returns_403_when_user_inactive():
-    from shared.adapters.kb import jwt_handler
-
-    mock_user_model = MagicMock()
-    mock_user_model.id = "user-2"
-    mock_user_model.email = "inactive@test.com"
-    mock_user_model.password_hash = jwt_handler.hash_password("correctpass")
-    mock_user_model.account_id = 1
-    mock_user_model.role = "admin"
-    mock_user_model.is_active = False
-    mock_user_model.must_change_password = False
-    mock_user_model.name = "Inactive"
-    mock_user_model.last_login_at = None
+    ident = Identity(
+        email="inactive@test.com",
+        password_hash=jwt_handler.hash_password("correctpass"),
+        name="Inactive",
+        must_change_password=False,
+        is_active=False,
+    )
+    sess, ir, mr = _patches(ident, [])
 
     with (
-        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_db", return_value=sess),
+        patch("interface.http.routers.admin.auth.IdentityRepository", return_value=ir),
+        patch("interface.http.routers.admin.auth.MembershipRepository", return_value=mr),
         patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
     ):
-        mock_session = _make_mock_session(mock_user_model)
-        mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
 
-        app = _make_app()
-        client = TestClient(app)
+        client = TestClient(_make_app())
         response = client.post(
             "/admin/auth/login",
-            json={"email": "inactive@test.com", "password": "correctpass", "account_id": 1},
+            json={"email": "inactive@test.com", "password": "correctpass"},
         )
         assert response.status_code == 403
 
 
 @pytest.mark.asyncio
 async def test_login_sets_httponly_cookie():
-    from shared.adapters.kb import jwt_handler
-
-    mock_user_model = MagicMock()
-    mock_user_model.id = "user-1"
-    mock_user_model.email = "admin@test.com"
-    mock_user_model.password_hash = jwt_handler.hash_password("correctpass")
-    mock_user_model.account_id = 1
-    mock_user_model.role = "admin"
-    mock_user_model.is_active = True
-    mock_user_model.must_change_password = False
-    mock_user_model.name = "Admin"
-    mock_user_model.last_login_at = None
+    ident = Identity(
+        email="admin@test.com",
+        password_hash=jwt_handler.hash_password("correctpass"),
+        name="Admin",
+        must_change_password=False,
+    )
+    views = [_view(uuid4(), UserRole.ADMIN, is_owner=True)]
+    sess, ir, mr = _patches(ident, views)
 
     with (
-        patch("interface.http.routers.admin.auth.get_db") as mock_get_db,
+        patch("interface.http.routers.admin.auth.get_db", return_value=sess),
+        patch("interface.http.routers.admin.auth.IdentityRepository", return_value=ir),
+        patch("interface.http.routers.admin.auth.MembershipRepository", return_value=mr),
         patch("interface.http.routers.admin.auth.get_settings") as mock_settings,
     ):
-        mock_session = _make_mock_session(mock_user_model)
-        mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_settings.return_value.jwt_secret = "test-secret"
         mock_settings.return_value.jwt_expire_minutes = 60
 
-        app = _make_app()
-        client = TestClient(app)
+        client = TestClient(_make_app())
         response = client.post(
             "/admin/auth/login",
-            json={"email": "admin@test.com", "password": "correctpass", "account_id": 1},
+            json={"email": "admin@test.com", "password": "correctpass"},
         )
         assert response.status_code == 200
         # Cookie HttpOnly deve ser setado pelo servidor

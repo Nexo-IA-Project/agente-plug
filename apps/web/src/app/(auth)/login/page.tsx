@@ -1,31 +1,67 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { loginRequest, setToken } from "@/lib/auth";
+import {
+  loginRequest,
+  selectAccount,
+  setToken,
+  type AccountOption,
+} from "@/lib/auth";
+import { useToast } from "@/shared/hooks/useToast";
+import { AccountChooserModal } from "@/features/auth/components/AccountChooserModal";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [chooser, setChooser] = useState<{
+    preAuthToken: string;
+    accounts: AccountOption[];
+  } | null>(null);
+  const toast = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const token = await loginRequest(email, password);
-      setToken(token);
-      // Mantém o formulário travado até a navegação concluir (não reseta loading
-      // no sucesso) — evita duplo-submit enquanto a página redireciona.
-      window.location.href = "/dashboard";
+      const result = await loginRequest(email, password);
+      if (result.status === "authenticated") {
+        setToken(result.access_token);
+        // Mantém o formulário travado até a navegação concluir (não reseta loading
+        // no sucesso) — evita duplo-submit enquanto a página redireciona.
+        window.location.href = "/dashboard";
+      } else if (result.status === "must_change_password") {
+        // Token pré-autenticado vira a sessão até a troca obrigatória de senha.
+        setToken(result.pre_auth_token);
+        window.location.href = "/change-password";
+      } else {
+        // choose_account: abre o modal de escolha de empresa.
+        setChooser({
+          preAuthToken: result.pre_auth_token,
+          accounts: result.accounts,
+        });
+        setLoading(false);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
       setLoading(false);
+    }
+  }
+
+  async function handleSelectAccount(account: AccountOption) {
+    if (!chooser) return;
+    try {
+      const token = await selectAccount(chooser.preAuthToken, account.account_id);
+      setToken(token);
+      window.location.href = "/dashboard";
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Falha ao selecionar empresa",
+      );
     }
   }
 
@@ -472,6 +508,13 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <AccountChooserModal
+        open={!!chooser}
+        accounts={chooser?.accounts ?? []}
+        onSelect={handleSelectAccount}
+        onClose={() => setChooser(null)}
+      />
     </>
   );
 }

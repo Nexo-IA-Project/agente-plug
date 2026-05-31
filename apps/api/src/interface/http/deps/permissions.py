@@ -7,16 +7,22 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin, require_admin_sse
-from shared.adapters.db.models import ProfilePermissionModel, UserModel
+from shared.adapters.db.models import MembershipModel, ProfilePermissionModel
 from shared.adapters.db.session import session_scope
 from shared.domain.permissions.catalog import all_permission_keys
 
 
-async def resolve_user_permissions(session: AsyncSession, *, user_id: str, role: str) -> set[str]:
+async def resolve_membership_permissions(
+    session: AsyncSession, *, membership_id: str | None, role: str
+) -> set[str]:
     if role == "admin":
         return set(all_permission_keys())
+    if membership_id is None:
+        return set()
     profile_id = (
-        await session.execute(select(UserModel.profile_id).where(UserModel.id == user_id))
+        await session.execute(
+            select(MembershipModel.profile_id).where(MembershipModel.id == membership_id)
+        )
     ).scalar_one_or_none()
     if profile_id is None:
         return set()
@@ -38,7 +44,9 @@ async def _check_permission(auth: AdminAuth, key: str) -> AdminAuth:
     if auth.user_role == "admin":
         return auth
     async with session_scope() as session:
-        perms = await resolve_user_permissions(session, user_id=auth.user_id, role=auth.user_role)
+        perms = await resolve_membership_permissions(
+            session, membership_id=auth.membership_id, role=auth.user_role
+        )
     if key not in perms:
         raise HTTPException(status_code=403, detail="Permissão insuficiente")
     return auth

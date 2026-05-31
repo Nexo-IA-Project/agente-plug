@@ -25,10 +25,23 @@ export function clearToken(): void {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+export type AccountOption = {
+  membership_id: string;
+  account_id: string;
+  account_name: string;
+  role: "admin" | "operator";
+  is_owner: boolean;
+};
+
+export type LoginResult =
+  | { status: "authenticated"; access_token: string }
+  | { status: "choose_account"; pre_auth_token: string; accounts: AccountOption[] }
+  | { status: "must_change_password"; pre_auth_token: string };
+
 export async function loginRequest(
   email: string,
   password: string,
-): Promise<string> {
+): Promise<LoginResult> {
   const res = await fetch(`${API_URL}/admin/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -42,6 +55,37 @@ export async function loginRequest(
     );
   }
 
+  return (await res.json()) as LoginResult;
+}
+
+export async function selectAccount(
+  preAuthToken: string,
+  accountId: string,
+): Promise<string> {
+  const res = await fetch(`${API_URL}/admin/auth/select-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${preAuthToken}`,
+    },
+    body: JSON.stringify({ account_id: accountId }),
+  });
+  if (!res.ok) throw new Error("Falha ao selecionar empresa");
+  const data = (await res.json()) as { access_token: string };
+  return data.access_token;
+}
+
+export async function switchAccount(accountId: string): Promise<string> {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/admin/auth/switch-account`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token ?? ""}`,
+    },
+    body: JSON.stringify({ account_id: accountId }),
+  });
+  if (!res.ok) throw new Error("Falha ao trocar de empresa");
   const data = (await res.json()) as { access_token: string };
   return data.access_token;
 }

@@ -37,7 +37,22 @@ export function UserListTable({
         <tbody>
           {users.map((u) => (
             <tr key={u.id} className="border-t border-outline-variant hover:bg-surface-container-low">
-              <td className="px-4 py-3">{u.name}</td>
+              <td className="px-4 py-3">
+                <span className="inline-flex items-center gap-2">
+                  <span className="text-on-surface">{u.name}</span>
+                  {u.is_owner && (
+                    <span
+                      title="Dono da conta — protegido pela plataforma"
+                      className="inline-flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-label-sm font-medium text-warning"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>
+                        shield
+                      </span>
+                      Owner
+                    </span>
+                  )}
+                </span>
+              </td>
               <td className="px-4 py-3 text-on-surface-variant">{u.email}</td>
               <td className="px-4 py-3">
                 <span className={`inline-block px-2 py-0.5 rounded-full text-label-sm ${
@@ -66,8 +81,9 @@ export function UserListTable({
                   <div className="flex gap-1 justify-end">
                     <button
                       onClick={() => onEdit(u)}
-                      title="Editar"
-                      className="p-1.5 rounded hover:bg-surface-container"
+                      disabled={u.is_owner}
+                      title={u.is_owner ? "Protegido pela plataforma" : "Editar"}
+                      className="p-1.5 rounded hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>edit</span>
                     </button>
@@ -81,8 +97,9 @@ export function UserListTable({
                     {u.id !== currentUserId && (
                       <button
                         onClick={() => onDelete(u)}
-                        title="Excluir"
-                        className="p-1.5 rounded hover:bg-error-container text-error"
+                        disabled={u.is_owner}
+                        title={u.is_owner ? "Protegido pela plataforma" : "Excluir"}
+                        className="p-1.5 rounded text-error hover:bg-error-container disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
                       </button>

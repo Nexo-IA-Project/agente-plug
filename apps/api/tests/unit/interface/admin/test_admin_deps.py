@@ -52,6 +52,8 @@ async def test_require_admin_role_passes_for_admin():
         user_email="a@x.com",
         user_role="admin",
         user_id="u1",
+        identity_id="u1",
+        membership_id=None,
         user_name="",
         must_change_password=False,
     )
@@ -70,6 +72,8 @@ async def test_require_admin_role_blocks_operator():
         user_email="a@x.com",
         user_role="operator",
         user_id="u1",
+        identity_id="u1",
+        membership_id=None,
         user_name="",
         must_change_password=False,
     )

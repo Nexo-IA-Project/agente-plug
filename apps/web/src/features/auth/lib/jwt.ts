@@ -1,7 +1,9 @@
 export interface AuthTokenPayload {
   sub: string;         // email
   user_id: string;
-  account_id: number;
+  identity_id: string;
+  account_id: string;  // UUID
+  membership_id: string;
   role: "admin" | "operator";
   must_change_password: boolean;
   exp: number;
