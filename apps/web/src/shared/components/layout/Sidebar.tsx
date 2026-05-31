@@ -33,6 +33,7 @@ const SETTINGS_CHILDREN: NavEntry[] = [
 
 const ADMIN_CHILDREN: NavEntry[] = [
   { label: "Auditoria", href: "/administracao/auditoria", icon: "policy", perm: "audit.view" },
+  { label: "Histórico de Acesso", href: "/administracao/acesso", icon: "manage_accounts", perm: "audit.view" },
 ];
 
 function NavItem({ href, icon, label, active }: { href: string; icon: string; label: string; active: boolean }) {

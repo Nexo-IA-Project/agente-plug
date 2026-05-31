@@ -12,6 +12,7 @@ export const ROUTE_PERMISSIONS: Record<string, string> = {
   "/settings/comportamento": "settings.view",
   "/settings/tokens": "tokens.view",
   "/administracao/auditoria": "audit.view",
+  "/administracao/acesso": "audit.view",
 };
 
 /**
