@@ -1,6 +1,7 @@
 export interface AuditEventItem {
   id: string;
   user_name: string | null;
+  user_email: string | null;
   action: string;
   resource_type: string;
   resource_id: string | null;
@@ -8,6 +9,7 @@ export interface AuditEventItem {
   geo_city: string | null;
   geo_country: string | null;
   geo_region: string | null;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
@@ -21,6 +23,8 @@ export interface AuditEventListResponse {
 export interface AuditFilters {
   user_id?: string;
   action?: string;
+  resource_type?: string;
+  exclude_auth?: boolean;
   date_from?: string;
   date_to?: string;
   page?: number;
