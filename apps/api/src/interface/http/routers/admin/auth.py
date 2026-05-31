@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, Cookie, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request, Response, status
+from jose import JWTError
 from pydantic import BaseModel
-from sqlalchemy import select
 
-from shared.adapters.db.models import UserModel
+from interface.http.deps.admin_auth import AdminAuth, require_admin
+from shared.adapters.db.repositories.identity_repo import IdentityRepository
+from shared.adapters.db.repositories.membership_repo import MembershipRepository
 from shared.adapters.db.session import session_scope
 from shared.adapters.kb.jwt_handler import create_access_token, verify_password, verify_token
 from shared.config.settings import get_settings
@@ -25,10 +26,58 @@ class LoginRequest(BaseModel):
     account_id: int | None = None  # ignorado — mantido só para compatibilidade
 
 
-class LoginResponse(BaseModel):
-    access_token: str
+class AccountOption(BaseModel):
+    membership_id: str
+    account_id: str
+    account_name: str
+    role: str
+    is_owner: bool
+
+
+class LoginResultResponse(BaseModel):
+    status: str  # "authenticated" | "choose_account" | "must_change_password"
+    access_token: str | None = None
+    pre_auth_token: str | None = None
     token_type: str = "bearer"
-    expires_in: int
+    expires_in: int | None = None
+    accounts: list[AccountOption] | None = None
+    must_change_password: bool = False
+
+
+class SelectAccountRequest(BaseModel):
+    account_id: str
+
+
+def _full_token(identity: Any, view: Any, settings: Any) -> str:
+    return create_access_token(
+        data={
+            "sub": identity.email,
+            "identity_id": identity.id,
+            "user_id": identity.id,
+            "user_name": identity.name,
+            "account_id": str(view.account_id),
+            "membership_id": view.membership_id,
+            "role": view.role.value,
+            "must_change_password": identity.must_change_password,
+        },
+        secret=settings.jwt_secret,
+        expire_minutes=settings.jwt_expire_minutes,
+    )
+
+
+def _pre_auth_token(identity: Any, settings: Any) -> str:
+    return create_access_token(
+        data={
+            "sub": identity.email,
+            "identity_id": identity.id,
+            "user_id": identity.id,
+            "user_name": identity.name,
+            "scope": "pre_auth",
+            "must_change_password": identity.must_change_password,
+        },
+        secret=settings.jwt_secret,
+        expire_minutes=10,
+    )
 
 
 def get_db() -> Any:
@@ -97,65 +146,97 @@ async def _save_auth_audit(
         pass
 
 
-@router.post("/auth/login", response_model=LoginResponse)
-async def login(body: LoginRequest, request: Request, response: Response) -> LoginResponse:
+@router.post("/auth/login", response_model=LoginResultResponse)
+async def login(body: LoginRequest, request: Request, response: Response) -> LoginResultResponse:
     settings = get_settings()
-
     async with get_db() as session:
-        result = await session.execute(select(UserModel).where(UserModel.email == body.email))
-        user = result.scalar_one_or_none()
-
-        if user is None or not verify_password(body.password, user.password_hash):
+        identity = await IdentityRepository(session).get_by_email(body.email)
+        if identity is None or not verify_password(body.password, identity.password_hash):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-
-        if not user.is_active:
+        if not identity.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User is inactive",
             )
 
-        user.last_login_at = datetime.now(UTC)
-        await session.flush()
-
-        snapshot = {
-            "id": user.id,
-            "email": user.email,
-            "name": user.name,
-            "account_id": user.account_id,
-            "role": user.role,
-            "must_change_password": user.must_change_password,
-        }
+        views = await MembershipRepository(session).list_active_by_identity(identity.id)
+        await IdentityRepository(session).touch_last_login(identity.id)
         await session.commit()
 
-    _login_task = asyncio.create_task(
-        _save_auth_audit(
-            account_id=str(snapshot["account_id"]),
-            user_id=str(snapshot["id"]),
-            user_email=snapshot["email"],
-            ip=_extract_login_ip(request),
-            action="Login",
-            user_agent=request.headers.get("user-agent", ""),
+    if identity.must_change_password:
+        return LoginResultResponse(
+            status="must_change_password",
+            pre_auth_token=_pre_auth_token(identity, settings),
+            must_change_password=True,
         )
+    if not views:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sem acesso a nenhuma empresa",
+        )
+    if len(views) == 1:
+        token = _full_token(identity, views[0], settings)
+        max_age = settings.jwt_expire_minutes * 60
+        response.set_cookie(
+            key=_COOKIE_NAME,
+            value=token,
+            httponly=True,
+            samesite="lax",
+            max_age=max_age,
+            path="/",
+        )
+        asyncio.create_task(  # noqa: RUF006
+            _save_auth_audit(
+                account_id=str(views[0].account_id),
+                user_id=identity.id,
+                user_email=identity.email,
+                ip=_extract_login_ip(request),
+                action="Login",
+                user_agent=request.headers.get("user-agent", ""),
+            )
+        )
+        return LoginResultResponse(status="authenticated", access_token=token, expires_in=max_age)
+    return LoginResultResponse(
+        status="choose_account",
+        pre_auth_token=_pre_auth_token(identity, settings),
+        accounts=[
+            AccountOption(
+                membership_id=v.membership_id,
+                account_id=str(v.account_id),
+                account_name=v.account_name,
+                role=v.role.value,
+                is_owner=v.is_owner,
+            )
+            for v in views
+        ],
     )
-    del _login_task
 
+
+async def _emit_for_account(
+    identity_id: str, account_id_raw: str, request: Request, response: Response
+) -> LoginResultResponse:
+    from uuid import UUID as _UUID
+
+    settings = get_settings()
+    try:
+        account_uuid = _UUID(account_id_raw)
+    except (ValueError, TypeError) as e:
+        raise HTTPException(status_code=400, detail="Invalid account_id") from e
+
+    async with get_db() as session:
+        identity = await IdentityRepository(session).get_by_id(identity_id)
+        if identity is None or not identity.is_active:
+            raise HTTPException(status_code=401, detail="Invalid identity")
+        views = await MembershipRepository(session).list_active_by_identity(identity_id)
+    match = next((v for v in views if str(v.account_id) == str(account_uuid)), None)
+    if match is None:
+        raise HTTPException(status_code=403, detail="Sem vínculo ativo com esta empresa")
+    token = _full_token(identity, match, settings)
     max_age = settings.jwt_expire_minutes * 60
-    token = create_access_token(
-        data={
-            "sub": snapshot["email"],
-            "account_id": str(snapshot["account_id"]),
-            "role": snapshot["role"],
-            "user_id": snapshot["id"],
-            "user_name": snapshot["name"],
-            "must_change_password": snapshot["must_change_password"],
-        },
-        secret=settings.jwt_secret,
-        expire_minutes=settings.jwt_expire_minutes,
-    )
     response.set_cookie(
         key=_COOKIE_NAME,
         value=token,
@@ -164,7 +245,44 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
         max_age=max_age,
         path="/",
     )
-    return LoginResponse(access_token=token, expires_in=max_age)
+    return LoginResultResponse(status="authenticated", access_token=token, expires_in=max_age)
+
+
+@router.post("/auth/select-account", response_model=LoginResultResponse)
+async def select_account(
+    body: SelectAccountRequest,
+    request: Request,
+    response: Response,
+    authorization: str | None = Header(default=None),
+    nexoia_token: str | None = Cookie(default=None),
+) -> LoginResultResponse:
+    token: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+    elif nexoia_token:
+        token = nexoia_token
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing credentials")
+    try:
+        payload = verify_token(token, secret=get_settings().jwt_secret)
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    identity_id = payload.get("identity_id") or payload.get("user_id", "")
+    return await _emit_for_account(identity_id, body.account_id, request, response)
+
+
+@router.post("/auth/switch-account", response_model=LoginResultResponse)
+async def switch_account(
+    body: SelectAccountRequest,
+    request: Request,
+    response: Response,
+    auth: AdminAuth = Depends(require_admin),
+) -> LoginResultResponse:
+    return await _emit_for_account(auth.identity_id, body.account_id, request, response)
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)

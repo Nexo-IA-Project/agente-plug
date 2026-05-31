@@ -18,6 +18,8 @@ def _make_app_with_mock_deps(mock_deps):
             user_email="admin@test.com",
             user_role="admin",
             user_id="test-id",
+            identity_id="test-id",
+            membership_id=None,
             user_name="",
             must_change_password=False,
         )

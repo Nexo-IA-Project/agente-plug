@@ -27,6 +27,8 @@ def client():
         user_email="a@b.com",
         user_role="admin",
         user_id="test-id",
+        identity_id="test-id",
+        membership_id=None,
         user_name="",
         must_change_password=False,
     )

@@ -15,7 +15,9 @@ class AdminAuth:
     account_id: UUID | None
     user_email: str
     user_role: str
-    user_id: str
+    user_id: str  # = identity_id (compat)
+    identity_id: str
+    membership_id: str | None
     user_name: str
     must_change_password: bool
 
@@ -40,11 +42,14 @@ def _decode(token: str) -> AdminAuth:
         account_id = None
 
     email = payload["sub"]
+    identity_id = payload.get("identity_id") or payload.get("user_id", "")
     return AdminAuth(
         account_id=account_id,
         user_email=email,
         user_role=payload.get("role", "operator"),
-        user_id=payload.get("user_id", ""),
+        user_id=identity_id,
+        identity_id=identity_id,
+        membership_id=payload.get("membership_id"),
         user_name=payload.get("user_name") or email,
         must_change_password=payload.get("must_change_password", False),
     )
