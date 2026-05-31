@@ -17,6 +17,7 @@ from interface.http.routers import (
     webhook_purchase,
 )
 from interface.http.routers.admin import api_tokens as admin_api_tokens
+from interface.http.routers.admin import audit as admin_audit
 from interface.http.routers.admin import auth as admin_auth
 from interface.http.routers.admin import chatnexo_agents as admin_chatnexo_agents
 from interface.http.routers.admin import dlq as admin_dlq
@@ -33,7 +34,6 @@ from interface.http.routers.admin import products as admin_products
 from interface.http.routers.admin import profiles as admin_profiles
 from interface.http.routers.admin import search as admin_search
 from interface.http.routers.admin import settings as admin_settings
-from interface.http.routers.admin import audit as admin_audit
 from interface.http.routers.admin import unmapped_products as admin_unmapped_products
 from interface.http.routers.admin import users as admin_users
 from shared.adapters.db.queue import PostgresJobQueue

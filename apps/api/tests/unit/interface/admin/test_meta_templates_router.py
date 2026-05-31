@@ -25,7 +25,8 @@ def _mock_auth_override():
         user_email="a@b.com",
         user_role="admin",
         user_id="test-id",
-        must_change_password=False,
+        user_name="",
+            must_change_password=False,
     )
 
     def _override():

@@ -27,7 +27,8 @@ def client():
         user_email="a@b.com",
         user_role="admin",
         user_id="test-id",
-        must_change_password=False,
+        user_name="",
+            must_change_password=False,
     )
     app.dependency_overrides[require_admin] = lambda: auth
     return TestClient(app)

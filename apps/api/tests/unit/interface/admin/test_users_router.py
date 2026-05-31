@@ -18,7 +18,8 @@ def _admin_auth():
         user_email="a@x.com",
         user_role="admin",
         user_id="self-id",
-        must_change_password=False,
+        user_name="",
+            must_change_password=False,
     )
 
 

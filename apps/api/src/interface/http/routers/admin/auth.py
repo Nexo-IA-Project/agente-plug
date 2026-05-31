@@ -117,6 +117,7 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
         snapshot = {
             "id": user.id,
             "email": user.email,
+            "name": user.name,
             "account_id": user.account_id,
             "role": user.role,
             "must_change_password": user.must_change_password,
@@ -139,6 +140,7 @@ async def login(body: LoginRequest, request: Request, response: Response) -> Log
             "account_id": str(snapshot["account_id"]),
             "role": snapshot["role"],
             "user_id": snapshot["id"],
+            "user_name": snapshot["name"],
             "must_change_password": snapshot["must_change_password"],
         },
         secret=settings.jwt_secret,

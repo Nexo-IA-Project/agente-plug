@@ -46,6 +46,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 
 
 _audit_log = _get_audit_log(__name__)
+_background_tasks: set[asyncio.Task] = set()  # evita GC das tasks de geo lookup
 
 # (method, path_regex, label, resource_type)
 _ACTION_RULES: list[tuple[str, re.Pattern[str], str, str]] = [
@@ -153,12 +154,14 @@ class AuditMiddleware(BaseHTTPMiddleware):
             return response
 
         event_id = uuid4()
+        user_email = audit_ctx.get("user_email", "")
+        user_name = audit_ctx.get("user_name") or user_email or None
         event = AuditEvent(
             id=event_id,
             account_id=account_id,
-            actor=audit_ctx.get("user_email", ""),
+            actor=user_email,
             user_id=audit_ctx.get("user_id") or None,
-            user_name=audit_ctx.get("user_email") or None,
+            user_name=user_name,
             action=label,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -175,7 +178,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 await repo.save(event)
             if ip:
                 _geo_task = asyncio.create_task(_do_geo_update(event_id, ip))
-                del _geo_task
+                _geo_task.add_done_callback(_background_tasks.discard)
+                _background_tasks.add(_geo_task)
         except Exception:
             _audit_log.warning("audit_save_failed", path=request.url.path)
 

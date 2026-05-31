@@ -80,7 +80,11 @@ class SqlAuditRepository:
         page: int = 1,
         page_size: int = 25,
     ) -> tuple[list[AuditEvent], int]:
-        base = select(AuditEventModel).where(AuditEventModel.account_id == account_id)
+        base = (
+            select(AuditEventModel)
+            .where(AuditEventModel.account_id == account_id)
+            .where(AuditEventModel.actor != "system")
+        )
         if user_id is not None:
             base = base.where(AuditEventModel.user_id == user_id)
         if action is not None:

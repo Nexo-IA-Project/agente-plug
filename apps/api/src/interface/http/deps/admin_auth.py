@@ -16,6 +16,7 @@ class AdminAuth:
     user_email: str
     user_role: str
     user_id: str
+    user_name: str
     must_change_password: bool
 
 
@@ -38,11 +39,13 @@ def _decode(token: str) -> AdminAuth:
     except (ValueError, TypeError):
         account_id = None
 
+    email = payload["sub"]
     return AdminAuth(
         account_id=account_id,
-        user_email=payload["sub"],
+        user_email=email,
         user_role=payload.get("role", "operator"),
         user_id=payload.get("user_id", ""),
+        user_name=payload.get("user_name") or email,
         must_change_password=payload.get("must_change_password", False),
     )
 
@@ -68,6 +71,7 @@ async def require_admin(
         "account_id": auth.account_id,
         "user_id": auth.user_id,
         "user_email": auth.user_email,
+        "user_name": auth.user_name,
     }
     return auth
 

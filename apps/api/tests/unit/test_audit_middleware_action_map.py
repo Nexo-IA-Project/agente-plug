@@ -1,4 +1,5 @@
 import pytest
+
 from interface.http.middleware import resolve_audit_action
 
 
