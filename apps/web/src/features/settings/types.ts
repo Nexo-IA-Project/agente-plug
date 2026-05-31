@@ -15,6 +15,11 @@ export interface AccountSettings {
   refund_deadline_days: number;
   welcome_d1_delay_hours: number;
   ai_memory_messages: number;
+  // Message Buffer
+  message_buffer_enabled: boolean;
+  message_buffer_outgoing_url?: string | null;
+  message_buffer_api_key?: string | null;
+  message_buffer_tenant_id?: string | null;
 }
 
 export type AccountSettingsPatch = Partial<AccountSettings>;

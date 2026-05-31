@@ -17,6 +17,7 @@ from shared.domain.entities.account_config import (
     AccountConfigPatch,
     BehaviorConfig,
     IntegrationConfig,
+    MessageBufferConfig,
 )
 
 _SENSITIVE = frozenset(
@@ -26,6 +27,8 @@ _SENSITIVE = frozenset(
         "meta_api_key",
     }
 )
+
+_MB_SENSITIVE = frozenset({"api_key"})
 
 
 def _mask(value: str) -> str:
@@ -71,12 +74,14 @@ class AccountConfigRepository:
     session: AsyncSession
     fernet: Fernet
 
-    async def _load_model(self) -> AccountModel | None:
-        result = await self.session.execute(select(AccountModel).limit(1))
+    async def _load_model(self, account_id: UUID) -> AccountModel | None:
+        result = await self.session.execute(
+            select(AccountModel).where(AccountModel.id == account_id)
+        )
         return result.scalar_one_or_none()
 
     async def get(self, *, account_id: UUID) -> AccountConfig:
-        model = await self._load_model()
+        model = await self._load_model(account_id)
         raw: dict = dict(model.settings or {}) if model else {}
 
         s = get_settings()
@@ -101,8 +106,17 @@ class AccountConfigRepository:
 
         # Carregar agentes ativos do ChatNexo
         agent_repo = ChatNexoAgentRepository(session=self.session, fernet=self.fernet)
-        account_uuid = await get_default_account_uuid(self.session)
-        agents = await agent_repo.list_active(account_uuid)
+        agents = await agent_repo.list_active(account_id)
+
+        mb = raw.get("message_buffer", {})
+
+        def mb_s(key: str) -> str | None:
+            val = mb.get(key) or ""
+            if not val:
+                return None
+            if key in _MB_SENSITIVE:
+                return _decrypt(self.fernet, val) or None
+            return val
 
         return AccountConfig(
             integration=IntegrationConfig(
@@ -130,12 +144,18 @@ class AccountConfigRepository:
                 welcome_d1_delay_hours=gi("welcome_d1_delay_hours", s.welcome_d1_delay_hours),
                 ai_memory_messages=_clamp_ai_memory(b.get("ai_memory_messages")),
             ),
+            message_buffer=MessageBufferConfig(
+                enabled=bool(mb.get("enabled", False)),
+                outgoing_url=mb_s("outgoing_url"),
+                api_key=mb_s("api_key"),
+                tenant_id=mb_s("tenant_id"),
+            ),
         )
 
     async def update(self, *, account_id: UUID, patch: AccountConfigPatch) -> AccountConfig:
-        model = await self._load_model()
+        model = await self._load_model(account_id)
         if model is None:
-            model = AccountModel(name="default", settings={})
+            model = AccountModel(id=account_id, name="default", settings={})
             self.session.add(model)
             await self.session.flush()
 
@@ -176,8 +196,20 @@ class AccountConfigRepository:
             if val_any is not None:
                 b[key] = val_any
 
+        mb = dict(current.get("message_buffer", {}))
+        if patch.message_buffer_enabled is not None:
+            mb["enabled"] = patch.message_buffer_enabled
+        if patch.message_buffer_outgoing_url is not None and not patch.message_buffer_outgoing_url.endswith("****"):
+            mb["outgoing_url"] = patch.message_buffer_outgoing_url
+        if patch.message_buffer_tenant_id is not None and not patch.message_buffer_tenant_id.endswith("****"):
+            mb["tenant_id"] = patch.message_buffer_tenant_id
+        if not _should_skip(patch.message_buffer_api_key):
+            assert patch.message_buffer_api_key is not None
+            mb["api_key"] = _encrypt(self.fernet, patch.message_buffer_api_key)
+
         current["integration"] = i
         current["behavior"] = b
+        current["message_buffer"] = mb
         model.settings = current
         await self.session.flush()
 

@@ -32,9 +32,20 @@ class BehaviorConfig:
 
 
 @dataclass(frozen=True)
+class MessageBufferConfig:
+    """Configuração do runtime externo de mensageria (Message Buffer / Nexus Hub)."""
+
+    enabled: bool = False
+    outgoing_url: str | None = field(default=None)
+    api_key: str | None = field(default=None)
+    tenant_id: str | None = field(default=None)
+
+
+@dataclass(frozen=True)
 class AccountConfig:
     integration: IntegrationConfig
     behavior: BehaviorConfig
+    message_buffer: MessageBufferConfig = field(default_factory=MessageBufferConfig)
 
 
 @dataclass
@@ -57,3 +68,8 @@ class AccountConfigPatch:
     refund_deadline_days: int | None = field(default=None)
     welcome_d1_delay_hours: int | None = field(default=None)
     ai_memory_messages: int | None = field(default=None)
+    # Message Buffer
+    message_buffer_enabled: bool | None = field(default=None)
+    message_buffer_outgoing_url: str | None = field(default=None)
+    message_buffer_api_key: str | None = field(default=None)
+    message_buffer_tenant_id: str | None = field(default=None)

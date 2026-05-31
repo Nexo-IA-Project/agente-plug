@@ -56,6 +56,13 @@ export default function SettingsPage() {
             status="active"
             href="/settings/whatsapp"
           />
+          <IntegrationCard
+            icon="swap_horiz"
+            title="Message Buffer"
+            subtitle="Runtime externo de mensageria e webhook para plataformas externas"
+            status="active"
+            href="/settings/message-buffer"
+          />
         </div>
       </div>
     </RequirePermission>
