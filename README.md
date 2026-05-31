@@ -116,7 +116,7 @@ IDLE_CLOSE (20 min após ping)   → encerra conversa
 ## Estrutura do monorepo
 
 ```
-agente-plug/
+nexo-flow/
 ├── apps/
 │   ├── api/            # Backend Python
 │   │   ├── src/
@@ -215,8 +215,8 @@ O deploy é automático via GitHub Actions ao fazer push na `main`:
 5. `docker compose up -d --force-recreate api worker web`
 
 As imagens ficam em:
-- `ghcr.io/nexo-ia-project/agente-plug-api:latest`
-- `ghcr.io/nexo-ia-project/agente-plug-web:latest`
+- `ghcr.io/nexo-ia-project/nexo-flow-api:latest`
+- `ghcr.io/nexo-ia-project/nexo-flow-web:latest`
 
 ---
 

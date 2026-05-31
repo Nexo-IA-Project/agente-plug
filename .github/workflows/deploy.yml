@@ -8,8 +8,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_API: ${{ github.repository_owner }}/agente-plug-api
-  IMAGE_WEB: ${{ github.repository_owner }}/agente-plug-web
+  IMAGE_API: ${{ github.repository_owner }}/nexo-flow-api
+  IMAGE_WEB: ${{ github.repository_owner }}/nexo-flow-web
 
 jobs:
   # ============================================================================
@@ -168,7 +168,7 @@ jobs:
           context: ${{ matrix.context }}
           push: false
           load: true
-          tags: agente-plug-${{ matrix.target }}:ci
+          tags: nexo-flow-${{ matrix.target }}:ci
           build-args: |
             NEXT_PUBLIC_API_URL=https://api-iag2.ianexo.com.br
           cache-from: type=gha,scope=${{ matrix.scope }}
@@ -177,7 +177,7 @@ jobs:
       - name: Smoke test — worker entrypoint
         if: matrix.target == 'worker'
         run: |
-          docker run --rm --entrypoint python agente-plug-worker:ci \
+          docker run --rm --entrypoint python nexo-flow-worker:ci \
             -c "import worker; print('worker module importable')"
 
   # ============================================================================
@@ -276,6 +276,6 @@ jobs:
           IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
         run: |
           set -euo pipefail
-          cd /root/agente-plug
+          cd /root/nexo-flow
           git pull --ff-only
           IMAGE_TAG="${IMAGE_TAG}" bash scripts/deploy.sh

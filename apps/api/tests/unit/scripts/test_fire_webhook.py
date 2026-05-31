@@ -4,9 +4,9 @@ import sys
 from pathlib import Path
 
 # Adiciona scripts/webhook-sim ao path para importar fire_webhook
-# Path: /home/fabio/www/agente-plug/apps/api/tests/unit/scripts/test_fire_webhook.py
-# Target: /home/fabio/www/agente-plug/scripts/webhook-sim/
-# Parent dirs: tests(1) -> unit(2) -> scripts(3) -> api(4) -> apps(5) -> agente-plug(root)
+# Path: /home/fabio/www/nexo-flow/apps/api/tests/unit/scripts/test_fire_webhook.py
+# Target: /home/fabio/www/nexo-flow/scripts/webhook-sim/
+# Parent dirs: tests(1) -> unit(2) -> scripts(3) -> api(4) -> apps(5) -> nexo-flow(root)
 repo_root = Path(__file__).parent.parent.parent.parent.parent.parent
 sys.path.insert(0, str(repo_root / "scripts" / "webhook-sim"))
 
