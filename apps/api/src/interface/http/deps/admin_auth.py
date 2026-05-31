@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 from uuid import UUID
 
 from fastapi import Cookie, Depends, Header, HTTPException, Query, Request, status
@@ -22,10 +23,10 @@ class AdminAuth:
     must_change_password: bool
 
 
-def _decode(token: str) -> AdminAuth:
+def _verify(token: str) -> dict[str, Any]:
     settings = get_settings()
     try:
-        payload = verify_token(token, secret=settings.jwt_secret)
+        return verify_token(token, secret=settings.jwt_secret)
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -33,6 +34,8 @@ def _decode(token: str) -> AdminAuth:
             headers={"WWW-Authenticate": "Bearer"},
         ) from exc
 
+
+def _payload_to_auth(payload: dict[str, Any]) -> AdminAuth:
     # account_id agora é UUID. Tokens legados (emitidos antes da migração)
     # carregavam um inteiro — toleramos: parse falho → None, sem derrubar o login.
     raw_acc = payload.get("account_id")
@@ -53,6 +56,23 @@ def _decode(token: str) -> AdminAuth:
         user_name=payload.get("user_name") or email,
         must_change_password=payload.get("must_change_password", False),
     )
+
+
+def _decode(token: str) -> AdminAuth:
+    """Decodifica um token COMPLETO. Rejeita tokens pre_auth (escopo mínimo).
+
+    Tokens com `scope == "pre_auth"` só servem para `select-account` e para a
+    troca obrigatória de senha. Aceitá-los aqui permitiria burlar o
+    `must_change_password` (via switch-account) e acessar dados sob a conta
+    default. Por isso, 403 explícito.
+    """
+    payload = _verify(token)
+    if payload.get("scope") == "pre_auth":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Token de pré-autenticação não autorizado aqui",
+        )
+    return _payload_to_auth(payload)
 
 
 async def require_admin(
@@ -119,3 +139,42 @@ async def require_admin_sse(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return _decode(actual)
+
+
+@dataclass
+class PasswordChangeIdentity:
+    identity_id: str
+    is_pre_auth: bool
+
+
+async def require_identity_for_password_change(
+    request: Request,
+    authorization: str | None = Header(default=None),
+    nexoia_token: str | None = Cookie(default=None),
+) -> PasswordChangeIdentity:
+    """Identidade para troca de senha — aceita token COMPLETO ou pre_auth.
+
+    Este é o ÚNICO endpoint de dados que aceita pre_auth, porque o fluxo de
+    `must_change_password` no login retorna pre_auth e o usuário precisa trocar
+    a senha antes de obter um token completo. Demais endpoints usam
+    `require_admin`, que rejeita pre_auth.
+    """
+    token: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization.removeprefix("Bearer ").strip()
+    elif nexoia_token:
+        token = nexoia_token
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    payload = _verify(token)
+    identity_id = payload.get("identity_id") or payload.get("user_id", "")
+    if not identity_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+    return PasswordChangeIdentity(
+        identity_id=str(identity_id),
+        is_pre_auth=payload.get("scope") == "pre_auth",
+    )

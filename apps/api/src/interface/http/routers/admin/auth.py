@@ -235,6 +235,14 @@ async def _emit_for_account(
         identity = await IdentityRepository(session).get_by_id(identity_id)
         if identity is None or not identity.is_active:
             raise HTTPException(status_code=401, detail="Invalid identity")
+        if identity.must_change_password:
+            # Um token completo nunca deve carregar must_change_password=True.
+            # Bloqueia a emissão para identidades que ainda não trocaram a senha
+            # (ex.: pre_auth de must_change usado em select-account).
+            raise HTTPException(
+                status_code=403,
+                detail="Troque a senha antes de acessar uma empresa",
+            )
         views = await MembershipRepository(session).list_active_by_identity(identity_id)
     match = next((v for v in views if str(v.account_id) == str(account_uuid)), None)
     if match is None:

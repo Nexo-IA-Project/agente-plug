@@ -7,7 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from interface.http.deps.admin_auth import AdminAuth, require_admin
+from interface.http.deps.admin_auth import (
+    AdminAuth,
+    PasswordChangeIdentity,
+    require_admin,
+    require_identity_for_password_change,
+)
 from interface.http.deps.permissions import resolve_membership_permissions
 from shared.adapters.db.repositories.identity_repo import IdentityRepository
 from shared.adapters.db.repositories.membership_repo import MembershipRepository
@@ -145,13 +150,13 @@ async def get_avatar(auth: AdminAuth = Depends(require_admin)) -> Response:
 @router.put("/me/password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(
     body: ChangePasswordRequest,
-    auth: AdminAuth = Depends(require_admin),
+    identity: PasswordChangeIdentity = Depends(require_identity_for_password_change),
 ) -> None:
     async with session_scope() as s:
         uc = ChangeMyPasswordUseCase(identity_repo=IdentityRepository(s))
         try:
             await uc.execute(
-                identity_id=auth.identity_id,
+                identity_id=identity.identity_id,
                 current_password=body.current_password,
                 new_password=body.new_password,
             )

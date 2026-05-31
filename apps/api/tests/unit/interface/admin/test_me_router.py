@@ -4,10 +4,12 @@ import base64
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from interface.http.deps.admin_auth import AdminAuth, require_admin
+from shared.adapters.kb import jwt_handler
 
 
 def _auth(role="admin", membership_id=None):
@@ -157,7 +159,99 @@ def test_update_avatar_rejects_invalid_base64():
     assert r.status_code == 422
 
 
+# ── /me/password aceita pre_auth (troca obrigatória no primeiro login) ───────
+
+
+def _pre_auth_token(identity_id: str) -> str:
+    return jwt_handler.create_access_token(
+        data={
+            "sub": "a@x.com",
+            "identity_id": identity_id,
+            "user_id": identity_id,
+            "scope": "pre_auth",
+            "must_change_password": True,
+        },
+        secret="s",
+        expire_minutes=10,
+    )
+
+
+@pytest.mark.asyncio
+async def test_password_change_accepts_pre_auth():
+    # App SEM dependency_overrides — exercita a dependência real do endpoint.
+    from interface.http.routers.admin.me import router
+
+    app = FastAPI()
+    app.include_router(router, prefix="/admin")
+
+    uc = MagicMock()
+    uc.execute = AsyncMock(return_value=None)
+
+    with (
+        patch("interface.http.deps.admin_auth.get_settings") as ms2,
+        patch("interface.http.routers.admin.me.session_scope") as mock_scope,
+        patch("interface.http.routers.admin.me.IdentityRepository"),
+        patch("interface.http.routers.admin.me.ChangeMyPasswordUseCase", return_value=uc),
+    ):
+        ms2.return_value.jwt_secret = "s"
+        s = AsyncMock()
+        mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
+        mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        pre = _pre_auth_token("uid")
+        r = TestClient(app).put(
+            "/admin/me/password",
+            json={"current_password": "oldpassw", "new_password": "newpassw1"},
+            headers={"Authorization": f"Bearer {pre}"},
+        )
+    assert r.status_code == 204
+    uc.execute.assert_awaited_once()
+    assert uc.execute.await_args.kwargs["identity_id"] == "uid"
+
+
+@pytest.mark.asyncio
+async def test_password_change_accepts_full_token():
+    from interface.http.routers.admin.me import router
+
+    app = FastAPI()
+    app.include_router(router, prefix="/admin")
+
+    uc = MagicMock()
+    uc.execute = AsyncMock(return_value=None)
+
+    full = jwt_handler.create_access_token(
+        data={
+            "sub": "a@x.com",
+            "identity_id": "uid",
+            "user_id": "uid",
+            "account_id": str(uuid.uuid4()),
+            "membership_id": "m",
+            "role": "admin",
+        },
+        secret="s",
+        expire_minutes=60,
+    )
+    with (
+        patch("interface.http.deps.admin_auth.get_settings") as ms2,
+        patch("interface.http.routers.admin.me.session_scope") as mock_scope,
+        patch("interface.http.routers.admin.me.IdentityRepository"),
+        patch("interface.http.routers.admin.me.ChangeMyPasswordUseCase", return_value=uc),
+    ):
+        ms2.return_value.jwt_secret = "s"
+        s = AsyncMock()
+        mock_scope.return_value.__aenter__ = AsyncMock(return_value=s)
+        mock_scope.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        r = TestClient(app).put(
+            "/admin/me/password",
+            json={"current_password": "oldpassw", "new_password": "newpassw1"},
+            headers={"Authorization": f"Bearer {full}"},
+        )
+    assert r.status_code == 204
+
+
 # ── /me/memberships ──────────────────────────────────────────────────────────
+
 
 def _fake_member_view(account_id, account_name, role="admin", is_owner=False):
     v = MagicMock()
@@ -173,8 +267,12 @@ def test_list_my_memberships_marks_is_current_correctly():
     current_account_id = uuid.uuid4()
     other_account_id = uuid.uuid4()
 
-    view_current = _fake_member_view(current_account_id, "Empresa Atual", role="admin", is_owner=True)
-    view_other = _fake_member_view(other_account_id, "Outra Empresa", role="operator", is_owner=False)
+    view_current = _fake_member_view(
+        current_account_id, "Empresa Atual", role="admin", is_owner=True
+    )
+    view_other = _fake_member_view(
+        other_account_id, "Outra Empresa", role="operator", is_owner=False
+    )
 
     auth = AdminAuth(
         account_id=current_account_id,
