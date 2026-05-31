@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from uuid import UUID
 
-from fastapi import Cookie, Depends, Header, HTTPException, Query, status
+from fastapi import Cookie, Depends, Header, HTTPException, Query, Request, status
 from jose import JWTError
 
 from shared.adapters.kb.jwt_handler import verify_token
@@ -48,6 +48,7 @@ def _decode(token: str) -> AdminAuth:
 
 
 async def require_admin(
+    request: Request,
     authorization: str | None = Header(default=None),
     nexoia_token: str | None = Cookie(default=None),
 ) -> AdminAuth:
@@ -62,7 +63,13 @@ async def require_admin(
             detail="Missing credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return _decode(token)
+    auth = _decode(token)
+    request.state.audit_ctx = {
+        "account_id": auth.account_id,
+        "user_id": auth.user_id,
+        "user_email": auth.user_email,
+    }
+    return auth
 
 
 async def require_admin_role(
