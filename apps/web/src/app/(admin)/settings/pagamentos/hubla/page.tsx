@@ -209,7 +209,7 @@ export default function HublaSettingsPage() {
                   savedSecret ? "mt-4 max-h-[700px] opacity-100" : "max-h-0 opacity-0"
                 }`}
               >
-                <HublaWebhookCard key={savedSecret ? "set" : "unset"} />
+                <HublaWebhookCard key={savedSecret} />
               </div>
             </div>
           </div>

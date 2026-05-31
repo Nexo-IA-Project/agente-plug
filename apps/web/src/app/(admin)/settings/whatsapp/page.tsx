@@ -6,6 +6,7 @@ import { getAccountSettings } from "@/lib/api";
 import { InlineEditField } from "@/features/settings/components/InlineEditField";
 import { useFieldSave } from "@/features/settings/hooks/useIntegrationForm";
 import { RequirePermission } from "@/features/auth/components/RequirePermission";
+import { usePermission } from "@/features/auth/hooks/usePermission";
 import type { AccountSettings } from "@/features/settings/types";
 
 const WhatsAppIcon = (
@@ -53,6 +54,7 @@ const META_FIELDS: FieldSpec[] = [
 
 function MetaCard({ settings, onSaved }: { settings: AccountSettings; onSaved: (updated: AccountSettings) => void }) {
   const { saveField } = useFieldSave(onSaved);
+  const canEdit = usePermission().can("settings.edit_credentials");
 
   return (
     <div className="overflow-hidden rounded-2xl border border-outline-variant bg-white dark:bg-surface-container">
@@ -82,6 +84,7 @@ function MetaCard({ settings, onSaved }: { settings: AccountSettings; onSaved: (
             type={field.type}
             placeholder={field.placeholder}
             description={field.description}
+            readOnly={!canEdit}
             onSave={(val) => saveField(field.key, val)}
           />
         ))}
