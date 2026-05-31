@@ -8,7 +8,7 @@ from sqlalchemy import delete as sa_delete
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.adapters.db.models import ProfileModel, ProfilePermissionModel, UserModel
+from shared.adapters.db.models import MembershipModel, ProfileModel, ProfilePermissionModel
 from shared.domain.entities.profile import Profile
 
 
@@ -139,11 +139,14 @@ class ProfileRepository:
         )
         user_count = (
             select(
-                UserModel.profile_id.label("profile_id"),
+                MembershipModel.profile_id.label("profile_id"),
                 func.count().label("user_count"),
             )
-            .where(UserModel.profile_id.is_not(None))
-            .group_by(UserModel.profile_id)
+            .where(
+                MembershipModel.profile_id.is_not(None),
+                MembershipModel.account_id == account_id,
+            )
+            .group_by(MembershipModel.profile_id)
             .subquery()
         )
         stmt = (

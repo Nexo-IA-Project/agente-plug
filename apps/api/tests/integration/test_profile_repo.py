@@ -8,7 +8,7 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
-from shared.adapters.db.models import AccountModel, UserModel
+from shared.adapters.db.models import AccountModel, IdentityModel, MembershipModel
 from shared.adapters.db.repositories.profile_repo import ProfileRepository
 
 
@@ -222,19 +222,28 @@ async def test_list_with_counts(engine: AsyncEngine) -> None:
         )
         await s.commit()
 
-    # 1 user apontando para o profile
+    # 2 memberships apontando para o profile (via identities)
     async with maker() as s:
-        s.add(
-            UserModel(
-                id=str(uuid.uuid4()),
-                account_id=acc_id,
-                name="User One",
-                email="u1@example.com",
-                password_hash="x",
-                role="operator",
-                profile_id=profile.id,
+        for i in range(2):
+            identity_id = str(uuid.uuid4())
+            s.add(
+                IdentityModel(
+                    id=identity_id,
+                    email=f"u{i}@example.com",
+                    password_hash="x",
+                    name=f"User {i}",
+                )
             )
-        )
+            await s.flush()
+            s.add(
+                MembershipModel(
+                    id=str(uuid.uuid4()),
+                    identity_id=identity_id,
+                    account_id=acc_id,
+                    role="operator",
+                    profile_id=profile.id,
+                )
+            )
         await s.commit()
 
     async with maker() as s:
@@ -247,4 +256,4 @@ async def test_list_with_counts(engine: AsyncEngine) -> None:
     assert row["name"] == "Gestor"
     assert row["is_system"] is False
     assert row["permission_count"] == 2
-    assert row["user_count"] == 1
+    assert row["user_count"] == 2
