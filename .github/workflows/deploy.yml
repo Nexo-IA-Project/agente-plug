@@ -277,6 +277,7 @@ jobs:
         run: |
           set -euo pipefail
           cd /root/nexo-flow
+          chmod -R u+rw .git/logs/ 2>/dev/null || true
           git fetch --prune origin
           git reset --hard origin/main
           IMAGE_TAG="${IMAGE_TAG}" bash scripts/deploy.sh
