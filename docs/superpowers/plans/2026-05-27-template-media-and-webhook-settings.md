@@ -48,7 +48,7 @@ cd /home/fabio/www/agente-plug && git add apps/api/src/shared/config/settings.py
 git commit -m "feat(config): adiciona PUBLIC_BASE_URL para o endpoint público de mídia"
 ```
 
-> O usuário vai colocar o valor real em `.env.local` (dev: `https://api-iag2-dev.ianexo.com.br`; prod: `https://api-iag2.ianexo.com.br`). Não é responsabilidade desta task.
+> O usuário vai colocar o valor real em `.env.local` (dev: `https://api-flow-dev.ianexo.com.br`; prod: `https://api-flow.ianexo.com.br`). Não é responsabilidade desta task.
 
 ---
 
@@ -1459,7 +1459,7 @@ git commit -m "feat(onboarding): thumbnail compacto no StepItem quando template 
 
 import { useToast } from "@/shared/hooks/useToast";
 
-const HUBLA_WEBHOOK_URL = "https://api-iag2.ianexo.com.br/webhook/hubla";
+const HUBLA_WEBHOOK_URL = "https://api-flow.ianexo.com.br/webhook/hubla";
 
 export function HublaWebhookCard() {
   const toast = useToast();
@@ -1648,7 +1648,7 @@ Em `/onboarding`:
 
 Em `/settings`:
 - [ ] Rolar até a seção Hubla.
-- [ ] Verificar que o card "URL do Webhook" aparece com a URL `https://api-iag2.ianexo.com.br/webhook/hubla`.
+- [ ] Verificar que o card "URL do Webhook" aparece com a URL `https://api-flow.ianexo.com.br/webhook/hubla`.
 - [ ] Clicar no botão copiar → toast de confirmação.
 - [ ] Verificar lista numerada de 5 passos.
 

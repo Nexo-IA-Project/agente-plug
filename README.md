@@ -8,10 +8,10 @@ Agente de suporte ao cliente com IA integrado ao WhatsApp via ChatNexo — monor
 
 | Ambiente | Serviço | URL |
 |----------|---------|-----|
-| **Produção** | API (backend) | `https://api-iag2.ianexo.com.br` |
-| **Produção** | Painel admin (frontend) | `https://panel-iag2.ianexo.com.br` |
-| **Dev (tunnel)** | API | `https://api-iag2-dev.ianexo.com.br` |
-| **Dev (tunnel)** | Painel admin | `https://panel-iag2-dev.ianexo.com.br` |
+| **Produção** | API (backend) | `https://api-flow.ianexo.com.br` |
+| **Produção** | Painel admin (frontend) | `https://flow.ianexo.com.br` |
+| **Dev (tunnel)** | API | `https://api-flow-dev.ianexo.com.br` |
+| **Dev (tunnel)** | Painel admin | `https://flow-dev.ianexo.com.br` |
 | **Dev local** | API | `http://localhost:8000` |
 | **Dev local** | Painel admin | `http://localhost:3001` |
 | **Dev local** | API docs (Swagger) | `http://localhost:8000/docs` |

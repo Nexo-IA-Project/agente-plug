@@ -92,7 +92,7 @@ O produto está em fase de crescimento. Resolver a concorrência agora evita ree
 ### Goal 5: Infraestrutura profissional em produção
 
 - **Description:** Aplicação rodando em produção na Hetzner com Cloudflare Tunnel, firewall, banco isolado em VM separada e backups automáticos diários.
-- **Metric:** `curl https://api-iag2.ianexo.com.br/health` retorna 200 em < 500ms
+- **Metric:** `curl https://api-flow.ianexo.com.br/health` retorna 200 em < 500ms
 - **Baseline:** Sem ambiente de produção
 - **Target:** Produção ativa com 99.9% uptime (Cloudflare + Hetzner SLA)
 - **Timeframe:** Entrega da Fase 5
@@ -632,8 +632,8 @@ ufw enable
 **Acceptance Criteria:**
 - [ ] `cloudflared` instalado e rodando como systemd service no app-server
 - [ ] Tunnel autenticado com conta Cloudflare do projeto
-- [ ] Rota `api-iag2.ianexo.com.br` → `http://localhost:8000`
-- [ ] Rota `panel-iag2.ianexo.com.br` → `http://localhost:3000`
+- [ ] Rota `api-flow.ianexo.com.br` → `http://localhost:8000`
+- [ ] Rota `flow.ianexo.com.br` → `http://localhost:3000`
 - [ ] `cloudflared service install` configurado para restart automático
 - [ ] Health check da tunnel: `systemctl status cloudflared` active
 - [ ] TLS terminado no Cloudflare (SSL Full Strict)
@@ -645,9 +645,9 @@ tunnel: <tunnel-id>
 credentials-file: /etc/cloudflared/<tunnel-id>.json
 
 ingress:
-  - hostname: api-iag2.ianexo.com.br
+  - hostname: api-flow.ianexo.com.br
     service: http://localhost:8000
-  - hostname: panel-iag2.ianexo.com.br
+  - hostname: flow.ianexo.com.br
     service: http://localhost:3000
   - service: http_status:404
 ```
@@ -1261,7 +1261,7 @@ CREATE INDEX idx_conversation_messages_updated
   - Complexity: Small (1h)
   - Dependencies: F5.7
 
-**Validation Checkpoint:** `curl https://api-iag2.ianexo.com.br/health` retorna 200; PR de teste dispara CI; merge dispara CD
+**Validation Checkpoint:** `curl https://api-flow.ianexo.com.br/health` retorna 200; PR de teste dispara CI; merge dispara CD
 
 ---
 
@@ -1357,8 +1357,8 @@ Buffer risco +20%: ~157h (~4 semanas com 1 dev)
 
 #### Q3: Domínio da aplicação ✅ RESOLVIDO
 - **Domínio base:** `ianexo.com.br`
-- **API:** `api-iag2.ianexo.com.br` → `http://localhost:8000`
-- **App:** `panel-iag2.ianexo.com.br` → `http://localhost:3000`
+- **API:** `api-flow.ianexo.com.br` → `http://localhost:8000`
+- **App:** `flow.ianexo.com.br` → `http://localhost:3000`
 
 #### Q4: GitHub organization/repositório ✅ RESOLVIDO
 - **Repo:** `ianexo/agente-plug`

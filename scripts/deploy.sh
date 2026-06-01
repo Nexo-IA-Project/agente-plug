@@ -121,7 +121,7 @@ docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" ps
 # ── Smoke test via Cloudflare Tunnel ─────────────────────────────────────────
 echo "==> Smoke test..."
 for i in 1 2 3; do
-  if curl -sf --max-time 10 https://api-iag2.ianexo.com.br/health | grep -q '"ok"'; then
+  if curl -sf --max-time 10 https://api-flow.ianexo.com.br/health | grep -q '"ok"'; then
     echo "    Smoke test passou!"
     exit 0
   fi

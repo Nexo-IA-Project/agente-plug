@@ -157,7 +157,7 @@ Limites por `kind` (validados no use case antes do INSERT):
 7. Retornar:
    ```json
    {
-     "media_url": "https://api-iag2.ianexo.com.br/public/media/<id>",
+     "media_url": "https://api-flow.ianexo.com.br/public/media/<id>",
      "media_object_key": "<id>",
      "media_kind": "IMAGE",
      "sha256": "<sha>",
@@ -362,12 +362,12 @@ class UploadTemplateMedia:
         )
 ```
 
-A nova configuração: `settings.public_base_url` (ex: `https://api-iag2.ianexo.com.br`). Adicionar em `Settings`:
+A nova configuração: `settings.public_base_url` (ex: `https://api-flow.ianexo.com.br`). Adicionar em `Settings`:
 
 ```python
 class Settings(BaseSettings):
     # ... existing ...
-    public_base_url: str  # ex: "https://api-iag2.ianexo.com.br"
+    public_base_url: str  # ex: "https://api-flow.ianexo.com.br"
 ```
 
 E em `.env.example`:
@@ -377,7 +377,7 @@ PUBLIC_BASE_URL=
 
 Em `.env.local` (dev):
 ```
-PUBLIC_BASE_URL=https://api-iag2-dev.ianexo.com.br
+PUBLIC_BASE_URL=https://api-flow-dev.ianexo.com.br
 ```
 
 ### 6. Remover `R2Storage` adapter
@@ -498,7 +498,7 @@ Novo componente `apps/web/src/features/settings/components/HublaWebhookCard.tsx`
 
 import { useToast } from "@/shared/hooks/useToast";
 
-const HUBLA_WEBHOOK_URL = "https://api-iag2.ianexo.com.br/webhook/hubla";
+const HUBLA_WEBHOOK_URL = "https://api-flow.ianexo.com.br/webhook/hubla";
 
 export function HublaWebhookCard() {
   const toast = useToast();
@@ -582,7 +582,7 @@ Mudança pequena — não muda o layout da seção.
    c. dedup: se já existe em meta_template_media (account_id, sha256), reusa id
    d. Senão, INSERT novo registro com BYTEA
    e. MetaTemplateClient.create_resumable_upload_session + upload_media_resumable → handle Meta
-4. Retorna { media_url=https://api-iag2.../public/media/<id>, media_object_key=<id>, media_kind, sha256, size, meta_handle? }
+4. Retorna { media_url=https://api-flow.../public/media/<id>, media_object_key=<id>, media_kind, sha256, size, meta_handle? }
 5. Frontend usa media_url no preview do TemplateForm + envia ao criar template
 ```
 
@@ -601,7 +601,7 @@ Mudança pequena — não muda o layout da seção.
 
 ```
 Worker → DispatchOnboardingStep → ChatNexoClient.send_template
-  → body.template_params.header.link = "https://api-iag2.../public/media/<id>"
+  → body.template_params.header.link = "https://api-flow.../public/media/<id>"
   → ChatNexo encaminha pra Meta:
     a. Dentro de janela 24h: ChatNexo envia como texto livre com `content` + downloads a URL
     b. Fora da janela: ChatNexo dispara Meta WhatsApp template; Meta baixa do nosso /public/media/{id}
@@ -670,7 +670,7 @@ Worker → DispatchOnboardingStep → ChatNexoClient.send_template
 
 ### Webhook na /settings
 - [ ] Card "URL do Webhook" aparece logo abaixo do campo "Webhook Secret".
-- [ ] URL mostrada: `https://api-iag2.ianexo.com.br/webhook/hubla`.
+- [ ] URL mostrada: `https://api-flow.ianexo.com.br/webhook/hubla`.
 - [ ] Botão copiar funciona (toast de confirmação).
 - [ ] Lista numerada de 5 passos visível.
 - [ ] Botão copiar no campo "Webhook Secret" funciona.
