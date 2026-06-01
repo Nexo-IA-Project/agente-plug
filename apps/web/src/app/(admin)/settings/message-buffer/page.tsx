@@ -63,10 +63,10 @@ export default function MessageBufferSettingsPage() {
                   </span>
                   Integrações
                 </Link>
-                <h1 className="mt-1 text-2xl font-bold text-on-surface">Message Buffer</h1>
+                <h1 className="mt-1 text-2xl font-bold text-on-surface">Servidor de mensagens externo</h1>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  Runtime externo de mensageria e endpoint para receber mensagens de plataformas
-                  externas.
+                  Conecte o Nexos Flow a um servidor de mensagens próprio para entregar os
+                  disparos de onboarding e follow-up.
                 </p>
               </div>
             </div>
