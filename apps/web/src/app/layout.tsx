@@ -17,8 +17,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "NexoIA Admin",
-  description: "NexoIA AI Agent Administration Panel",
+  metadataBase: new URL("https://flow.ianexo.com.br"),
+  title: {
+    default: "NexoIA",
+    template: "%s · NexoIA",
+  },
+  applicationName: "NexoIA",
+  description:
+    "Agente de IA para atendimento ao cliente no WhatsApp — automatiza onboarding, suporte, reembolsos e follow-ups, com base de conhecimento e gestão de leads.",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "NexoIA",
+    url: "https://flow.ianexo.com.br",
+    title: "NexoIA — Atendimento com IA no WhatsApp",
+    description:
+      "Agente de IA que automatiza onboarding, suporte, reembolsos e follow-ups no WhatsApp, com base de conhecimento e gestão de leads.",
+  },
+  twitter: {
+    card: "summary",
+    title: "NexoIA — Atendimento com IA no WhatsApp",
+    description:
+      "Agente de IA que automatiza onboarding, suporte, reembolsos e follow-ups no WhatsApp.",
+  },
 };
 
 export default function RootLayout({
