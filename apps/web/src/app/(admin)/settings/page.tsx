@@ -58,8 +58,8 @@ export default function SettingsPage() {
           />
           <IntegrationCard
             icon="swap_horiz"
-            title="Message Buffer"
-            subtitle="Runtime externo de mensageria e webhook para plataformas externas"
+            title="Servidor de mensagens"
+            subtitle="Conecte um servidor externo para entregar os disparos de onboarding"
             status="active"
             href="/settings/message-buffer"
           />
