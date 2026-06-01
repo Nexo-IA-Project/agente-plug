@@ -3,7 +3,7 @@ Load test with Locust — simulates concurrent webhook messages.
 
 Usage:
     pip install locust
-    locust -f scripts/load_test.py --host https://api-iag2.ianexo.com.br \
+    locust -f scripts/load_test.py --host https://api-flow.ianexo.com.br \
            --users 50 --spawn-rate 5 --run-time 2m --headless
 
 To test locally:

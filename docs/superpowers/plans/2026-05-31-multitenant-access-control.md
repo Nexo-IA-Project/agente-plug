@@ -2394,7 +2394,7 @@ O merge em `main` dispara o CI (`alembic upgrade heads` roda a `aa01mt` com as 5
 
 - [ ] **Step 3: Pós-deploy — smoke em produção**
 
-Verificar `https://api-iag2.ianexo.com.br/health` OK; login do `suporte@ianexo.com.br` com a senha atual funciona; os 2 operators logam; G2 Educação intacta (leads/conversas visíveis).
+Verificar `https://api-flow.ianexo.com.br/health` OK; login do `suporte@ianexo.com.br` com a senha atual funciona; os 2 operators logam; G2 Educação intacta (leads/conversas visíveis).
 
 - [ ] **Step 4: Em caso de falha — rollback**
 

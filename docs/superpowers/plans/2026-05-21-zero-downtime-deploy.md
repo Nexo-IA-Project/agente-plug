@@ -314,7 +314,7 @@ docker compose --env-file "${ENV_FILE}" -f "${COMPOSE_FILE}" ps
 # ── Smoke test via Cloudflare Tunnel ─────────────────────────────────────────
 echo "==> Smoke test..."
 for i in 1 2 3; do
-  if curl -sf --max-time 10 https://api-iag2.ianexo.com.br/health | grep -q '"ok"'; then
+  if curl -sf --max-time 10 https://api-flow.ianexo.com.br/health | grep -q '"ok"'; then
     echo "    Smoke test passou!"
     exit 0
   fi
@@ -565,7 +565,7 @@ chmod +x /root/rollback.sh
 - [ ] **Step 11: Verificar smoke test final**
 
 ```bash
-curl -sf https://api-iag2.ianexo.com.br/health | grep '"ok"'
+curl -sf https://api-flow.ianexo.com.br/health | grep '"ok"'
 echo "Smoke test OK"
 ```
 
@@ -632,7 +632,7 @@ agente-plug-redis-1        Up X days (healthy)
 ```bash
 ssh root@100.70.85.81 "/root/rollback.sh"
 # Verificar que voltou para blue
-curl -sf https://api-iag2.ianexo.com.br/health | grep '"ok"'
+curl -sf https://api-flow.ianexo.com.br/health | grep '"ok"'
 ```
 
 Esperado: `rollback completo` nos logs e API respondendo.
