@@ -276,8 +276,11 @@ jobs:
           IMAGE_TAG: ${{ needs.build-push.outputs.image_tag }}
         run: |
           set -euo pipefail
+          git config --global --add safe.directory /root/nexo-flow
           cd /root/nexo-flow
-          chmod -R u+rw .git/logs/ 2>/dev/null || true
-          git fetch --prune origin
+          # Busca só a branch main — evita tocar refs de outras branches
+          # que podem ter permissões inconsistentes no servidor.
+          git fetch origin main
           git reset --hard origin/main
+          git clean -fd
           IMAGE_TAG="${IMAGE_TAG}" bash scripts/deploy.sh
